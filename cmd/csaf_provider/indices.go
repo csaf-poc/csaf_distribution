@@ -20,9 +20,8 @@ func updateIndex(dir, fname string) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				return []string{fname}, nil
-			} else {
-				return nil, err
 			}
+			return nil, err
 		}
 		defer f.Close()
 		var lines []string
