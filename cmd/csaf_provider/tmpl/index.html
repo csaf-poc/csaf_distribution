@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta description="CSAF-Provider - CSAF upload">
+    <title>CSAF-Provider - CSAF upload</title>
+  </head>
+  <body>
+    <h1>CSAF-Provider - CSAF upload</h1>
+    <form action="/cgi-bin/csaf_provider.go/upload" method="post" enctype="multipart/form-data">
+      <fieldset>
+        <legend>Select your CSAF file</legend>
+        <label for="csaf">CSAF file:</label>
+        <input name="csaf" id="csaf" type="file" size="50" accept="application/json" required="required">
+        <br>
+        {{ if eq (len .Config.TLPs) 1 }}
+        <input type="hidden" value="{{ index .Config.TLPs 0 }}" id="tlp" name="tlp">
+        {{ else }}
+        <label for="tlp">TLP:</label>
+        <select name="tlp" id="tlp">
+        {{ range .Config.TLPs }}
+        <option value="{{ . }}">{{ . }}</option>
+        {{ end }}
+        {{ end }}
+        </select>
+        <br>
+        {{ if .Config.UploadSignature }}
+        <label for="signature">Signature:</label>
+        <br>
+        <textarea name="signature" id="signature" required="required" cols="65" rows="20"
+          placeholder="Insert ASCII armored signature here ..."></textarea>
+        {{ else }}
+        <label for="passphrase">Key passphrase:</label>
+        <input name="passphrase" type="password" id="passphrase">
+        {{ end }}
+        <br>
+        <input type="submit" value="Upload">
+      </fieldset>
+    </form>
+  </body>
+</html>

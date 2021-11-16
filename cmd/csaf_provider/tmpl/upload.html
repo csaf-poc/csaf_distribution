@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta description="CSAF-Provider - CSAF uploaded">
+    <title>CSAF-Provider - CSAF uploaded</title>
+  </head>
+  <body>
+    <h1>CSAF-Provider - CSAF uploaded</h1>
+    {{ if .Error }}
+    <strong>Error: <tt>{{ .Error }}.</tt></strong>
+    {{ else }}
+    <table>
+      <tr><td>CSAF file:</td><td><tt>{{ .Name }}</tt></td></tr>
+      <tr><td>Release date:</td><td><tt>{{ .ReleaseDate }}</tt></td></tr>
+    </table>
+    {{ end }}
+    <br>
+    <a href="/cgi-bin/csaf_provider.go/">Back</a>:
+  </body>
+</html>
