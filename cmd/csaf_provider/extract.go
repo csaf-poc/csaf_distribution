@@ -33,13 +33,23 @@ type extraction struct {
 	tlpLabel           string
 }
 
+type extractFunc func(string) (interface{}, error)
+
 func newExtraction(content interface{}) (*extraction, error) {
 
 	builder := gval.Full(jsonpath.Language())
 
+	path := func(expr string) (interface{}, error) {
+		eval, err := builder.NewEvaluable(expr)
+		if err != nil {
+			return nil, err
+		}
+		return eval(context.Background(), content)
+	}
+
 	e := new(extraction)
 
-	for _, fn := range []func(*gval.Language, interface{}) error{
+	for _, fn := range []func(extractFunc) error{
 		extractText(idExpr, &e.id),
 		extractText(titleExpr, &e.title),
 		extractTime(currentReleaseDateExpr, &e.currentReleaseDate),
@@ -48,7 +58,7 @@ func newExtraction(content interface{}) (*extraction, error) {
 		extractText(tlpLabelExpr, &e.tlpLabel),
 		e.extractPublisher,
 	} {
-		if err := fn(&builder, content); err != nil {
+		if err := fn(path); err != nil {
 			return nil, err
 		}
 	}
@@ -56,16 +66,10 @@ func newExtraction(content interface{}) (*extraction, error) {
 	return e, nil
 }
 
-func extractText(
-	expr string,
-	store *string,
-) func(*gval.Language, interface{}) error {
-	return func(builder *gval.Language, content interface{}) error {
-		eval, err := builder.NewEvaluable(expr)
-		if err != nil {
-			return err
-		}
-		s, err := eval(context.Background(), content)
+func extractText(expr string, store *string) func(extractFunc) error {
+
+	return func(path extractFunc) error {
+		s, err := path(expr)
 		if text, ok := s.(string); ok && err == nil {
 			*store = text
 		}
@@ -73,16 +77,10 @@ func extractText(
 	}
 }
 
-func extractTime(
-	expr string,
-	store *time.Time,
-) func(*gval.Language, interface{}) error {
-	return func(builder *gval.Language, content interface{}) error {
-		eval, err := builder.NewEvaluable(expr)
-		if err != nil {
-			return err
-		}
-		s, err := eval(context.Background(), content)
+func extractTime(expr string, store *time.Time) func(extractFunc) error {
+
+	return func(path extractFunc) error {
+		s, err := path(expr)
 		if err != nil {
 			return err
 		}
@@ -98,15 +96,8 @@ func extractTime(
 	}
 }
 
-func (e *extraction) extractPublisher(
-	builder *gval.Language,
-	content interface{},
-) error {
-	eval, err := builder.NewEvaluable(publisherExpr)
-	if err != nil {
-		return err
-	}
-	p, err := eval(context.Background(), content)
+func (e *extraction) extractPublisher(path extractFunc) error {
+	p, err := path(publisherExpr)
 	if err != nil {
 		return err
 	}
