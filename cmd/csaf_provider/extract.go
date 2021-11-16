@@ -10,7 +10,7 @@ import (
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
 
-	"github.com/intevation/csaf_trusted/csaf"
+	"github.com/Intevation/csaf_trusted/csaf"
 )
 
 const (

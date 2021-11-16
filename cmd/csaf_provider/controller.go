@@ -23,7 +23,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 
-	"github.com/intevation/csaf_trusted/csaf"
+	"github.com/Intevation/csaf_trusted/csaf"
 )
 
 const dateFormat = time.RFC3339

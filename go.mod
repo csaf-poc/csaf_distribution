@@ -1,4 +1,4 @@
-module github.com/intevation/csaf_trusted
+module github.com/Intevation/csaf_trusted
 
 go 1.17
 
