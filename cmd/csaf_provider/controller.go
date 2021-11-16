@@ -241,60 +241,62 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := c.doTransaction(t, func(folder string, pmd *csaf.ProviderMetadata) error {
+	if err := doTransaction(
+		c.cfg, t,
+		func(folder string, pmd *csaf.ProviderMetadata) error {
 
-		year := strconv.Itoa(ex.currentReleaseDate.Year())
+			year := strconv.Itoa(ex.currentReleaseDate.Year())
 
-		subDir := filepath.Join(folder, year)
+			subDir := filepath.Join(folder, year)
 
-		// Create folder if it does not exists.
-		if _, err := os.Stat(subDir); err != nil {
-			if os.IsNotExist(err) {
-				if err := os.Mkdir(subDir, 0755); err != nil {
+			// Create folder if it does not exists.
+			if _, err := os.Stat(subDir); err != nil {
+				if os.IsNotExist(err) {
+					if err := os.Mkdir(subDir, 0755); err != nil {
+						return err
+					}
+				} else {
 					return err
 				}
-			} else {
+			}
+
+			fname := filepath.Join(subDir, newCSAF)
+
+			// Write the file itself.
+			if err := ioutil.WriteFile(fname, data, 0644); err != nil {
 				return err
 			}
-		}
 
-		fname := filepath.Join(subDir, newCSAF)
+			// Write SHA256 sum.
+			if err := writeHash(fname+".sha256", newCSAF, sha256.New(), data); err != nil {
+				return err
+			}
 
-		// Write the file itself.
-		if err := ioutil.WriteFile(fname, data, 0644); err != nil {
-			return err
-		}
+			// Write SHA512 sum.
+			if err := writeHash(fname+".sha512", newCSAF, sha512.New(), data); err != nil {
+				return err
+			}
 
-		// Write SHA256 sum.
-		if err := writeHash(fname+".sha256", newCSAF, sha256.New(), data); err != nil {
-			return err
-		}
+			// Write signature.
+			if err := ioutil.WriteFile(fname+".asc", []byte(armored), 0644); err != nil {
+				return err
+			}
 
-		// Write SHA512 sum.
-		if err := writeHash(fname+".sha512", newCSAF, sha512.New(), data); err != nil {
-			return err
-		}
+			if err := updateIndices(
+				folder, filepath.Join(year, newCSAF),
+				ex.currentReleaseDate,
+			); err != nil {
+				return err
+			}
 
-		// Write signature.
-		if err := ioutil.WriteFile(fname+".asc", []byte(armored), 0644); err != nil {
-			return err
-		}
+			// Take over publisher
+			// TODO: Check for conflicts.
+			pmd.Publisher = ex.publisher
 
-		if err := updateIndices(
-			folder, filepath.Join(year, newCSAF),
-			ex.currentReleaseDate,
-		); err != nil {
-			return err
-		}
+			pmd.SetPGP(fingerprint, c.cfg.GetPGPURL(fingerprint))
 
-		// Take over publisher
-		// TODO: Check for conflicts.
-		pmd.Publisher = ex.publisher
-
-		pmd.SetPGP(fingerprint, c.cfg.GetPGPURL(fingerprint))
-
-		return nil
-	}); err != nil {
+			return nil
+		}); err != nil {
 		c.failed(rw, "upload.html", err)
 		return
 	}
@@ -305,95 +307,4 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	c.render(rw, "upload.html", result)
-}
-
-func (c *controller) doTransaction(
-	t tlp,
-	fn func(string, *csaf.ProviderMetadata) error,
-) error {
-
-	wellknown := filepath.Join(c.cfg.Web, ".well-known", "csaf")
-
-	metadata := filepath.Join(wellknown, "provider-metadata.json")
-
-	pmd, err := func() (*csaf.ProviderMetadata, error) {
-		f, err := os.Open(metadata)
-		if err != nil {
-			if os.IsNotExist(err) {
-				return csaf.NewProviderMetadata(
-					c.cfg.Domain + "/.wellknown/csaf/provider-metadata.json"), nil
-			}
-			return nil, err
-		}
-		defer f.Close()
-		return csaf.LoadProviderMetadata(f)
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	webTLP := filepath.Join(wellknown, string(t))
-
-	oldDir, err := filepath.EvalSymlinks(webTLP)
-	if err != nil {
-		return err
-	}
-
-	folderTLP := filepath.Join(c.cfg.Folder, string(t))
-
-	newDir, err := mkUniqDir(folderTLP)
-	if err != nil {
-		return err
-	}
-
-	// Copy old content into new.
-	if err := deepCopy(newDir, oldDir); err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	// Work with new folder.
-	if err := fn(newDir, pmd); err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	// Write back provider metadata.
-	newMetaName, newMetaFile, err := mkUniqFile(metadata)
-	if err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	if err := pmd.Save(newMetaFile); err != nil {
-		newMetaFile.Close()
-		os.Remove(newMetaName)
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	if err := newMetaFile.Close(); err != nil {
-		os.Remove(newMetaName)
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	if err := os.Rename(newMetaName, metadata); err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	// Switch directories.
-	symlink := filepath.Join(newDir, string(t))
-	if err := os.Symlink(newDir, symlink); err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-	if err := os.Rename(symlink, webTLP); err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
-
-	return os.RemoveAll(oldDir)
 }
