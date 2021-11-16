@@ -2,16 +2,12 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"crypto/sha512"
 	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -114,20 +110,6 @@ func loadCSAF(r *http.Request) (string, []byte, error) {
 		return "", nil, err
 	}
 	return cleanFileName(handler.Filename), buf.Bytes(), nil
-}
-
-func writeHash(fname, name string, h hash.Hash, data []byte) error {
-
-	if _, err := io.Copy(h, bytes.NewReader(data)); err != nil {
-		return err
-	}
-
-	f, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(f, "%x %s\n", h.Sum(nil), name)
-	return f.Close()
 }
 
 func (c *controller) loadCryptoKey() (*crypto.Key, error) {
@@ -262,23 +244,7 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 
 			fname := filepath.Join(subDir, newCSAF)
 
-			// Write the file itself.
-			if err := ioutil.WriteFile(fname, data, 0644); err != nil {
-				return err
-			}
-
-			// Write SHA256 sum.
-			if err := writeHash(fname+".sha256", newCSAF, sha256.New(), data); err != nil {
-				return err
-			}
-
-			// Write SHA512 sum.
-			if err := writeHash(fname+".sha512", newCSAF, sha512.New(), data); err != nil {
-				return err
-			}
-
-			// Write signature.
-			if err := ioutil.WriteFile(fname+".asc", []byte(armored), 0644); err != nil {
+			if err := writeHashedFile(fname, newCSAF, data, armored); err != nil {
 				return err
 			}
 
