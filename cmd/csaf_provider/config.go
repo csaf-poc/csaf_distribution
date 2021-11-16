@@ -23,6 +23,7 @@ type config struct {
 	UploadSignature bool   `toml:"upload_signature"`
 	PGPURL          string `toml:"pgp_url"`
 	Domain          string `toml:"domain"`
+	NoPassphrase    bool   `toml:"no_passphrase"`
 }
 
 type tlp string

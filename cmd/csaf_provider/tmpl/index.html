@@ -30,8 +30,10 @@
         <textarea name="signature" id="signature" required="required" cols="65" rows="20"
           placeholder="Insert ASCII armored signature here ..."></textarea>
         {{ else }}
+        {{ if not .Config.NoPassphrase }}
         <label for="passphrase">Key passphrase:</label>
         <input name="passphrase" type="password" id="passphrase">
+        {{ end }}
         {{ end }}
         <br>
         <input type="submit" value="Upload">

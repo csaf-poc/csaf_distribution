@@ -179,7 +179,7 @@ func (c *controller) handleSignature(r *http.Request, data []byte) (string, stri
 
 	// Sign ourself
 
-	if passwd := r.FormValue("passphrase"); passwd != "" {
+	if passwd := r.FormValue("passphrase"); !c.cfg.NoPassphrase && passwd != "" {
 		if key, err = key.Unlock([]byte(passwd)); err != nil {
 			return "", "", err
 		}
