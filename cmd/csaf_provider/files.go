@@ -39,7 +39,7 @@ func createSecurity(c *config) error {
 				return err
 			}
 			fmt.Fprintf(
-				f, "CSAF: https://%s/.wellknown/csaf/provider-metadata.json\n",
+				f, "CSAF: %s/.well-known/csaf/provider-metadata.json\n",
 				c.Domain)
 			return f.Close()
 		} else {
@@ -213,4 +213,21 @@ func writeHashedFile(fname, name string, data []byte, armored string) error {
 		return err
 	}
 	return nil
+}
+
+type saver interface {
+	Save(io.Writer) error
+}
+
+func saveToFile(fname string, s saver) error {
+	f, err1 := os.Create(fname)
+	if err1 != nil {
+		return err1
+	}
+	err1 = s.Save(f)
+	err2 := f.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
 }

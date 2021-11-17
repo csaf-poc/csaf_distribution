@@ -227,7 +227,83 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 		c.cfg, t,
 		func(folder string, pmd *csaf.ProviderMetadata) error {
 
+			// Load the feed
+			ts := string(t)
+			feedName := "csaf-feed-tlp-" + ts + ".json"
+
+			feed := filepath.Join(folder, feedName)
+			var rolie *csaf.ROLIEFeed
+			if err := func() error {
+				f, err := os.Open(feed)
+				if err != nil {
+					if os.IsNotExist(err) {
+						return nil
+					}
+					return err
+				}
+				defer f.Close()
+				rolie, err = csaf.LoadROLIEFeed(f)
+				return err
+			}(); err != nil {
+				return err
+			}
+
+			// Create new if does not exists.
+			if rolie == nil {
+				feedURL := c.cfg.Domain +
+					"/.well-known/csaf/" + ts + "/" + feedName
+				rolie = &csaf.ROLIEFeed{
+					ID:    "csaf-feed-tlp-" + ts,
+					Title: "CSAF feed (TLP:" + strings.ToUpper(ts) + ")",
+					Link: []csaf.Link{{
+						Rel:  "rel",
+						HRef: feedURL,
+					}},
+				}
+			}
+			rolie.Updated = csaf.TimeStamp(time.Now())
+
 			year := strconv.Itoa(ex.currentReleaseDate.Year())
+
+			csafURL := c.cfg.Domain +
+				"/.well-known/csaf/" + ts + "/" + year + "/" + newCSAF
+
+			e := rolie.EntryByID(ex.id)
+			if e == nil {
+				e = &csaf.Entry{ID: ex.id}
+				rolie.Entry = append(rolie.Entry, e)
+			}
+
+			e.Titel = ex.title
+			e.Published = csaf.TimeStamp(ex.initialReleaseDate)
+			e.Updated = csaf.TimeStamp(ex.currentReleaseDate)
+			e.Link = []csaf.Link{{
+				Rel:  "self",
+				HRef: csafURL,
+			}}
+			e.Format = csaf.Format{
+				Schema:  "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
+				Version: "2.0",
+			}
+			e.Content = csaf.Content{
+				Type: "application/json",
+				Src:  csafURL,
+			}
+			if ex.summary != "" {
+				e.Summary = &csaf.Summary{Content: ex.summary}
+			} else {
+				e.Summary = nil
+			}
+
+			// Sort by descending updated order.
+			rolie.SortEntriesByUpdated()
+
+			// Store the feed
+			if err := saveToFile(feed, rolie); err != nil {
+				return err
+			}
+
+			// Create yearly subfolder
 
 			subDir := filepath.Join(folder, year)
 
