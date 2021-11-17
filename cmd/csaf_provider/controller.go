@@ -248,19 +248,23 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
+			feedURL := csaf.JsonURL(
+				c.cfg.Domain + "/.well-known/csaf/" + ts + "/" + feedName)
+
+			tlpLabel := csaf.TLPLabel(strings.ToUpper(ts))
+
 			// Create new if does not exists.
 			if rolie == nil {
-				feedURL := c.cfg.Domain +
-					"/.well-known/csaf/" + ts + "/" + feedName
 				rolie = &csaf.ROLIEFeed{
 					ID:    "csaf-feed-tlp-" + ts,
-					Title: "CSAF feed (TLP:" + strings.ToUpper(ts) + ")",
+					Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
 					Link: []csaf.Link{{
 						Rel:  "rel",
-						HRef: feedURL,
+						HRef: string(feedURL),
 					}},
 				}
 			}
+
 			rolie.Updated = csaf.TimeStamp(time.Now())
 
 			year := strconv.Itoa(ex.currentReleaseDate.Year())

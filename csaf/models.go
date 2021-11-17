@@ -38,12 +38,13 @@ type Feed struct {
 }
 
 type ROLIE struct {
-	Categories []JsonURL `json:"categories"`
+	Categories []JsonURL `json:"categories,omitempty"`
 	Feeds      []Feed    `json:"feeds"` // required
+	Services   []JsonURL `json:"services,omitempty"`
 }
 
 type Distribution struct {
-	DirectoryURL string  `json:"directory_url"`
+	DirectoryURL string  `json:"directory_url,omitempty"`
 	Rolie        []ROLIE `json:"rolie"`
 }
 
