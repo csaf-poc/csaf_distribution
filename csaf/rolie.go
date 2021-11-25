@@ -7,30 +7,36 @@ import (
 	"time"
 )
 
+// Link for ROLIE.
 type Link struct {
 	Rel  string `json:"rel"`
 	HRef string `json:"href"`
 }
 
-type Category struct {
+// ROLIECategory for ROLIE.
+type ROLIECategory struct {
 	Scheme string `json:"scheme"`
 	Term   string `json:"term"`
 }
 
+// Summary for ROLIE.
 type Summary struct {
 	Content string `json:"content"`
 }
 
+// Content for ROLIE.
 type Content struct {
 	Type string `json:"type"`
 	Src  string `json:"src"`
 }
 
+// Format for ROLIE.
 type Format struct {
 	Schema  string `json:"schema"`
 	Version string `json:"version"`
 }
 
+// Entry for ROLIE.
 type Entry struct {
 	ID        string    `json:"id"`
 	Titel     string    `json:"title"`
@@ -42,15 +48,17 @@ type Entry struct {
 	Format    Format    `json:"format"`
 }
 
+// ROLIEFeed is a ROLIE feed.
 type ROLIEFeed struct {
-	ID       string     `json:"id"`
-	Title    string     `json:"title"`
-	Link     []Link     `json:"link,omitempty"`
-	Category []Category `json:"category,omitempty"`
-	Updated  TimeStamp  `json:"updated"`
-	Entry    []*Entry   `json:"entry,omitempty"`
+	ID       string          `json:"id"`
+	Title    string          `json:"title"`
+	Link     []Link          `json:"link,omitempty"`
+	Category []ROLIECategory `json:"category,omitempty"`
+	Updated  TimeStamp       `json:"updated"`
+	Entry    []*Entry        `json:"entry,omitempty"`
 }
 
+// LoadROLIEFeed loads a ROLIE feed from a reader.
 func LoadROLIEFeed(r io.Reader) (*ROLIEFeed, error) {
 	dec := json.NewDecoder(r)
 	var rf ROLIEFeed
@@ -60,12 +68,15 @@ func LoadROLIEFeed(r io.Reader) (*ROLIEFeed, error) {
 	return &rf, nil
 }
 
+// Save saves a ROLIE feed to a writer.
 func (rf *ROLIEFeed) Save(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(rf)
 }
 
+// EntryByID looks up an entry by its ID.
+// Returns nil if no such entry was found.
 func (rf *ROLIEFeed) EntryByID(id string) *Entry {
 	for _, entry := range rf.Entry {
 		if entry.ID == id {
@@ -75,6 +86,8 @@ func (rf *ROLIEFeed) EntryByID(id string) *Entry {
 	return nil
 }
 
+// SortEntriesByUpdated sorts all the entries in the feed
+// by their update times.
 func (rf *ROLIEFeed) SortEntriesByUpdated() {
 	entries := rf.Entry
 	sort.Slice(entries, func(i, j int) bool {

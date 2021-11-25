@@ -26,7 +26,7 @@ const (
 type extraction struct {
 	id                 string
 	title              string
-	publisher          *csaf.CSAFPublisher
+	publisher          *csaf.Publisher
 	initialReleaseDate time.Time
 	currentReleaseDate time.Time
 	summary            string
@@ -109,7 +109,7 @@ func (e *extraction) extractPublisher(path extractFunc) error {
 	if err := enc.Encode(p); err != nil {
 		return err
 	}
-	e.publisher = new(csaf.CSAFPublisher)
+	e.publisher = new(csaf.Publisher)
 	if err := json.Unmarshal(buf.Bytes(), e.publisher); err != nil {
 		return err
 	}
