@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Intevation/csaf_trusted/csaf"
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 func newProviderMetadata(cfg *config) *csaf.ProviderMetadata {
