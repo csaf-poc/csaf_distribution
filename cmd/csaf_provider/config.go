@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -50,7 +51,7 @@ func (t *tlp) UnmarshalText(text []byte) error {
 		*t = s
 		return nil
 	}
-	return nil
+	return fmt.Errorf("invalid config TLP value: %v", string(text))
 }
 
 func (cfg *config) GetPGPURL(key string) string {
