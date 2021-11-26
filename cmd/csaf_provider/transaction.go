@@ -24,7 +24,7 @@ func newProviderMetadata(cfg *config) *csaf.ProviderMetadata {
 		var (
 			ts       = string(t)
 			feedName = "csaf-feed-tlp-" + ts + ".json"
-			feedURL  = csaf.JsonURL(
+			feedURL  = csaf.JSONURL(
 				cfg.Domain + "/.well-known/csaf/" + ts + "/" + feedName)
 			tlpLabel = csaf.TLPLabel(strings.ToUpper(ts))
 		)

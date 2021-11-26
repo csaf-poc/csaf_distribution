@@ -248,7 +248,7 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 				return err
 			}
 
-			feedURL := csaf.JsonURL(
+			feedURL := csaf.JSONURL(
 				c.cfg.Domain + "/.well-known/csaf/" + ts + "/" + feedName)
 
 			tlpLabel := csaf.TLPLabel(strings.ToUpper(ts))

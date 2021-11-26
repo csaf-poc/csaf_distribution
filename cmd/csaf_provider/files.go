@@ -42,9 +42,8 @@ func createSecurity(c *config) error {
 				f, "CSAF: %s/.well-known/csaf/provider-metadata.json\n",
 				c.Domain)
 			return f.Close()
-		} else {
-			return err
 		}
+		return err
 	}
 	return nil
 }
