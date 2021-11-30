@@ -49,14 +49,25 @@ location /cgi-bin/ {
 }
 ```
 
-Add to `/etc/nginx/sites-available/default`:
+Add to `/etc/nginx/sites-enabled/default`:
 
 ```
 server {
 
-   # include fcgiwrap.conf;...
+    location / {
+        # Other config
+        # ... 
 
-   include fcgiwrap.conf;
+        # For atomic directory switches
+        disable_symlinks off;
+
+        # directory listings
+        autoindex on;
+    }
+
+    # enable CGI
+
+    include fcgiwrap.conf;
 }
 ```
 
