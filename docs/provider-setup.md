@@ -13,6 +13,12 @@ systemctl is-enabled fcgiwrap.service
 systemctl is-enabled fcgiwrap.socket
 ```
 
+```(shell)
+cd /var/www
+chgrp -R www-data .
+chmod -R g+w .
+```
+
 Content of `/etc/nginx/fcgiwrap.conf`
 
 ```
