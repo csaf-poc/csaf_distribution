@@ -74,4 +74,9 @@ domain = "http://192.168.56.102"
 #no_passphrase = true
 ```
 
-with sui
+with suitable replacements.
+
+Create the folders:
+```(shell)
+curl http://192.168.56.102/cgi-bin/csaf_provider.go/create
+```
