@@ -18,7 +18,7 @@ Content of `/etc/nginx/fcgiwrap.conf`
 ```
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
 # fcgiwrap
-location /cgi-bin/ { 
+location /cgi-bin/ {
   # Disable gzip (it makes scripts feel slower since they have to complete
   # before getting gzipped)
   gzip off;
@@ -65,7 +65,7 @@ Create configuarion file under `/usr/lib/csaf/config.toml`:
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 domain = "http://192.168.56.102"
-#no_passphrase = true`
+#no_passphrase = true
 ```
 
 with sui
