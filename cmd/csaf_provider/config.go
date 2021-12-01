@@ -59,7 +59,7 @@ func (t *tlp) UnmarshalText(text []byte) error {
 }
 
 func (cfg *config) GetOpenPGPURL(key string) string {
-	return strings.ReplaceAll(cfg.OpenPGPURL, "${KEY}", key)
+	return strings.ReplaceAll(cfg.OpenPGPURL, "${KEY}", "0x"+key)
 }
 
 func (cfg *config) modelTLPs() []csaf.TLPLabel {
