@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/sha512"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -15,81 +14,6 @@ import (
 	"strconv"
 	"time"
 )
-
-func ensureFolders(c *config) error {
-
-	wellknown, err := createWellknown(c)
-	if err != nil {
-		return err
-	}
-
-	if err := createFeedFolders(c, wellknown); err != nil {
-		return err
-	}
-
-	return createSecurity(c, wellknown)
-}
-
-func createSecurity(c *config, wellknown string) error {
-	security := filepath.Join(wellknown, "security.txt")
-	if _, err := os.Stat(security); err != nil {
-		if os.IsNotExist(err) {
-			f, err := os.Create(security)
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(
-				f, "CSAF: %s/.well-known/csaf/provider-metadata.json\n",
-				c.Domain)
-			return f.Close()
-		}
-		return err
-	}
-	return nil
-}
-
-func createFeedFolders(c *config, wellknown string) error {
-	for _, t := range c.TLPs {
-		if t == tlpCSAF {
-			continue
-		}
-		tlpLink := filepath.Join(wellknown, string(t))
-		if _, err := filepath.EvalSymlinks(tlpLink); err != nil {
-			if os.IsNotExist(err) {
-				tlpFolder := filepath.Join(c.Folder, string(t))
-				if tlpFolder, err = mkUniqDir(tlpFolder); err != nil {
-					return err
-				}
-				if err = os.Symlink(tlpFolder, tlpLink); err != nil {
-					return err
-				}
-			} else {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func createWellknown(c *config) (string, error) {
-	wellknown := filepath.Join(c.Web, ".well-known", "csaf")
-
-	st, err := os.Stat(wellknown)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(wellknown, 0755); err != nil {
-				return "", err
-			}
-		} else {
-			return "", err
-		}
-	} else {
-		if !st.IsDir() {
-			return "", errors.New(".well-known/csaf is not a directory")
-		}
-	}
-	return wellknown, nil
-}
 
 func deepCopy(dst, src string) error {
 

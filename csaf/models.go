@@ -102,11 +102,11 @@ var csafCategoryPattern = alternativesUnmarshal(
 
 // Publisher is the publisher of the feed.
 type Publisher struct {
-	Category         *Category `json:"category"`  // required
-	Name             *string   `json:"name"`      // required
-	Namespace        *string   `json:"namespace"` // required
-	ContactDetails   string    `json:"contact_details,omitempty"`
-	IssuingAuthority string    `json:"issuing_authority,omitempty"`
+	Category         *Category `json:"category" toml:"category"`   // required
+	Name             *string   `json:"name" toml:"name"`           // required
+	Namespace        *string   `json:"namespace" toml:"namespace"` // required
+	ContactDetails   string    `json:"contact_details,omitempty" toml:"contact_details"`
+	IssuingAuthority string    `json:"issuing_authority,omitempty" toml:"issuing_authority"`
 }
 
 // MetadataVersion is the metadata version of the feed.
@@ -148,8 +148,8 @@ type ProviderMetadata struct {
 	MetadataVersion         *MetadataVersion `json:"metadata_version"`           // required
 	MirrorOnCSAFAggregators *bool            `json:"mirror_on_CSAF_aggregators"` // required
 	PGPKeys                 []PGPKey         `json:"pgp_keys,omitempty"`
-	Publisher               *Publisher       `json:"publisher"` // required
-	Role                    *MetadataRole    `json:"role"`      // required
+	Publisher               *Publisher       `json:"publisher,omitempty"` // required
+	Role                    *MetadataRole    `json:"role"`                // required
 }
 
 func patternUnmarshal(pattern string) func([]byte) (string, error) {
@@ -381,6 +381,42 @@ func NewProviderMetadata(canonicalURL string) *ProviderMetadata {
 	pm.SetLastUpdated(time.Now())
 	cu := ProviderURL(canonicalURL)
 	pm.CanonicalURL = &cu
+	return pm
+}
+
+// NewProviderMetadataDomain creates a new provider with the given URL
+// and tlps feeds.
+func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata {
+
+	pm := NewProviderMetadata(
+		domain + "/.wellknown/csaf/provider-metadata.json")
+
+	// Register feeds.
+
+	var feeds []Feed
+
+	for _, t := range tlps {
+		var (
+			ts       = strings.ToLower(string(t))
+			feedName = "csaf-feed-tlp-" + ts + ".json"
+			feedURL  = JSONURL(
+				domain + "/.well-known/csaf/" + ts + "/" + feedName)
+		)
+		feeds = append(feeds, Feed{
+			Summary:  "TLP:" + string(t) + " advisories",
+			TLPLabel: &t,
+			URL:      &feedURL,
+		})
+	}
+
+	if len(feeds) > 0 {
+		pm.Distributions = []Distribution{{
+			Rolie: []ROLIE{{
+				Feeds: feeds,
+			}},
+		}}
+	}
+
 	return pm
 }
 

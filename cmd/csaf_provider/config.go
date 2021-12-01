@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 const (
@@ -17,14 +18,15 @@ const (
 )
 
 type config struct {
-	Key             string `toml:"key"`
-	Folder          string `toml:"folder"`
-	Web             string `toml:"web"`
-	TLPs            []tlp  `toml:"tlps"`
-	UploadSignature bool   `toml:"upload_signature"`
-	PGPURL          string `toml:"pgp_url"`
-	Domain          string `toml:"domain"`
-	NoPassphrase    bool   `toml:"no_passphrase"`
+	Key             string          `toml:"key"`
+	Folder          string          `toml:"folder"`
+	Web             string          `toml:"web"`
+	TLPs            []tlp           `toml:"tlps"`
+	UploadSignature bool            `toml:"upload_signature"`
+	PGPURL          string          `toml:"pgp_url"`
+	Domain          string          `toml:"domain"`
+	NoPassphrase    bool            `toml:"no_passphrase"`
+	Publisher       *csaf.Publisher `toml:"publisher"`
 }
 
 type tlp string
@@ -56,6 +58,16 @@ func (t *tlp) UnmarshalText(text []byte) error {
 
 func (cfg *config) GetPGPURL(key string) string {
 	return strings.ReplaceAll(cfg.PGPURL, "${KEY}", key)
+}
+
+func (cfg *config) modelTLPs() []csaf.TLPLabel {
+	tlps := make([]csaf.TLPLabel, len(cfg.TLPs))
+	for _, t := range cfg.TLPs {
+		if t != tlpCSAF {
+			tlps = append(tlps, csaf.TLPLabel(t))
+		}
+	}
+	return tlps
 }
 
 func loadConfig() (*config, error) {

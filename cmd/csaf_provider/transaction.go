@@ -3,48 +3,9 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 )
-
-func newProviderMetadata(cfg *config) *csaf.ProviderMetadata {
-
-	pmd := csaf.NewProviderMetadata(
-		cfg.Domain + "/.wellknown/csaf/provider-metadata.json")
-
-	// Register feeds.
-
-	var feeds []csaf.Feed
-
-	for _, t := range cfg.TLPs {
-		if t == tlpCSAF {
-			continue
-		}
-		var (
-			ts       = string(t)
-			feedName = "csaf-feed-tlp-" + ts + ".json"
-			feedURL  = csaf.JSONURL(
-				cfg.Domain + "/.well-known/csaf/" + ts + "/" + feedName)
-			tlpLabel = csaf.TLPLabel(strings.ToUpper(ts))
-		)
-		feeds = append(feeds, csaf.Feed{
-			Summary:  "TLP:" + string(tlpLabel) + " advisories",
-			TLPLabel: &tlpLabel,
-			URL:      &feedURL,
-		})
-	}
-
-	if len(feeds) > 0 {
-		pmd.Distributions = []csaf.Distribution{{
-			Rolie: []csaf.ROLIE{{
-				Feeds: feeds,
-			}},
-		}}
-	}
-
-	return pmd
-}
 
 func doTransaction(
 	cfg *config,
@@ -60,7 +21,7 @@ func doTransaction(
 		f, err := os.Open(metadata)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return newProviderMetadata(cfg), nil
+				return csaf.NewProviderMetadataDomain(cfg.Domain, cfg.modelTLPs()), nil
 			}
 			return nil, err
 		}
