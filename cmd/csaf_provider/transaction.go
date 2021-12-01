@@ -59,29 +59,31 @@ func doTransaction(
 		return err
 	}
 
-	// Write back provider metadata.
-	newMetaName, newMetaFile, err := mkUniqFile(metadata)
-	if err != nil {
-		os.RemoveAll(newDir)
-		return err
-	}
+	// Write back provider metadata if its dynamic.
+	if cfg.DynamicProviderMetaData {
+		newMetaName, newMetaFile, err := mkUniqFile(metadata)
+		if err != nil {
+			os.RemoveAll(newDir)
+			return err
+		}
 
-	if err := pmd.Save(newMetaFile); err != nil {
-		newMetaFile.Close()
-		os.Remove(newMetaName)
-		os.RemoveAll(newDir)
-		return err
-	}
+		if err := pmd.Save(newMetaFile); err != nil {
+			newMetaFile.Close()
+			os.Remove(newMetaName)
+			os.RemoveAll(newDir)
+			return err
+		}
 
-	if err := newMetaFile.Close(); err != nil {
-		os.Remove(newMetaName)
-		os.RemoveAll(newDir)
-		return err
-	}
+		if err := newMetaFile.Close(); err != nil {
+			os.Remove(newMetaName)
+			os.RemoveAll(newDir)
+			return err
+		}
 
-	if err := os.Rename(newMetaName, metadata); err != nil {
-		os.RemoveAll(newDir)
-		return err
+		if err := os.Rename(newMetaName, metadata); err != nil {
+			os.RemoveAll(newDir)
+			return err
+		}
 	}
 
 	// Switch directories.

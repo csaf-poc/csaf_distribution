@@ -19,15 +19,16 @@ const (
 )
 
 type config struct {
-	Key             string          `toml:"key"`
-	Folder          string          `toml:"folder"`
-	Web             string          `toml:"web"`
-	TLPs            []tlp           `toml:"tlps"`
-	UploadSignature bool            `toml:"upload_signature"`
-	OpenPGPURL      string          `toml:"openpgp_url"`
-	Domain          string          `toml:"domain"`
-	NoPassphrase    bool            `toml:"no_passphrase"`
-	Publisher       *csaf.Publisher `toml:"publisher"`
+	Key                     string          `toml:"key"`
+	Folder                  string          `toml:"folder"`
+	Web                     string          `toml:"web"`
+	TLPs                    []tlp           `toml:"tlps"`
+	UploadSignature         bool            `toml:"upload_signature"`
+	OpenPGPURL              string          `toml:"openpgp_url"`
+	Domain                  string          `toml:"domain"`
+	NoPassphrase            bool            `toml:"no_passphrase"`
+	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
+	Publisher               *csaf.Publisher `toml:"publisher"`
 }
 
 type tlp string
