@@ -27,11 +27,11 @@ func ensureFolders(c *config) error {
 		return err
 	}
 
-	return createSecurity(c)
+	return createSecurity(c, wellknown)
 }
 
-func createSecurity(c *config) error {
-	security := filepath.Join(c.Web, "security.txt")
+func createSecurity(c *config, wellknown string) error {
+	security := filepath.Join(wellknown, "security.txt")
 	if _, err := os.Stat(security); err != nil {
 		if os.IsNotExist(err) {
 			f, err := os.Create(security)
