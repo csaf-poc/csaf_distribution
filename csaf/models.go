@@ -426,17 +426,17 @@ type nWriter struct {
 }
 
 func (nw *nWriter) Write(p []byte) (int, error) {
-	n, err := nw.Write(p)
+	n, err := nw.Writer.Write(p)
 	nw.n += int64(n)
 	return n, err
 }
 
 // WriteTo saves a metadata provider to a writer.
 func (pmd *ProviderMetadata) WriteTo(w io.Writer) (int64, error) {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
 	nw := nWriter{w, 0}
-	err := enc.Encode(&nw)
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(pmd)
 	return nw.n, err
 }
 
