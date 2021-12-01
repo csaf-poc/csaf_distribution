@@ -67,7 +67,7 @@ func doTransaction(
 			return err
 		}
 
-		if err := pmd.Save(newMetaFile); err != nil {
+		if _, err := pmd.WriteTo(newMetaFile); err != nil {
 			newMetaFile.Close()
 			os.Remove(newMetaName)
 			os.RemoveAll(newDir)

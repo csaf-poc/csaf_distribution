@@ -138,16 +138,12 @@ func writeHashedFile(fname, name string, data []byte, armored string) error {
 	return nil
 }
 
-type saver interface {
-	Save(io.Writer) error
-}
-
-func saveToFile(fname string, s saver) error {
+func saveToFile(fname string, wt io.WriterTo) error {
 	f, err1 := os.Create(fname)
 	if err1 != nil {
 		return err1
 	}
-	err1 = s.Save(f)
+	_, err1 = wt.WriteTo(f)
 	err2 := f.Close()
 	if err1 != nil {
 		return err1

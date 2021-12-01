@@ -420,11 +420,24 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 	return pm
 }
 
-// Save saves a metadata provider to a writer.
-func (pmd *ProviderMetadata) Save(w io.Writer) error {
+type nWriter struct {
+	io.Writer
+	n int64
+}
+
+func (nw *nWriter) Write(p []byte) (int, error) {
+	n, err := nw.Write(p)
+	nw.n += int64(n)
+	return n, err
+}
+
+// WriteTo saves a metadata provider to a writer.
+func (pmd *ProviderMetadata) WriteTo(w io.Writer) (int64, error) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(pmd)
+	nw := nWriter{w, 0}
+	err := enc.Encode(&nw)
+	return nw.n, err
 }
 
 // LoadProviderMetadata loads a metadata provider from a reader.
