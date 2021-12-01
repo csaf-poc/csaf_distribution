@@ -391,31 +391,31 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 	pm := NewProviderMetadata(
 		domain + "/.wellknown/csaf/provider-metadata.json")
 
+	if len(tlps) == 0 {
+		return pm
+	}
+
 	// Register feeds.
 
-	var feeds []Feed
+	feeds := make([]Feed, len(tlps))
 
-	for _, t := range tlps {
-		var (
-			ts       = strings.ToLower(string(t))
-			feedName = "csaf-feed-tlp-" + ts + ".json"
-			feedURL  = JSONURL(
-				domain + "/.well-known/csaf/" + ts + "/" + feedName)
-		)
-		feeds = append(feeds, Feed{
+	for i, t := range tlps {
+		lt := strings.ToLower(string(t))
+		feed := "csaf-feed-tlp-" + lt + ".json"
+		url := JSONURL(domain + "/.well-known/csaf/" + lt + "/" + feed)
+
+		feeds[i] = Feed{
 			Summary:  "TLP:" + string(t) + " advisories",
 			TLPLabel: &t,
-			URL:      &feedURL,
-		})
+			URL:      &url,
+		}
 	}
 
-	if len(feeds) > 0 {
-		pm.Distributions = []Distribution{{
-			Rolie: []ROLIE{{
-				Feeds: feeds,
-			}},
-		}}
-	}
+	pm.Distributions = []Distribution{{
+		Rolie: []ROLIE{{
+			Feeds: feeds,
+		}},
+	}}
 
 	return pm
 }
