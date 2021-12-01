@@ -13,7 +13,7 @@ const (
 	defaultConfigPath = "/usr/lib/casf/config.toml"
 	defaultFolder     = "/var/www/"
 	defaultWeb        = "/var/www/html"
-	defaultPGPURL     = "http://pgp.mit.edu/pks/lookup?search=${KEY}&op=index"
+	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?search=${KEY}&op=index"
 )
 
 type config struct {
@@ -22,7 +22,7 @@ type config struct {
 	Web             string `toml:"web"`
 	TLPs            []tlp  `toml:"tlps"`
 	UploadSignature bool   `toml:"upload_signature"`
-	PGPURL          string `toml:"pgp_url"`
+	OpenPGPURL      string `toml:"openpgp_url"`
 	Domain          string `toml:"domain"`
 	NoPassphrase    bool   `toml:"no_passphrase"`
 }
@@ -54,8 +54,8 @@ func (t *tlp) UnmarshalText(text []byte) error {
 	return fmt.Errorf("invalid config TLP value: %v", string(text))
 }
 
-func (cfg *config) GetPGPURL(key string) string {
-	return strings.ReplaceAll(cfg.PGPURL, "${KEY}", key)
+func (cfg *config) GetOpenPGPURL(key string) string {
+	return strings.ReplaceAll(cfg.OpenPGPURL, "${KEY}", key)
 }
 
 func loadConfig() (*config, error) {
@@ -86,8 +86,8 @@ func loadConfig() (*config, error) {
 		cfg.TLPs = []tlp{tlpCSAF, tlpWhite, tlpGreen, tlpAmber, tlpRed}
 	}
 
-	if cfg.PGPURL == "" {
-		cfg.PGPURL = defaultPGPURL
+	if cfg.OpenPGPURL == "" {
+		cfg.OpenPGPURL = defaultOpenPGPURL
 	}
 
 	return &cfg, nil

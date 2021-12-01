@@ -339,7 +339,7 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 			// TODO: Check for conflicts.
 			pmd.Publisher = ex.publisher
 
-			pmd.SetPGP(fingerprint, c.cfg.GetPGPURL(fingerprint))
+			pmd.SetPGP(fingerprint, c.cfg.GetOpenPGPURL(fingerprint))
 
 			return nil
 		}); err != nil {
