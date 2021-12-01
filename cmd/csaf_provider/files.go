@@ -18,12 +18,14 @@ import (
 
 func ensureFolders(c *config) error {
 
-	wellknown, err := createWellknown(c)
-	if err != nil {
+	wellknown := filepath.Join(c.Web, ".well-known")
+	wellknownCSAF := filepath.Join(wellknown, "csaf")
+
+	if err := createWellknownCSAF(wellknownCSAF); err != nil {
 		return err
 	}
 
-	if err := createFeedFolders(c, wellknown); err != nil {
+	if err := createFeedFolders(c, wellknownCSAF); err != nil {
 		return err
 	}
 
@@ -71,24 +73,18 @@ func createFeedFolders(c *config, wellknown string) error {
 	return nil
 }
 
-func createWellknown(c *config) (string, error) {
-	wellknown := filepath.Join(c.Web, ".well-known", "csaf")
-
-	st, err := os.Stat(wellknown)
+func createWellknownCSAF(wellknownCSAF string) error {
+	st, err := os.Stat(wellknownCSAF)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(wellknown, 0755); err != nil {
-				return "", err
-			}
-		} else {
-			return "", err
+			return os.MkdirAll(wellknownCSAF, 0755)
 		}
-	} else {
-		if !st.IsDir() {
-			return "", errors.New(".well-known/csaf is not a directory")
-		}
+		return err
 	}
-	return wellknown, nil
+	if !st.IsDir() {
+		return errors.New(".well-known/csaf is not a directory")
+	}
+	return nil
 }
 
 func deepCopy(dst, src string) error {
