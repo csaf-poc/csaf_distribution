@@ -112,19 +112,10 @@ func loadCSAF(r *http.Request) (string, []byte, error) {
 	return cleanFileName(handler.Filename), buf.Bytes(), nil
 }
 
-func (c *controller) loadCryptoKey() (*crypto.Key, error) {
-	f, err := os.Open(c.cfg.Key)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return crypto.NewKeyFromArmoredReader(f)
-}
-
 func (c *controller) handleSignature(r *http.Request, data []byte) (string, string, error) {
 
 	// Either way ... we need the key.
-	key, err := c.loadCryptoKey()
+	key, err := c.cfg.loadCryptoKey()
 	if err != nil {
 		return "", "", err
 	}

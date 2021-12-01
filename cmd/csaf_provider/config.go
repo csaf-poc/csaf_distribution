@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
@@ -68,6 +69,15 @@ func (cfg *config) modelTLPs() []csaf.TLPLabel {
 		}
 	}
 	return tlps
+}
+
+func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
+	f, err := os.Open(cfg.Key)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return crypto.NewKeyFromArmoredReader(f)
 }
 
 func loadConfig() (*config, error) {

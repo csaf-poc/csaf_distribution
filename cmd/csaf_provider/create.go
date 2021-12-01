@@ -95,5 +95,14 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	}
 	pm := csaf.NewProviderMetadataDomain(c.Domain, c.modelTLPs())
 	pm.Publisher = c.Publisher
+
+	// Set OpenPGP key.
+	key, err := c.loadCryptoKey()
+	if err != nil {
+		return err
+	}
+	fingerprint := key.GetFingerprint()
+	pm.SetPGP(fingerprint, c.GetOpenPGPURL(fingerprint))
+
 	return saveToFile(path, pm)
 }
