@@ -63,10 +63,10 @@ func (cfg *config) GetOpenPGPURL(key string) string {
 }
 
 func (cfg *config) modelTLPs() []csaf.TLPLabel {
-	tlps := make([]csaf.TLPLabel, len(cfg.TLPs))
+	tlps := make([]csaf.TLPLabel, 0, len(cfg.TLPs))
 	for _, t := range cfg.TLPs {
 		if t != tlpCSAF {
-			tlps = append(tlps, csaf.TLPLabel(t))
+			tlps = append(tlps, csaf.TLPLabel(strings.ToUpper(string(t))))
 		}
 	}
 	return tlps

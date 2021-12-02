@@ -389,7 +389,7 @@ func NewProviderMetadata(canonicalURL string) *ProviderMetadata {
 func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata {
 
 	pm := NewProviderMetadata(
-		domain + "/.wellknown/csaf/provider-metadata.json")
+		domain + "/.well-known/csaf/provider-metadata.json")
 
 	if len(tlps) == 0 {
 		return pm
