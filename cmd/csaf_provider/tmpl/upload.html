@@ -14,6 +14,16 @@
       <tr><td>CSAF file:</td><td><tt>{{ .Name }}</tt></td></tr>
       <tr><td>Release date:</td><td><tt>{{ .ReleaseDate }}</tt></td></tr>
     </table>
+    {{ if .Warnings }}
+    <p>
+    Warning(s):
+    <ul>
+      {{ range .Warnings }}
+      <li>{{ . }}</li>
+      {{ end }}
+    </ul>
+    </p>
+    {{ end }}
     {{ end }}
     <br>
     <a href="/cgi-bin/csaf_provider.go/">Back</a>:

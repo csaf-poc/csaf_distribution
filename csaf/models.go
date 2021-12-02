@@ -283,18 +283,45 @@ func (r *ROLIE) Validate() error {
 
 // Validate checks if the publisher is valid.
 // Returns an error if the validation fails otherwise nil.
-func (cp *Publisher) Validate() error {
+func (p *Publisher) Validate() error {
 	switch {
-	case cp == nil:
+	case p == nil:
 		return errors.New("publisher is mandatory")
-	case cp.Category == nil:
+	case p.Category == nil:
 		return errors.New("publisher.category is mandatory")
-	case cp.Name == nil:
+	case p.Name == nil:
 		return errors.New("publisher.name is mandatory")
-	case cp.Namespace == nil:
+	case p.Namespace == nil:
 		return errors.New("publisher.namespace is mandatory")
 	}
 	return nil
+}
+
+func strPtrEquals(a, b *string) bool {
+	switch {
+	case a == nil:
+		return b == nil
+	case b == nil:
+		return false
+	default:
+		return *a == *b
+	}
+}
+
+// Equals checks if the publisher is equal to other componentwise.
+func (p *Publisher) Equals(o *Publisher) bool {
+	switch {
+	case p == nil:
+		return o == nil
+	case o == nil:
+		return false
+	default:
+		return strPtrEquals((*string)(p.Category), (*string)(o.Category)) &&
+			strPtrEquals(p.Name, o.Name) &&
+			strPtrEquals(p.Namespace, o.Namespace) &&
+			p.ContactDetails == o.ContactDetails &&
+			p.IssuingAuthority == o.IssuingAuthority
+	}
 }
 
 // Validate checks if the PGPKey is valid.

@@ -113,5 +113,13 @@ func loadConfig() (*config, error) {
 		cfg.OpenPGPURL = defaultOpenPGPURL
 	}
 
+	if cfg.Publisher == nil {
+		cfg.Publisher = &csaf.Publisher{
+			Category:  func(c csaf.Category) *csaf.Category { return &c }(csaf.CSAFCategoryVendor),
+			Name:      func(s string) *string { return &s }("ACME"),
+			Namespace: func(s string) *string { return &s }("https://example.com"),
+		}
+	}
+
 	return &cfg, nil
 }

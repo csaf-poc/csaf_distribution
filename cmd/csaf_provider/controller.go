@@ -215,6 +215,9 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var warnings []string
+	warn := func(msg string) { warnings = append(warnings, msg) }
+
 	if err := doTransaction(
 		c.cfg, t,
 		func(folder string, pmd *csaf.ProviderMetadata) error {
@@ -328,14 +331,23 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 			}
 
 			// Take over publisher
-			// TODO: Check for conflicts.
-			pmd.Publisher = ex.publisher
+			switch {
+			case pmd.Publisher == nil:
+				warn("Publisher in provider metadata is not initialized. Forgot to configure?")
+				if c.cfg.DynamicProviderMetaData {
+					warn("Taking publisher from CSAF")
+					pmd.Publisher = ex.publisher
+				}
+			case !pmd.Publisher.Equals(ex.publisher):
+				warn("Publishers in provider metadata and CSAF do not match.")
+			}
 
 			keyID, fingerprint := key.GetHexKeyID(), key.GetFingerprint()
 			pmd.SetPGP(fingerprint, c.cfg.GetOpenPGPURL(keyID))
 
 			return nil
-		}); err != nil {
+		},
+	); err != nil {
 		c.failed(rw, "upload.html", err)
 		return
 	}
@@ -343,6 +355,7 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 	result := map[string]interface{}{
 		"Name":        newCSAF,
 		"ReleaseDate": ex.currentReleaseDate.Format(dateFormat),
+		"Warnings":    warnings,
 	}
 
 	c.render(rw, "upload.html", result)
