@@ -102,11 +102,11 @@ var csafCategoryPattern = alternativesUnmarshal(
 
 // Publisher is the publisher of the feed.
 type Publisher struct {
-	Category         *Category `json:"category"`  // required
-	Name             *string   `json:"name"`      // required
-	Namespace        *string   `json:"namespace"` // required
-	ContactDetails   string    `json:"contact_details,omitempty"`
-	IssuingAuthority string    `json:"issuing_authority,omitempty"`
+	Category         *Category `json:"category" toml:"category"`   // required
+	Name             *string   `json:"name" toml:"name"`           // required
+	Namespace        *string   `json:"namespace" toml:"namespace"` // required
+	ContactDetails   string    `json:"contact_details,omitempty" toml:"contact_details"`
+	IssuingAuthority string    `json:"issuing_authority,omitempty" toml:"issuing_authority"`
 }
 
 // MetadataVersion is the metadata version of the feed.
@@ -148,8 +148,8 @@ type ProviderMetadata struct {
 	MetadataVersion         *MetadataVersion `json:"metadata_version"`           // required
 	MirrorOnCSAFAggregators *bool            `json:"mirror_on_CSAF_aggregators"` // required
 	PGPKeys                 []PGPKey         `json:"pgp_keys,omitempty"`
-	Publisher               *Publisher       `json:"publisher"` // required
-	Role                    *MetadataRole    `json:"role"`      // required
+	Publisher               *Publisher       `json:"publisher,omitempty"` // required
+	Role                    *MetadataRole    `json:"role"`                // required
 }
 
 func patternUnmarshal(pattern string) func([]byte) (string, error) {
@@ -283,18 +283,45 @@ func (r *ROLIE) Validate() error {
 
 // Validate checks if the publisher is valid.
 // Returns an error if the validation fails otherwise nil.
-func (cp *Publisher) Validate() error {
+func (p *Publisher) Validate() error {
 	switch {
-	case cp == nil:
+	case p == nil:
 		return errors.New("publisher is mandatory")
-	case cp.Category == nil:
+	case p.Category == nil:
 		return errors.New("publisher.category is mandatory")
-	case cp.Name == nil:
+	case p.Name == nil:
 		return errors.New("publisher.name is mandatory")
-	case cp.Namespace == nil:
+	case p.Namespace == nil:
 		return errors.New("publisher.namespace is mandatory")
 	}
 	return nil
+}
+
+func strPtrEquals(a, b *string) bool {
+	switch {
+	case a == nil:
+		return b == nil
+	case b == nil:
+		return false
+	default:
+		return *a == *b
+	}
+}
+
+// Equals checks if the publisher is equal to other componentwise.
+func (p *Publisher) Equals(o *Publisher) bool {
+	switch {
+	case p == nil:
+		return o == nil
+	case o == nil:
+		return false
+	default:
+		return strPtrEquals((*string)(p.Category), (*string)(o.Category)) &&
+			strPtrEquals(p.Name, o.Name) &&
+			strPtrEquals(p.Namespace, o.Namespace) &&
+			p.ContactDetails == o.ContactDetails &&
+			p.IssuingAuthority == o.IssuingAuthority
+	}
 }
 
 // Validate checks if the PGPKey is valid.
@@ -384,11 +411,60 @@ func NewProviderMetadata(canonicalURL string) *ProviderMetadata {
 	return pm
 }
 
-// Save saves a metadata provider to a writer.
-func (pmd *ProviderMetadata) Save(w io.Writer) error {
-	enc := json.NewEncoder(w)
+// NewProviderMetadataDomain creates a new provider with the given URL
+// and tlps feeds.
+func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata {
+
+	pm := NewProviderMetadata(
+		domain + "/.well-known/csaf/provider-metadata.json")
+
+	if len(tlps) == 0 {
+		return pm
+	}
+
+	// Register feeds.
+
+	feeds := make([]Feed, len(tlps))
+
+	for i, t := range tlps {
+		lt := strings.ToLower(string(t))
+		feed := "csaf-feed-tlp-" + lt + ".json"
+		url := JSONURL(domain + "/.well-known/csaf/" + lt + "/" + feed)
+
+		feeds[i] = Feed{
+			Summary:  "TLP:" + string(t) + " advisories",
+			TLPLabel: &t,
+			URL:      &url,
+		}
+	}
+
+	pm.Distributions = []Distribution{{
+		Rolie: []ROLIE{{
+			Feeds: feeds,
+		}},
+	}}
+
+	return pm
+}
+
+type nWriter struct {
+	io.Writer
+	n int64
+}
+
+func (nw *nWriter) Write(p []byte) (int, error) {
+	n, err := nw.Writer.Write(p)
+	nw.n += int64(n)
+	return n, err
+}
+
+// WriteTo saves a metadata provider to a writer.
+func (pmd *ProviderMetadata) WriteTo(w io.Writer) (int64, error) {
+	nw := nWriter{w, 0}
+	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
-	return enc.Encode(pmd)
+	err := enc.Encode(pmd)
+	return nw.n, err
 }
 
 // LoadProviderMetadata loads a metadata provider from a reader.

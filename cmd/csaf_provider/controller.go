@@ -112,74 +112,66 @@ func loadCSAF(r *http.Request) (string, []byte, error) {
 	return cleanFileName(handler.Filename), buf.Bytes(), nil
 }
 
-func (c *controller) loadCryptoKey() (*crypto.Key, error) {
-	f, err := os.Open(c.cfg.Key)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return crypto.NewKeyFromArmoredReader(f)
-}
-
-func (c *controller) handleSignature(r *http.Request, data []byte) (string, string, error) {
+func (c *controller) handleSignature(
+	r *http.Request,
+	data []byte,
+) (string, *crypto.Key, error) {
 
 	// Either way ... we need the key.
-	key, err := c.loadCryptoKey()
+	key, err := c.cfg.loadCryptoKey()
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-
-	fingerprint := key.GetFingerprint()
 
 	// Was the signature given via request?
 	if c.cfg.UploadSignature {
 		sigText := r.FormValue("signature")
 		if sigText == "" {
-			return "", "", errors.New("missing signature in request")
+			return "", nil, errors.New("missing signature in request")
 		}
 
 		pgpSig, err := crypto.NewPGPSignatureFromArmored(sigText)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 
 		// Use as public key
 		signRing, err := crypto.NewKeyRing(key)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 
 		if err := signRing.VerifyDetached(
 			crypto.NewPlainMessage(data),
 			pgpSig, crypto.GetUnixTime(),
 		); err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 
-		return sigText, fingerprint, nil
+		return sigText, key, nil
 	}
 
 	// Sign ourself
 
 	if passwd := r.FormValue("passphrase"); !c.cfg.NoPassphrase && passwd != "" {
 		if key, err = key.Unlock([]byte(passwd)); err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 	}
 
 	// Use as private key
 	signRing, err := crypto.NewKeyRing(key)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	sig, err := signRing.SignDetached(crypto.NewPlainMessage(data))
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	armored, err := sig.GetArmored()
-	return armored, fingerprint, err
+	return armored, key, err
 }
 
 func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
@@ -217,11 +209,14 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	armored, fingerprint, err := c.handleSignature(r, data)
+	armored, key, err := c.handleSignature(r, data)
 	if err != nil {
 		c.failed(rw, "upload.html", err)
 		return
 	}
+
+	var warnings []string
+	warn := func(msg string) { warnings = append(warnings, msg) }
 
 	if err := doTransaction(
 		c.cfg, t,
@@ -336,13 +331,23 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 			}
 
 			// Take over publisher
-			// TODO: Check for conflicts.
-			pmd.Publisher = ex.publisher
+			switch {
+			case pmd.Publisher == nil:
+				warn("Publisher in provider metadata is not initialized. Forgot to configure?")
+				if c.cfg.DynamicProviderMetaData {
+					warn("Taking publisher from CSAF")
+					pmd.Publisher = ex.publisher
+				}
+			case !pmd.Publisher.Equals(ex.publisher):
+				warn("Publishers in provider metadata and CSAF do not match.")
+			}
 
-			pmd.SetPGP(fingerprint, c.cfg.GetPGPURL(fingerprint))
+			keyID, fingerprint := key.GetHexKeyID(), key.GetFingerprint()
+			pmd.SetPGP(fingerprint, c.cfg.GetOpenPGPURL(keyID))
 
 			return nil
-		}); err != nil {
+		},
+	); err != nil {
 		c.failed(rw, "upload.html", err)
 		return
 	}
@@ -350,6 +355,7 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 	result := map[string]interface{}{
 		"Name":        newCSAF,
 		"ReleaseDate": ex.currentReleaseDate.Format(dateFormat),
+		"Warnings":    warnings,
 	}
 
 	c.render(rw, "upload.html", result)

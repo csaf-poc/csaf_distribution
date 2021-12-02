@@ -68,11 +68,13 @@ func LoadROLIEFeed(r io.Reader) (*ROLIEFeed, error) {
 	return &rf, nil
 }
 
-// Save saves a ROLIE feed to a writer.
-func (rf *ROLIEFeed) Save(w io.Writer) error {
-	enc := json.NewEncoder(w)
+// WriteTo saves a ROLIE feed to a writer.
+func (rf *ROLIEFeed) WriteTo(w io.Writer) (int64, error) {
+	nw := nWriter{w, 0}
+	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
-	return enc.Encode(rf)
+	err := enc.Encode(rf)
+	return nw.n, err
 }
 
 // EntryByID looks up an entry by its ID.

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 const (
@@ -13,18 +15,20 @@ const (
 	defaultConfigPath = "/usr/lib/casf/config.toml"
 	defaultFolder     = "/var/www/"
 	defaultWeb        = "/var/www/html"
-	defaultPGPURL     = "http://pgp.mit.edu/pks/lookup?search=${KEY}&op=index"
+	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?search=${KEY}&op=index"
 )
 
 type config struct {
-	Key             string `toml:"key"`
-	Folder          string `toml:"folder"`
-	Web             string `toml:"web"`
-	TLPs            []tlp  `toml:"tlps"`
-	UploadSignature bool   `toml:"upload_signature"`
-	PGPURL          string `toml:"pgp_url"`
-	Domain          string `toml:"domain"`
-	NoPassphrase    bool   `toml:"no_passphrase"`
+	Key                     string          `toml:"key"`
+	Folder                  string          `toml:"folder"`
+	Web                     string          `toml:"web"`
+	TLPs                    []tlp           `toml:"tlps"`
+	UploadSignature         bool            `toml:"upload_signature"`
+	OpenPGPURL              string          `toml:"openpgp_url"`
+	Domain                  string          `toml:"domain"`
+	NoPassphrase            bool            `toml:"no_passphrase"`
+	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
+	Publisher               *csaf.Publisher `toml:"publisher"`
 }
 
 type tlp string
@@ -54,8 +58,27 @@ func (t *tlp) UnmarshalText(text []byte) error {
 	return fmt.Errorf("invalid config TLP value: %v", string(text))
 }
 
-func (cfg *config) GetPGPURL(key string) string {
-	return strings.ReplaceAll(cfg.PGPURL, "${KEY}", key)
+func (cfg *config) GetOpenPGPURL(key string) string {
+	return strings.ReplaceAll(cfg.OpenPGPURL, "${KEY}", "0x"+key)
+}
+
+func (cfg *config) modelTLPs() []csaf.TLPLabel {
+	tlps := make([]csaf.TLPLabel, 0, len(cfg.TLPs))
+	for _, t := range cfg.TLPs {
+		if t != tlpCSAF {
+			tlps = append(tlps, csaf.TLPLabel(strings.ToUpper(string(t))))
+		}
+	}
+	return tlps
+}
+
+func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
+	f, err := os.Open(cfg.Key)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return crypto.NewKeyFromArmoredReader(f)
 }
 
 func loadConfig() (*config, error) {
@@ -86,8 +109,16 @@ func loadConfig() (*config, error) {
 		cfg.TLPs = []tlp{tlpCSAF, tlpWhite, tlpGreen, tlpAmber, tlpRed}
 	}
 
-	if cfg.PGPURL == "" {
-		cfg.PGPURL = defaultPGPURL
+	if cfg.OpenPGPURL == "" {
+		cfg.OpenPGPURL = defaultOpenPGPURL
+	}
+
+	if cfg.Publisher == nil {
+		cfg.Publisher = &csaf.Publisher{
+			Category:  func(c csaf.Category) *csaf.Category { return &c }(csaf.CSAFCategoryVendor),
+			Name:      func(s string) *string { return &s }("ACME"),
+			Namespace: func(s string) *string { return &s }("https://example.com"),
+		}
 	}
 
 	return &cfg, nil
