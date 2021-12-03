@@ -9,7 +9,7 @@
     <h1>CSAF-Provider - CSAF uploaded</h1>
     {{ if .Error }}
     {{ if eq (len .Error) 1 }}
-    <strong>Error: <tt>{{ .Error }}.</tt></strong>
+    <strong>Error: <tt>{{ index .Error 0 }}.</tt></strong>
     {{ else }}
     <p>
     Errors:

@@ -7,6 +7,7 @@ require (
 	github.com/PaesslerAG/gval v1.1.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ProtonMail/gopenpgp/v2 v2.3.0
+	github.com/qri-io/jsonschema v0.2.1
 )
 
 require (
@@ -14,10 +15,8 @@ require (
 	github.com/ProtonMail/go-mime v0.0.0-20190923161245-9b5a4261663a // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/qri-io/jsonpointer v0.1.1 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 	golang.org/x/text v0.3.3 // indirect

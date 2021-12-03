@@ -1,33 +1,50 @@
 package csaf
 
 import (
+	"context"
 	_ "embed"
+	"encoding/json"
+	"sort"
+	"strings"
 
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/qri-io/jsonschema"
 )
 
 //go:embed schema/csaf_json_schema.json
-var schema string
+var schema []byte
 
-// Validate validates the document data against the JSON schema
+// ValidateCSAF validates the document data against the JSON schema
 // of CSAF.
-func Validate(data []byte) ([]string, error) {
-	schemaLoader := gojsonschema.NewStringLoader(schema)
-	documentLoader := gojsonschema.NewStringLoader(string(data))
+func ValidateCSAF(doc interface{}) ([]string, error) {
 
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
-	if err != nil {
+	ctx := context.Background()
+
+	rs := &jsonschema.Schema{}
+	if err := json.Unmarshal(schema, rs); err != nil {
 		return nil, err
 	}
 
-	if result.Valid() {
-		return nil, nil
-	}
+	vs := rs.Validate(ctx, doc)
+	errs := *vs.Errs
 
-	errors := result.Errors()
-	res := make([]string, len(errors))
-	for i, e := range errors {
-		res[i] = e.String()
+	sort.Slice(errs, func(i, j int) bool {
+		pi := errs[i].PropertyPath
+		pj := errs[j].PropertyPath
+		if strings.HasPrefix(pj, pi) {
+			return true
+		}
+		if strings.HasPrefix(pi, pj) {
+			return false
+		}
+		if pi != pj {
+			return pi < pj
+		}
+		return errs[i].Message < errs[j].Message
+	})
+
+	res := make([]string, len(errs))
+	for i, e := range errs {
+		res[i] = e.PropertyPath + ": " + e.Message
 	}
 
 	return res, nil

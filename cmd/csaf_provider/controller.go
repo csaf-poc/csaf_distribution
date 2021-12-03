@@ -190,21 +190,24 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validationErrors, err := csaf.Validate(data)
-	if err != nil {
-		c.failed(rw, "upload.html", err)
-		return
-	}
-
-	if len(validationErrors) > 0 {
-		c.multiFailed(rw, "upload.html", validationErrors)
-		return
-	}
-
 	var content interface{}
 	if err := json.Unmarshal(data, &content); err != nil {
 		c.failed(rw, "upload.html", err)
 		return
+	}
+
+	// Validate againt JSON schema.
+	if !c.cfg.NoValidation {
+		validationErrors, err := csaf.ValidateCSAF(content)
+		if err != nil {
+			c.failed(rw, "upload.html", err)
+			return
+		}
+
+		if len(validationErrors) > 0 {
+			c.multiFailed(rw, "upload.html", validationErrors)
+			return
+		}
 	}
 
 	ex, err := newExtraction(content)
