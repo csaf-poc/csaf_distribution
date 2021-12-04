@@ -2,7 +2,7 @@ package csaf
 
 import (
 	"bytes"
-	_ "embed"
+	_ "embed" // Used for embedding.
 	"sort"
 	"strings"
 	"sync"
