@@ -115,11 +115,19 @@ func (c *controller) tlpParam(r *http.Request) (tlp, error) {
 	return "", fmt.Errorf("unsupported TLP type '%s'", t)
 }
 
-func (c *controller) create(http.ResponseWriter, *http.Request) error {
-	return ensureFolders(c.cfg)
+func (c *controller) create(*http.Request) (interface{}, error) {
+	if err := ensureFolders(c.cfg); err != nil {
+		return nil, err
+	}
+	return &struct {
+		Message string `json:"message"`
+		Error   bool   `json:"-"`
+	}{
+		Message: "Everything is setup fine now.",
+	}, nil
 }
 
-func (c *controller) upload(rw http.ResponseWriter, r *http.Request) (interface{}, error) {
+func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 	newCSAF, data, err := loadCSAF(r)
 	if err != nil {

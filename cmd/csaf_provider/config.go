@@ -28,6 +28,7 @@ type config struct {
 	Domain                  string          `toml:"domain"`
 	NoPassphrase            bool            `toml:"no_passphrase"`
 	NoValidation            bool            `toml:"no_validation"`
+	NoWebUI                 bool            `toml:"no_web_ui"`
 	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
 	Publisher               *csaf.Publisher `toml:"publisher"`
 }
