@@ -7,6 +7,7 @@ require (
 	github.com/PaesslerAG/gval v1.1.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ProtonMail/gopenpgp/v2 v2.3.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 )
 
 require (

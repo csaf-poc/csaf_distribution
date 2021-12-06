@@ -59,6 +59,14 @@ func (c *controller) render(rw http.ResponseWriter, tmpl string, arg interface{}
 
 func (c *controller) failed(rw http.ResponseWriter, tmpl string, err error) {
 	rw.Header().Set("Content-type", "text/html; charset=utf-8")
+	result := map[string]interface{}{"Error": []error{err}}
+	if err := c.tmpl.ExecuteTemplate(rw, tmpl, result); err != nil {
+		log.Printf("warn: %v\n", err)
+	}
+}
+
+func (c *controller) multiFailed(rw http.ResponseWriter, tmpl string, err interface{}) {
+	rw.Header().Set("Content-type", "text/html; charset=utf-8")
 	result := map[string]interface{}{"Error": err}
 	if err := c.tmpl.ExecuteTemplate(rw, tmpl, result); err != nil {
 		log.Printf("warn: %v\n", err)
@@ -186,6 +194,20 @@ func (c *controller) upload(rw http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(data, &content); err != nil {
 		c.failed(rw, "upload.html", err)
 		return
+	}
+
+	// Validate againt JSON schema.
+	if !c.cfg.NoValidation {
+		validationErrors, err := csaf.ValidateCSAF(content)
+		if err != nil {
+			c.failed(rw, "upload.html", err)
+			return
+		}
+
+		if len(validationErrors) > 0 {
+			c.multiFailed(rw, "upload.html", validationErrors)
+			return
+		}
 	}
 
 	ex, err := newExtraction(content)

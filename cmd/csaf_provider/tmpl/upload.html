@@ -8,7 +8,18 @@
   <body>
     <h1>CSAF-Provider - CSAF uploaded</h1>
     {{ if .Error }}
-    <strong>Error: <tt>{{ .Error }}.</tt></strong>
+    {{ if eq (len .Error) 1 }}
+    <strong>Error: <tt>{{ index .Error 0 }}.</tt></strong>
+    {{ else }}
+    <p>
+    Errors:
+    <ul>
+    {{ range .Error }}
+    <li>{{ . }}</li>
+    {{ end }}
+    </ul>
+    <p>
+    {{ end }}
     {{ else }}
     <table>
       <tr><td>CSAF file:</td><td><tt>{{ .Name }}</tt></td></tr>
