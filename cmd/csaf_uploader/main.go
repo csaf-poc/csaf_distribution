@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -25,6 +26,7 @@ type options struct {
 type processor struct {
 	opts       *options
 	cachedAuth string
+	keyRing    *crypto.KeyRing
 }
 
 var iniPaths = []string{
@@ -33,9 +35,36 @@ var iniPaths = []string{
 	"csaf_uploader.ini",
 }
 
+func loadKey(filename string) (*crypto.Key, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return crypto.NewKeyFromArmoredReader(f)
+}
+
 func newProcessor(opts *options) (*processor, error) {
 	p := processor{
 		opts: opts,
+	}
+
+	if opts.Action == "upload" {
+		if opts.Key != nil {
+			var err error
+			var key *crypto.Key
+			if key, err = loadKey(*opts.Key); err != nil {
+				return nil, err
+			}
+			if opts.Passphrase != nil {
+				if key, err = key.Unlock([]byte(*opts.Passphrase)); err != nil {
+					return nil, err
+				}
+			}
+			if p.keyRing, err = crypto.NewKeyRing(key); err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// pre-calc the auth header
@@ -47,6 +76,7 @@ func newProcessor(opts *options) (*processor, error) {
 		}
 		p.cachedAuth = string(hash)
 	}
+
 	return &p, nil
 }
 
@@ -56,7 +86,24 @@ func (p *processor) create() error {
 }
 
 func (p *processor) process(filename string) error {
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	var armored string
+	if p.keyRing != nil {
+		sig, err := p.keyRing.SignDetached(crypto.NewPlainMessage(data))
+		if err != nil {
+			return err
+		}
+		if armored, err = sig.GetArmored(); err != nil {
+			return err
+		}
+	}
 	// TODO: Implement me!
+	_ = armored
 	return nil
 }
 
