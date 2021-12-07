@@ -50,12 +50,29 @@ func newController(cfg *config) (*controller, error) {
 
 func (c *controller) bind(pim *pathInfoMux) {
 	if !c.cfg.NoWebUI {
-		pim.handleFunc("/", c.index)
-		pim.handleFunc("/upload", c.web(c.upload, "upload.html"))
-		pim.handleFunc("/create", c.web(c.create, "create.html"))
+		pim.handleFunc("/", c.auth(c.index))
+		pim.handleFunc("/upload", c.auth(c.web(c.upload, "upload.html")))
+		pim.handleFunc("/create", c.auth(c.web(c.create, "create.html")))
 	}
-	pim.handleFunc("/api/upload", api(c.upload))
-	pim.handleFunc("/api/create", api(c.create))
+	pim.handleFunc("/api/upload", c.auth(api(c.upload)))
+	pim.handleFunc("/api/create", c.auth(api(c.create)))
+}
+
+func (c *controller) auth(
+	fn func(http.ResponseWriter, *http.Request),
+) func(http.ResponseWriter, *http.Request) {
+
+	if c.cfg.Password == nil {
+		return fn
+	}
+	return func(rw http.ResponseWriter, r *http.Request) {
+		hash := r.Header.Get("X-CSAF-PROVIDER-AUTH")
+		if !c.cfg.checkPassword(hash) {
+			http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+		fn(rw, r)
+	}
 }
 
 func (c *controller) render(rw http.ResponseWriter, tmpl string, arg interface{}) {

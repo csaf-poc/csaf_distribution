@@ -8,6 +8,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 )
 
 type config struct {
+	Password                *string         `toml:"password"`
 	Key                     string          `toml:"key"`
 	Folder                  string          `toml:"folder"`
 	Web                     string          `toml:"web"`
@@ -81,6 +83,11 @@ func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
 	}
 	defer f.Close()
 	return crypto.NewKeyFromArmoredReader(f)
+}
+
+func (cfg *config) checkPassword(hash string) bool {
+	return cfg.Password == nil ||
+		bcrypt.CompareHashAndPassword([]byte(hash), []byte(*cfg.Password)) == nil
 }
 
 func loadConfig() (*config, error) {
