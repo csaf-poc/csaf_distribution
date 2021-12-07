@@ -1,20 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type options struct {
-	URL        string  `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
-	Password   *string `short:"P" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
-	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
-	Passphrase *string `short:"p" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	Action     string  `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
-	Config     *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE"`
+	URL                   string  `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
+	Password              *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
+	Key                   *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
+	Passphrase            *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
+	Action                string  `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
+	Config                *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE"`
+	PasswordInteractive   bool    `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
+	PassphraseInteractive bool    `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
 }
 
 var iniPaths = []string{
@@ -37,35 +41,50 @@ func findIniFile() string {
 	return ""
 }
 
-func main() {
-	var opts options
+func readInteractive(prompt string, pw **string) error {
+	fmt.Print(prompt)
+	p, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
+	ps := string(p)
+	*pw = &ps
+	return nil
+}
 
-	parser := flags.NewParser(&opts, flags.Default)
+func check(err error) {
+	if err != nil {
+		log.Fatalf("error: %v\n", err)
+	}
+}
 
-	args, err := parser.Parse()
+func checkParser(err error) {
 	if err != nil {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
 		os.Exit(1)
 	}
+}
+
+func main() {
+	var opts options
+
+	parser := flags.NewParser(&opts, flags.Default)
+
+	args, err := parser.Parse()
+	checkParser(err)
 
 	if opts.Config != nil {
 		iniParser := flags.NewIniParser(parser)
 		iniParser.ParseAsDefaults = true
 		name, err := homedir.Expand(*opts.Config)
-		if err != nil {
-			log.Fatalf("error: %v\n", err)
-		}
-		if err := iniParser.ParseFile(name); err != nil {
-			os.Exit(1)
-		}
+		check(err)
+		checkParser(iniParser.ParseFile(name))
 	} else if iniFile := findIniFile(); iniFile != "" {
 		iniParser := flags.NewIniParser(parser)
 		iniParser.ParseAsDefaults = true
-		if err := iniParser.ParseFile(iniFile); err != nil {
-			os.Exit(1)
-		}
+		checkParser(iniParser.ParseFile(iniFile))
 	}
 
 	if opts.Key != nil {
@@ -74,6 +93,22 @@ func main() {
 
 	log.Printf("url: %s\n", opts.URL)
 	log.Printf("action: %s\n", opts.Action)
+
+	if opts.PasswordInteractive {
+		check(readInteractive("Enter auth password: ", &opts.Password))
+	}
+
+	if opts.PassphraseInteractive {
+		check(readInteractive("Enter OpenPGP passphrase: ", &opts.Passphrase))
+	}
+
+	if opts.Password != nil {
+		log.Printf("password: '%s'\n", *opts.Password)
+	}
+
+	if opts.Passphrase != nil {
+		log.Printf("passphrase: '%s'\n", *opts.Passphrase)
+	}
 
 	for _, arg := range args {
 		log.Printf("arg: %s\n", arg)
