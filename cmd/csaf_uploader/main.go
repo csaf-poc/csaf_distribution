@@ -90,7 +90,41 @@ func newProcessor(opts *options) (*processor, error) {
 }
 
 func (p *processor) create() error {
-	// TODO: Implement me!
+	req, err := http.NewRequest(http.MethodGet, p.opts.URL+"/api/create", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-CSAF-PROVIDER-AUTH", p.cachedAuth)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Create failed: %s\n", resp.Status)
+	}
+
+	var result struct {
+		Message string   `json:"message"`
+		Errors  []string `json:"errors"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	if result.Message != "" {
+		fmt.Printf("\t%s\n", result.Message)
+	}
+
+	if len(result.Errors) > 0 {
+		fmt.Println("Errors:")
+		for _, err := range result.Errors {
+			fmt.Printf("\t%s\n", err)
+		}
+	}
 	return nil
 }
 
@@ -140,7 +174,7 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", p.opts.URL+"/api/upload", body)
+	req, err := http.NewRequest(http.MethodPost, p.opts.URL+"/api/upload", body)
 	if err != nil {
 		return nil, err
 	}
