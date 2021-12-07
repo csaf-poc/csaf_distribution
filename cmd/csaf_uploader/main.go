@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/jessevdk/go-flags"
@@ -13,14 +18,18 @@ import (
 )
 
 type options struct {
-	Action                string  `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
-	URL                   string  `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
-	Password              *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
-	Key                   *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
-	Passphrase            *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	PasswordInteractive   bool    `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
-	PassphraseInteractive bool    `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
-	Config                *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
+	Action string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
+	URL    string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
+	TLP    string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
+
+	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
+	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
+	Passphrase *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
+
+	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
+	PassphraseInteractive bool `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
+
+	Config *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
 }
 
 type processor struct {
@@ -85,25 +94,112 @@ func (p *processor) create() error {
 	return nil
 }
 
+func (p *processor) uploadRequest(filename string) (*http.Request, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("csaf", filepath.Base(filename))
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := part.Write(data); err != nil {
+		return nil, err
+	}
+
+	if err := writer.WriteField("tlp", p.opts.TLP); err != nil {
+		return nil, err
+	}
+
+	if p.keyRing == nil && p.opts.Passphrase != nil {
+		if err := writer.WriteField("passphrase", *p.opts.Passphrase); err != nil {
+			return nil, err
+		}
+	}
+
+	if p.keyRing != nil {
+		sig, err := p.keyRing.SignDetached(crypto.NewPlainMessage(data))
+		if err != nil {
+			return nil, err
+		}
+		armored, err := sig.GetArmored()
+		if err != nil {
+			return nil, err
+		}
+		if err := writer.WriteField("signature", armored); err != nil {
+			return nil, err
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", p.opts.URL+"/api/upload", body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-CSAF-PROVIDER-AUTH", p.cachedAuth)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	return req, nil
+}
+
 func (p *processor) process(filename string) error {
 
-	data, err := os.ReadFile(filename)
+	req, err := p.uploadRequest(filename)
 	if err != nil {
 		return err
 	}
 
-	var armored string
-	if p.keyRing != nil {
-		sig, err := p.keyRing.SignDetached(crypto.NewPlainMessage(data))
-		if err != nil {
-			return err
-		}
-		if armored, err = sig.GetArmored(); err != nil {
-			return err
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Upload failed: %s\n", resp.Status)
+	}
+
+	var result struct {
+		Name        string   `json:"name"`
+		ReleaseDate string   `json:"release_date"`
+		Warnings    []string `json:"warnings"`
+		Errors      []string `json:"errors"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	if result.Name != "" {
+		fmt.Printf("Name: %s\n", result.Name)
+	}
+	if result.ReleaseDate != "" {
+		fmt.Printf("Release date: %s\n", result.ReleaseDate)
+	}
+
+	if len(result.Warnings) > 0 {
+		fmt.Println("Warnings:")
+		for _, warning := range result.Warnings {
+			fmt.Printf("\t%s\n", warning)
 		}
 	}
-	// TODO: Implement me!
-	_ = armored
+
+	if len(result.Errors) > 0 {
+		fmt.Println("Errors:")
+		for _, err := range result.Errors {
+			fmt.Printf("\t%s\n", err)
+		}
+	}
+
 	return nil
 }
 
@@ -166,13 +262,6 @@ func main() {
 		iniParser.ParseAsDefaults = true
 		checkParser(iniParser.ParseFile(iniFile))
 	}
-
-	if opts.Key != nil {
-		log.Printf("key: %s\n", *opts.Key)
-	}
-
-	log.Printf("url: %s\n", opts.URL)
-	log.Printf("action: %s\n", opts.Action)
 
 	if opts.PasswordInteractive {
 		check(readInteractive("Enter auth password: ", &opts.Password))
