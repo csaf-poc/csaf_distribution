@@ -12,11 +12,11 @@ import (
 )
 
 type options struct {
+	Action                string  `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
 	URL                   string  `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
 	Password              *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
 	Key                   *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Passphrase            *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	Action                string  `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
 	PasswordInteractive   bool    `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool    `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
 	Config                *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
