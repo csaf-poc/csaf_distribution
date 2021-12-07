@@ -7,6 +7,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -21,10 +22,42 @@ type options struct {
 	PassphraseInteractive bool    `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
 }
 
+type processor struct {
+	opts       *options
+	cachedAuth string
+}
+
 var iniPaths = []string{
 	"~/.config/csaf/uploader.ini",
 	"~/.csaf_uploader.ini",
 	"csaf_uploader.ini",
+}
+
+func newProcessor(opts *options) (*processor, error) {
+	p := processor{
+		opts: opts,
+	}
+
+	// pre-calc the auth header
+	if opts.Password != nil {
+		hash, err := bcrypt.GenerateFromPassword(
+			[]byte(*opts.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+		p.cachedAuth = string(hash)
+	}
+	return &p, nil
+}
+
+func (p *processor) create() error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (p *processor) process(filename string) error {
+	// TODO: Implement me!
+	return nil
 }
 
 func findIniFile() string {
@@ -102,15 +135,15 @@ func main() {
 		check(readInteractive("Enter OpenPGP passphrase: ", &opts.Passphrase))
 	}
 
-	if opts.Password != nil {
-		log.Printf("password: '%s'\n", *opts.Password)
-	}
+	p, err := newProcessor(&opts)
+	check(err)
 
-	if opts.Passphrase != nil {
-		log.Printf("passphrase: '%s'\n", *opts.Passphrase)
+	if opts.Action == "create" {
+		check(p.create())
+		return
 	}
 
 	for _, arg := range args {
-		log.Printf("arg: %s\n", arg)
+		check(p.process(arg))
 	}
 }
