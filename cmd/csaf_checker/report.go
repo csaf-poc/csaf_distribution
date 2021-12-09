@@ -1,16 +1,19 @@
 package main
 
-type requirement struct {
+// Requirement a single requirement report of a domain.
+type Requirement struct {
 	Num         int      `json:"num"`
 	Description string   `json:"description"`
 	Messages    []string `json:"messages"`
 }
 
-type domain struct {
-	Name         string        `json:"name"`
-	requirements []requirement `json:"requirements"`
+// Domain are the results of a domain.
+type Domain struct {
+	Name         string         `json:"name"`
+	requirements []*Requirement `json:"requirements"`
 }
 
-type report struct {
-	Domains []domain `json:"domains"`
+// Report is the overall report.
+type Report struct {
+	Domains []*Domain `json:"domains"`
 }
