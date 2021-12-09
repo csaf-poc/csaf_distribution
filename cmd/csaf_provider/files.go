@@ -1,19 +1,17 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
 	"hash"
-	"io"
 	"io/ioutil"
 	"os"
 )
 
 func writeHash(fname, name string, h hash.Hash, data []byte) error {
 
-	if _, err := io.Copy(h, bytes.NewReader(data)); err != nil {
+	if _, err := h.Write(data); err != nil {
 		return err
 	}
 
