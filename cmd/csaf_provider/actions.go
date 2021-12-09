@@ -16,6 +16,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 const dateFormat = time.RFC3339
@@ -256,7 +257,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			rolie.SortEntriesByUpdated()
 
 			// Store the feed
-			if err := saveToFile(feed, rolie); err != nil {
+			if err := util.WriteToFile(feed, rolie); err != nil {
 				return err
 			}
 
