@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 // TLPLabel is the traffic light policy of the CSAF.
@@ -447,24 +449,13 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 	return pm
 }
 
-type nWriter struct {
-	io.Writer
-	n int64
-}
-
-func (nw *nWriter) Write(p []byte) (int, error) {
-	n, err := nw.Writer.Write(p)
-	nw.n += int64(n)
-	return n, err
-}
-
 // WriteTo saves a metadata provider to a writer.
 func (pmd *ProviderMetadata) WriteTo(w io.Writer) (int64, error) {
-	nw := nWriter{w, 0}
+	nw := util.NWriter{Writer: w, N: 0}
 	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(pmd)
-	return nw.n, err
+	return nw.N, err
 }
 
 // LoadProviderMetadata loads a metadata provider from a reader.

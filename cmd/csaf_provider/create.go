@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 func ensureFolders(c *config) error {
@@ -52,7 +53,7 @@ func createFeedFolders(c *config, wellknown string) error {
 		if _, err := filepath.EvalSymlinks(tlpLink); err != nil {
 			if os.IsNotExist(err) {
 				tlpFolder := filepath.Join(c.Folder, string(t))
-				if tlpFolder, err = mkUniqDir(tlpFolder); err != nil {
+				if tlpFolder, err = util.MakeUniqDir(tlpFolder); err != nil {
 					return err
 				}
 				if err = os.Symlink(tlpFolder, tlpLink); err != nil {
@@ -104,5 +105,5 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	keyID, fingerprint := key.GetHexKeyID(), key.GetFingerprint()
 	pm.SetPGP(fingerprint, c.GetOpenPGPURL(keyID))
 
-	return saveToFile(path, pm)
+	return util.WriteToFile(path, pm)
 }

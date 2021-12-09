@@ -5,6 +5,8 @@ import (
 	"io"
 	"sort"
 	"time"
+
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 // Link for ROLIE.
@@ -70,11 +72,11 @@ func LoadROLIEFeed(r io.Reader) (*ROLIEFeed, error) {
 
 // WriteTo saves a ROLIE feed to a writer.
 func (rf *ROLIEFeed) WriteTo(w io.Writer) (int64, error) {
-	nw := nWriter{w, 0}
+	nw := util.NWriter{Writer: w, N: 0}
 	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(rf)
-	return nw.n, err
+	return nw.N, err
 }
 
 // EntryByID looks up an entry by its ID.

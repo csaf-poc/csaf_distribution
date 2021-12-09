@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 func doTransaction(
@@ -42,13 +43,13 @@ func doTransaction(
 
 	folderTLP := filepath.Join(cfg.Folder, string(t))
 
-	newDir, err := mkUniqDir(folderTLP)
+	newDir, err := util.MakeUniqDir(folderTLP)
 	if err != nil {
 		return err
 	}
 
 	// Copy old content into new.
-	if err := deepCopy(newDir, oldDir); err != nil {
+	if err := util.DeepCopy(newDir, oldDir); err != nil {
 		os.RemoveAll(newDir)
 		return err
 	}
@@ -61,7 +62,7 @@ func doTransaction(
 
 	// Write back provider metadata if its dynamic.
 	if cfg.DynamicProviderMetaData {
-		newMetaName, newMetaFile, err := mkUniqFile(metadata)
+		newMetaName, newMetaFile, err := util.MakeUniqFile(metadata)
 		if err != nil {
 			os.RemoveAll(newDir)
 			return err
