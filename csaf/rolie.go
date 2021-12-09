@@ -72,7 +72,7 @@ func LoadROLIEFeed(r io.Reader) (*ROLIEFeed, error) {
 
 // WriteTo saves a ROLIE feed to a writer.
 func (rf *ROLIEFeed) WriteTo(w io.Writer) (int64, error) {
-	nw := util.NWriter{w, 0}
+	nw := util.NWriter{Writer: w, N: 0}
 	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(rf)

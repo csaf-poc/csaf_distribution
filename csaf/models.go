@@ -451,7 +451,7 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 
 // WriteTo saves a metadata provider to a writer.
 func (pmd *ProviderMetadata) WriteTo(w io.Writer) (int64, error) {
-	nw := util.NWriter{w, 0}
+	nw := util.NWriter{Writer: w, N: 0}
 	enc := json.NewEncoder(&nw)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(pmd)
