@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"mime/multipart"
@@ -18,9 +19,10 @@ import (
 )
 
 type options struct {
-	Action string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
-	URL    string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
-	TLP    string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
+	Action         string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
+	URL            string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
+	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
+	ExternalSigned bool   `short:"x" long:"external-signed" description:"CASF files are signed externally. Assumes .asc files beside CSAF files."`
 
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
@@ -60,6 +62,9 @@ func newProcessor(opts *options) (*processor, error) {
 
 	if opts.Action == "upload" {
 		if opts.Key != nil {
+			if opts.ExternalSigned {
+				return nil, errors.New("refused to sign external signed files")
+			}
 			var err error
 			var key *crypto.Key
 			if key, err = loadKey(*opts.Key); err != nil {
@@ -166,6 +171,16 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 			return nil, err
 		}
 		if err := writer.WriteField("signature", armored); err != nil {
+			return nil, err
+		}
+	}
+
+	if p.opts.ExternalSigned {
+		signature, err := os.ReadFile(filename + ".asc")
+		if err != nil {
+			return nil, err
+		}
+		if err := writer.WriteField("signature", string(signature)); err != nil {
 			return nil, err
 		}
 	}
@@ -311,6 +326,10 @@ func main() {
 	if opts.Action == "create" {
 		check(p.create())
 		return
+	}
+
+	if len(args) == 0 {
+		log.Println("No CSAF files given.")
 	}
 
 	for _, arg := range args {
