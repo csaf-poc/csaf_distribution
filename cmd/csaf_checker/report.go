@@ -1,16 +1,16 @@
 package main
 
-type Requirement struct {
-	Num         int
-	Description string
-	Messages    []string
+type requirement struct {
+	Num         int      `json:"num"`
+	Description string   `json:"description"`
+	Messages    []string `json:"messages"`
 }
 
 type domain struct {
-	Name         string
-	Requirements []Requirement
+	Name         string        `json:"name"`
+	requirements []requirement `json:"requirements"`
 }
 
 type report struct {
-	Domains []domain
+	Domains []domain `json:"domains"`
 }
