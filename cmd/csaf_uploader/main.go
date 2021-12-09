@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"mime/multipart"
@@ -11,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -18,9 +20,11 @@ import (
 )
 
 type options struct {
-	Action string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
-	URL    string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
-	TLP    string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
+	Action         string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
+	URL            string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
+	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
+	ExternalSigned bool   `short:"x" long:"external-signed" description:"CASF files are signed externally. Assumes .asc files beside CSAF files."`
+	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally."`
 
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
@@ -60,6 +64,9 @@ func newProcessor(opts *options) (*processor, error) {
 
 	if opts.Action == "upload" {
 		if opts.Key != nil {
+			if opts.ExternalSigned {
+				return nil, errors.New("refused to sign external signed files")
+			}
 			var err error
 			var key *crypto.Key
 			if key, err = loadKey(*opts.Key); err != nil {
@@ -87,6 +94,15 @@ func newProcessor(opts *options) (*processor, error) {
 	}
 
 	return &p, nil
+}
+
+func writeStrings(header string, messages []string) {
+	if len(messages) > 0 {
+		fmt.Println(header)
+		for _, msg := range messages {
+			fmt.Printf("\t%s\n", msg)
+		}
+	}
 }
 
 func (p *processor) create() error {
@@ -119,12 +135,8 @@ func (p *processor) create() error {
 		fmt.Printf("\t%s\n", result.Message)
 	}
 
-	if len(result.Errors) > 0 {
-		fmt.Println("Errors:")
-		for _, err := range result.Errors {
-			fmt.Printf("\t%s\n", err)
-		}
-	}
+	writeStrings("Errors:", result.Errors)
+
 	return nil
 }
 
@@ -132,6 +144,21 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
+	}
+
+	if !p.opts.NoSchemaCheck {
+		var doc interface{}
+		if err := json.NewDecoder(bytes.NewReader(data)).Decode(&doc); err != nil {
+			return nil, err
+		}
+		errs, err := csaf.ValidateCSAF(doc)
+		if err != nil {
+			return nil, err
+		}
+		if len(errs) > 0 {
+			writeStrings("Errors:", errs)
+			return nil, errors.New("local schema check failed")
+		}
 	}
 
 	body := new(bytes.Buffer)
@@ -166,6 +193,16 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 			return nil, err
 		}
 		if err := writer.WriteField("signature", armored); err != nil {
+			return nil, err
+		}
+	}
+
+	if p.opts.ExternalSigned {
+		signature, err := os.ReadFile(filename + ".asc")
+		if err != nil {
+			return nil, err
+		}
+		if err := writer.WriteField("signature", string(signature)); err != nil {
 			return nil, err
 		}
 	}
@@ -220,19 +257,8 @@ func (p *processor) process(filename string) error {
 		fmt.Printf("Release date: %s\n", result.ReleaseDate)
 	}
 
-	if len(result.Warnings) > 0 {
-		fmt.Println("Warnings:")
-		for _, warning := range result.Warnings {
-			fmt.Printf("\t%s\n", warning)
-		}
-	}
-
-	if len(result.Errors) > 0 {
-		fmt.Println("Errors:")
-		for _, err := range result.Errors {
-			fmt.Printf("\t%s\n", err)
-		}
-	}
+	writeStrings("Warnings:", result.Warnings)
+	writeStrings("Errors:", result.Errors)
 
 	return nil
 }
@@ -273,7 +299,7 @@ func checkParser(err error) {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
-		os.Exit(1)
+		log.Fatalf("error: %v\n", err)
 	}
 }
 
@@ -311,6 +337,10 @@ func main() {
 	if opts.Action == "create" {
 		check(p.create())
 		return
+	}
+
+	if len(args) == 0 {
+		log.Println("No CSAF files given.")
 	}
 
 	for _, arg := range args {
