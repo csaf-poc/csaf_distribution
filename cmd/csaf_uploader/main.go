@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -23,6 +24,7 @@ type options struct {
 	URL            string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
 	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
 	ExternalSigned bool   `short:"x" long:"external-signed" description:"CASF files are signed externally. Assumes .asc files beside CSAF files."`
+	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally."`
 
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
@@ -142,6 +144,21 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
+	}
+
+	if !p.opts.NoSchemaCheck {
+		var doc interface{}
+		if err := json.NewDecoder(bytes.NewReader(data)).Decode(&doc); err != nil {
+			return nil, err
+		}
+		errs, err := csaf.ValidateCSAF(doc)
+		if err != nil {
+			return nil, err
+		}
+		if len(errs) > 0 {
+			writeStrings("Errors:", errs)
+			return nil, errors.New("local schema check failed")
+		}
 	}
 
 	body := new(bytes.Buffer)
@@ -282,7 +299,7 @@ func checkParser(err error) {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
-		os.Exit(1)
+		log.Fatalf("error: %v\n", err)
 	}
 }
 
