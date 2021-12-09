@@ -94,6 +94,15 @@ func newProcessor(opts *options) (*processor, error) {
 	return &p, nil
 }
 
+func writeStrings(header string, messages []string) {
+	if len(messages) > 0 {
+		fmt.Println(header)
+		for _, msg := range messages {
+			fmt.Printf("\t%s\n", msg)
+		}
+	}
+}
+
 func (p *processor) create() error {
 	req, err := http.NewRequest(http.MethodGet, p.opts.URL+"/api/create", nil)
 	if err != nil {
@@ -124,12 +133,8 @@ func (p *processor) create() error {
 		fmt.Printf("\t%s\n", result.Message)
 	}
 
-	if len(result.Errors) > 0 {
-		fmt.Println("Errors:")
-		for _, err := range result.Errors {
-			fmt.Printf("\t%s\n", err)
-		}
-	}
+	writeStrings("Errors:", result.Errors)
+
 	return nil
 }
 
@@ -235,19 +240,8 @@ func (p *processor) process(filename string) error {
 		fmt.Printf("Release date: %s\n", result.ReleaseDate)
 	}
 
-	if len(result.Warnings) > 0 {
-		fmt.Println("Warnings:")
-		for _, warning := range result.Warnings {
-			fmt.Printf("\t%s\n", warning)
-		}
-	}
-
-	if len(result.Errors) > 0 {
-		fmt.Println("Errors:")
-		for _, err := range result.Errors {
-			fmt.Printf("\t%s\n", err)
-		}
-	}
+	writeStrings("Warnings:", result.Warnings)
+	writeStrings("Errors:", result.Errors)
 
 	return nil
 }
