@@ -10,7 +10,7 @@ type Requirement struct {
 // Domain are the results of a domain.
 type Domain struct {
 	Name         string         `json:"name"`
-	requirements []*Requirement `json:"requirements"`
+	Requirements []*Requirement `json:"requirements"`
 }
 
 // Report is the overall report.
