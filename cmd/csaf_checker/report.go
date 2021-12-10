@@ -12,16 +12,16 @@ package main
 type Requirement struct {
 	Num         int      `json:"num"`
 	Description string   `json:"description"`
-	Messages    []string `json:"messages"`
+	Messages    []string `json:"messages,omitempty"`
 }
 
 // Domain are the results of a domain.
 type Domain struct {
 	Name         string         `json:"name"`
-	Requirements []*Requirement `json:"requirements"`
+	Requirements []*Requirement `json:"requirements,omitempty"`
 }
 
 // Report is the overall report.
 type Report struct {
-	Domains []*Domain `json:"domains"`
+	Domains []*Domain `json:"domains,omitempty"`
 }

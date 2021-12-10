@@ -9,13 +9,19 @@
 package main
 
 import (
+	"bufio"
+	_ "embed" // Used for embedding.
 	"encoding/json"
+	"html/template"
 	"io"
 	"log"
 	"os"
 
 	"github.com/jessevdk/go-flags"
 )
+
+//go:embed tmpl/report.html
+var reportHTML string
 
 type options struct {
 	Output string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
@@ -46,8 +52,23 @@ func writeJSON(report *Report, w io.WriteCloser) error {
 }
 
 func writeHTML(report *Report, w io.WriteCloser) error {
-	// TODO: Implement me!
-	return w.Close()
+	tmpl, err := template.New("Report HTML").Parse(reportHTML)
+	if err != nil {
+		w.Close()
+		return err
+	}
+	buf := bufio.NewWriter(w)
+
+	if err := tmpl.Execute(buf, report); err != nil {
+		w.Close()
+		return err
+	}
+
+	err = buf.Flush()
+	if e := w.Close(); err == nil {
+		err = e
+	}
+	return err
 }
 
 type nopCloser struct{ io.Writer }

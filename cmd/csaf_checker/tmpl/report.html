@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta description="CSAF-Checker - Report">
+    <title>CSAF-Checker - Report</title>
+  </head>
+  <body>
+   <h1>CSAF-Checker - Report</h1>
+{{ range .Domains }}
+   <h2>{{ .Name }}</h2>
+   Requirements:
+   <dl>
+{{ range .Requirements }}
+    <dt>{{ .Num }} - {{ .Description }}</dt>
+{{ range .Messages }}
+{{ end }}
+      <dd>- {{ . }}</dd>
+{{ end }}
+   </dl>
+{{ end }}
+  </body>
+</html>

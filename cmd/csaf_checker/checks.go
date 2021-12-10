@@ -32,7 +32,7 @@ func run(domains []string, checks []check) (*Report, error) {
 				return nil, err
 			}
 		}
-		domain := new(Domain)
+		domain := &Domain{Name: d}
 		for _, ch := range checks {
 			ch.report(state, domain)
 		}
