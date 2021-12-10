@@ -17,3 +17,10 @@
 
 - [Install](http://nginx.org/en/docs/install.html)  **nginx**
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
+
+## License
+
+- csaf_distribution is licensed as Free Software under MIT License.
+
+- See the specific source files
+for details, the license itself can be found in the directory `LICENSES`.
