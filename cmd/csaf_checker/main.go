@@ -28,10 +28,6 @@ type options struct {
 	Format string `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
 }
 
-var checks = []check{
-	// TODO: Implement me!
-}
-
 func errCheck(err error) {
 	if err != nil {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
@@ -101,6 +97,24 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
+func buildChecks() checks {
+	return checks{
+		&tlsCheck{baseCheck{3, "TLS"}},
+		&redirectsCheck{baseCheck{6, "Redirects"}},
+		&providerMetadataCheck{baseCheck{7, "provider-metadata.json"}},
+		&securityCheck{baseCheck{8, "security.txt"}},
+		&wellknownMetadataCheck{baseCheck{9, "/.well-known/csaf/provider-metadata.json"}},
+		&dnsPathCheck{baseCheck{10, "DNS path"}},
+		&oneFolderPerYearCheck{baseCheck{11, "One folder per year"}},
+		&indexCheck{baseCheck{12, "index.txt"}},
+		&changesCheck{baseCheck{13, "changes.csv"}},
+		&directoryListingsCheck{baseCheck{14, "Directory listings"}},
+		&integrityCheck{baseCheck{18, "Integrity"}},
+		&signaturesCheck{baseCheck{19, "Signatures"}},
+		&publicPGPKeyCheck{baseCheck{20, "Public PGP Key"}},
+	}
+}
+
 func main() {
 	opts := new(options)
 
@@ -112,7 +126,7 @@ func main() {
 		return
 	}
 
-	report, err := run(domains, checks)
+	report, err := buildChecks().run(domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))

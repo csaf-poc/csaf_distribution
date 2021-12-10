@@ -7,15 +7,14 @@
   </head>
   <body>
    <h1>CSAF-Checker - Report</h1>
-{{ range .Domains }}
+{{- range .Domains }}
    <h2>{{ .Name }}</h2>
-   Requirements:
    <dl>
 {{ range .Requirements }}
-    <dt>{{ .Num }} - {{ .Description }}</dt>
+   <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
 {{ range .Messages }}
-{{ end }}
       <dd>- {{ . }}</dd>
+{{ end }}
 {{ end }}
    </dl>
 {{ end }}
