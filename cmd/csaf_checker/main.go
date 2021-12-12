@@ -98,8 +98,8 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
-func buildChecks() checks {
-	return checks{
+func buildChecks() []check {
+	return []check{
 		&tlsCheck{baseCheck{3, "TLS"}},
 		&redirectsCheck{baseCheck{6, "Redirects"}},
 		&providerMetadataCheck{baseCheck{7, "provider-metadata.json"}},
@@ -127,7 +127,9 @@ func main() {
 		return
 	}
 
-	report, err := buildChecks().run(domains)
+	p := newProcessor(opts)
+
+	report, err := p.run(buildChecks(), domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))

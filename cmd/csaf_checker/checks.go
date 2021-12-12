@@ -8,35 +8,33 @@
 
 package main
 
-type state struct {
+type processor struct {
+	opts   *options
 	domain string
 }
 
-func newState(domain string) *state {
-	return &state{domain: domain}
+func newProcessor(opts *options) *processor {
+	return &processor{opts: opts}
 }
 
 type check interface {
-	run(*state) error
-	report(*state, *Domain)
+	run(*processor, string) error
+	report(*processor, *Domain)
 }
 
-type checks []check
-
-func (cs checks) run(domains []string) (*Report, error) {
+func (p *processor) run(checks []check, domains []string) (*Report, error) {
 
 	var report Report
 
 	for _, d := range domains {
-		state := newState(d)
-		for _, ch := range cs {
-			if err := ch.run(state); err != nil {
+		for _, ch := range checks {
+			if err := ch.run(p, d); err != nil {
 				return nil, err
 			}
 		}
 		domain := &Domain{Name: d}
-		for _, ch := range cs {
-			ch.report(state, domain)
+		for _, ch := range checks {
+			ch.report(p, domain)
 		}
 		report.Domains = append(report.Domains, domain)
 	}
@@ -101,137 +99,137 @@ type publicPGPKeyCheck struct {
 	baseCheck
 }
 
-func (bc *baseCheck) report(_ *state, domain *Domain) {
+func (bc *baseCheck) report(_ *processor, domain *Domain) {
 	req := &Requirement{Num: bc.num, Description: bc.description}
 	domain.Requirements = append(domain.Requirements, req)
 }
 
-func (tc *tlsCheck) run(*state) error {
+func (tc *tlsCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (tc *tlsCheck) report(state *state, domain *Domain) {
-	tc.baseCheck.report(state, domain)
+func (tc *tlsCheck) report(p *processor, domain *Domain) {
+	tc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (rc *redirectsCheck) run(*state) error {
-	// TODO: Implement me!
-	return nil
-}
-
-func (rc *redirectsCheck) report(state *state, domain *Domain) {
-	rc.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (pmdc *providerMetadataCheck) run(*state) error {
+func (rc *redirectsCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (pmdc *providerMetadataCheck) report(state *state, domain *Domain) {
-	pmdc.baseCheck.report(state, domain)
+func (rc *redirectsCheck) report(p *processor, domain *Domain) {
+	rc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (sc *securityCheck) run(*state) error {
-	// TODO: Implement me!
-	return nil
-}
-
-func (sc *securityCheck) report(state *state, domain *Domain) {
-	sc.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (wmdc *wellknownMetadataCheck) run(*state) error {
+func (pmdc *providerMetadataCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (wmdc *wellknownMetadataCheck) report(state *state, domain *Domain) {
-	wmdc.baseCheck.report(state, domain)
+func (pmdc *providerMetadataCheck) report(p *processor, domain *Domain) {
+	pmdc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (dpc *dnsPathCheck) run(*state) error {
-	// TODO: Implement me!
-	return nil
-}
-
-func (dpc *dnsPathCheck) report(state *state, domain *Domain) {
-	dpc.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (ofpyc *oneFolderPerYearCheck) report(state *state, domain *Domain) {
-	ofpyc.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (ofpyc *oneFolderPerYearCheck) run(*state) error {
+func (sc *securityCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (ic *indexCheck) report(state *state, domain *Domain) {
-	ic.baseCheck.report(state, domain)
+func (sc *securityCheck) report(p *processor, domain *Domain) {
+	sc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (ic *indexCheck) run(*state) error {
-	// TODO: Implement me!
-	return nil
-}
-
-func (cc *changesCheck) report(state *state, domain *Domain) {
-	cc.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (cc *changesCheck) run(*state) error {
+func (wmdc *wellknownMetadataCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (dlc *directoryListingsCheck) report(state *state, domain *Domain) {
-	dlc.baseCheck.report(state, domain)
+func (wmdc *wellknownMetadataCheck) report(p *processor, domain *Domain) {
+	wmdc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (dlc *directoryListingsCheck) run(*state) error {
-	// TODO: Implement me!
-	return nil
-}
-
-func (ic *integrityCheck) report(state *state, domain *Domain) {
-	ic.baseCheck.report(state, domain)
-	// TODO: Implement me!
-}
-
-func (ic *integrityCheck) run(*state) error {
+func (dpc *dnsPathCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (sc *signaturesCheck) report(state *state, domain *Domain) {
-	sc.baseCheck.report(state, domain)
+func (dpc *dnsPathCheck) report(p *processor, domain *Domain) {
+	dpc.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (sc *signaturesCheck) run(*state) error {
+func (ofpyc *oneFolderPerYearCheck) report(p *processor, domain *Domain) {
+	ofpyc.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (ofpyc *oneFolderPerYearCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (ppkc *publicPGPKeyCheck) report(state *state, domain *Domain) {
-	ppkc.baseCheck.report(state, domain)
+func (ic *indexCheck) report(p *processor, domain *Domain) {
+	ic.baseCheck.report(p, domain)
 	// TODO: Implement me!
 }
 
-func (ppkc *publicPGPKeyCheck) run(*state) error {
+func (ic *indexCheck) run(*processor, string) error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (cc *changesCheck) report(p *processor, domain *Domain) {
+	cc.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (cc *changesCheck) run(*processor, string) error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (dlc *directoryListingsCheck) report(p *processor, domain *Domain) {
+	dlc.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (dlc *directoryListingsCheck) run(*processor, string) error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (ic *integrityCheck) report(p *processor, domain *Domain) {
+	ic.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (ic *integrityCheck) run(*processor, string) error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (sc *signaturesCheck) report(p *processor, domain *Domain) {
+	sc.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (sc *signaturesCheck) run(*processor, string) error {
+	// TODO: Implement me!
+	return nil
+}
+
+func (ppkc *publicPGPKeyCheck) report(p *processor, domain *Domain) {
+	ppkc.baseCheck.report(p, domain)
+	// TODO: Implement me!
+}
+
+func (ppkc *publicPGPKeyCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
