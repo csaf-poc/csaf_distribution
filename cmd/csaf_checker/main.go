@@ -24,8 +24,9 @@ import (
 var reportHTML string
 
 type options struct {
-	Output string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
-	Format string `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
+	Output   string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
+	Format   string `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
+	Insecure bool   `long:"insecure" description:"Do not check TSL certificates from provider"`
 }
 
 func errCheck(err error) {
