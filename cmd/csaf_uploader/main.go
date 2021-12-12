@@ -108,15 +108,15 @@ func newProcessor(opts *options) (*processor, error) {
 }
 
 func (p *processor) httpClient() *http.Client {
-	var transport *http.Transport
+	var client http.Client
 	if p.opts.Insecure {
-		transport = &http.Transport{
+		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 		}
 	}
-	return &http.Client{Transport: transport}
+	return &client
 }
 
 func writeStrings(header string, messages []string) {
