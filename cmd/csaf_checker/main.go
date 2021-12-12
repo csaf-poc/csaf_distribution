@@ -100,19 +100,19 @@ func writeReport(report *Report, opts *options) error {
 
 func buildChecks() []check {
 	return []check{
-		&tlsCheck{baseCheck{3, "TLS"}},
-		&redirectsCheck{baseCheck{6, "Redirects"}},
-		&providerMetadataCheck{baseCheck{7, "provider-metadata.json"}},
-		&securityCheck{baseCheck{8, "security.txt"}},
-		&wellknownMetadataCheck{baseCheck{9, "/.well-known/csaf/provider-metadata.json"}},
-		&dnsPathCheck{baseCheck{10, "DNS path"}},
-		&oneFolderPerYearCheck{baseCheck{11, "One folder per year"}},
-		&indexCheck{baseCheck{12, "index.txt"}},
-		&changesCheck{baseCheck{13, "changes.csv"}},
-		&directoryListingsCheck{baseCheck{14, "Directory listings"}},
-		&integrityCheck{baseCheck{18, "Integrity"}},
-		&signaturesCheck{baseCheck{19, "Signatures"}},
-		&publicPGPKeyCheck{baseCheck{20, "Public PGP Key"}},
+		&tlsCheck{baseCheck{num: 3, description: "TLS"}},
+		&redirectsCheck{baseCheck{num: 6, description: "Redirects"}},
+		&providerMetadataCheck{baseCheck{num: 7, description: "provider-metadata.json"}},
+		&securityCheck{baseCheck{num: 8, description: "security.txt"}},
+		&wellknownMetadataCheck{baseCheck{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
+		&dnsPathCheck{baseCheck{num: 10, description: "DNS path"}},
+		&oneFolderPerYearCheck{baseCheck{num: 11, description: "One folder per year"}},
+		&indexCheck{baseCheck{num: 12, description: "index.txt"}},
+		&changesCheck{baseCheck{num: 13, description: "changes.csv"}},
+		&directoryListingsCheck{baseCheck{num: 14, description: "Directory listings"}},
+		&integrityCheck{baseCheck{num: 18, description: "Integrity"}},
+		&signaturesCheck{baseCheck{num: 19, description: "Signatures"}},
+		&publicPGPKeyCheck{baseCheck{num: 20, description: "Public PGP Key"}},
 	}
 }
 

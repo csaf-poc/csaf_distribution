@@ -8,18 +8,36 @@
 
 package main
 
-type processor struct {
-	opts   *options
-	domain string
-}
+import (
+	"crypto/tls"
+	"errors"
+	"fmt"
+	"net/http"
+	"sort"
+	"strings"
+)
 
-func newProcessor(opts *options) *processor {
-	return &processor{opts: opts}
+type processor struct {
+	opts      *options
+	redirects map[string]string
 }
 
 type check interface {
 	run(*processor, string) error
 	report(*processor, *Domain)
+}
+
+func newProcessor(opts *options) *processor {
+	return &processor{
+		opts:      opts,
+		redirects: map[string]string{},
+	}
+}
+
+func (p *processor) clean() {
+	for k := range p.redirects {
+		delete(p.redirects, k)
+	}
 }
 
 func (p *processor) run(checks []check, domains []string) (*Report, error) {
@@ -37,14 +55,49 @@ func (p *processor) run(checks []check, domains []string) (*Report, error) {
 			ch.report(p, domain)
 		}
 		report.Domains = append(report.Domains, domain)
+		p.clean()
 	}
 
 	return &report, nil
 }
 
+func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
+
+	var path strings.Builder
+	for i, v := range via {
+		if i > 0 {
+			path.WriteString(", ")
+		}
+		path.WriteString(v.URL.String())
+	}
+	p.redirects[r.URL.String()] = path.String()
+
+	if len(via) > 10 {
+		return errors.New("Too many redirections")
+	}
+	return nil
+}
+
+func (p *processor) httpClient() *http.Client {
+	client := http.Client{
+		CheckRedirect: p.checkRedirect,
+	}
+
+	if p.opts.Insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+
+	return &client
+}
+
 type baseCheck struct {
 	num         int
 	description string
+	messages    []string
 }
 
 type tlsCheck struct {
@@ -100,7 +153,11 @@ type publicPGPKeyCheck struct {
 }
 
 func (bc *baseCheck) report(_ *processor, domain *Domain) {
-	req := &Requirement{Num: bc.num, Description: bc.description}
+	req := &Requirement{
+		Num:         bc.num,
+		Description: bc.description,
+		Messages:    bc.messages,
+	}
 	domain.Requirements = append(domain.Requirements, req)
 }
 
@@ -115,13 +172,22 @@ func (tc *tlsCheck) report(p *processor, domain *Domain) {
 }
 
 func (rc *redirectsCheck) run(*processor, string) error {
-	// TODO: Implement me!
 	return nil
 }
 
 func (rc *redirectsCheck) report(p *processor, domain *Domain) {
+	keys := make([]string, len(p.redirects))
+	var i int
+	for k := range p.redirects {
+		keys[i] = k
+		i++
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		keys[i] = fmt.Sprintf("Redirect %s: %s", k, p.redirects[k])
+	}
+	rc.baseCheck.messages = keys
 	rc.baseCheck.report(p, domain)
-	// TODO: Implement me!
 }
 
 func (pmdc *providerMetadataCheck) run(*processor, string) error {
