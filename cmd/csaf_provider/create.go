@@ -110,8 +110,7 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	if err != nil {
 		return err
 	}
-	keyID, fingerprint := key.GetHexKeyID(), key.GetFingerprint()
-	pm.SetPGP(fingerprint, c.GetOpenPGPURL(keyID))
+	pm.SetPGP(key.GetFingerprint(), c.GetOpenPGPURL(key))
 
 	return util.WriteToFile(path, pm)
 }
