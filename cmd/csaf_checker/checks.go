@@ -172,6 +172,14 @@ func (bc *baseCheck) add(messages ...string) {
 	bc.messages = append(bc.messages, messages...)
 }
 
+func (bc *baseCheck) ok(message string) bool {
+	k := len(bc.messages) == 0
+	if k {
+		bc.messages = []string{message}
+	}
+	return k
+}
+
 func (tc *tlsCheck) run(p *processor, domain string) error {
 	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 	client := p.httpClient()
@@ -188,9 +196,7 @@ func (tc *tlsCheck) run(p *processor, domain string) error {
 		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
 		tc.add(msg)
 	}
-	if len(tc.baseCheck.messages) == 0 {
-		tc.add("TLS check worked.")
-	}
+	tc.ok("TLS check worked.")
 	return nil
 }
 
@@ -245,10 +251,7 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 		pmdc.add(errors...)
 	}
 
-	if len(pmdc.baseCheck.messages) == 0 {
-		pmdc.add("No problems with provider metadata.")
-	}
-
+	pmdc.ok("No problems with provider metadata.")
 	return nil
 }
 
