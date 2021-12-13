@@ -226,6 +226,11 @@ func (bc *baseCheck) add(messages ...string) {
 	bc.messages = append(bc.messages, messages...)
 }
 
+func (bc *baseCheck) sprintf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	bc.messages = append(bc.messages, msg)
+}
+
 func (bc *baseCheck) ok(message string) bool {
 	k := len(bc.messages) == 0
 	if k {
@@ -279,14 +284,12 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 	}
 	res, err := client.Do(req)
 	if err != nil {
-		msg := fmt.Sprintf("Fetching provider metadata failed: %s.", err.Error())
-		pmdc.add(msg)
+		pmdc.sprintf("Fetching provider metadata failed: %s.", err.Error())
 		return nil
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
-		pmdc.add(msg)
+		pmdc.sprintf("Status: %d (%s).", res.StatusCode, res.Status)
 	}
 
 	// Calculate checksum for later comparison.
@@ -302,8 +305,7 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 	p.pmd256 = h.Sum(nil)
 
 	if err := json.NewDecoder(bytes.NewReader(data)).Decode(&p.pmd); err != nil {
-		msg := fmt.Sprintf("Decoding JSON failed: %s.", err.Error())
-		pmdc.add(msg)
+		pmdc.sprintf("Decoding JSON failed: %s.", err.Error())
 	}
 	errors, err := csaf.ValidateProviderMetadata(p.pmd)
 	if err != nil {
@@ -330,7 +332,7 @@ func (sc *securityCheck) run(p *processor, domain string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusOK {
-		sc.add(fmt.Sprintf("Fetching security failed. Status code %d (%s)", res.StatusCode, res.Status))
+		sc.sprintf("Fetching security failed. Status code %d (%s)", res.StatusCode, res.Status)
 		return nil
 	}
 	u, err := func() (string, error) {
@@ -345,7 +347,7 @@ func (sc *securityCheck) run(p *processor, domain string) error {
 		return "", lines.Err()
 	}()
 	if err != nil {
-		sc.add(fmt.Sprintf("Error while reading security.txt: %s", err.Error()))
+		sc.sprintf("Error while reading security.txt: %s", err.Error())
 	}
 	if u == "" {
 		sc.add("No CSAF line found in security.txt.")
@@ -355,7 +357,7 @@ func (sc *securityCheck) run(p *processor, domain string) error {
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
-		sc.add(fmt.Sprintf("CSAF URL '%s' invalid: %s.", u, err.Error()))
+		sc.sprintf("CSAF URL '%s' invalid: %s.", u, err.Error())
 		return nil
 	}
 
@@ -370,29 +372,27 @@ func (sc *securityCheck) run(p *processor, domain string) error {
 		return err
 	}
 	if res, err = client.Do(req); err != nil {
-		sc.add(fmt.Sprintf("Cannot fetch %s from security.txt: %s", u, err.Error()))
+		sc.sprintf("Cannot fetch %s from security.txt: %s", u, err.Error())
 		return nil
 	}
 	if res.StatusCode != http.StatusOK {
-		sc.add(fmt.Sprintf("Fetching %s failed. Status code %d (%s).", u, res.StatusCode, res.Status))
+		sc.sprintf("Fetching %s failed. Status code %d (%s).", u, res.StatusCode, res.Status)
 		return nil
 	}
 	defer res.Body.Close()
 	// Compare checksums to already read provider-metadata.json.
 	h := sha256.New()
 	if _, err := io.Copy(h, res.Body); err != nil {
-		sc.add(fmt.Sprintf("Reading %s failed: %s.", u, err.Error()))
+		sc.sprintf("Reading %s failed: %s.", u, err.Error())
 		return nil
 	}
 
 	if !bytes.Equal(h.Sum(nil), p.pmd256) {
-		sc.add(fmt.Sprintf(
-			"Content of %s from security.txt is not identical to .well-known/csaf/provider-metadata.json", u))
+		sc.sprintf(
+			"Content of %s from security.txt is not identical to .well-known/csaf/provider-metadata.json", u)
 	}
 
-	if len(sc.baseCheck.messages) == 0 {
-		sc.add("Valid CSAF line in security.txt found.")
-	}
+	sc.ok("Valid CSAF line in security.txt found.")
 
 	return nil
 }
@@ -454,13 +454,13 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 
 	src, err := p.jsonPath("$.pgp_keys")
 	if err != nil {
-		ppkc.add(fmt.Sprintf("No PGP keys found: %v.", err))
+		ppkc.sprintf("No PGP keys found: %v.", err)
 		return nil
 	}
 
 	var keys []csaf.PGPKey
 	if err := util.ReMarshalJSON(&keys, src); err != nil {
-		ppkc.add(fmt.Sprintf("PGP keys invalid: %v.", err))
+		ppkc.sprintf("PGP keys invalid: %v.", err)
 		return nil
 	}
 
@@ -481,12 +481,12 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 	for i := range keys {
 		key := &keys[i]
 		if key.URL == nil {
-			ppkc.add(fmt.Sprintf("Missing URL for fingerprint %x.", key.Fingerprint))
+			ppkc.sprintf("Missing URL for fingerprint %x.", key.Fingerprint)
 			continue
 		}
 		up, err := url.Parse(*key.URL)
 		if err != nil {
-			ppkc.add(fmt.Sprintf("Invalid URL '%s': %v", *key.URL, err))
+			ppkc.sprintf("Invalid URL '%s': %v", *key.URL, err)
 			continue
 		}
 
@@ -500,11 +500,11 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 		}
 		res, err := client.Do(req)
 		if err != nil {
-			ppkc.add(fmt.Sprintf("Fetching PGP key %s failed: %v.", u, err))
+			ppkc.sprintf("Fetching PGP key %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			ppkc.add(fmt.Sprintf("Fetching PGP key %s status code: %d (%s)", u, res.StatusCode, res.Status))
+			ppkc.sprintf("Fetching PGP key %s status code: %d (%s)", u, res.StatusCode, res.Status)
 			continue
 		}
 
@@ -514,12 +514,12 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 		}()
 
 		if err != nil {
-			ppkc.add(fmt.Sprintf("Reading PGP key %s failed: %v", u, err))
+			ppkc.sprintf("Reading PGP key %s failed: %v", u, err)
 			continue
 		}
 
 		if ckey.GetFingerprint() != string(key.Fingerprint) {
-			ppkc.add(fmt.Sprintf("Fingerprint of PGP key %s do not match remotely loaded.", u))
+			ppkc.sprintf("Fingerprint of PGP key %s do not match remotely loaded.", u)
 			continue
 		}
 		p.keys = append(p.keys, ckey)
@@ -530,9 +530,7 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 		return nil
 	}
 
-	if len(ppkc.baseCheck.messages) == 0 {
-		ppkc.add(fmt.Sprintf("%d PGP key(s) loaded successfully.", len(p.keys)))
-	}
+	ppkc.ok(fmt.Sprintf("%d PGP key(s) loaded successfully.", len(p.keys)))
 
 	return nil
 }
