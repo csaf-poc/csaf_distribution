@@ -11,6 +11,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
@@ -22,7 +23,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/PaesslerAG/gval"
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 type processor struct {
@@ -30,6 +35,9 @@ type processor struct {
 	redirects map[string]string
 	noneTLS   map[string]struct{}
 	pmd256    []byte
+	pmd       interface{}
+	builder   gval.Language
+	keys      []*crypto.Key
 }
 
 type check interface {
@@ -43,6 +51,7 @@ func newProcessor(opts *options) *processor {
 		opts:      opts,
 		redirects: map[string]string{},
 		noneTLS:   map[string]struct{}{},
+		builder:   gval.Full(jsonpath.Language()),
 	}
 }
 
@@ -54,6 +63,8 @@ func (p *processor) clean() {
 		delete(p.noneTLS, k)
 	}
 	p.pmd256 = nil
+	p.pmd = nil
+	p.keys = nil
 }
 
 func (p *processor) run(checks []check, domains []string) (*Report, error) {
@@ -81,6 +92,17 @@ func (p *processor) run(checks []check, domains []string) (*Report, error) {
 	}
 
 	return &report, nil
+}
+
+func (p *processor) jsonPath(expr string) (interface{}, error) {
+	if p.pmd == nil {
+		return nil, errors.New("no provider metadata loaded")
+	}
+	eval, err := p.builder.NewEvaluable(expr)
+	if err != nil {
+		return nil, err
+	}
+	return eval(context.Background(), p.pmd)
 }
 
 func (p *processor) checkTLS(url string) {
@@ -279,12 +301,11 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 	}
 	p.pmd256 = h.Sum(nil)
 
-	var doc interface{}
-	if err := json.NewDecoder(bytes.NewReader(data)).Decode(&doc); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(data)).Decode(&p.pmd); err != nil {
 		msg := fmt.Sprintf("Decoding JSON failed: %s.", err.Error())
 		pmdc.add(msg)
 	}
-	errors, err := csaf.ValidateProviderMetadata(doc)
+	errors, err := csaf.ValidateProviderMetadata(p.pmd)
 	if err != nil {
 		return err
 	}
@@ -421,7 +442,97 @@ func (sc *signaturesCheck) run(*processor, string) error {
 	return nil
 }
 
-func (ppkc *publicPGPKeyCheck) run(*processor, string) error {
-	// TODO: Implement me!
+func reserialize(dst, src interface{}) error {
+	s, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(s, dst)
+}
+
+func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
+
+	src, err := p.jsonPath("$.pgp_keys")
+	if err != nil {
+		ppkc.add(fmt.Sprintf("No PGP keys found: %v.", err))
+		return nil
+	}
+
+	var keys []csaf.PGPKey
+	if err := util.ReMarshalJSON(&keys, src); err != nil {
+		ppkc.add(fmt.Sprintf("PGP keys invalid: %v.", err))
+		return nil
+	}
+
+	if len(keys) == 0 {
+		ppkc.add("No PGP keys found.")
+		return nil
+	}
+
+	// Try to load
+
+	client := p.httpClient()
+
+	base, err := url.Parse("https://" + domain + "/.well-known/csaf/provider-metadata.json")
+	if err != nil {
+		return err
+	}
+
+	for i := range keys {
+		key := &keys[i]
+		if key.URL == nil {
+			ppkc.add(fmt.Sprintf("Missing URL for fingerprint %x.", key.Fingerprint))
+			continue
+		}
+		up, err := url.Parse(*key.URL)
+		if err != nil {
+			ppkc.add(fmt.Sprintf("Invalid URL '%s': %v", *key.URL, err))
+			continue
+		}
+
+		up = base.ResolveReference(up)
+		u := up.String()
+		p.checkTLS(u)
+
+		req, err := http.NewRequest(http.MethodGet, u, nil)
+		if err != nil {
+			return err
+		}
+		res, err := client.Do(req)
+		if err != nil {
+			ppkc.add(fmt.Sprintf("Fetching PGP key %s failed: %v.", u, err))
+			continue
+		}
+		if res.StatusCode != http.StatusOK {
+			ppkc.add(fmt.Sprintf("Fetching PGP key %s status code: %d (%s)", u, res.StatusCode, res.Status))
+			continue
+		}
+
+		ckey, err := func() (*crypto.Key, error) {
+			defer res.Body.Close()
+			return crypto.NewKeyFromArmoredReader(res.Body)
+		}()
+
+		if err != nil {
+			ppkc.add(fmt.Sprintf("Reading PGP key %s failed: %v", u, err))
+			continue
+		}
+
+		if ckey.GetFingerprint() != string(key.Fingerprint) {
+			ppkc.add(fmt.Sprintf("Fingerprint of PGP key %s do not match remotely loaded.", u))
+			continue
+		}
+		p.keys = append(p.keys, ckey)
+	}
+
+	if len(p.keys) == 0 {
+		ppkc.add("No PGP keys loaded.")
+		return nil
+	}
+
+	if len(ppkc.baseCheck.messages) == 0 {
+		ppkc.add(fmt.Sprintf("%d PGP key(s) loaded successfully.", len(p.keys)))
+	}
+
 	return nil
 }
