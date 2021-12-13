@@ -9,11 +9,16 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -24,6 +29,7 @@ type processor struct {
 	opts      *options
 	redirects map[string]string
 	noneTLS   map[string]struct{}
+	pmd256    []byte
 }
 
 type check interface {
@@ -47,6 +53,7 @@ func (p *processor) clean() {
 	for k := range p.noneTLS {
 		delete(p.noneTLS, k)
 	}
+	p.pmd256 = nil
 }
 
 func (p *processor) run(checks []check, domains []string) (*Report, error) {
@@ -259,8 +266,21 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
 		pmdc.add(msg)
 	}
+
+	// Calculate checksum for later comparison.
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, res.Body); err != nil {
+		return err
+	}
+	data := buf.Bytes()
+	h := sha256.New()
+	if _, err := h.Write(data); err != nil {
+		return err
+	}
+	p.pmd256 = h.Sum(nil)
+
 	var doc interface{}
-	if err := json.NewDecoder(res.Body).Decode(&doc); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(data)).Decode(&doc); err != nil {
 		msg := fmt.Sprintf("Decoding JSON failed: %s.", err.Error())
 		pmdc.add(msg)
 	}
@@ -277,8 +297,82 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 	return nil
 }
 
-func (sc *securityCheck) run(*processor, string) error {
-	// TODO: Implement me!
+func (sc *securityCheck) run(p *processor, domain string) error {
+	path := "https://" + domain + "/.well-known/security.txt"
+	client := p.httpClient()
+	req, err := http.NewRequest(http.MethodGet, path, nil)
+	if err != nil {
+		return err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		sc.add(fmt.Sprintf("Fetching security failed. Status code %d (%s)", res.StatusCode, res.Status))
+		return nil
+	}
+	u, err := func() (string, error) {
+		defer res.Body.Close()
+		lines := bufio.NewScanner(res.Body)
+		for lines.Scan() {
+			line := lines.Text()
+			if strings.HasPrefix(line, "CSAF:") {
+				return strings.TrimSpace(line[6:]), nil
+			}
+		}
+		return "", lines.Err()
+	}()
+	if err != nil {
+		sc.add(fmt.Sprintf("Error while reading security.txt: %s", err.Error()))
+	}
+	if u == "" {
+		sc.add("No CSAF line found in security.txt.")
+		return nil
+	}
+
+	// Try to load
+	up, err := url.Parse(u)
+	if err != nil {
+		sc.add(fmt.Sprintf("CSAF URL '%s' invalid: %s.", u, err.Error()))
+		return nil
+	}
+
+	base, err := url.Parse("https://" + domain + "/.well-known/")
+	if err != nil {
+		return err
+	}
+	ur := base.ResolveReference(up)
+	u = ur.String()
+	p.checkTLS(u)
+	if req, err = http.NewRequest(http.MethodGet, u, nil); err != nil {
+		return err
+	}
+	if res, err = client.Do(req); err != nil {
+		sc.add(fmt.Sprintf("Cannot fetch %s from security.txt: %s", u, err.Error()))
+		return nil
+	}
+	if res.StatusCode != http.StatusOK {
+		sc.add(fmt.Sprintf("Fetching %s failed. Status code %d (%s).", u, res.StatusCode, res.Status))
+		return nil
+	}
+	defer res.Body.Close()
+	// Compare checksums to already read provider-metadata.json.
+	h := sha256.New()
+	if _, err := io.Copy(h, res.Body); err != nil {
+		sc.add(fmt.Sprintf("Reading %s failed: %s.", u, err.Error()))
+		return nil
+	}
+
+	if !bytes.Equal(h.Sum(nil), p.pmd256) {
+		sc.add(fmt.Sprintf(
+			"Content of %s from security.txt is not identical to .well-known/csaf/provider-metadata.json", u))
+	}
+
+	if len(sc.baseCheck.messages) == 0 {
+		sc.add("Valid CSAF line in security.txt found.")
+	}
+
 	return nil
 }
 
