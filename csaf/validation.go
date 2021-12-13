@@ -30,43 +30,63 @@ var cvss30 []byte
 //go:embed schema/cvss-v3.1.json
 var cvss31 []byte
 
+//go:embed schema/provider_json_schema.json
+var providerSchema []byte
+
 var (
-	compileSchemaOnce sync.Once
-	compileError      error
-	compiledSchema    *jsonschema.Schema
+	compiledCSAFSchema     compiledSchema
+	compiledProviderSchema compiledSchema
 )
 
-func compileSchema() {
-	c := jsonschema.NewCompiler()
-
-	for _, s := range []struct {
-		url  string
-		data []byte
-	}{
+func init() {
+	compiledCSAFSchema.compiler([]schemaData{
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
 		{"https://www.first.org/cvss/cvss-v2.0.json", cvss20},
 		{"https://www.first.org/cvss/cvss-v3.0.json", cvss30},
 		{"https://www.first.org/cvss/cvss-v3.1.json", cvss31},
-	} {
-		if compileError = c.AddResource(s.url, bytes.NewReader(s.data)); compileError != nil {
-			return
-		}
-	}
-
-	compiledSchema, compileError = c.Compile(
-		"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json")
+	})
+	compiledProviderSchema.compiler([]schemaData{
+		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
+		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
+	})
 }
 
-// ValidateCSAF validates the document data against the JSON schema
-// of CSAF.
-func ValidateCSAF(doc interface{}) ([]string, error) {
+type schemaData struct {
+	url  string
+	data []byte
+}
 
-	compileSchemaOnce.Do(compileSchema)
-	if compileError != nil {
-		return nil, compileError
+type compiledSchema struct {
+	once     sync.Once
+	compile  func()
+	err      error
+	compiled *jsonschema.Schema
+}
+
+func (cs *compiledSchema) compiler(sds []schemaData) {
+	if len(sds) == 0 {
+		panic("missing schema data")
+	}
+	cs.compile = func() {
+		c := jsonschema.NewCompiler()
+		for _, s := range sds {
+			if cs.err = c.AddResource(
+				s.url, bytes.NewReader(s.data)); cs.err != nil {
+				return
+			}
+		}
+		cs.compiled, cs.err = c.Compile(sds[0].url)
+	}
+}
+
+func (cs *compiledSchema) validate(doc interface{}) ([]string, error) {
+	cs.once.Do(cs.compile)
+
+	if cs.err != nil {
+		return nil, cs.err
 	}
 
-	err := compiledSchema.Validate(doc)
+	err := cs.compiled.Validate(doc)
 	if err == nil {
 		return nil, nil
 	}
@@ -107,4 +127,16 @@ func ValidateCSAF(doc interface{}) ([]string, error) {
 	}
 
 	return res, nil
+}
+
+// ValidateCSAF validates the document doc against the JSON schema
+// of CSAF.
+func ValidateCSAF(doc interface{}) ([]string, error) {
+	return compiledCSAFSchema.validate(doc)
+}
+
+// ValidateProviderMetadata validates the document doc against the JSON schema
+// of provider metadata.
+func ValidateProviderMetadata(doc interface{}) ([]string, error) {
+	return compiledProviderSchema.validate(doc)
 }

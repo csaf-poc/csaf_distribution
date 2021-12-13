@@ -309,8 +309,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				warn("Publishers in provider metadata and CSAF do not match.")
 			}
 
-			keyID, fingerprint := key.GetHexKeyID(), key.GetFingerprint()
-			pmd.SetPGP(fingerprint, c.cfg.GetOpenPGPURL(keyID))
+			pmd.SetPGP(key.GetFingerprint(), c.cfg.GetOpenPGPURL(key))
 
 			return nil
 		},

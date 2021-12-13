@@ -10,6 +10,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -40,6 +41,8 @@ type options struct {
 
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
+
+	Insecure bool `long:"insecure" description:"Do not check TSL certificates from provider"`
 
 	Config *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
 }
@@ -104,6 +107,18 @@ func newProcessor(opts *options) (*processor, error) {
 	return &p, nil
 }
 
+func (p *processor) httpClient() *http.Client {
+	var client http.Client
+	if p.opts.Insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+	return &client
+}
+
 func writeStrings(header string, messages []string) {
 	if len(messages) > 0 {
 		fmt.Println(header)
@@ -120,7 +135,7 @@ func (p *processor) create() error {
 	}
 	req.Header.Set("X-CSAF-PROVIDER-AUTH", p.cachedAuth)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := p.httpClient().Do(req)
 	if err != nil {
 		return err
 	}
@@ -237,7 +252,7 @@ func (p *processor) process(filename string) error {
 		return err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := p.httpClient().Do(req)
 	if err != nil {
 		return err
 	}
@@ -298,12 +313,6 @@ func readInteractive(prompt string, pw **string) error {
 
 func check(err error) {
 	if err != nil {
-		log.Fatalf("error: %v\n", err)
-	}
-}
-
-func checkParser(err error) {
-	if err != nil {
 		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 			os.Exit(0)
 		}
@@ -317,18 +326,18 @@ func main() {
 	parser := flags.NewParser(&opts, flags.Default)
 
 	args, err := parser.Parse()
-	checkParser(err)
+	check(err)
 
 	if opts.Config != nil {
 		iniParser := flags.NewIniParser(parser)
 		iniParser.ParseAsDefaults = true
 		name, err := homedir.Expand(*opts.Config)
 		check(err)
-		checkParser(iniParser.ParseFile(name))
+		check(iniParser.ParseFile(name))
 	} else if iniFile := findIniFile(); iniFile != "" {
 		iniParser := flags.NewIniParser(parser)
 		iniParser.ParseAsDefaults = true
-		checkParser(iniParser.ParseFile(iniFile))
+		check(iniParser.ParseFile(iniFile))
 	}
 
 	if opts.PasswordInteractive {

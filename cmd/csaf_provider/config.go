@@ -24,7 +24,7 @@ const (
 	defaultConfigPath = "/usr/lib/casf/config.toml"
 	defaultFolder     = "/var/www/"
 	defaultWeb        = "/var/www/html"
-	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?search=${KEY}&op=index"
+	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}"
 )
 
 type config struct {
@@ -70,8 +70,13 @@ func (t *tlp) UnmarshalText(text []byte) error {
 	return fmt.Errorf("invalid config TLP value: %v", string(text))
 }
 
-func (cfg *config) GetOpenPGPURL(key string) string {
-	return strings.ReplaceAll(cfg.OpenPGPURL, "${KEY}", "0x"+key)
+func (cfg *config) GetOpenPGPURL(key *crypto.Key) string {
+	if key == nil {
+		return cfg.OpenPGPURL
+	}
+	return strings.NewReplacer(
+		"${FINGERPRINT}", "0x"+key.GetFingerprint(),
+		"${KEY_ID}", "0x"+key.GetHexKeyID()).Replace(cfg.OpenPGPURL)
 }
 
 func (cfg *config) modelTLPs() []csaf.TLPLabel {
