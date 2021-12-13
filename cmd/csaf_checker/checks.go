@@ -272,29 +272,14 @@ func (sc *securityCheck) run(*processor, string) error {
 	return nil
 }
 
-func (sc *securityCheck) report(p *processor, domain *Domain) {
-	sc.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
 func (wmdc *wellknownMetadataCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
 }
 
-func (wmdc *wellknownMetadataCheck) report(p *processor, domain *Domain) {
-	wmdc.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
 func (dpc *dnsPathCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
-}
-
-func (dpc *dnsPathCheck) report(p *processor, domain *Domain) {
-	dpc.baseCheck.report(p, domain)
-	// TODO: Implement me!
 }
 
 func (ofpyc *oneFolderPerYearCheck) report(p *processor, domain *Domain) {
@@ -307,19 +292,9 @@ func (ofpyc *oneFolderPerYearCheck) run(*processor, string) error {
 	return nil
 }
 
-func (ic *indexCheck) report(p *processor, domain *Domain) {
-	ic.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
 func (ic *indexCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
-}
-
-func (cc *changesCheck) report(p *processor, domain *Domain) {
-	cc.baseCheck.report(p, domain)
-	// TODO: Implement me!
 }
 
 func (cc *changesCheck) run(*processor, string) error {
@@ -327,19 +302,9 @@ func (cc *changesCheck) run(*processor, string) error {
 	return nil
 }
 
-func (dlc *directoryListingsCheck) report(p *processor, domain *Domain) {
-	dlc.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
 func (dlc *directoryListingsCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
-}
-
-func (ic *integrityCheck) report(p *processor, domain *Domain) {
-	ic.baseCheck.report(p, domain)
-	// TODO: Implement me!
 }
 
 func (ic *integrityCheck) run(*processor, string) error {
@@ -347,19 +312,9 @@ func (ic *integrityCheck) run(*processor, string) error {
 	return nil
 }
 
-func (sc *signaturesCheck) report(p *processor, domain *Domain) {
-	sc.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
 func (sc *signaturesCheck) run(*processor, string) error {
 	// TODO: Implement me!
 	return nil
-}
-
-func (ppkc *publicPGPKeyCheck) report(p *processor, domain *Domain) {
-	ppkc.baseCheck.report(p, domain)
-	// TODO: Implement me!
 }
 
 func (ppkc *publicPGPKeyCheck) run(*processor, string) error {
