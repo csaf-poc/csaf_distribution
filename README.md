@@ -42,7 +42,7 @@ E.g. of Creating the initial directiories and files.
 ./csaf_uploader -a create  -u http://localhost/cgi-bin/csaf_provider.go
 ```
 
-E.g of Uploading a csaf-document
+E.g. of Uploading a csaf-document
 
 ```
 ./csaf_uploader -a upload -I -t white -u http://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
