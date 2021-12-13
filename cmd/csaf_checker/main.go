@@ -100,7 +100,7 @@ func writeReport(report *Report, opts *options) error {
 
 func buildChecks() []check {
 	return []check{
-		&tlsCheck{baseCheck{exec: 0, num: 3, description: "TLS"}},
+		&tlsCheck{baseCheck{exec: 13, num: 3, description: "TLS"}},
 		&redirectsCheck{baseCheck{exec: 12, num: 6, description: "Redirects"}},
 		&providerMetadataCheck{baseCheck{exec: 1, num: 7, description: "provider-metadata.json"}},
 		&securityCheck{baseCheck{exec: 2, num: 8, description: "security.txt"}},

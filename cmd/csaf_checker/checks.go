@@ -23,10 +23,11 @@ import (
 type processor struct {
 	opts      *options
 	redirects map[string]string
+	noneTLS   map[string]struct{}
 }
 
 type check interface {
-	executeOrder() int
+	executionOrder() int
 	run(*processor, string) error
 	report(*processor, *Domain)
 }
@@ -35,12 +36,16 @@ func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:      opts,
 		redirects: map[string]string{},
+		noneTLS:   map[string]struct{}{},
 	}
 }
 
 func (p *processor) clean() {
 	for k := range p.redirects {
 		delete(p.redirects, k)
+	}
+	for k := range p.noneTLS {
+		delete(p.noneTLS, k)
 	}
 }
 
@@ -51,7 +56,7 @@ func (p *processor) run(checks []check, domains []string) (*Report, error) {
 	execs := make([]check, len(checks))
 	copy(execs, checks)
 	sort.SliceStable(execs, func(i, j int) bool {
-		return execs[i].executeOrder() < execs[j].executeOrder()
+		return execs[i].executionOrder() < execs[j].executionOrder()
 	})
 
 	for _, d := range domains {
@@ -71,6 +76,12 @@ func (p *processor) run(checks []check, domains []string) (*Report, error) {
 	return &report, nil
 }
 
+func (p *processor) checkTLS(url string) {
+	if !strings.HasPrefix(strings.ToLower(url), "https://") {
+		p.noneTLS[url] = struct{}{}
+	}
+}
+
 func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 
 	var path strings.Builder
@@ -80,7 +91,9 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 		}
 		path.WriteString(v.URL.String())
 	}
-	p.redirects[r.URL.String()] = path.String()
+	url := r.URL.String()
+	p.checkTLS(url)
+	p.redirects[url] = path.String()
 
 	if len(via) > 10 {
 		return errors.New("Too many redirections")
@@ -163,7 +176,7 @@ type publicPGPKeyCheck struct {
 	baseCheck
 }
 
-func (bc *baseCheck) executeOrder() int {
+func (bc *baseCheck) executionOrder() int {
 	return bc.exec
 }
 
@@ -193,22 +206,19 @@ func (bc *baseCheck) ok(message string) bool {
 }
 
 func (tc *tlsCheck) run(p *processor, domain string) error {
-	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	client := p.httpClient()
-	req, err := http.NewRequest(http.MethodHead, url, nil)
-	if err != nil {
-		return err
+	if len(p.noneTLS) == 0 {
+		tc.add("All tested URLs were https.")
+	} else {
+		urls := make([]string, len(p.noneTLS))
+		var i int
+		for k := range p.noneTLS {
+			urls[i] = k
+			i++
+		}
+		sort.Strings(urls)
+		tc.add("Following none https URLs were used:")
+		tc.add(urls...)
 	}
-	res, err := client.Do(req)
-	if err != nil {
-		msg := fmt.Sprintf("Fetching provider metadata failed: %s.", err.Error())
-		tc.add(msg)
-	}
-	if res != nil && res.StatusCode != http.StatusOK {
-		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
-		tc.add(msg)
-	}
-	tc.ok("TLS check worked.")
 	return nil
 }
 
