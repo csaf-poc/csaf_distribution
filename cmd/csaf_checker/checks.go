@@ -10,11 +10,14 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strings"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 type processor struct {
@@ -165,6 +168,10 @@ func (bc *baseCheck) report(_ *processor, domain *Domain) {
 	domain.Requirements = append(domain.Requirements, req)
 }
 
+func (bc *baseCheck) add(messages ...string) {
+	bc.messages = append(bc.messages, messages...)
+}
+
 func (tc *tlsCheck) run(p *processor, domain string) error {
 	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 	client := p.httpClient()
@@ -175,25 +182,21 @@ func (tc *tlsCheck) run(p *processor, domain string) error {
 	res, err := client.Do(req)
 	if err != nil {
 		msg := fmt.Sprintf("Fetching provider metadata failed: %s.", err.Error())
-		tc.baseCheck.messages = append(tc.baseCheck.messages, msg)
+		tc.add(msg)
 	}
 	if res != nil && res.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
-		tc.baseCheck.messages = append(tc.baseCheck.messages, msg)
+		tc.add(msg)
+	}
+	if len(tc.baseCheck.messages) == 0 {
+		tc.add("TLS check worked.")
 	}
 	return nil
 }
 
-func (tc *tlsCheck) report(p *processor, domain *Domain) {
-	if len(tc.baseCheck.messages) == 0 {
-		tc.baseCheck.messages = []string{"TLS check worked."}
-	}
-	tc.baseCheck.report(p, domain)
-}
-
 func (rc *redirectsCheck) report(p *processor, domain *Domain) {
 	if len(p.redirects) == 0 {
-		rc.baseCheck.messages = []string{"No redirections found."}
+		rc.add("No redirections found.")
 	} else {
 		keys := make([]string, len(p.redirects))
 		var i int
@@ -210,14 +213,43 @@ func (rc *redirectsCheck) report(p *processor, domain *Domain) {
 	rc.baseCheck.report(p, domain)
 }
 
-func (pmdc *providerMetadataCheck) run(*processor, string) error {
-	// TODO: Implement me!
-	return nil
-}
+func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
+	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+	client := p.httpClient()
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		msg := fmt.Sprintf("Fetching provider metadata failed: %s.", err.Error())
+		pmdc.add(msg)
+		return nil
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
+		pmdc.add(msg)
+	}
+	var doc interface{}
+	if err := json.NewDecoder(res.Body).Decode(&doc); err != nil {
+		msg := fmt.Sprintf("Decoding JSON failed: %s.", err.Error())
+		pmdc.add(msg)
+	}
+	errors, err := csaf.ValidateProviderMetadata(doc)
+	if err != nil {
+		return err
+	}
+	if len(errors) > 0 {
+		pmdc.add("Validating against JSON schema failed:")
+		pmdc.add(errors...)
+	}
 
-func (pmdc *providerMetadataCheck) report(p *processor, domain *Domain) {
-	pmdc.baseCheck.report(p, domain)
-	// TODO: Implement me!
+	if len(pmdc.baseCheck.messages) == 0 {
+		pmdc.add("No problems with provider metadata.")
+	}
+
+	return nil
 }
 
 func (sc *securityCheck) run(*processor, string) error {
