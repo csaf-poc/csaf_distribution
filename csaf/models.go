@@ -64,8 +64,8 @@ type ROLIE struct {
 
 // Distribution is a distribution of a CSAF feed.
 type Distribution struct {
-	DirectoryURL string  `json:"directory_url,omitempty"`
-	Rolie        []ROLIE `json:"rolie"`
+	DirectoryURL string `json:"directory_url,omitempty"`
+	Rolie        *ROLIE `json:"rolie,omitempty"`
 }
 
 // TimeStamp represents a time stamp in a CSAF feed.
@@ -346,9 +346,9 @@ func (pk *PGPKey) Validate() error {
 // Validate checks if the distribution is valid.
 // Returns an error if the validation fails otherwise nil.
 func (d *Distribution) Validate() error {
-	for i := range d.Rolie {
-		if err := d.Rolie[i].Validate(); err != nil {
-			return nil
+	if d.Rolie != nil {
+		if err := d.Rolie.Validate(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -441,6 +441,7 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 		feed := "csaf-feed-tlp-" + lt + ".json"
 		url := JSONURL(domain + "/.well-known/csaf/" + lt + "/" + feed)
 
+		t := t
 		feeds[i] = Feed{
 			Summary:  "TLP:" + string(t) + " advisories",
 			TLPLabel: &t,
@@ -449,9 +450,9 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 	}
 
 	pm.Distributions = []Distribution{{
-		Rolie: []ROLIE{{
+		Rolie: &ROLIE{
 			Feeds: feeds,
-		}},
+		},
 	}}
 
 	return pm
