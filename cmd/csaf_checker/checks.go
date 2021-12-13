@@ -152,6 +152,10 @@ type publicPGPKeyCheck struct {
 	baseCheck
 }
 
+func (bc *baseCheck) run(*processor, string) error {
+	return nil
+}
+
 func (bc *baseCheck) report(_ *processor, domain *Domain) {
 	req := &Requirement{
 		Num:         bc.num,
@@ -161,32 +165,48 @@ func (bc *baseCheck) report(_ *processor, domain *Domain) {
 	domain.Requirements = append(domain.Requirements, req)
 }
 
-func (tc *tlsCheck) run(*processor, string) error {
-	// TODO: Implement me!
+func (tc *tlsCheck) run(p *processor, domain string) error {
+	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+	client := p.httpClient()
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		return err
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		msg := fmt.Sprintf("Fetching provider metadata failed: %s.", err.Error())
+		tc.baseCheck.messages = append(tc.baseCheck.messages, msg)
+	}
+	if res != nil && res.StatusCode != http.StatusOK {
+		msg := fmt.Sprintf("Status: %d (%s).", res.StatusCode, res.Status)
+		tc.baseCheck.messages = append(tc.baseCheck.messages, msg)
+	}
 	return nil
 }
 
 func (tc *tlsCheck) report(p *processor, domain *Domain) {
+	if len(tc.baseCheck.messages) == 0 {
+		tc.baseCheck.messages = []string{"TLS check worked."}
+	}
 	tc.baseCheck.report(p, domain)
-	// TODO: Implement me!
-}
-
-func (rc *redirectsCheck) run(*processor, string) error {
-	return nil
 }
 
 func (rc *redirectsCheck) report(p *processor, domain *Domain) {
-	keys := make([]string, len(p.redirects))
-	var i int
-	for k := range p.redirects {
-		keys[i] = k
-		i++
+	if len(p.redirects) == 0 {
+		rc.baseCheck.messages = []string{"No redirections found."}
+	} else {
+		keys := make([]string, len(p.redirects))
+		var i int
+		for k := range p.redirects {
+			keys[i] = k
+			i++
+		}
+		sort.Strings(keys)
+		for i, k := range keys {
+			keys[i] = fmt.Sprintf("Redirect %s: %s", k, p.redirects[k])
+		}
+		rc.baseCheck.messages = keys
 	}
-	sort.Strings(keys)
-	for i, k := range keys {
-		keys[i] = fmt.Sprintf("Redirect %s: %s", k, p.redirects[k])
-	}
-	rc.baseCheck.messages = keys
 	rc.baseCheck.report(p, domain)
 }
 
