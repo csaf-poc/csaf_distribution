@@ -100,19 +100,19 @@ func writeReport(report *Report, opts *options) error {
 
 func buildChecks() []check {
 	return []check{
-		&tlsCheck{baseCheck{num: 3, description: "TLS"}},
-		&redirectsCheck{baseCheck{num: 6, description: "Redirects"}},
-		&providerMetadataCheck{baseCheck{num: 7, description: "provider-metadata.json"}},
-		&securityCheck{baseCheck{num: 8, description: "security.txt"}},
-		&wellknownMetadataCheck{baseCheck{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
-		&dnsPathCheck{baseCheck{num: 10, description: "DNS path"}},
-		&oneFolderPerYearCheck{baseCheck{num: 11, description: "One folder per year"}},
-		&indexCheck{baseCheck{num: 12, description: "index.txt"}},
-		&changesCheck{baseCheck{num: 13, description: "changes.csv"}},
-		&directoryListingsCheck{baseCheck{num: 14, description: "Directory listings"}},
-		&integrityCheck{baseCheck{num: 18, description: "Integrity"}},
-		&signaturesCheck{baseCheck{num: 19, description: "Signatures"}},
-		&publicPGPKeyCheck{baseCheck{num: 20, description: "Public PGP Key"}},
+		&tlsCheck{baseCheck{exec: 0, num: 3, description: "TLS"}},
+		&redirectsCheck{baseCheck{exec: 12, num: 6, description: "Redirects"}},
+		&providerMetadataCheck{baseCheck{exec: 1, num: 7, description: "provider-metadata.json"}},
+		&securityCheck{baseCheck{exec: 2, num: 8, description: "security.txt"}},
+		&wellknownMetadataCheck{baseCheck{exec: 3, num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
+		&dnsPathCheck{baseCheck{exec: 4, num: 10, description: "DNS path"}},
+		&oneFolderPerYearCheck{baseCheck{exec: 5, num: 11, description: "One folder per year"}},
+		&indexCheck{baseCheck{exec: 6, num: 12, description: "index.txt"}},
+		&changesCheck{baseCheck{exec: 7, num: 13, description: "changes.csv"}},
+		&directoryListingsCheck{baseCheck{exec: 8, num: 14, description: "Directory listings"}},
+		&integrityCheck{baseCheck{exec: 9, num: 18, description: "Integrity"}},
+		&signaturesCheck{baseCheck{exec: 11, num: 19, description: "Signatures"}},
+		&publicPGPKeyCheck{baseCheck{exec: 10, num: 20, description: "Public PGP Key"}},
 	}
 }
 

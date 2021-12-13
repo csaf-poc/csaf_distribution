@@ -26,6 +26,7 @@ type processor struct {
 }
 
 type check interface {
+	executeOrder() int
 	run(*processor, string) error
 	report(*processor, *Domain)
 }
@@ -47,8 +48,14 @@ func (p *processor) run(checks []check, domains []string) (*Report, error) {
 
 	var report Report
 
+	execs := make([]check, len(checks))
+	copy(execs, checks)
+	sort.SliceStable(execs, func(i, j int) bool {
+		return execs[i].executeOrder() < execs[j].executeOrder()
+	})
+
 	for _, d := range domains {
-		for _, ch := range checks {
+		for _, ch := range execs {
 			if err := ch.run(p, d); err != nil {
 				return nil, err
 			}
@@ -98,6 +105,7 @@ func (p *processor) httpClient() *http.Client {
 }
 
 type baseCheck struct {
+	exec        int
 	num         int
 	description string
 	messages    []string
@@ -155,6 +163,10 @@ type publicPGPKeyCheck struct {
 	baseCheck
 }
 
+func (bc *baseCheck) executeOrder() int {
+	return bc.exec
+}
+
 func (bc *baseCheck) run(*processor, string) error {
 	return nil
 }
@@ -200,7 +212,7 @@ func (tc *tlsCheck) run(p *processor, domain string) error {
 	return nil
 }
 
-func (rc *redirectsCheck) report(p *processor, domain *Domain) {
+func (rc *redirectsCheck) run(p *processor, domain string) error {
 	if len(p.redirects) == 0 {
 		rc.add("No redirections found.")
 	} else {
@@ -216,7 +228,7 @@ func (rc *redirectsCheck) report(p *processor, domain *Domain) {
 		}
 		rc.baseCheck.messages = keys
 	}
-	rc.baseCheck.report(p, domain)
+	return nil
 }
 
 func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
