@@ -41,7 +41,7 @@ type processor struct {
 	pmd256        []byte
 	pmd           interface{}
 	builder       gval.Language
-	keys          []*crypto.Key
+	keys          []*crypto.KeyRing
 	badHashes     []string
 	badSignatures []string
 }
@@ -158,6 +158,10 @@ func (p *processor) addBadHash(format string, args ...interface{}) {
 	p.badHashes = append(p.badHashes, fmt.Sprintf(format, args...))
 }
 
+func (p *processor) addBadSignature(format string, args ...interface{}) {
+	p.badSignatures = append(p.badSignatures, fmt.Sprintf(format, args...))
+}
+
 func (p *processor) integrity(
 	files []string,
 	base string,
@@ -250,7 +254,49 @@ func (p *processor) integrity(
 			}
 		}
 
-		// TODO: Implement signature check.
+		// Check signature
+		sigFile := u + ".asc"
+		p.checkTLS(sigFile)
+
+		if res, err = client.Get(sigFile); err != nil {
+			p.addBadSignature("Fetching %s failed: %v.", sigFile, err)
+			continue
+		}
+		if res.StatusCode != http.StatusOK {
+			p.addBadSignature("Fetching %s failed: status code %d (%s)",
+				sigFile, res.StatusCode, res.Status)
+			continue
+		}
+
+		sig, err := func() (*crypto.PGPSignature, error) {
+			defer res.Body.Close()
+			all, err := io.ReadAll(res.Body)
+			if err != nil {
+				return nil, err
+			}
+			return crypto.NewPGPSignatureFromArmored(string(all))
+		}()
+		if err != nil {
+			p.addBadSignature("Loading signature from %s failed: %v.",
+				sigFile, err)
+			continue
+		}
+
+		if len(p.keys) > 0 {
+			pm := crypto.NewPlainMessage(data)
+			t := crypto.GetUnixTime()
+			var verified bool
+			for _, key := range p.keys {
+				if err := key.VerifyDetached(pm, sig, t); err == nil {
+					verified = true
+					break
+				}
+			}
+			if !verified {
+				p.addBadSignature("Signature of %s could not be verified.", u)
+			}
+		}
+
 	}
 	return nil
 }
@@ -664,8 +710,12 @@ func (ic *integrityCheck) run(p *processor, _ string) error {
 	return nil
 }
 
-func (sc *signaturesCheck) run(*processor, string) error {
-	// TODO: Implement me!
+func (sc *signaturesCheck) run(p *processor, _ string) error {
+	if len(p.badSignatures) > 0 {
+		sc.baseCheck.messages = p.badSignatures
+	} else {
+		sc.add("All signatures verified.")
+	}
 	return nil
 }
 
@@ -749,7 +799,12 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 			ppkc.sprintf("Fingerprint of PGP key %s do not match remotely loaded.", u)
 			continue
 		}
-		p.keys = append(p.keys, ckey)
+		keyring, err := crypto.NewKeyRing(ckey)
+		if err != nil {
+			ppkc.sprintf("Creatin key ring for %s failed: %v.", u, err)
+			continue
+		}
+		p.keys = append(p.keys, keyring)
 	}
 
 	if len(p.keys) == 0 {
