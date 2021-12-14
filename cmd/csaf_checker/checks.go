@@ -13,13 +13,17 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -31,13 +35,15 @@ import (
 )
 
 type processor struct {
-	opts      *options
-	redirects map[string]string
-	noneTLS   map[string]struct{}
-	pmd256    []byte
-	pmd       interface{}
-	builder   gval.Language
-	keys      []*crypto.Key
+	opts          *options
+	redirects     map[string]string
+	noneTLS       map[string]struct{}
+	pmd256        []byte
+	pmd           interface{}
+	builder       gval.Language
+	keys          []*crypto.Key
+	badHashes     []string
+	badSignatures []string
 }
 
 type check interface {
@@ -65,6 +71,8 @@ func (p *processor) clean() {
 	p.pmd256 = nil
 	p.pmd = nil
 	p.keys = nil
+	p.badSignatures = nil
+	p.badHashes = nil
 }
 
 func (p *processor) run(checks []check, domains []string) (*Report, error) {
@@ -146,6 +154,10 @@ func (p *processor) httpClient() *http.Client {
 	return &client
 }
 
+func (p *processor) addBadHash(format string, args ...interface{}) {
+	p.badHashes = append(p.badHashes, fmt.Sprintf(format, args...))
+}
+
 func (p *processor) integrity(
 	files []string,
 	base string,
@@ -169,7 +181,7 @@ func (p *processor) integrity(
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			lg("Fetchinf %s failed: Status code %d (%s)",
+			lg("Fetching %s failed: Status code %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -194,10 +206,65 @@ func (p *processor) integrity(
 		if len(errors) > 0 {
 			lg("CSAF file %s has %d validation errors.", u, len(errors))
 		}
-		// TODO: Implement check sums
+
+		// Check hashes
+		for _, x := range []struct {
+			ext  string
+			hash func() hash.Hash
+		}{
+			{"sha256", sha256.New},
+			{"sha512", sha512.New},
+		} {
+			hashFile := u + "." + x.ext
+			p.checkTLS(hashFile)
+			if res, err = client.Get(hashFile); err != nil {
+				p.addBadHash("Fetching %s failed: %v.", hashFile, err)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				p.addBadHash("Fetching %s failed: Status code %d (%s)",
+					hashFile, res.StatusCode, res.Status)
+				continue
+			}
+			h, err := func() ([]byte, error) {
+				defer res.Body.Close()
+				return hashFromReader(res.Body)
+			}()
+			if err != nil {
+				p.addBadHash("Reading %s failed: %v.", hashFile, err)
+				continue
+			}
+			if len(h) == 0 {
+				p.addBadHash("No hash found in %s.", hashFile)
+				continue
+			}
+			orig := x.hash()
+			if _, err := orig.Write(data); err != nil {
+				p.addBadHash("%s hashing of %s failed: %v.",
+					strings.ToUpper(x.ext), u, err)
+				continue
+			}
+			if !bytes.Equal(h, orig.Sum(nil)) {
+				p.addBadHash("%s hash of %s does not match %s.",
+					strings.ToUpper(x.ext), u, hashFile)
+			}
+		}
+
 		// TODO: Implement signature check.
 	}
 	return nil
+}
+
+var hexRe = regexp.MustCompile(`^([[:xdigit:]]+)`)
+
+func hashFromReader(r io.Reader) ([]byte, error) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		if m := hexRe.FindStringSubmatch(scanner.Text()); m != nil {
+			return hex.DecodeString(m[1])
+		}
+	}
+	return nil, scanner.Err()
 }
 
 type baseCheck struct {
@@ -588,8 +655,12 @@ func (dlc *directoryListingsCheck) run(*processor, string) error {
 	return nil
 }
 
-func (ic *integrityCheck) run(*processor, string) error {
-	// TODO: Implement me!
+func (ic *integrityCheck) run(p *processor, _ string) error {
+	if len(p.badHashes) > 0 {
+		ic.baseCheck.messages = p.badHashes
+	} else {
+		ic.add("All checksums match.")
+	}
 	return nil
 }
 
