@@ -106,13 +106,13 @@ func buildChecks() []check {
 		&securityCheck{baseCheck{exec: 2, num: 8, description: "security.txt"}},
 		&wellknownMetadataCheck{baseCheck{exec: 3, num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
 		&dnsPathCheck{baseCheck{exec: 4, num: 10, description: "DNS path"}},
-		&oneFolderPerYearCheck{baseCheck{exec: 5, num: 11, description: "One folder per year"}},
-		&indexCheck{baseCheck{exec: 6, num: 12, description: "index.txt"}},
-		&changesCheck{baseCheck{exec: 7, num: 13, description: "changes.csv"}},
-		&directoryListingsCheck{baseCheck{exec: 8, num: 14, description: "Directory listings"}},
-		&integrityCheck{baseCheck{exec: 9, num: 18, description: "Integrity"}},
-		&signaturesCheck{baseCheck{exec: 11, num: 19, description: "Signatures"}},
-		&publicPGPKeyCheck{baseCheck{exec: 10, num: 20, description: "Public PGP Key"}},
+		&oneFolderPerYearCheck{baseCheck{exec: 6, num: 11, description: "One folder per year"}},
+		&indexCheck{baseCheck{exec: 7, num: 12, description: "index.txt"}},
+		&changesCheck{baseCheck{exec: 8, num: 13, description: "changes.csv"}},
+		&directoryListingsCheck{baseCheck{exec: 9, num: 14, description: "Directory listings"}},
+		&integrityCheck{baseCheck{exec: 11, num: 18, description: "Integrity"}},
+		&signaturesCheck{baseCheck{exec: 12, num: 19, description: "Signatures"}},
+		&publicPGPKeyCheck{baseCheck{exec: 5, num: 20, description: "Public PGP Key"}},
 	}
 }
 

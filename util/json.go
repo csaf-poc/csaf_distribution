@@ -8,7 +8,9 @@
 
 package util
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // ReMarshalJSON transforms data from src to dst via JSON marshalling.
 func ReMarshalJSON(dst, src interface{}) error {
