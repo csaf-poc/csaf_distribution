@@ -37,7 +37,7 @@ type processor struct {
 
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
-	alreadyChecked map[string]struct{}
+	alreadyChecked map[string]byte
 	pmd256         []byte
 	pmd            interface{}
 	keys           []*crypto.KeyRing
@@ -47,7 +47,7 @@ type processor struct {
 	badSignatures        []string
 	badProviderMetadatas []string
 	badSecurities        []string
-	badIntegrity         []string
+	badIndices           []string
 
 	builder gval.Language
 	exprs   map[string]gval.Evaluable
@@ -59,12 +59,20 @@ type reporter interface {
 
 var errContinue = errors.New("continue")
 
+const (
+	rolieMask = 1 << iota
+	rolieIndexMask
+	rolieChangesMask
+	indexMask
+	changesMask
+)
+
 func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
 		redirects:      map[string]string{},
 		noneTLS:        map[string]struct{}{},
-		alreadyChecked: map[string]struct{}{},
+		alreadyChecked: map[string]byte{},
 		builder:        gval.Full(jsonpath.Language()),
 		exprs:          map[string]gval.Evaluable{},
 	}
@@ -89,7 +97,7 @@ func (p *processor) clean() {
 	p.badSignatures = nil
 	p.badProviderMetadatas = nil
 	p.badSecurities = nil
-	p.badIntegrity = nil
+	p.badIndices = nil
 }
 
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
@@ -153,12 +161,10 @@ func (p *processor) checkTLS(u string) {
 	}
 }
 
-func (p *processor) markChecked(s string) bool {
-	if _, ok := p.alreadyChecked[s]; ok {
-		return true
-	}
-	p.alreadyChecked[s] = struct{}{}
-	return false
+func (p *processor) markChecked(s string, mask byte) bool {
+	v, ok := p.alreadyChecked[s]
+	p.alreadyChecked[s] = v | mask
+	return ok
 }
 
 func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
@@ -221,9 +227,15 @@ func (p *processor) badSecurity(format string, args ...interface{}) {
 	p.badSecurities = append(p.badSecurities, fmt.Sprintf(format, args...))
 }
 
+func (p *processor) badIndex(format string, args ...interface{}) {
+	p.badIndices = append(p.badIndices, fmt.Sprintf(format, args...))
+}
+
 func (p *processor) integrity(
 	files []string,
 	base string,
+	mask byte,
+	lg func(string, ...interface{}),
 ) error {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -236,21 +248,21 @@ func (p *processor) integrity(
 	for _, f := range files {
 		fp, err := url.Parse(f)
 		if err != nil {
-			p.badProviderMetadata("Bad URL %s: %v", f, err)
+			lg("Bad URL %s: %v", f, err)
 			continue
 		}
 		u := b.ResolveReference(fp).String()
-		if p.markChecked(u) {
+		if p.markChecked(u, mask) {
 			continue
 		}
 		p.checkTLS(u)
 		res, err := client.Get(u)
 		if err != nil {
-			p.badProviderMetadata("Fetching %s failed: %v.", u, err)
+			lg("Fetching %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			p.badProviderMetadata("Fetching %s failed: Status code %d (%s)",
+			lg("Fetching %s failed: Status code %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -267,18 +279,17 @@ func (p *processor) integrity(
 			tee := io.TeeReader(res.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
-			p.badProviderMetadata("Reading %s failed: %v", u, err)
+			lg("Reading %s failed: %v", u, err)
 			continue
 		}
 
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
-			p.badProviderMetadata("Failed to validate %s: %v", u, err)
+			lg("Failed to validate %s: %v", u, err)
 			continue
 		}
 		if len(errors) > 0 {
-			p.badProviderMetadata(
-				"CSAF file %s has %d validation errors.", u, len(errors))
+			lg("CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
 		// Check hashes
@@ -398,7 +409,49 @@ func (p *processor) processFeed(feed string) error {
 			files = append(files, f.Link[i].HRef)
 		}
 	}
-	return p.integrity(files, base)
+
+	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata); err != nil &&
+		err != errContinue {
+		return err
+	}
+
+	if err := p.checkIndex(base, rolieIndexMask); err != nil && err != errContinue {
+		return err
+	}
+
+	return nil
+}
+
+func (p *processor) checkIndex(base string, mask byte) error {
+	client := p.httpClient()
+	index := base + "/index.txt"
+	p.checkTLS(index)
+	res, err := client.Get(index)
+	if err != nil {
+		p.badIndex("Fetching %s failed: %v", index, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badIndex("Fetching %s failed. Status code %d (%s)",
+			index, res.StatusCode, res.Status)
+		return errContinue
+	}
+
+	files, err := func() ([]string, error) {
+		defer res.Body.Close()
+		var files []string
+		scanner := bufio.NewScanner(res.Body)
+		for scanner.Scan() {
+			files = append(files, scanner.Text())
+		}
+		return files, scanner.Err()
+	}()
+	if err != nil {
+		p.badIndex("Reading %s failed: %v", index, err)
+		return errContinue
+	}
+
+	return p.integrity(files, base, mask, p.badIndex)
 }
 
 func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
@@ -407,9 +460,9 @@ func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
 	if err != nil {
 		return err
 	}
-	for i := range feeds {
-		for j := range feeds[i] {
-			feed := &feeds[i][j]
+	for _, fs := range feeds {
+		for i := range fs {
+			feed := &fs[i]
 			if feed.URL == nil {
 				continue
 			}

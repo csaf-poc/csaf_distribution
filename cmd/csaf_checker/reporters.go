@@ -92,7 +92,7 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badSecurities) == 0 {
-		req.message("No problems with security.txt.")
+		req.message("No problems with security.txt found.")
 		return
 	}
 	req.Messages = p.badSecurities
@@ -116,10 +116,13 @@ func (r *oneFolderPerYearReport) report(_ *processor, domain *Domain) {
 	_ = req
 }
 
-func (r *indexReporter) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *indexReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	_ = req
+	if len(p.badIndices) == 0 {
+		req.message("No problems with index.txt found.")
+		return
+	}
+	req.Messages = p.badIndices
 }
 
 func (r *changesReporter) report(_ *processor, domain *Domain) {

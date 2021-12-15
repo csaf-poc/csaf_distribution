@@ -36,11 +36,14 @@ func basePath(p string) (string, error) {
 	}
 	ep := u.EscapedPath()
 	if idx := strings.LastIndexByte(ep, '/'); idx != -1 {
-		ep = ep[:idx]
+		ep = ep[:idx+1]
 	}
 	user := u.User.String()
 	if user != "" {
 		user += "@"
 	}
-	return u.Scheme + "://" + user + u.Host + "/" + ep, nil
+	if !strings.HasPrefix(ep, "/") {
+		ep = "/" + ep
+	}
+	return u.Scheme + "://" + user + u.Host + ep, nil
 }
