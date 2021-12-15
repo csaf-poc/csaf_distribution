@@ -26,12 +26,15 @@ import (
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 type processor struct {
-	opts           *options
+	opts   *options
+	client *http.Client
+
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
 	alreadyChecked map[string]struct{}
@@ -43,14 +46,14 @@ type processor struct {
 	badPGPs              []string
 	badSignatures        []string
 	badProviderMetadatas []string
-	badSecurity          []string
+	badSecurities        []string
 	badIntegrity         []string
 
 	builder gval.Language
 	exprs   map[string]gval.Evaluable
 }
 
-type Reporter interface {
+type reporter interface {
 	report(*processor, *Domain)
 }
 
@@ -85,11 +88,11 @@ func (p *processor) clean() {
 	p.badPGPs = nil
 	p.badSignatures = nil
 	p.badProviderMetadatas = nil
-	p.badSecurity = nil
+	p.badSecurities = nil
 	p.badIntegrity = nil
 }
 
-func (p *processor) run(reporter []Reporter, domains []string) (*Report, error) {
+func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
 
@@ -102,8 +105,8 @@ domainsLoop:
 			return nil, err
 		}
 		domain := &Domain{Name: d}
-		for _, ch := range reporter {
-			ch.report(p, domain)
+		for _, r := range reporters {
+			r.report(p, domain)
 		}
 		report.Domains = append(report.Domains, domain)
 		p.clean()
@@ -115,9 +118,17 @@ domainsLoop:
 func (p *processor) checkDomain(domain string) error {
 
 	// TODO: Implement me!
-	if err := p.checkProviderMetadata(domain); err != nil && err != errContinue {
-		return err
+	for _, check := range []func(*processor, string) error{
+		(*processor).checkProviderMetadata,
+		(*processor).checkPGPKeys,
+		(*processor).checkSecurity,
+		(*processor).checkCSAFs,
+	} {
+		if err := check(p, domain); err != nil && err != errContinue {
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -170,19 +181,24 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 }
 
 func (p *processor) httpClient() *http.Client {
-	client := http.Client{
+
+	if p.client != nil {
+		return p.client
+	}
+
+	p.client = &http.Client{
 		CheckRedirect: p.checkRedirect,
 	}
 
 	if p.opts.Insecure {
-		client.Transport = &http.Transport{
+		p.client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 		}
 	}
 
-	return &client
+	return p.client
 }
 
 func (p *processor) badHash(format string, args ...interface{}) {
@@ -201,10 +217,13 @@ func (p *processor) badPGP(format string, args ...interface{}) {
 	p.badPGPs = append(p.badPGPs, fmt.Sprintf(format, args...))
 }
 
+func (p *processor) badSecurity(format string, args ...interface{}) {
+	p.badSecurities = append(p.badSecurities, fmt.Sprintf(format, args...))
+}
+
 func (p *processor) integrity(
 	files []string,
 	base string,
-	lg func(string, ...interface{}),
 ) error {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -217,7 +236,7 @@ func (p *processor) integrity(
 	for _, f := range files {
 		fp, err := url.Parse(f)
 		if err != nil {
-			lg("Bad URL %s: %v", f, err)
+			p.badProviderMetadata("Bad URL %s: %v", f, err)
 			continue
 		}
 		u := b.ResolveReference(fp).String()
@@ -227,11 +246,11 @@ func (p *processor) integrity(
 		p.checkTLS(u)
 		res, err := client.Get(u)
 		if err != nil {
-			lg("Fetching %s failed: %v.", u, err)
+			p.badProviderMetadata("Fetching %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			lg("Fetching %s failed: Status code %d (%s)",
+			p.badProviderMetadata("Fetching %s failed: Status code %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -248,17 +267,18 @@ func (p *processor) integrity(
 			tee := io.TeeReader(res.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
-			lg("Reading %s failed: %v", u, err)
+			p.badProviderMetadata("Reading %s failed: %v", u, err)
 			continue
 		}
 
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
-			lg("Failed to validate %s: %v", u, err)
+			p.badProviderMetadata("Failed to validate %s: %v", u, err)
 			continue
 		}
 		if len(errors) > 0 {
-			lg("CSAF file %s has %d validation errors.", u, len(errors))
+			p.badProviderMetadata(
+				"CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
 		// Check hashes
@@ -344,16 +364,16 @@ func (p *processor) integrity(
 	return nil
 }
 
-func (p *processor) processFeed(feed string, lg func(string, ...interface{})) error {
+func (p *processor) processFeed(feed string) error {
 
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	if err != nil {
-		lg("Cannot fetch feed %s: %v", feed, err)
+		p.badProviderMetadata("Cannot fetch feed %s: %v", feed, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		lg("Fetching %s failed. Status code %d (%s)",
+		p.badProviderMetadata("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -362,12 +382,12 @@ func (p *processor) processFeed(feed string, lg func(string, ...interface{})) er
 		return csaf.LoadROLIEFeed(res.Body)
 	}()
 	if err != nil {
-		lg("Loading ROLIE feed failed: %v.", err)
+		p.badProviderMetadata("Loading ROLIE feed failed: %v.", err)
 		return errContinue
 	}
 	base, err := basePath(feed)
 	if err != nil {
-		lg("Bad base path: %v", err)
+		p.badProviderMetadata("Bad base path: %v", err)
 		return errContinue
 	}
 
@@ -378,14 +398,11 @@ func (p *processor) processFeed(feed string, lg func(string, ...interface{})) er
 			files = append(files, f.Link[i].HRef)
 		}
 	}
-	return p.integrity(files, base, lg)
+	return p.integrity(files, base)
 }
 
-func (p *processor) processFeeds(
-	domain string,
-	feeds [][]csaf.Feed,
-	lg func(string, ...interface{}),
-) error {
+func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
+
 	base, err := url.Parse("https://" + domain + "/.well-known/csaf/")
 	if err != nil {
 		return err
@@ -398,12 +415,12 @@ func (p *processor) processFeeds(
 			}
 			up, err := url.Parse(string(*feed.URL))
 			if err != nil {
-				lg("Invalid URL %s in feed: %v.", *feed.URL, err)
+				p.badProviderMetadata("Invalid URL %s in feed: %v.", *feed.URL, err)
 				continue
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if err := p.processFeed(feedURL, lg); err != nil && err != errContinue {
+			if err := p.processFeed(feedURL); err != nil && err != errContinue {
 				return err
 			}
 		}
@@ -411,7 +428,7 @@ func (p *processor) processFeeds(
 	return nil
 }
 
-func (p *processor) checkCSAFs(domain string, lg func(string, ...interface{})) error {
+func (p *processor) checkCSAFs(domain string) error {
 	// Check for ROLIE
 	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds")
 	if err != nil {
@@ -424,10 +441,10 @@ func (p *processor) checkCSAFs(domain string, lg func(string, ...interface{})) e
 	if hasRolie {
 		var feeds [][]csaf.Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
-			lg("ROLIE feeds are not compatible: %v.", err)
+			p.badProviderMetadata("ROLIE feeds are not compatible: %v.", err)
 			goto noRolie
 		}
-		if err := p.processFeeds(domain, feeds, lg); err != nil {
+		if err := p.processFeeds(domain, feeds); err != nil {
 			if err == errContinue {
 				goto noRolie
 			}
@@ -488,19 +505,19 @@ func (p *processor) checkProviderMetadata(domain string) error {
 	return nil
 }
 
-func (p *processor) checkSecurity(domain string, lg func(string, ...interface{})) error {
+func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
 
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
-		lg("Fetchinig %s failed: %v", err)
+		p.badSecurity("Fetching %s failed: %v", err)
 		return errContinue
 	}
 
 	if res.StatusCode != http.StatusOK {
-		lg("Fetching %s failed. Status code %d (%s)",
+		p.badSecurity("Fetching %s failed. Status code %d (%s)",
 			path, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -517,18 +534,18 @@ func (p *processor) checkSecurity(domain string, lg func(string, ...interface{})
 		return "", lines.Err()
 	}()
 	if err != nil {
-		lg("Error while reading security.txt: %v", err)
+		p.badSecurity("Error while reading security.txt: %v", err)
 		return errContinue
 	}
 	if u == "" {
-		lg("No CSAF line found in security.txt.")
+		p.badSecurity("No CSAF line found in security.txt.")
 		return errContinue
 	}
 
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
-		lg("CSAF URL '%s' invalid: %v", u, err)
+		p.badSecurity("CSAF URL '%s' invalid: %v", u, err)
 		return errContinue
 	}
 
@@ -540,11 +557,11 @@ func (p *processor) checkSecurity(domain string, lg func(string, ...interface{})
 	u = base.ResolveReference(up).String()
 	p.checkTLS(u)
 	if res, err = client.Get(u); err != nil {
-		lg("Cannot fetch %s from security.txt: %v", u, err)
+		p.badSecurity("Cannot fetch %s from security.txt: %v", u, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		lg("Fetching %s failed. Status code %d (%s)",
+		p.badSecurity("Fetching %s failed. Status code %d (%s)",
 			u, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -552,33 +569,34 @@ func (p *processor) checkSecurity(domain string, lg func(string, ...interface{})
 	// Compare checksums to already read provider-metadata.json.
 	h := sha256.New()
 	if _, err := io.Copy(h, res.Body); err != nil {
-		lg("Reading %s failed: %v", u, err)
+		p.badSecurity("Reading %s failed: %v", u, err)
 		return errContinue
 	}
 
 	if !bytes.Equal(h.Sum(nil), p.pmd256) {
-		lg("Content of %s from security.txt is not identical to .well-known/csaf/provider-metadata.json", u)
+		p.badSecurity("Content of %s from security.txt is not "+
+			"identical to .well-known/csaf/provider-metadata.json", u)
 	}
 
 	return nil
 }
 
-func (p *processor) checkPGPKeys(domain string, lg func(string, ...interface{})) error {
+func (p *processor) checkPGPKeys(domain string) error {
 
 	src, err := p.jsonPath("$.pgp_keys")
 	if err != nil {
-		lg("No PGP keys found: %v.", err)
+		p.badPGP("No PGP keys found: %v.", err)
 		return errContinue
 	}
 
 	var keys []csaf.PGPKey
 	if err := util.ReMarshalJSON(&keys, src); err != nil {
-		lg("PGP keys invalid: %v.", err)
+		p.badPGP("PGP keys invalid: %v.", err)
 		return errContinue
 	}
 
 	if len(keys) == 0 {
-		lg("No PGP keys found.")
+		p.badPGP("No PGP keys found.")
 		return errContinue
 	}
 
@@ -594,12 +612,12 @@ func (p *processor) checkPGPKeys(domain string, lg func(string, ...interface{}))
 	for i := range keys {
 		key := &keys[i]
 		if key.URL == nil {
-			lg("Missing URL for fingerprint %x.", key.Fingerprint)
+			p.badPGP("Missing URL for fingerprint %x.", key.Fingerprint)
 			continue
 		}
 		up, err := url.Parse(*key.URL)
 		if err != nil {
-			lg("Invalid URL '%s': %v", *key.URL, err)
+			p.badPGP("Invalid URL '%s': %v", *key.URL, err)
 			continue
 		}
 
@@ -608,11 +626,12 @@ func (p *processor) checkPGPKeys(domain string, lg func(string, ...interface{}))
 
 		res, err := client.Get(u)
 		if err != nil {
-			lg("Fetching PGP key %s failed: %v.", u, err)
+			p.badPGP("Fetching PGP key %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			lg("Fetching PGP key %s status code: %d (%s)", u, res.StatusCode, res.Status)
+			p.badPGP("Fetching PGP key %s status code: %d (%s)",
+				u, res.StatusCode, res.Status)
 			continue
 		}
 
@@ -622,24 +641,24 @@ func (p *processor) checkPGPKeys(domain string, lg func(string, ...interface{}))
 		}()
 
 		if err != nil {
-			lg("Reading PGP key %s failed: %v", u, err)
+			p.badPGP("Reading PGP key %s failed: %v", u, err)
 			continue
 		}
 
 		if ckey.GetFingerprint() != string(key.Fingerprint) {
-			lg("Fingerprint of PGP key %s do not match remotely loaded.", u)
+			p.badPGP("Fingerprint of PGP key %s do not match remotely loaded.", u)
 			continue
 		}
 		keyring, err := crypto.NewKeyRing(ckey)
 		if err != nil {
-			lg("Creating key ring for %s failed: %v.", u, err)
+			p.badPGP("Creating key ring for %s failed: %v.", u, err)
 			continue
 		}
 		p.keys = append(p.keys, keyring)
 	}
 
 	if len(p.keys) == 0 {
-		lg("No PGP keys loaded.")
+		p.badPGP("No PGP keys loaded.")
 	}
 	return nil
 }

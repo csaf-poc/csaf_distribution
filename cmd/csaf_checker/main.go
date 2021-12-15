@@ -98,8 +98,8 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
-func buildReporters() []Reporter {
-	return []Reporter{
+func buildReporters() []reporter {
+	return []reporter{
 		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
 		&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
 		&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},

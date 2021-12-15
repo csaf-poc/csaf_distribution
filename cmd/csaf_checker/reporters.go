@@ -91,11 +91,11 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if len(p.badSecurity) == 0 {
+	if len(p.badSecurities) == 0 {
 		req.message("No problems with security.txt.")
 		return
 	}
-	req.Messages = p.badSecurity
+	req.Messages = p.badSecurities
 }
 
 func (r *wellknownMetadataReporter) report(_ *processor, domain *Domain) {
@@ -145,10 +145,10 @@ func (r *integrityReporter) report(p *processor, domain *Domain) {
 
 func (r *signaturesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
+	req.Messages = p.badSignatures
 	if len(p.badSignatures) == 0 {
 		req.message("All signatures verified.")
 	}
-	req.Messages = p.badSignatures
 }
 
 func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
