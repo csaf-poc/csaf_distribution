@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"net/url"
@@ -182,6 +181,9 @@ func (p *processor) integrity(
 		return err
 	}
 	client := p.httpClient()
+
+	var data bytes.Buffer
+
 	for _, f := range files {
 		fp, err := url.Parse(f)
 		if err != nil {
@@ -202,19 +204,23 @@ func (p *processor) integrity(
 				u, res.StatusCode, res.Status)
 			continue
 		}
-		data, err := func() ([]byte, error) {
+
+		s256 := sha256.New()
+		s512 := sha512.New()
+		data.Reset()
+		hasher := io.MultiWriter(s256, s512, &data)
+
+		var doc interface{}
+
+		if err := func() error {
 			defer res.Body.Close()
-			return io.ReadAll(res.Body)
-		}()
-		if err != nil {
+			tee := io.TeeReader(res.Body, hasher)
+			return json.NewDecoder(tee).Decode(&doc)
+		}(); err != nil {
 			lg("Reading %s failed: %v", u, err)
 			continue
 		}
-		var doc interface{}
-		if err := json.Unmarshal(data, &doc); err != nil {
-			lg("Failed to unmarshal %s: %v", u, err)
-			continue
-		}
+
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
 			lg("Failed to validate %s: %v", u, err)
@@ -227,10 +233,10 @@ func (p *processor) integrity(
 		// Check hashes
 		for _, x := range []struct {
 			ext  string
-			hash func() hash.Hash
+			hash []byte
 		}{
-			{"sha256", sha256.New},
-			{"sha512", sha512.New},
+			{"sha256", s256.Sum(nil)},
+			{"sha512", s512.Sum(nil)},
 		} {
 			hashFile := u + "." + x.ext
 			p.checkTLS(hashFile)
@@ -255,13 +261,7 @@ func (p *processor) integrity(
 				p.addBadHash("No hash found in %s.", hashFile)
 				continue
 			}
-			orig := x.hash()
-			if _, err := orig.Write(data); err != nil {
-				p.addBadHash("%s hashing of %s failed: %v.",
-					strings.ToUpper(x.ext), u, err)
-				continue
-			}
-			if !bytes.Equal(h, orig.Sum(nil)) {
+			if !bytes.Equal(h, x.hash) {
 				p.addBadHash("%s hash of %s does not match %s.",
 					strings.ToUpper(x.ext), u, hashFile)
 			}
@@ -296,7 +296,7 @@ func (p *processor) integrity(
 		}
 
 		if len(p.keys) > 0 {
-			pm := crypto.NewPlainMessage(data)
+			pm := crypto.NewPlainMessage(data.Bytes())
 			t := crypto.GetUnixTime()
 			var verified bool
 			for _, key := range p.keys {
