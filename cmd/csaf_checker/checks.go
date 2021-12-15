@@ -329,6 +329,115 @@ func hashFromReader(r io.Reader) ([]byte, error) {
 	return nil, scanner.Err()
 }
 
+func basePath(p string) (string, error) {
+	u, err := url.Parse(p)
+	if err != nil {
+		return "", err
+	}
+	ep := u.EscapedPath()
+	if idx := strings.LastIndexByte(ep, '/'); idx != -1 {
+		ep = ep[:idx]
+	}
+	user := u.User.String()
+	if user != "" {
+		user += "@"
+	}
+	return u.Scheme + "://" + user + u.Host + "/" + ep, nil
+}
+
+func (p *processor) processFeed(feed string, lg func(string, ...interface{})) error {
+
+	client := p.httpClient()
+	res, err := client.Get(feed)
+	if err != nil {
+		lg("Cannot fetch feed %s: %v.", feed, err)
+		return nil
+	}
+	if res.StatusCode != http.StatusOK {
+		lg("Fetching %s failed. Status code %d (%s)",
+			feed, res.StatusCode, res.Status)
+		return nil
+	}
+	rfeed, err := func() (*csaf.ROLIEFeed, error) {
+		defer res.Body.Close()
+		return csaf.LoadROLIEFeed(res.Body)
+	}()
+	if err != nil {
+		lg("Loading ROLIE feed failed: %v.", err)
+		return nil
+	}
+	base, err := basePath(feed)
+	if err != nil {
+		return err
+	}
+
+	// Extract the CSAF files from feed.
+	var files []string
+	for _, f := range rfeed.Entry {
+		for i := range f.Link {
+			files = append(files, f.Link[i].HRef)
+		}
+	}
+	return p.integrity(files, base, lg)
+}
+
+func (p *processor) processFeeds(
+	domain string,
+	feeds [][]csaf.Feed,
+	lg func(string, ...interface{}),
+) error {
+	base, err := url.Parse("https://" + domain + "/.well-known/csaf/")
+	if err != nil {
+		return err
+	}
+	for i := range feeds {
+		for j := range feeds[i] {
+			feed := &feeds[i][j]
+			if feed.URL == nil {
+				continue
+			}
+			up, err := url.Parse(string(*feed.URL))
+			if err != nil {
+				lg("Invalid URL %s in feed: %v.", *feed.URL, err)
+				continue
+			}
+			feedURL := base.ResolveReference(up).String()
+			p.checkTLS(feedURL)
+			if err := p.processFeed(feedURL, lg); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (p *processor) checkCSAFs(domain string, lg func(string, ...interface{})) error {
+	// Check for ROLIE
+	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds")
+	if err != nil {
+		return err
+	}
+
+	fs, hasRolie := rolie.([]interface{})
+	hasRolie = hasRolie && len(fs) > 0
+
+	if hasRolie {
+		var feeds [][]csaf.Feed
+		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
+			lg("ROLIE feeds are not compatible: %v.", err)
+			return nil
+		}
+		if err := p.processFeeds(domain, feeds, lg); err != nil {
+			return err
+		}
+	} else {
+		// No rolie feeds
+		// TODO: Implement me!
+	}
+
+	return nil
+}
+
 type baseCheck struct {
 	exec        int
 	num         int
@@ -584,115 +693,10 @@ func (dpc *dnsPathCheck) run(*processor, string) error {
 	return nil
 }
 
-func basePath(p string) (string, error) {
-	u, err := url.Parse(p)
-	if err != nil {
-		return "", err
-	}
-	ep := u.EscapedPath()
-	if idx := strings.LastIndexByte(ep, '/'); idx != -1 {
-		ep = ep[:idx]
-	}
-	user := u.User.String()
-	if user != "" {
-		user += "@"
-	}
-	return u.Scheme + "://" + user + u.Host + "/" + ep, nil
-}
-
-func (ofpyc *oneFolderPerYearCheck) processFeed(
-	p *processor,
-	feed string,
-) error {
-	client := p.httpClient()
-	res, err := client.Get(feed)
-	if err != nil {
-		ofpyc.sprintf("Cannot fetch feed %s: %v.", feed, err)
-		return nil
-	}
-	if res.StatusCode != http.StatusOK {
-		ofpyc.sprintf("Fetching %s failed. Status code %d (%s)",
-			feed, res.StatusCode, res.Status)
-		return nil
-	}
-	rfeed, err := func() (*csaf.ROLIEFeed, error) {
-		defer res.Body.Close()
-		return csaf.LoadROLIEFeed(res.Body)
-	}()
-	if err != nil {
-		ofpyc.sprintf("Loading ROLIE feed failed: %v.", err)
-		return nil
-	}
-	base, err := basePath(feed)
-	if err != nil {
-		return err
-	}
-
-	// Extract the CSAF files from feed.
-	var files []string
-	for _, f := range rfeed.Entry {
-		for i := range f.Link {
-			files = append(files, f.Link[i].HRef)
-		}
-	}
-	return p.integrity(files, base, ofpyc.sprintf)
-}
-
-func (ofpyc *oneFolderPerYearCheck) processFeeds(
-	p *processor,
-	domain string,
-	feeds [][]csaf.Feed,
-) error {
-	base, err := url.Parse("https://" + domain + "/.well-known/csaf/")
-	if err != nil {
-		return err
-	}
-	for i := range feeds {
-		for j := range feeds[i] {
-			feed := &feeds[i][j]
-			if feed.URL == nil {
-				continue
-			}
-			up, err := url.Parse(string(*feed.URL))
-			if err != nil {
-				ofpyc.sprintf("Invalid URL %s in feed: %v.", *feed.URL, err)
-				continue
-			}
-			feedURL := base.ResolveReference(up).String()
-			p.checkTLS(feedURL)
-			if err := ofpyc.processFeed(p, feedURL); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (ofpyc *oneFolderPerYearCheck) run(p *processor, domain string) error {
-	// Check for ROLIE
-	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds")
-	if err != nil {
-		return err
-	}
 
-	fs, hasRolie := rolie.([]interface{})
-	hasRolie = hasRolie && len(fs) > 0
-
-	if hasRolie {
-		var feeds [][]csaf.Feed
-		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
-			ofpyc.sprintf("ROLIE feeds are not compatible: %v.", err)
-			return nil
-		}
-		if err := ofpyc.processFeeds(p, domain, feeds); err != nil {
-			return err
-		}
-	} else {
-		// No rolie feeds
-		// TODO: Implement me!
-	}
-
-	return nil
+	// TODO: This does not belong here!
+	return p.checkCSAFs(domain, ofpyc.sprintf)
 }
 
 func (ic *indexCheck) run(*processor, string) error {
