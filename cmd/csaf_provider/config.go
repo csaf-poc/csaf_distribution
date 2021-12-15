@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -20,11 +21,12 @@ import (
 )
 
 const (
-	configEnv         = "CSAF_CONFIG"
-	defaultConfigPath = "/usr/lib/casf/config.toml"
-	defaultFolder     = "/var/www/"
-	defaultWeb        = "/var/www/html"
-	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}"
+	configEnv          = "CSAF_CONFIG"
+	defaultConfigPath  = "/usr/lib/casf/config.toml"
+	defaultFolder      = "/var/www/"
+	defaultWeb         = "/var/www/html"
+	defaultOpenPGPURL  = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}"
+	defaultUploadLimit = 50 * 1024 * 1024
 )
 
 type config struct {
@@ -41,6 +43,7 @@ type config struct {
 	NoWebUI                 bool            `toml:"no_web_ui"`
 	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
 	Publisher               *csaf.Publisher `toml:"publisher"`
+	UploadLimit             *int64          `toml:"upload_limit"`
 }
 
 type tlp string
@@ -68,6 +71,14 @@ func (t *tlp) UnmarshalText(text []byte) error {
 		return nil
 	}
 	return fmt.Errorf("invalid config TLP value: %v", string(text))
+}
+
+func (cfg *config) uploadLimiter(r io.Reader) io.Reader {
+	// Zero or less means no upload limit.
+	if cfg.UploadLimit == nil || *cfg.UploadLimit < 1 {
+		return r
+	}
+	return io.LimitReader(r, *cfg.UploadLimit)
 }
 
 func (cfg *config) GetOpenPGPURL(key *crypto.Key) string {
@@ -141,6 +152,11 @@ func loadConfig() (*config, error) {
 			Name:      func(s string) *string { return &s }("ACME"),
 			Namespace: func(s string) *string { return &s }("https://example.com"),
 		}
+	}
+
+	if cfg.UploadLimit == nil {
+		ul := int64(defaultUploadLimit)
+		cfg.UploadLimit = &ul
 	}
 
 	return &cfg, nil

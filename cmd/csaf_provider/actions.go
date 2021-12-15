@@ -37,7 +37,7 @@ func cleanFileName(s string) string {
 	return s
 }
 
-func loadCSAF(r *http.Request) (string, []byte, error) {
+func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 	file, handler, err := r.FormFile("csaf")
 	if err != nil {
 		return "", nil, err
@@ -45,8 +45,7 @@ func loadCSAF(r *http.Request) (string, []byte, error) {
 	defer file.Close()
 
 	var buf bytes.Buffer
-	lr := io.LimitReader(file, 10*1024*1024)
-	if _, err := io.Copy(&buf, lr); err != nil {
+	if _, err := io.Copy(&buf, c.cfg.uploadLimiter(file)); err != nil {
 		return "", nil, err
 	}
 	return cleanFileName(handler.Filename), buf.Bytes(), nil
@@ -138,7 +137,7 @@ func (c *controller) create(*http.Request) (interface{}, error) {
 
 func (c *controller) upload(r *http.Request) (interface{}, error) {
 
-	newCSAF, data, err := loadCSAF(r)
+	newCSAF, data, err := c.loadCSAF(r)
 	if err != nil {
 		return nil, err
 	}
