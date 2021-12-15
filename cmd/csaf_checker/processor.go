@@ -37,10 +37,12 @@ type processor struct {
 	alreadyChecked map[string]struct{}
 	pmd256         []byte
 	pmd            interface{}
-	builder        gval.Language
 	keys           []*crypto.KeyRing
 	badHashes      []string
 	badSignatures  []string
+
+	builder gval.Language
+	exprs   map[string]gval.Evaluable
 }
 
 type check interface {
@@ -56,6 +58,7 @@ func newProcessor(opts *options) *processor {
 		noneTLS:        map[string]struct{}{},
 		alreadyChecked: map[string]struct{}{},
 		builder:        gval.Full(jsonpath.Language()),
+		exprs:          map[string]gval.Evaluable{},
 	}
 }
 
@@ -107,9 +110,13 @@ func (p *processor) jsonPath(expr string) (interface{}, error) {
 	if p.pmd == nil {
 		return nil, errors.New("no provider metadata loaded")
 	}
-	eval, err := p.builder.NewEvaluable(expr)
-	if err != nil {
-		return nil, err
+	eval := p.exprs[expr]
+	if eval == nil {
+		var err error
+		if eval, err = p.builder.NewEvaluable(expr); err != nil {
+			return nil, err
+		}
+		p.exprs[expr] = eval
 	}
 	return eval(context.Background(), p.pmd)
 }
