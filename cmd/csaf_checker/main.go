@@ -100,19 +100,19 @@ func writeReport(report *Report, opts *options) error {
 
 func buildReporters() []Reporter {
 	return []Reporter{
-		&tlsReport{baseReporter{num: 3, description: "TLS"}},
-		&redirectsReport{baseReporter{num: 6, description: "Redirects"}},
+		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
+		&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
 		&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
-		&securityReport{baseReporter{num: 8, description: "security.txt"}},
-		&wellknownMetadataReport{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
-		&dnsPathReport{baseReporter{num: 10, description: "DNS path"}},
+		&securityReporter{baseReporter{num: 8, description: "security.txt"}},
+		&wellknownMetadataReporter{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
+		&dnsPathReporter{baseReporter{num: 10, description: "DNS path"}},
 		&oneFolderPerYearReport{baseReporter{num: 11, description: "One folder per year"}},
-		&indexReport{baseReporter{num: 12, description: "index.txt"}},
-		&changesReport{baseReporter{num: 13, description: "changes.csv"}},
-		&directoryListingsReport{baseReporter{num: 14, description: "Directory listings"}},
-		&integrityReport{baseReporter{num: 18, description: "Integrity"}},
-		&signaturesReport{baseReporter{num: 19, description: "Signatures"}},
-		&publicPGPKeyReport{baseReporter{num: 20, description: "Public PGP Key"}},
+		&indexReporter{baseReporter{num: 12, description: "index.txt"}},
+		&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
+		&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
+		&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
+		&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
+		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public PGP Key"}},
 	}
 }
 

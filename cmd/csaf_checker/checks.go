@@ -18,19 +18,19 @@ type (
 		num         int
 		description string
 	}
-	tlsReport               struct{ baseReporter }
-	redirectsReport         struct{ baseReporter }
-	providerMetadataReport  struct{ baseReporter }
-	securityReport          struct{ baseReporter }
-	wellknownMetadataReport struct{ baseReporter }
-	dnsPathReport           struct{ baseReporter }
-	oneFolderPerYearReport  struct{ baseReporter }
-	indexReport             struct{ baseReporter }
-	changesReport           struct{ baseReporter }
-	directoryListingsReport struct{ baseReporter }
-	integrityReport         struct{ baseReporter }
-	signaturesReport        struct{ baseReporter }
-	publicPGPKeyReport      struct{ baseReporter }
+	tlsReporter               struct{ baseReporter }
+	redirectsReporter         struct{ baseReporter }
+	providerMetadataReport    struct{ baseReporter }
+	securityReporter          struct{ baseReporter }
+	wellknownMetadataReporter struct{ baseReporter }
+	dnsPathReporter           struct{ baseReporter }
+	oneFolderPerYearReport    struct{ baseReporter }
+	indexReporter             struct{ baseReporter }
+	changesReporter           struct{ baseReporter }
+	directoryListingsReporter struct{ baseReporter }
+	integrityReporter         struct{ baseReporter }
+	signaturesReporter        struct{ baseReporter }
+	publicPGPKeyReporter      struct{ baseReporter }
 )
 
 func (bc *baseReporter) requirement(domain *Domain) *Requirement {
@@ -42,7 +42,7 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	return req
 }
 
-func (r *tlsReport) report(p *processor, domain *Domain) {
+func (r *tlsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.noneTLS) == 0 {
 		req.message("All tested URLs were https.")
@@ -60,7 +60,7 @@ func (r *tlsReport) report(p *processor, domain *Domain) {
 	req.message(urls...)
 }
 
-func (r *redirectsReport) report(p *processor, domain *Domain) {
+func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.redirects) == 0 {
 		req.message("No redirections found.")
@@ -89,7 +89,7 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req.Messages = p.badProviderMetadatas
 }
 
-func (r *securityReport) report(p *processor, domain *Domain) {
+func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badSecurity) == 0 {
 		req.message("No problems with security.txt.")
@@ -98,13 +98,13 @@ func (r *securityReport) report(p *processor, domain *Domain) {
 	req.Messages = p.badSecurity
 }
 
-func (r *wellknownMetadataReport) report(_ *processor, domain *Domain) {
+func (r *wellknownMetadataReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
 	_ = req
 }
 
-func (r *dnsPathReport) report(_ *processor, domain *Domain) {
+func (r *dnsPathReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
 	_ = req
@@ -116,25 +116,25 @@ func (r *oneFolderPerYearReport) report(_ *processor, domain *Domain) {
 	_ = req
 }
 
-func (r *indexReport) report(_ *processor, domain *Domain) {
+func (r *indexReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
 	_ = req
 }
 
-func (r *changesReport) report(_ *processor, domain *Domain) {
+func (r *changesReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
 	_ = req
 }
 
-func (r *directoryListingsReport) report(_ *processor, domain *Domain) {
+func (r *directoryListingsReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
 	_ = req
 }
 
-func (r *integrityReport) report(p *processor, domain *Domain) {
+func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badHashes) == 0 {
 		req.message("All checksums match.")
@@ -143,7 +143,7 @@ func (r *integrityReport) report(p *processor, domain *Domain) {
 	req.Messages = p.badHashes
 }
 
-func (r *signaturesReport) report(p *processor, domain *Domain) {
+func (r *signaturesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badSignatures) == 0 {
 		req.message("All signatures verified.")
@@ -151,7 +151,7 @@ func (r *signaturesReport) report(p *processor, domain *Domain) {
 	req.Messages = p.badSignatures
 }
 
-func (r *publicPGPKeyReport) report(p *processor, domain *Domain) {
+func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	req.Messages = p.badPGPs
 	if len(p.keys) > 0 {
