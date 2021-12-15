@@ -187,7 +187,8 @@ func (p *processor) integrity(
 	for _, f := range files {
 		fp, err := url.Parse(f)
 		if err != nil {
-			return err
+			lg("Bad URL %s: %v", f, err)
+			continue
 		}
 		u := b.ResolveReference(fp).String()
 		if p.markChecked(u) {
