@@ -9,6 +9,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -409,6 +410,125 @@ func (p *processor) checkCSAFs(domain string, lg func(string, ...interface{})) e
 	} else {
 		// No rolie feeds
 		// TODO: Implement me!
+	}
+
+	return nil
+}
+
+func (p *processor) checkProviderMetadata(domain string, lg func(string, ...interface{})) error {
+
+	client := p.httpClient()
+
+	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	res, err := client.Get(url)
+	if err != nil {
+		lg("Fetching %s: %v.", url, err)
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		lg("Fetching %s failed. Status code: %d (%s).",
+			url, res.StatusCode, res.Status)
+		return errors.New("Cannot load provider-metadata.json")
+	}
+
+	// Calculate checksum for later comparison.
+	hash := sha256.New()
+
+	if err := func() error {
+		defer res.Body.Close()
+		tee := io.TeeReader(res.Body, hash)
+		return json.NewDecoder(tee).Decode(&p.pmd)
+	}(); err != nil {
+		lg("Decoding JSON failed: %v.", err)
+		return err
+	}
+
+	p.pmd256 = hash.Sum(nil)
+
+	errors, err := csaf.ValidateProviderMetadata(p.pmd)
+	if err != nil {
+		return err
+	}
+	if len(errors) > 0 {
+		lg("Validating against JSON schema failed:")
+		for _, msg := range errors {
+			lg(strings.ReplaceAll(msg, `%`, `%%`))
+		}
+	}
+	return nil
+}
+
+func (p *processor) checkSecurity(domain string, lg func(string, ...interface{})) error {
+
+	client := p.httpClient()
+
+	path := "https://" + domain + "/.well-known/security.txt"
+	res, err := client.Get(path)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		lg("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+		return errors.New("fetching security.txt failed")
+	}
+
+	u, err := func() (string, error) {
+		defer res.Body.Close()
+		lines := bufio.NewScanner(res.Body)
+		for lines.Scan() {
+			line := lines.Text()
+			if strings.HasPrefix(line, "CSAF:") {
+				return strings.TrimSpace(line[6:]), nil
+			}
+		}
+		return "", lines.Err()
+	}()
+	if err != nil {
+		lg("Error while reading security.txt: %v", err)
+		return err
+	}
+	if u == "" {
+		lg("No CSAF line found in security.txt.")
+		return errors.New("no CSAF line in security.txt")
+	}
+
+	// Try to load
+	up, err := url.Parse(u)
+	if err != nil {
+		lg("CSAF URL '%s' invalid: %v.", u, err.Error())
+		return err
+	}
+
+	base, err := url.Parse("https://" + domain + "/.well-known/")
+	if err != nil {
+		return err
+	}
+	ur := base.ResolveReference(up)
+	u = ur.String()
+	p.checkTLS(u)
+	if res, err = client.Get(u); err != nil {
+		lg("Cannot fetch %s from security.txt: %v", u, err)
+		return nil
+	}
+	if res.StatusCode != http.StatusOK {
+		lg("Fetching %s failed. Status code %d (%s).",
+			u, res.StatusCode, res.Status)
+		return nil
+	}
+	defer res.Body.Close()
+	// Compare checksums to already read provider-metadata.json.
+	h := sha256.New()
+	if _, err := io.Copy(h, res.Body); err != nil {
+		lg("Reading %s failed: %v.", u, err)
+		return nil
+	}
+
+	if !bytes.Equal(h.Sum(nil), p.pmd256) {
+		lg("Content of %s from security.txt is not identical to .well-known/csaf/provider-metadata.json", u)
 	}
 
 	return nil

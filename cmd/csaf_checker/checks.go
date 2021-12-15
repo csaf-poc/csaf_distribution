@@ -12,7 +12,6 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -155,37 +154,9 @@ func (rc *redirectsCheck) run(p *processor, domain string) error {
 }
 
 func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
-	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	client := p.httpClient()
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
+
+	if err := p.checkProviderMetadata(domain, pmdc.sprintf); err != nil {
 		return err
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		pmdc.sprintf("Fetching provider metadata failed: %s.", err.Error())
-		return nil
-	}
-	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		pmdc.sprintf("Status: %d (%s).", res.StatusCode, res.Status)
-	}
-
-	// Calculate checksum for later comparison.
-	hash := sha256.New()
-
-	if err := json.NewDecoder(io.TeeReader(res.Body, hash)).Decode(&p.pmd); err != nil {
-		pmdc.sprintf("Decoding JSON failed: %s.", err.Error())
-	}
-	p.pmd256 = hash.Sum(nil)
-
-	errors, err := csaf.ValidateProviderMetadata(p.pmd)
-	if err != nil {
-		return err
-	}
-	if len(errors) > 0 {
-		pmdc.add("Validating against JSON schema failed:")
-		pmdc.add(errors...)
 	}
 
 	pmdc.ok("No problems with provider metadata.")
