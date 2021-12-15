@@ -35,15 +35,16 @@ import (
 )
 
 type processor struct {
-	opts          *options
-	redirects     map[string]string
-	noneTLS       map[string]struct{}
-	pmd256        []byte
-	pmd           interface{}
-	builder       gval.Language
-	keys          []*crypto.KeyRing
-	badHashes     []string
-	badSignatures []string
+	opts           *options
+	redirects      map[string]string
+	noneTLS        map[string]struct{}
+	alreadyChecked map[string]struct{}
+	pmd256         []byte
+	pmd            interface{}
+	builder        gval.Language
+	keys           []*crypto.KeyRing
+	badHashes      []string
+	badSignatures  []string
 }
 
 type check interface {
@@ -54,10 +55,11 @@ type check interface {
 
 func newProcessor(opts *options) *processor {
 	return &processor{
-		opts:      opts,
-		redirects: map[string]string{},
-		noneTLS:   map[string]struct{}{},
-		builder:   gval.Full(jsonpath.Language()),
+		opts:           opts,
+		redirects:      map[string]string{},
+		noneTLS:        map[string]struct{}{},
+		alreadyChecked: map[string]struct{}{},
+		builder:        gval.Full(jsonpath.Language()),
 	}
 }
 
@@ -67,6 +69,9 @@ func (p *processor) clean() {
 	}
 	for k := range p.noneTLS {
 		delete(p.noneTLS, k)
+	}
+	for k := range p.alreadyChecked {
+		delete(p.alreadyChecked, k)
 	}
 	p.pmd256 = nil
 	p.pmd = nil
@@ -117,6 +122,14 @@ func (p *processor) checkTLS(u string) {
 	if x, err := url.Parse(u); err == nil && x.Scheme != "https" {
 		p.noneTLS[u] = struct{}{}
 	}
+}
+
+func (p *processor) markChecked(s string) bool {
+	if _, ok := p.alreadyChecked[s]; ok {
+		return true
+	}
+	p.alreadyChecked[s] = struct{}{}
+	return false
 }
 
 func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
@@ -178,6 +191,9 @@ func (p *processor) integrity(
 			return err
 		}
 		u := b.ResolveReference(fp).String()
+		if p.markChecked(u) {
+			continue
+		}
 		p.checkTLS(u)
 		res, err := client.Get(u)
 		if err != nil {
