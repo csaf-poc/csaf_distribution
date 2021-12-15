@@ -506,11 +506,7 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 func (sc *securityCheck) run(p *processor, domain string) error {
 	path := "https://" + domain + "/.well-known/security.txt"
 	client := p.httpClient()
-	req, err := http.NewRequest(http.MethodGet, path, nil)
-	if err != nil {
-		return err
-	}
-	res, err := client.Do(req)
+	res, err := client.Get(path)
 	if err != nil {
 		return err
 	}
@@ -551,10 +547,7 @@ func (sc *securityCheck) run(p *processor, domain string) error {
 	ur := base.ResolveReference(up)
 	u = ur.String()
 	p.checkTLS(u)
-	if req, err = http.NewRequest(http.MethodGet, u, nil); err != nil {
-		return err
-	}
-	if res, err = client.Do(req); err != nil {
+	if res, err = client.Get(u); err != nil {
 		sc.sprintf("Cannot fetch %s from security.txt: %v", u, err)
 		return nil
 	}
@@ -787,11 +780,7 @@ func (ppkc *publicPGPKeyCheck) run(p *processor, domain string) error {
 		u := up.String()
 		p.checkTLS(u)
 
-		req, err := http.NewRequest(http.MethodGet, u, nil)
-		if err != nil {
-			return err
-		}
-		res, err := client.Do(req)
+		res, err := client.Get(u)
 		if err != nil {
 			ppkc.sprintf("Fetching PGP key %s failed: %v.", u, err)
 			continue
