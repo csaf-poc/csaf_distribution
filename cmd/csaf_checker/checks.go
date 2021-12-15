@@ -172,20 +172,13 @@ func (pmdc *providerMetadataCheck) run(p *processor, domain string) error {
 	}
 
 	// Calculate checksum for later comparison.
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, res.Body); err != nil {
-		return err
-	}
-	data := buf.Bytes()
-	h := sha256.New()
-	if _, err := h.Write(data); err != nil {
-		return err
-	}
-	p.pmd256 = h.Sum(nil)
+	hash := sha256.New()
 
-	if err := json.NewDecoder(bytes.NewReader(data)).Decode(&p.pmd); err != nil {
+	if err := json.NewDecoder(io.TeeReader(res.Body, hash)).Decode(&p.pmd); err != nil {
 		pmdc.sprintf("Decoding JSON failed: %s.", err.Error())
 	}
+	p.pmd256 = hash.Sum(nil)
+
 	errors, err := csaf.ValidateProviderMetadata(p.pmd)
 	if err != nil {
 		return err
