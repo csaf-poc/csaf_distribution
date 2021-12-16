@@ -125,10 +125,13 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badIndices
 }
 
-func (r *changesReporter) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	_ = req
+	if len(p.badChanges) == 0 {
+		req.message("No problems with changes.txt found.")
+		return
+	}
+	req.Messages = p.badChanges
 }
 
 func (r *directoryListingsReporter) report(_ *processor, domain *Domain) {

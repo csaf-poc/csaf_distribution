@@ -15,13 +15,16 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/tls"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
@@ -48,6 +51,7 @@ type processor struct {
 	badProviderMetadatas []string
 	badSecurities        []string
 	badIndices           []string
+	badChanges           []string
 
 	builder gval.Language
 	exprs   map[string]gval.Evaluable
@@ -98,6 +102,7 @@ func (p *processor) clean() {
 	p.badProviderMetadatas = nil
 	p.badSecurities = nil
 	p.badIndices = nil
+	p.badChanges = nil
 }
 
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
@@ -229,6 +234,10 @@ func (p *processor) badSecurity(format string, args ...interface{}) {
 
 func (p *processor) badIndex(format string, args ...interface{}) {
 	p.badIndices = append(p.badIndices, fmt.Sprintf(format, args...))
+}
+
+func (p *processor) badChange(format string, args ...interface{}) {
+	p.badChanges = append(p.badChanges, fmt.Sprintf(format, args...))
 }
 
 func (p *processor) integrity(
@@ -419,6 +428,10 @@ func (p *processor) processFeed(feed string) error {
 		return err
 	}
 
+	if err := p.checkChanges(base, rolieChangesMask); err != nil && err != errContinue {
+		return err
+	}
+
 	return nil
 }
 
@@ -452,6 +465,59 @@ func (p *processor) checkIndex(base string, mask byte) error {
 	}
 
 	return p.integrity(files, base, mask, p.badIndex)
+}
+
+func (p *processor) checkChanges(base string, mask byte) error {
+	client := p.httpClient()
+	changes := base + "/changes.csv"
+	p.checkTLS(changes)
+	res, err := client.Get(changes)
+	if err != nil {
+		p.badChange("Fetching %s failed: %v", changes, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badChange("Fetching %s failed. Status code %d (%s)",
+			changes, res.StatusCode, res.Status)
+		return errContinue
+	}
+
+	times, files, err := func() ([]time.Time, []string, error) {
+		defer res.Body.Close()
+		var times []time.Time
+		var files []string
+		c := csv.NewReader(res.Body)
+		for {
+			r, err := c.Read()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(r) < 2 {
+				return nil, nil, errors.New("not enough columns")
+			}
+			t, err := time.Parse(time.RFC3339, r[0])
+			if err != nil {
+				return nil, nil, err
+			}
+			times, files = append(times, t), append(files, r[1])
+		}
+		return times, files, nil
+	}()
+	if err != nil {
+		p.badChange("Reading %s failed: %v", changes, err)
+		return errContinue
+	}
+
+	if !sort.SliceIsSorted(times, func(i, j int) bool {
+		return times[j].Before(times[i])
+	}) {
+		p.badChange("%s is not sorted in descending order", changes)
+	}
+
+	return p.integrity(files, base, mask, p.badChange)
 }
 
 func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
