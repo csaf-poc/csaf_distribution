@@ -471,8 +471,11 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badIndex("Fetching %s failed. Status code %d (%s)",
-			index, res.StatusCode, res.Status)
+		// It's optional
+		if res.StatusCode != http.StatusNotFound {
+			p.badIndex("Fetching %s failed. Status code %d (%s)",
+				index, res.StatusCode, res.Status)
+		}
 		return errContinue
 	}
 
@@ -503,8 +506,11 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badChange("Fetching %s failed. Status code %d (%s)",
-			changes, res.StatusCode, res.Status)
+		if res.StatusCode != http.StatusNotFound {
+			// It's optional
+			p.badChange("Fetching %s failed. Status code %d (%s)",
+				changes, res.StatusCode, res.Status)
+		}
 		return errContinue
 	}
 
@@ -587,20 +593,23 @@ func (p *processor) checkCSAFs(domain string) error {
 		var feeds [][]csaf.Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			p.badProviderMetadata("ROLIE feeds are not compatible: %v.", err)
-			goto noRolie
-		}
-		if err := p.processFeeds(domain, feeds); err != nil {
-			if err == errContinue {
-				goto noRolie
+		} else if err := p.processFeeds(domain, feeds); err != nil {
+			if err != errContinue {
+				return err
 			}
-			return err
 		}
 	}
 
-noRolie:
-
 	// No rolie feeds
-	// TODO: Implement me!
+	base := "https://" + domain + "/.well-known/csaf"
+
+	if err := p.checkIndex(base, indexMask); err != nil && err != errContinue {
+		return err
+	}
+
+	if err := p.checkChanges(base, changesMask); err != nil && err != errContinue {
+		return err
+	}
 
 	return nil
 }
