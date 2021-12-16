@@ -228,7 +228,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 			rolie.Updated = csaf.TimeStamp(time.Now())
 
-			year := strconv.Itoa(ex.currentReleaseDate.Year())
+			year := strconv.Itoa(ex.initialReleaseDate.Year())
 
 			csafURL := c.cfg.Domain +
 				"/.well-known/csaf/" + ts + "/" + year + "/" + newCSAF
