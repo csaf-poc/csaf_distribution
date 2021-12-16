@@ -40,12 +40,12 @@ type processor struct {
 
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
-	alreadyChecked map[string]byte
+	alreadyChecked map[string]whereType
 	pmd256         []byte
 	pmd            interface{}
 	keys           []*crypto.KeyRing
 
-	badHashes            []string
+	badIntegrities       []string
 	badPGPs              []string
 	badSignatures        []string
 	badProviderMetadatas []string
@@ -63,20 +63,45 @@ type reporter interface {
 
 var errContinue = errors.New("continue")
 
+type whereType byte
+
 const (
-	rolieMask = 1 << iota
+	rolieMask = whereType(1) << iota
 	rolieIndexMask
 	rolieChangesMask
 	indexMask
 	changesMask
 )
 
+func (wt whereType) String() string {
+	switch wt {
+	case rolieMask:
+		return "ROLIE"
+	case rolieIndexMask:
+		return "index.txt [ROLIE]"
+	case rolieChangesMask:
+		return "changes.csv [ROLIE]"
+	case indexMask:
+		return "index.txt"
+	case changesMask:
+		return "changes.csv"
+	default:
+		var mixed []string
+		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
+			if x := wt & mask; x == mask {
+				mixed = append(mixed, x.String())
+			}
+		}
+		return strings.Join(mixed, "|")
+	}
+}
+
 func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
 		redirects:      map[string]string{},
 		noneTLS:        map[string]struct{}{},
-		alreadyChecked: map[string]byte{},
+		alreadyChecked: map[string]whereType{},
 		builder:        gval.Full(jsonpath.Language()),
 		exprs:          map[string]gval.Evaluable{},
 	}
@@ -96,7 +121,7 @@ func (p *processor) clean() {
 	p.pmd = nil
 	p.keys = nil
 
-	p.badHashes = nil
+	p.badIntegrities = nil
 	p.badPGPs = nil
 	p.badSignatures = nil
 	p.badProviderMetadatas = nil
@@ -136,6 +161,7 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkPGPKeys,
 		(*processor).checkSecurity,
 		(*processor).checkCSAFs,
+		(*processor).checkMissing,
 	} {
 		if err := check(p, domain); err != nil && err != errContinue {
 			return err
@@ -166,7 +192,7 @@ func (p *processor) checkTLS(u string) {
 	}
 }
 
-func (p *processor) markChecked(s string, mask byte) bool {
+func (p *processor) markChecked(s string, mask whereType) bool {
 	v, ok := p.alreadyChecked[s]
 	p.alreadyChecked[s] = v | mask
 	return ok
@@ -212,8 +238,8 @@ func (p *processor) httpClient() *http.Client {
 	return p.client
 }
 
-func (p *processor) badHash(format string, args ...interface{}) {
-	p.badHashes = append(p.badHashes, fmt.Sprintf(format, args...))
+func (p *processor) badIntegrity(format string, args ...interface{}) {
+	p.badIntegrities = append(p.badIntegrities, fmt.Sprintf(format, args...))
 }
 
 func (p *processor) badSignature(format string, args ...interface{}) {
@@ -243,7 +269,7 @@ func (p *processor) badChange(format string, args ...interface{}) {
 func (p *processor) integrity(
 	files []string,
 	base string,
-	mask byte,
+	mask whereType,
 	lg func(string, ...interface{}),
 ) error {
 	b, err := url.Parse(base)
@@ -312,11 +338,11 @@ func (p *processor) integrity(
 			hashFile := u + "." + x.ext
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
-				p.badHash("Fetching %s failed: %v.", hashFile, err)
+				p.badIntegrity("Fetching %s failed: %v.", hashFile, err)
 				continue
 			}
 			if res.StatusCode != http.StatusOK {
-				p.badHash("Fetching %s failed: Status code %d (%s)",
+				p.badIntegrity("Fetching %s failed: Status code %d (%s)",
 					hashFile, res.StatusCode, res.Status)
 				continue
 			}
@@ -325,15 +351,15 @@ func (p *processor) integrity(
 				return hashFromReader(res.Body)
 			}()
 			if err != nil {
-				p.badHash("Reading %s failed: %v.", hashFile, err)
+				p.badIntegrity("Reading %s failed: %v.", hashFile, err)
 				continue
 			}
 			if len(h) == 0 {
-				p.badHash("No hash found in %s.", hashFile)
+				p.badIntegrity("No hash found in %s.", hashFile)
 				continue
 			}
 			if !bytes.Equal(h, x.hash) {
-				p.badHash("%s hash of %s does not match %s.",
+				p.badIntegrity("%s hash of %s does not match %s.",
 					strings.ToUpper(x.ext), u, hashFile)
 			}
 		}
@@ -435,7 +461,7 @@ func (p *processor) processFeed(feed string) error {
 	return nil
 }
 
-func (p *processor) checkIndex(base string, mask byte) error {
+func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 	index := base + "/index.txt"
 	p.checkTLS(index)
@@ -467,7 +493,7 @@ func (p *processor) checkIndex(base string, mask byte) error {
 	return p.integrity(files, base, mask, p.badIndex)
 }
 
-func (p *processor) checkChanges(base string, mask byte) error {
+func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
 	changes := base + "/changes.csv"
 	p.checkTLS(changes)
@@ -576,6 +602,40 @@ noRolie:
 	// No rolie feeds
 	// TODO: Implement me!
 
+	return nil
+}
+
+func (p *processor) checkMissing(string) error {
+	var maxMask whereType
+
+	for _, v := range p.alreadyChecked {
+		maxMask |= v
+	}
+
+	var files []string
+
+	for f, v := range p.alreadyChecked {
+		if v != maxMask {
+			files = append(files, f)
+		}
+	}
+	sort.Strings(files)
+	for _, f := range files {
+		v := p.alreadyChecked[f]
+		var where []string
+		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
+			if maxMask&mask == mask {
+				var in string
+				if v&mask == mask {
+					in = "in"
+				} else {
+					in = "not in"
+				}
+				where = append(where, in+" "+mask.String())
+			}
+		}
+		p.badIntegrity("%s %s", f, strings.Join(where, ", "))
+	}
 	return nil
 }
 

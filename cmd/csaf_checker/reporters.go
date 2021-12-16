@@ -142,11 +142,11 @@ func (r *directoryListingsReporter) report(_ *processor, domain *Domain) {
 
 func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if len(p.badHashes) == 0 {
+	if len(p.badIntegrities) == 0 {
 		req.message("All checksums match.")
 		return
 	}
-	req.Messages = p.badHashes
+	req.Messages = p.badIntegrities
 }
 
 func (r *signaturesReporter) report(p *processor, domain *Domain) {
