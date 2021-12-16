@@ -36,7 +36,7 @@ Follwoing options are supported:
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
 | -h, --help                                 | Show help                                                                                  |
 
-E.g. of Creating the initial directiories and files.
+E.g. of Creating the initial directiories and files
 
 ```
 ./csaf_uploader -a create  -u http://localhost/cgi-bin/csaf_provider.go
@@ -63,10 +63,13 @@ action=create
 u=http://localhost/cgi-bin/csaf_provider.go
 ```
 
-
 ## License
 
 - csaf_distribution is licensed as Free Software under MIT License.
 
 - See the specific source files
-for details, the license itself can be found in the directory `LICENSES`.
+  for details, the license itself can be found in the directory `LICENSES`.
+
+- csaf_distrubution contains third party Free Software components under compatible licenses, please check [LICENSES/3rdpartylicenses.md](LICENSES/3rdpartylicenses.md) for more info.
+
+- Check the source file of each schema under `/csaf/schema/` to see the source and license of each one.
