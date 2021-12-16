@@ -410,7 +410,7 @@ func (p *processor) integrity(
 	return nil
 }
 
-func (p *processor) processFeed(feed string) error {
+func (p *processor) processROLIEFeed(feed string) error {
 
 	client := p.httpClient()
 	res, err := client.Get(feed)
@@ -552,7 +552,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	return p.integrity(files, base, mask, p.badChange)
 }
 
-func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
+func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error {
 
 	base, err := url.Parse("https://" + domain + "/.well-known/csaf/")
 	if err != nil {
@@ -571,7 +571,7 @@ func (p *processor) processFeeds(domain string, feeds [][]csaf.Feed) error {
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if err := p.processFeed(feedURL); err != nil && err != errContinue {
+			if err := p.processROLIEFeed(feedURL); err != nil && err != errContinue {
 				return err
 			}
 		}
@@ -593,7 +593,7 @@ func (p *processor) checkCSAFs(domain string) error {
 		var feeds [][]csaf.Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			p.badProviderMetadata("ROLIE feeds are not compatible: %v.", err)
-		} else if err := p.processFeeds(domain, feeds); err != nil {
+		} else if err := p.processROLIEFeeds(domain, feeds); err != nil {
 			if err != errContinue {
 				return err
 			}
