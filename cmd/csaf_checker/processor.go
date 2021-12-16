@@ -700,7 +700,7 @@ func (p *processor) checkSecurity(domain string) error {
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
-		p.badSecurity("Fetching %s failed: %v", err)
+		p.badSecurity("Fetching %s failed: %v", path, err)
 		return errContinue
 	}
 
