@@ -98,21 +98,21 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
-func buildChecks() []check {
-	return []check{
-		&tlsCheck{baseCheck{exec: 0, num: 3, description: "TLS"}},
-		&redirectsCheck{baseCheck{exec: 12, num: 6, description: "Redirects"}},
-		&providerMetadataCheck{baseCheck{exec: 1, num: 7, description: "provider-metadata.json"}},
-		&securityCheck{baseCheck{exec: 2, num: 8, description: "security.txt"}},
-		&wellknownMetadataCheck{baseCheck{exec: 3, num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
-		&dnsPathCheck{baseCheck{exec: 4, num: 10, description: "DNS path"}},
-		&oneFolderPerYearCheck{baseCheck{exec: 5, num: 11, description: "One folder per year"}},
-		&indexCheck{baseCheck{exec: 6, num: 12, description: "index.txt"}},
-		&changesCheck{baseCheck{exec: 7, num: 13, description: "changes.csv"}},
-		&directoryListingsCheck{baseCheck{exec: 8, num: 14, description: "Directory listings"}},
-		&integrityCheck{baseCheck{exec: 9, num: 18, description: "Integrity"}},
-		&signaturesCheck{baseCheck{exec: 11, num: 19, description: "Signatures"}},
-		&publicPGPKeyCheck{baseCheck{exec: 10, num: 20, description: "Public PGP Key"}},
+func buildReporters() []reporter {
+	return []reporter{
+		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
+		&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
+		&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
+		&securityReporter{baseReporter{num: 8, description: "security.txt"}},
+		&wellknownMetadataReporter{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
+		&dnsPathReporter{baseReporter{num: 10, description: "DNS path"}},
+		&oneFolderPerYearReport{baseReporter{num: 11, description: "One folder per year"}},
+		&indexReporter{baseReporter{num: 12, description: "index.txt"}},
+		&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
+		&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
+		&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
+		&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
+		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public PGP Key"}},
 	}
 }
 
@@ -129,7 +129,7 @@ func main() {
 
 	p := newProcessor(opts)
 
-	report, err := p.run(buildChecks(), domains)
+	report, err := p.run(buildReporters(), domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))

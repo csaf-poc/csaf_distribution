@@ -25,3 +25,7 @@ type Domain struct {
 type Report struct {
 	Domains []*Domain `json:"domains,omitempty"`
 }
+
+func (r *Requirement) message(msg ...string) {
+	r.Messages = append(r.Messages, msg...)
+}

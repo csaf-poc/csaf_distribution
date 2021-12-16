@@ -9,9 +9,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -19,6 +17,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 const (
@@ -112,14 +111,13 @@ func (e *extraction) extractPublisher(path extractFunc) error {
 
 	// XXX: It's a bit cumbersome to serialize and deserialize
 	// it into our own structure.
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	if err := enc.Encode(p); err != nil {
+	publisher := new(csaf.Publisher)
+	if err := util.ReMarshalJSON(publisher, p); err != nil {
 		return err
 	}
-	e.publisher = new(csaf.Publisher)
-	if err := json.Unmarshal(buf.Bytes(), e.publisher); err != nil {
+	if err := publisher.Validate(); err != nil {
 		return err
 	}
-	return e.publisher.Validate()
+	e.publisher = publisher
+	return nil
 }
