@@ -128,7 +128,7 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badChanges) == 0 {
-		req.message("No problems with changes.txt found.")
+		req.message("No problems with changes.csv found.")
 		return
 	}
 	req.Messages = p.badChanges
