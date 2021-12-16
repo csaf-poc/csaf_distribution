@@ -110,10 +110,13 @@ func (r *dnsPathReporter) report(_ *processor, domain *Domain) {
 	_ = req
 }
 
-func (r *oneFolderPerYearReport) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	_ = req
+	if len(p.badFolders) == 0 {
+		req.message("All CSAF files are in the right folders.")
+		return
+	}
+	req.Messages = p.badFolders
 }
 
 func (r *indexReporter) report(p *processor, domain *Domain) {

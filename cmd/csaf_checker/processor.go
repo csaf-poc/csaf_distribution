@@ -22,7 +22,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -52,6 +54,7 @@ type processor struct {
 	badSecurities        []string
 	badIndices           []string
 	badChanges           []string
+	badFolders           []string
 
 	builder gval.Language
 	exprs   map[string]gval.Evaluable
@@ -171,9 +174,9 @@ func (p *processor) checkDomain(domain string) error {
 	return nil
 }
 
-func (p *processor) jsonPath(expr string) (interface{}, error) {
-	if p.pmd == nil {
-		return nil, errors.New("no provider metadata loaded")
+func (p *processor) jsonPath(expr string, doc interface{}) (interface{}, error) {
+	if doc == nil {
+		return nil, errors.New("no document to extract data from")
 	}
 	eval := p.exprs[expr]
 	if eval == nil {
@@ -183,7 +186,7 @@ func (p *processor) jsonPath(expr string) (interface{}, error) {
 		}
 		p.exprs[expr] = eval
 	}
-	return eval(context.Background(), p.pmd)
+	return eval(context.Background(), doc)
 }
 
 func (p *processor) checkTLS(u string) {
@@ -266,6 +269,12 @@ func (p *processor) badChange(format string, args ...interface{}) {
 	p.badChanges = append(p.badChanges, fmt.Sprintf(format, args...))
 }
 
+func (p *processor) badFolder(format string, args ...interface{}) {
+	p.badFolders = append(p.badFolders, fmt.Sprintf(format, args...))
+}
+
+var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
+
 func (p *processor) integrity(
 	files []string,
 	base string,
@@ -325,6 +334,22 @@ func (p *processor) integrity(
 		}
 		if len(errors) > 0 {
 			lg("CSAF file %s has %d validation errors.", u, len(errors))
+		}
+
+		// Check if file is in the right folder.
+		if date, err := p.jsonPath(
+			`$.document.tracking.initial_release_date`, doc); err != nil {
+			p.badFolder(
+				"Extracting 'initial_release_date' from %s failed: %v", u, err)
+		} else if text, ok := date.(string); !ok {
+			p.badFolder("'initial_release_date' is not a string in %s", u)
+		} else if d, err := time.Parse(time.RFC3339, text); err != nil {
+			p.badFolder(
+				"Parsing 'initial_release_date' as RFC3339 failed in %s: %v", u, err)
+		} else if m := yearFromURL.FindStringSubmatch(u); m == nil {
+			p.badFolder("No year folder found in %s", u)
+		} else if year, _ := strconv.Atoi(m[1]); d.UTC().Year() != year {
+			p.badFolder("%s should be in folder %d", u, d.UTC().Year())
 		}
 
 		// Check hashes
@@ -581,7 +606,7 @@ func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error 
 
 func (p *processor) checkCSAFs(domain string) error {
 	// Check for ROLIE
-	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds")
+	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds", p.pmd)
 	if err != nil {
 		return err
 	}
@@ -771,7 +796,7 @@ func (p *processor) checkSecurity(domain string) error {
 
 func (p *processor) checkPGPKeys(domain string) error {
 
-	src, err := p.jsonPath("$.pgp_keys")
+	src, err := p.jsonPath("$.pgp_keys", p.pmd)
 	if err != nil {
 		p.badPGP("No PGP keys found: %v.", err)
 		return errContinue
