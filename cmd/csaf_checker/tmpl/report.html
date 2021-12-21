@@ -11,7 +11,11 @@
    <h2>{{ .Name }}</h2>
    <dl>
 {{ range .Requirements }}
-   <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
+   {{ if .Ok }}
+   <dt class="success"><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
+   {{else}}
+   <dt class="failed"><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
+   {{end}}
 {{ range .Messages }}
       <dd>- {{ . }}</dd>
 {{ end }}
@@ -20,3 +24,13 @@
 {{ end }}
   </body>
 </html>
+<style>
+dt.success:after {
+    content: ' \2713';
+    color: green
+}
+dt.failed:after {
+    content: ' \2715';
+    color: red
+}
+</style>

@@ -13,6 +13,7 @@ type Requirement struct {
 	Num         int      `json:"num"`
 	Description string   `json:"description"`
 	Messages    []string `json:"messages,omitempty"`
+	Ok          bool     `json:"ok"`
 }
 
 // Domain are the results of a domain.
