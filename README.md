@@ -62,7 +62,9 @@ config.ini :
 action=create
 u=http://localhost/cgi-bin/csaf_provider.go
 ```
-
+## csaf_checker
+csaf_checker is a tool for testing the CSAF-standards on the csaf_providers.  
+See [docs/checker-setup.md](docs/checker-setup.md) for setup info.
 
 ## License
 
