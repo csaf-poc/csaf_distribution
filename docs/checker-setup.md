@@ -14,7 +14,7 @@ To set up the development environment properly (nginx and thus csaf-provider on 
 
 1.  Generate a self-signed certificate using OpenSSL
     ```bash
-    sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
     ```
     you will be asked to answer a few question about the server.
     The `Common Name (e.g. server FQDN or YOUR name)` should match the specified server name.
