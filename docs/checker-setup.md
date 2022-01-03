@@ -1,8 +1,6 @@
 # Setup checker
 
-The checker deals only with domains and TLS certifcate.
-
-To set up the development environment properly (nginx and thus csaf-provider on the same machine) following should be done:
+To set up the development environment properly (nginx and thus the csaf-provider on the same machine) following should be done:
 
 ## Use domain from the dev-machine
 
@@ -31,7 +29,7 @@ To set up the development environment properly (nginx and thus csaf-provider on 
     ```
     and `/etc/nginx/snippets/ssl-params.conf` with the content:
     ```
-    ssl_protocols TLSv1.2;
+    ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
     ssl_ecdh_curve secp384r1;
     ssl_session_timeout 10m;
