@@ -55,7 +55,7 @@ type processor struct {
 	keyRing    *crypto.KeyRing
 }
 
-// Config-files pathes
+// Pathes to the config ini file
 var iniPaths = []string{
 	"~/.config/csaf/uploader.ini",
 	"~/.csaf_uploader.ini",
@@ -112,7 +112,7 @@ func newProcessor(opts *options) (*processor, error) {
 }
 
 // httpClient Initializes the http client according
-// to the "Insecure" flag option and return it
+// to the "Insecure" flag option and returns it
 func (p *processor) httpClient() *http.Client {
 	var client http.Client
 	if p.opts.Insecure {
