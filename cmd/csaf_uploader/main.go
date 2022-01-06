@@ -316,7 +316,7 @@ func findIniFile() string {
 	return ""
 }
 
-// readInteractive prints a message to command line and retrives the password from it.
+// readInteractive prints a message to command line and retrieves the password from it.
 func readInteractive(prompt string, pw **string) error {
 	fmt.Print(prompt)
 	p, err := terminal.ReadPassword(int(os.Stdin.Fd()))
