@@ -68,8 +68,8 @@ u=http://localhost/cgi-bin/csaf_provider.go
 - csaf_distribution is licensed as Free Software under MIT License.
 
 - See the specific source files
-  for details, the license itself can be found in the directory `LICENSES`.
+  for details, the license itself can be found in the directory `LICENSES/`.
 
-- csaf_distrubution contains third party Free Software components under licenses that to our best knowledge are compatible at time of adding the depenceny, please check [3rdpartylicenses.md](3rdpartylicenses.md) for more info.
+- Contains third party Free Software components under licenses that to our best knowledge are compatible at time of adding the dependency, [3rdpartylicenses.md](3rdpartylicenses.md) has the details.
 
 - Check the source file of each schema under `/csaf/schema/` to see the source and license of each one.
