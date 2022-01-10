@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
 
+// Implemnts a command line tool that loads csaf documents to a trusted provider
 package main
 
 import (
@@ -28,6 +29,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// The supported flag options of the uploader command line
 type options struct {
 	Action         string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
 	URL            string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
@@ -53,12 +55,14 @@ type processor struct {
 	keyRing    *crypto.KeyRing
 }
 
+// iniPaths are the potential file locations of the the config file.
 var iniPaths = []string{
 	"~/.config/csaf/uploader.ini",
 	"~/.csaf_uploader.ini",
 	"csaf_uploader.ini",
 }
 
+// loadKey loads an OpenPGP key.
 func loadKey(filename string) (*crypto.Key, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -107,6 +111,8 @@ func newProcessor(opts *options) (*processor, error) {
 	return &p, nil
 }
 
+// httpClient initializes the http client according
+// to the "Insecure" flag option and returns it.
 func (p *processor) httpClient() *http.Client {
 	var client http.Client
 	if p.opts.Insecure {
@@ -119,6 +125,7 @@ func (p *processor) httpClient() *http.Client {
 	return &client
 }
 
+// writeStrings prints the passed messages under the specific passed header.
 func writeStrings(header string, messages []string) {
 	if len(messages) > 0 {
 		fmt.Println(header)
@@ -128,6 +135,8 @@ func writeStrings(header string, messages []string) {
 	}
 }
 
+// create sends an request to create the initial files and directories
+// on the server. It prints the response messages.
 func (p *processor) create() error {
 	req, err := http.NewRequest(http.MethodGet, p.opts.URL+"/api/create", nil)
 	if err != nil {
@@ -163,6 +172,9 @@ func (p *processor) create() error {
 	return nil
 }
 
+// uploadRequest creates the request for uploading a csaf document by passing the filename.
+// According to the flags values the multipart sections of the request are established.
+// It returns the created http request.
 func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -245,6 +257,8 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	return req, nil
 }
 
+// process attemps to upload a file filename to the server.
+// It prints the response messages.
 func (p *processor) process(filename string) error {
 
 	req, err := p.uploadRequest(filename)
@@ -286,6 +300,8 @@ func (p *processor) process(filename string) error {
 	return nil
 }
 
+// findIniFile looks for a file in the pre-defined paths in "iniPaths".
+// The returned value will be the name of file if found, otherwise an empty string.
 func findIniFile() string {
 	for _, f := range iniPaths {
 		name, err := homedir.Expand(f)
@@ -300,6 +316,7 @@ func findIniFile() string {
 	return ""
 }
 
+// readInteractive prints a message to command line and retrieves the password from it.
 func readInteractive(prompt string, pw **string) error {
 	fmt.Print(prompt)
 	p, err := terminal.ReadPassword(int(os.Stdin.Fd()))
