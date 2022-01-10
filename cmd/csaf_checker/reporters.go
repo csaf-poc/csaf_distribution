@@ -38,7 +38,7 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	req := &Requirement{
 		Num:         bc.num,
 		Description: bc.description,
-		Ok:          bc.ok,
+		OK:          bc.ok,
 	}
 	domain.Requirements = append(domain.Requirements, req)
 	return req
@@ -48,7 +48,7 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.noneTLS) == 0 {
 		req.message("All tested URLs were https.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 
@@ -67,7 +67,7 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.redirects) == 0 {
 		req.message("No redirections found.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 
@@ -88,7 +88,7 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badProviderMetadatas) == 0 {
 		req.message("No problems with provider metadata.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badProviderMetadatas
@@ -98,7 +98,7 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badSecurities) == 0 {
 		req.message("No problems with security.txt found.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badSecurities
@@ -120,7 +120,7 @@ func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badFolders) == 0 {
 		req.message("All CSAF files are in the right folders.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badFolders
@@ -130,7 +130,7 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badIndices) == 0 {
 		req.message("No problems with index.txt found.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badIndices
@@ -140,7 +140,7 @@ func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badChanges) == 0 {
 		req.message("No problems with changes.csv found.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badChanges
@@ -156,7 +156,7 @@ func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.badIntegrities) == 0 {
 		req.message("All checksums match.")
-		req.Ok = true
+		req.OK = true
 		return
 	}
 	req.Messages = p.badIntegrities
@@ -167,7 +167,7 @@ func (r *signaturesReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badSignatures
 	if len(p.badSignatures) == 0 {
 		req.message("All signatures verified.")
-		req.Ok = true
+		req.OK = true
 	}
 }
 
@@ -176,6 +176,6 @@ func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badPGPs
 	if len(p.keys) > 0 {
 		req.message(fmt.Sprintf("%d PGP key(s) loaded successfully.", len(p.keys)))
-		req.Ok = true
+		req.OK = true
 	}
 }

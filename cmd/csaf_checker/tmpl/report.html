@@ -11,7 +11,7 @@
    <h2>{{ .Name }}</h2>
    <dl>
 {{ range .Requirements }}
-   {{ if .Ok }}
+   {{ if .OK }}
    <dt class="success"><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
    {{else}}
    <dt class="failed"><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
