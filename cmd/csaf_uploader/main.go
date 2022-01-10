@@ -55,14 +55,14 @@ type processor struct {
 	keyRing    *crypto.KeyRing
 }
 
-// Pathes to the config ini file
+// iniPaths are the potential file locations of the the config file.
 var iniPaths = []string{
 	"~/.config/csaf/uploader.ini",
 	"~/.csaf_uploader.ini",
 	"csaf_uploader.ini",
 }
 
-// Load the OpenPGP key
+// loadKey loads an OpenPGP key.
 func loadKey(filename string) (*crypto.Key, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -111,8 +111,8 @@ func newProcessor(opts *options) (*processor, error) {
 	return &p, nil
 }
 
-// httpClient Initializes the http client according
-// to the "Insecure" flag option and returns it
+// httpClient initializes the http client according
+// to the "Insecure" flag option and returns it.
 func (p *processor) httpClient() *http.Client {
 	var client http.Client
 	if p.opts.Insecure {
@@ -125,7 +125,7 @@ func (p *processor) httpClient() *http.Client {
 	return &client
 }
 
-// writeStrings prints the passed messages under the specific passed header
+// writeStrings prints the passed messages under the specific passed header.
 func writeStrings(header string, messages []string) {
 	if len(messages) > 0 {
 		fmt.Println(header)
@@ -135,8 +135,8 @@ func writeStrings(header string, messages []string) {
 	}
 }
 
-// create makes and sends the request for creating the initial files and directories
-// It prints the response messages
+// create sends an request to create the initial files and directories
+// on the server. It prints the response messages.
 func (p *processor) create() error {
 	req, err := http.NewRequest(http.MethodGet, p.opts.URL+"/api/create", nil)
 	if err != nil {
@@ -172,9 +172,9 @@ func (p *processor) create() error {
 	return nil
 }
 
-// UpoladRequest creates the request for uploading a csaf document by passing the filename.
+// uploadRequest creates the request for uploading a csaf document by passing the filename.
 // According to the flags values the multipart sections of the request are established.
-// It returns the created http request
+// It returns the created http request.
 func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -257,8 +257,8 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	return req, nil
 }
 
-// process calls the uploadRequest to establish the request and sends it.
-// It prints the response messages
+// process attemps to upload a file filename to the server.
+// It prints the response messages.
 func (p *processor) process(filename string) error {
 
 	req, err := p.uploadRequest(filename)
@@ -300,7 +300,7 @@ func (p *processor) process(filename string) error {
 	return nil
 }
 
-// findIniFile looks for a file in the pre-defined pathes in "iniPaths".
+// findIniFile looks for a file in the pre-defined paths in "iniPaths".
 // The returned value will be the name of file if found, otherwise an empty string.
 func findIniFile() string {
 	for _, f := range iniPaths {
