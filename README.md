@@ -1,6 +1,6 @@
 # csaf_distribution
 
-**WIP**: A prove of concept for a CSAF trusted provider, checker and aggregator.
+**WIP**: A proof of concept for a CSAF trusted provider, checker and aggregator.
 
 
 ## Setup
@@ -19,8 +19,8 @@
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 
 ## csaf_uploader
-csaf_uploader is a command line tool that upload CSAF-Documents to the trusted provider (CSAF_Provider).
-Follwoing options are supported:
+csaf_uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
+Following options are supported:
 
 | Options                                    | Description                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
@@ -36,13 +36,13 @@ Follwoing options are supported:
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
 | -h, --help                                 | Show help                                                                                  |
 
-E.g. of Creating the initial directiories and files
+E.g. creating the initial directiories and files
 
 ```
 ./csaf_uploader -a create  -u http://localhost/cgi-bin/csaf_provider.go
 ```
 
-E.g. of Uploading a csaf-document
+E.g. uploading a csaf-document
 
 ```
 ./csaf_uploader -a upload -I -t white -u http://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
