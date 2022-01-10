@@ -64,6 +64,7 @@ u=http://localhost/cgi-bin/csaf_provider.go
 ```
 ## csaf_checker
 Provider checker is a tool for testing a CSAF trusted provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
+For setup configuration see [docs/checker-setup.md](docs/checker-setup.md)
 
 ## License
 

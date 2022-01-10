@@ -1,6 +1,6 @@
 # Setup checker
 
-To set up the development environment properly (nginx and thus the csaf-provider on the same machine) following should be done:
+To set up the development environment properly (nginx and thus the csaf-provider on the same machine) the following should be done:
 
 ## Use domain from the dev-machine
 
@@ -20,7 +20,7 @@ To set up the development environment properly (nginx and thus the csaf-provider
 
 2.  Configure nginx to use these files
 
-    Create following nginx configuration snippet files:
+    Create the following nginx configuration snippet files:
     `/etc/nginx/snippets/self-signed.conf` with the content:
 
     ```bash
