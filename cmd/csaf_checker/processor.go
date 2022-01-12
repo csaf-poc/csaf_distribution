@@ -64,7 +64,12 @@ type reporter interface {
 	report(*processor, *Domain)
 }
 
-var errContinue = errors.New("continue")
+var (
+	// errContinue indicates that the current check should continue.
+	errContinue = errors.New("continue")
+	// errStop indicates that the current check should stop.
+	errStop = errors.New("stop")
+)
 
 type whereType byte
 
@@ -140,7 +145,7 @@ func (p *processor) run(reporters []reporter, domains []string) (*Report, error)
 domainsLoop:
 	for _, d := range domains {
 		if err := p.checkDomain(d); err != nil {
-			if err == errContinue {
+			if err == errContinue || err == errStop {
 				continue domainsLoop
 			}
 			return nil, err
@@ -167,6 +172,9 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkMissing,
 	} {
 		if err := check(p, domain); err != nil && err != errContinue {
+			if err == errStop {
+				return nil
+			}
 			return err
 		}
 	}
@@ -682,13 +690,13 @@ func (p *processor) checkProviderMetadata(domain string) error {
 	res, err := client.Get(url)
 	if err != nil {
 		p.badProviderMetadata("Fetching %s: %v.", url, err)
-		return errContinue
+		return errStop
 	}
 
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata("Fetching %s failed. Status code: %d (%s)",
 			url, res.StatusCode, res.Status)
-		return errContinue
+		return errStop
 	}
 
 	// Calculate checksum for later comparison.
@@ -700,7 +708,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 		return json.NewDecoder(tee).Decode(&p.pmd)
 	}(); err != nil {
 		p.badProviderMetadata("Decoding JSON failed: %v", err)
-		return errContinue
+		return errStop
 	}
 
 	p.pmd256 = hash.Sum(nil)
