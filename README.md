@@ -17,6 +17,7 @@
 
 - [Install](http://nginx.org/en/docs/install.html)  **nginx**
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
+- To configure nginx for client certificate authentication see [docs/client-certificate-setup.md](docs/client-certificate-setup.md)
 
 ## csaf_uploader
 csaf_uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
