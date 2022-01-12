@@ -14,7 +14,7 @@ To set up the development environment properly (nginx and thus the csaf-provider
     ```bash
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
     ```
-    you will be asked to answer a few question about the server.
+    you will be asked to answer a few questions about the server.
     The `Common Name (e.g. server FQDN or YOUR name)` should match the specified server name.
     This generates a key file and certificate in `/etc/ssl`
 
@@ -27,7 +27,7 @@ To set up the development environment properly (nginx and thus the csaf-provider
      ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
      ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
     ```
-    and `/etc/nginx/snippets/ssl-params.conf` with the content:
+    And `/etc/nginx/snippets/ssl-params.conf` with the content:
     ```
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
