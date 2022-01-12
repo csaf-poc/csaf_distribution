@@ -9,7 +9,7 @@ cd /etc/ssl
 ### Create the Certificate Autority (CA)
 
 Firstly, generate the CA:      
-```openssl genrsa -des3 -out ca.key 4096```          
+```openssl genrsa -aes256 -out ca.key 4096```          
 This asks to enter a passphrase.       
 Next, create the server-side certificate, that will be sent via the TLS server to the client.             
 ```openssl req -new -x509 -days 365 -key ca.key -out ca.crt```       
@@ -18,7 +18,7 @@ You will be asked to answer a few questions.
 ### Create a client certificate
 
 Create the key like previously:              
-```openssl genresa -des3 -out userA.key 4906```               
+```openssl genrsa -aes256 -out userA.key 4906```               
 Then create a Certificate Signing Request (CSR)                   
 ```openssl req -new -key userA.key -out userA.csr```                
 A number of questions should be answered also.
