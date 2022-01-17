@@ -10,10 +10,12 @@
 - Clone the repository `git clone https://github.com/csaf-poc/csaf_distribution.git `
 
 - Build Go components
- ``` bash
- cd csaf_distribution
- go build -v ./cmd/...
-```
+  Makefile supplies the following builds:
+	- For Linux Systems :`make build`
+	- For Windows platform: `make build_win`
+	- Build from the last tag: `make build_tag`
+
+These places the binares in the current directory.
 
 - [Install](http://nginx.org/en/docs/install.html)  **nginx**
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
