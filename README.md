@@ -11,8 +11,8 @@
 
 - Build Go components
   Makefile supplies the following builds:
-	- For Linux Systems :`make build`
-	- For Windows platform: `make build_win`
+	- For Linux System (default build):`make build`
+	- For Windows System (cross build): `make build_win`
 	- Build from the last tag: `make build_tag`
 
 These places the binaries in the current directory.

@@ -14,7 +14,7 @@ build:
 	@echo $(buildMsg)
 	@$(BUILD) -o ./ -v ./cmd/...
 
-# Build the binaries for windows and place them in the current directory level.
+# Build the binaries for windows (cross build) and place them in the current directory level.
 build_win:
 	@echo $(buildMsg)
 	@env GOOS=windows $(BUILD)  -o ./ -v ./cmd/...
