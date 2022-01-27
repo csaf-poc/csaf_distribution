@@ -104,12 +104,12 @@ Provider has many config options described as following:
    The "csaf" selection lets the provider takes the value from the CSAF document.         
    These affects the list items in the web interface.      
    Default: `["csaf", "white", "amber", "green", "red"]`.
- - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`
+ - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.
  - domain: The domain name. Default: `http://$SERVER_NAME`.
  - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
- - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`
- - no_web_ui: Disable the web interface. Default: `false`
- - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`
- - publisher: Set the publisher. Default: `{"category": "vendor", "name": "ACME", "namespace": "https:/example.com"}`
- - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`
+ - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
+ - no_web_ui: Disable the web interface. Default: `false`.
+ - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
+ - publisher: Set the publisher. Default: `{"category": "vendor", "name": "ACME", "namespace": "https:/example.com"}`.
+ - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
