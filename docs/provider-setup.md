@@ -7,19 +7,22 @@ The following instructions are for an Debian 11 server setup.
 ```(shell)
 apt-get install nginx fcgiwrap
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
-systemctl status fcgiwrap.servic
+```
+Check if the CGI server and the fcgiwrap Socket active (running):
+```bash
+systemctl status fcgiwrap.service
 systemctl status fcgiwrap.socket
 systemctl is-enabled fcgiwrap.service
 systemctl is-enabled fcgiwrap.socket
 ```
-
+Change the group ownership and the permissions of `/var/www`:
 ```(shell)
 cd /var/www
 chgrp -R www-data .
 chmod -R g+w .
 ```
 
-Content of `/etc/nginx/fcgiwrap.conf`
+Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
 ```
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -53,7 +56,8 @@ Add to `/etc/nginx/sites-enabled/default`:
 
 ```
 server {
-
+      # Other config
+      # ...
     location / {
         # Other config
         # ...
@@ -71,10 +75,12 @@ server {
 }
 ```
 
-Place the binary under `/usr/lib/cgi-bin/csaf_provider.go`.
-Make sure `/usr/lib/cgi-bin/` exists.
+Create `cgi-bin` folder if not exists `mkdir -p /usr/lib/cgi-bin/`.
 
-Create configuarion file under `/usr/lib/csaf/config.toml` (for other config options see [Provider options](#provider-options)):
+Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_provider.go`.
+
+
+Create configuarion file under `/usr/lib/csaf/config.toml`:
 
 ```
 # upload_signature = true
@@ -85,13 +91,16 @@ domain = "http://192.168.56.102"
 #no_passphrase = true
 ```
 
-with suitable replacements.
+with suitable [replacements](#provider-options).
 
 Create the folders:
 ```(shell)
 curl http://192.168.56.102/cgi-bin/csaf_provider.go/create
 ```
-
+Or using the uploader:
+```(shell)
+./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go
+```
 
 ## Provider options
 Provider has many config options described as following:
