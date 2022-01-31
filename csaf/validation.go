@@ -121,9 +121,15 @@ func (cs *compiledSchema) validate(doc interface{}) ([]string, error) {
 	res := make([]string, 0, len(errs))
 
 	for i := range errs {
-		if e := &errs[i]; e.InstanceLocation != "" && e.Error != "" {
-			res = append(res, e.InstanceLocation+": "+e.Error)
+		e := &errs[i]
+		if e.Error == "" {
+			continue
 		}
+		loc := e.InstanceLocation
+		if loc == "" {
+			loc = e.AbsoluteKeywordLocation
+		}
+		res = append(res, loc+": "+e.Error)
 	}
 
 	return res, nil
