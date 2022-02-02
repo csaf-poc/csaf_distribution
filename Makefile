@@ -2,7 +2,7 @@
 
 SHELL=/bin/bash
 BUILD = go build
-MAKDIR = mkdir -p binaries
+MKDIR = mkdir -p bin
 
 .PHONY: build build_win build_tag clean
 
@@ -13,13 +13,13 @@ all:
 build_linux:
 	@$(MKDIR)
 	@echo "Bulding binaries for GNU/Linux ..."
-	@$(BUILD) -o ./binaries/ -v ./cmd/...
+	@$(BUILD) -o ./bin/ -v ./cmd/...
 
 # Build the binaries for windows (cross build) and place them under binaries/ directory.
 build_win:
 	@$(MKDIR)
 	@echo "Bulding binaries for windows (cross build) ..."
-	@env GOOS=windows $(BUILD)  -o ./binaries/ -v ./cmd/...
+	@env GOARCH=amd64 GOOS=windows $(BUILD)  -o ./bin/ -v ./cmd/...
 
 # Build the binaries for both GNU/linux and Windows and place them under binaries/ directory.
 build: build_linux build_win
@@ -39,6 +39,6 @@ endif
 
 # Remove binaries directory
 clean:
-	@rm -rf binaries/
+	@rm -rf bin/
 
 
