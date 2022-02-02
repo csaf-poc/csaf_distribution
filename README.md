@@ -19,6 +19,7 @@
 These places the binaries under `bin/` directory.
 
 - [Install](http://nginx.org/en/docs/install.html)  **nginx**
+- To install server certificate on nginx see [docs/install-server-certificate.md](docs/client-certificate-setup.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 
 ## csaf_uploader
