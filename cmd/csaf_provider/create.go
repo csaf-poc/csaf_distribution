@@ -18,6 +18,8 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// ensureFolders initializes the paths and call functions to create
+// the directories and files.
 func ensureFolders(c *config) error {
 
 	wellknown := filepath.Join(c.Web, ".well-known")
@@ -38,6 +40,8 @@ func ensureFolders(c *config) error {
 	return createSecurity(c, wellknown)
 }
 
+// createWellknown creates ".well-known" directory if not exist and returns nil.
+// An error is returned if the it is not a directory.
 func createWellknown(wellknown string) error {
 	st, err := os.Stat(wellknown)
 	if err != nil {
@@ -52,6 +56,10 @@ func createWellknown(wellknown string) error {
 	return nil
 }
 
+// createFeedFolders creates the feed folders according to the tlp values
+// in the "tlps" config option if they do not already exist.
+// No creation for the "csaf" option will be done.
+// It creates also symbolic links to feed folders.
 func createFeedFolders(c *config, wellknown string) error {
 	for _, t := range c.TLPs {
 		if t == tlpCSAF {
@@ -75,6 +83,8 @@ func createFeedFolders(c *config, wellknown string) error {
 	return nil
 }
 
+// createSecurity creats the "security.txt" file if does not exist
+// and writes the CSAF field inside the file.
 func createSecurity(c *config, wellknown string) error {
 	security := filepath.Join(wellknown, "security.txt")
 	if _, err := os.Stat(security); err != nil {
@@ -93,6 +103,7 @@ func createSecurity(c *config, wellknown string) error {
 	return nil
 }
 
+// createProviderMetadata creates the provider-metadata.json file if does not exist.
 func createProviderMetadata(c *config, wellknownCSAF string) error {
 	path := filepath.Join(wellknownCSAF, "provider-metadata.json")
 	_, err := os.Stat(path)

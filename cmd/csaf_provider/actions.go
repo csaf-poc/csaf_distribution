@@ -29,6 +29,8 @@ import (
 
 const dateFormat = time.RFC3339
 
+// cleanFileName removes the "/" "\" charachters and replace the two or more
+// occurences of "." with only one from the passed string.
 func cleanFileName(s string) string {
 	s = strings.ReplaceAll(s, `/`, ``)
 	s = strings.ReplaceAll(s, `\`, ``)
@@ -37,6 +39,10 @@ func cleanFileName(s string) string {
 	return s
 }
 
+// loadCSAF loads the csaf file from the request, calls the "UploadLimter" function to
+// set the upload limit size of the file and the "cleanFileName" to refine
+// the filename. It returns the filename, file content in a buffer of bytes
+// and an error.
 func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 	file, handler, err := r.FormFile("csaf")
 	if err != nil {

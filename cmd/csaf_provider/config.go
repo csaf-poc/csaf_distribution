@@ -21,14 +21,16 @@ import (
 )
 
 const (
+	// The environment name, that contains the path to the config file.
 	configEnv          = "CSAF_CONFIG"
-	defaultConfigPath  = "/usr/lib/casf/config.toml"
-	defaultFolder      = "/var/www/"
-	defaultWeb         = "/var/www/html"
-	defaultOpenPGPURL  = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}"
-	defaultUploadLimit = 50 * 1024 * 1024
+	defaultConfigPath  = "/usr/lib/casf/config.toml"                                        // Default path to the config file.
+	defaultFolder      = "/var/www/"                                                        // Default folder path.
+	defaultWeb         = "/var/www/html"                                                    // Default web path.
+	defaultOpenPGPURL  = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}" // Default OpenPGP URL.
+	defaultUploadLimit = 50 * 1024 * 1024                                                   // Default limit size of the uploaded file.
 )
 
+// configs contains the config values for the provider.
 type config struct {
 	Password                *string         `toml:"password"`
 	Key                     string          `toml:"key"`
@@ -56,6 +58,7 @@ const (
 	tlpRed   tlp = "red"
 )
 
+// valid returns true if the checked tlp matches one of the defined tlps.
 func (t tlp) valid() bool {
 	switch t {
 	case tlpCSAF, tlpWhite, tlpGreen, tlpAmber, tlpRed:
@@ -73,6 +76,8 @@ func (t *tlp) UnmarshalText(text []byte) error {
 	return fmt.Errorf("invalid config TLP value: %v", string(text))
 }
 
+// uploadLimiter returns a reader that reads from a given r reader but stops
+// with EOF after the defined bytes in the "UploadLimit" config option.
 func (cfg *config) uploadLimiter(r io.Reader) io.Reader {
 	// Zero or less means no upload limit.
 	if cfg.UploadLimit == nil || *cfg.UploadLimit < 1 {
@@ -100,6 +105,8 @@ func (cfg *config) modelTLPs() []csaf.TLPLabel {
 	return tlps
 }
 
+// loadCryptoKey loads the armored data into the key stored in the file specified by the
+// "key" config value and return it with nil, otherwise an error.
 func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
 	f, err := os.Open(cfg.Key)
 	if err != nil {
@@ -109,11 +116,18 @@ func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
 	return crypto.NewKeyFromArmoredReader(f)
 }
 
+// checkPassword compares the given hashed password with the plaintext in the "password" config value.
+// It returns true if these matches or if the "password" config value is not set, otherwise false.
 func (cfg *config) checkPassword(hash string) bool {
 	return cfg.Password == nil ||
 		bcrypt.CompareHashAndPassword([]byte(hash), []byte(*cfg.Password)) == nil
 }
 
+// loadConfig extracts the config values from the config file. The path to the
+// file is taken either from environment variable "CSAF_CONFIG" or from the
+// defined default path in "defaultConfigPath".
+// Default values are set in case some are missing in the file.
+// It returns these values in a struct and nil if there is no error.
 func loadConfig() (*config, error) {
 	path := os.Getenv(configEnv)
 	if path == "" {
