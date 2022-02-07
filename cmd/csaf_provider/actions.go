@@ -129,6 +129,8 @@ func (c *controller) tlpParam(r *http.Request) (tlp, error) {
 	return "", fmt.Errorf("unsupported TLP type '%s'", t)
 }
 
+// creates calls the "ensureFolders" functions to create the directories and files.
+// It returns a struct by success, otherwise an error.
 func (c *controller) create(*http.Request) (interface{}, error) {
 	if err := ensureFolders(c.cfg); err != nil {
 		return nil, err
