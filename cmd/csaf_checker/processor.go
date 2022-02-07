@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -723,34 +724,86 @@ func (p *processor) locateProviderMetadata(
 
 	client := p.httpClient()
 
-	for _, loc := range providerMetadataLocations {
-		url := "https://" + domain + "/" + loc
+	tryURL := func(url string) (bool, error) {
 		res, err := client.Get(url)
-		if err != nil {
-			continue
-		}
-		if res.StatusCode != http.StatusOK {
-			continue
-		}
-		if res.Header.Get("Content-Type") != "application/json" {
-			continue
+		if err != nil || res.StatusCode != http.StatusOK ||
+			res.Header.Get("Content-Type") != "application/json" {
+			// ignore this as it is expected.
+			return false, nil
 		}
 
 		if err := func() error {
 			defer res.Body.Close()
 			return found(url, res.Body)
 		}(); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	for _, loc := range providerMetadataLocations {
+		url := "https://" + domain + "/" + loc
+		ok, err := tryURL(url)
+		if err != nil {
 			if err == errContinue {
 				continue
 			}
 			return err
 		}
-		break
+		if ok {
+			return nil
+		}
 	}
 
-	// TODO: Read from security.txt
+	// Read from security.txt
 
-	return nil
+	path := "https://" + domain + "/.well-known/security.txt"
+	res, err := client.Get(path)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return err
+	}
+
+	loc, err := func() (string, error) {
+		defer res.Body.Close()
+		return extractProviderURL(res.Body)
+	}()
+
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return nil
+	}
+
+	if loc != "" {
+		if _, err = tryURL(loc); err == errContinue {
+			err = nil
+		}
+	}
+
+	return err
+}
+
+func extractProviderURL(r io.Reader) (string, error) {
+	sc := bufio.NewScanner(r)
+	const csaf = "CSAF:"
+
+	for sc.Scan() {
+		line := sc.Text()
+		if strings.HasPrefix(line, csaf) {
+			line = strings.TrimSpace(line[len(csaf):])
+			if !strings.HasPrefix(line, "https://") {
+				return "", errors.New("CASF: found in security.txt, but does not start with https://")
+			}
+			return line, nil
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
 }
 
 func (p *processor) checkProviderMetadata(domain string) error {
