@@ -19,7 +19,7 @@
      The special value `1` means checking out the highest github tag for the build.                               
     - Remove the generated binaries und their directories: `make mostlyclean`
 
-These places the binaries under `bin-linux-amd64/` and `bin-windows-amd64/` directories.
+Binaries will be places in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
 
 - [Install](http://nginx.org/en/docs/install.html)  **nginx**
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
