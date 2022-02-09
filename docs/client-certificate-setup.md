@@ -49,8 +49,8 @@ server {
 
     location ~* /.well-known/csaf/(red|green|amber)/{
         autoindex on;a
-        if  ($ssl_client_verify != SUCESS){
-            retrun 403;
+        if  ($ssl_client_verify != SUCCESS){
+            return 403;
         }
     }
 
