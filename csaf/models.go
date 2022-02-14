@@ -215,7 +215,7 @@ type AggregatorCSAFProviderMetadata struct {
 // AggregatorCSAFProvider reflects one 'csaf_trusted_provider' in an aggregator.
 type AggregatorCSAFProvider struct {
 	Metadata *AggregatorCSAFProviderMetadata `json:"metadata,omitempty"` // required
-	// TODO: Add 'mirrors'
+	Mirrors  []ProviderURL                   `json:"mirrors,omitempty"`  // required
 }
 
 // Aggregator is the CSAF Aggregator.
