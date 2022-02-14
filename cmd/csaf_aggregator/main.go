@@ -8,6 +8,10 @@
 
 package main
 
+import "github.com/csaf-poc/csaf_distribution/csaf"
+
 func main() {
 	// TODO: Implement me!
+	a := csaf.Aggregator{}
+	_ = a
 }

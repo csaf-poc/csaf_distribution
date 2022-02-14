@@ -162,6 +162,133 @@ type ProviderMetadata struct {
 	Role                    *MetadataRole    `json:"role"`                // required
 }
 
+// AggregatorCategory is the category of the aggregator.
+type AggregatorCategory string
+
+const (
+	// AggregatorAggregator represents the "aggregator" type of aggregators.
+	AggregatorAggregator AggregatorCategory = "aggregator"
+	// AggregatorLister represents the "listers" type of aggregators.
+	AggregatorLister AggregatorCategory = "lister"
+)
+
+var aggregatorCategoryPattern = alternativesUnmarshal(
+	string(AggregatorAggregator),
+	string(AggregatorLister),
+)
+
+// AggregatorVersion is the version of the aggregator.
+type AggregatorVersion string
+
+const (
+	// AggregatorVersion20 is version 2.0 of the aggregator.
+	AggregatorVersion20 AggregatorVersion = "2.0"
+)
+
+var aggregatorVersionPattern = alternativesUnmarshal(
+	string(AggregatorVersion20),
+)
+
+// AggregatorInfo reflects the 'aggregator' object in the aggregator.
+type AggregatorInfo struct {
+	Category         *AggregatorCategory `json:"category,omitempty"` // required
+	Name             string              `json:"name"`               // required
+	ContactDetails   string              `json:"contact_details,omitempty"`
+	IssuingAuthority string              `json:"issuing_authority,omitempty"`
+	Namespace        string              `json:"namespace"` // required
+}
+
+// AggregatorURL is the URL of the aggregator document.
+type AggregatorURL string
+
+var aggregatorURLPattern = patternUnmarshal(`/aggregator\.json$`)
+
+// Aggregator is the CSAF Aggregator.
+type Aggregator struct {
+	Aggregator   *AggregatorInfo    `json:"aggregator,omitempty"`         // required
+	Version      *AggregatorVersion `json:"aggregator_version,omitempty"` // required
+	CanonicalURL *AggregatorURL     `json:"canonical_url,omitempty"`      // required
+}
+
+// Validate validates the current state of the AggregatorCategory.
+func (ac *AggregatorCategory) Validate() error {
+	if ac == nil {
+		return errors.New("aggregator.aggregator.category is mandatory")
+	}
+	return nil
+}
+
+// Validate validates the current state of the AggregatorVersion.
+func (av *AggregatorVersion) Validate() error {
+	if av == nil {
+		return errors.New("aggregator.aggregator_version is mandatory")
+	}
+	return nil
+}
+
+// Validate validates the current state of the AggregatorURL.
+func (au *AggregatorURL) Validate() error {
+	if au == nil {
+		return errors.New("aggregator.aggregator_url is mandatory")
+	}
+	return nil
+}
+
+// Validate validates the current state of the AggregatorInfo.
+func (ai *AggregatorInfo) Validate() error {
+	if err := ai.Category.Validate(); err != nil {
+		return err
+	}
+	if ai.Name == "" {
+		return errors.New("aggregator.aggregator.name is mandatory")
+	}
+	if ai.Namespace == "" {
+		return errors.New("aggregator.aggregator.namespace is mandatory")
+	}
+	return nil
+}
+
+// Validate validates the current state of the Aggregator.
+func (a *Aggregator) Validate() error {
+	if err := a.Aggregator.Validate(); err != nil {
+		return err
+	}
+	if err := a.Version.Validate(); err != nil {
+		return err
+	}
+	if err := a.CanonicalURL.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (ac *AggregatorCategory) UnmarshalText(data []byte) error {
+	s, err := aggregatorCategoryPattern(data)
+	if err == nil {
+		*ac = AggregatorCategory(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (av *AggregatorVersion) UnmarshalText(data []byte) error {
+	s, err := aggregatorVersionPattern(data)
+	if err == nil {
+		*av = AggregatorVersion(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (au *AggregatorURL) UnmarshalText(data []byte) error {
+	s, err := aggregatorURLPattern(data)
+	if err == nil {
+		*au = AggregatorURL(s)
+	}
+	return err
+}
+
 func patternUnmarshal(pattern string) func([]byte) (string, error) {
 	r := regexp.MustCompile(pattern)
 	return func(data []byte) (string, error) {
