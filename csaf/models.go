@@ -203,11 +203,26 @@ type AggregatorURL string
 
 var aggregatorURLPattern = patternUnmarshal(`/aggregator\.json$`)
 
+// AggregatorCSAFProviderMetadata reflects 'csaf_providers.metadata' in an aggregator.
+type AggregatorCSAFProviderMetadata struct {
+	LastUpdated *TimeStamp    `json:"last_updated,omitempty"` // required
+	Publisher   *Publisher    `json:"publisher,omitempty"`    // required
+	Role        *MetadataRole `json:"role,omitempty"`
+	URL         *ProviderURL  `json:"url,omitempty"` // required
+}
+
+// AggregatorCSAFProvider reflects one 'csaf_trusted_provider' in an aggregator.
+type AggregatorCSAFProvider struct {
+	Metadata *AggregatorCSAFProviderMetadata `json:"metadata,omitempty"` // required
+	// TODO: Add 'mirrors'
+}
+
 // Aggregator is the CSAF Aggregator.
 type Aggregator struct {
-	Aggregator   *AggregatorInfo    `json:"aggregator,omitempty"`         // required
-	Version      *AggregatorVersion `json:"aggregator_version,omitempty"` // required
-	CanonicalURL *AggregatorURL     `json:"canonical_url,omitempty"`      // required
+	Aggregator    *AggregatorInfo           `json:"aggregator,omitempty"`         // required
+	Version       *AggregatorVersion        `json:"aggregator_version,omitempty"` // required
+	CanonicalURL  *AggregatorURL            `json:"canonical_url,omitempty"`      // required
+	CSAFProviders []*AggregatorCSAFProvider `json:"csaf_providers,omitempty"`     // required
 }
 
 // Validate validates the current state of the AggregatorCategory.
@@ -248,6 +263,37 @@ func (ai *AggregatorInfo) Validate() error {
 	return nil
 }
 
+// Validate validates the current state of the AggregatorCSAFProviderMetadata.
+func (acpm *AggregatorCSAFProviderMetadata) Validate() error {
+	if acpm == nil {
+		return errors.New("aggregator.csaf_providers[].metadata is mandatory")
+	}
+	if acpm.LastUpdated == nil {
+		return errors.New("aggregator.csaf_providers[].metadata.last_updated is mandatory")
+	}
+	if acpm.Publisher == nil {
+		return errors.New("aggregator.csaf_providers[].metadata.publisher is mandatory")
+	}
+	if err := acpm.Publisher.Validate(); err != nil {
+		return err
+	}
+	if acpm.URL == nil {
+		return errors.New("aggregator.csaf_providers[].metadata.url is mandatory")
+	}
+	return nil
+}
+
+// Validate validates the current state of the AggregatorCSAFProvider.
+func (acp *AggregatorCSAFProvider) Validate() error {
+	if acp == nil {
+		return errors.New("aggregator.csaf_providers[] not allowed to be nil")
+	}
+	if err := acp.Metadata.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Validate validates the current state of the Aggregator.
 func (a *Aggregator) Validate() error {
 	if err := a.Aggregator.Validate(); err != nil {
@@ -258,6 +304,11 @@ func (a *Aggregator) Validate() error {
 	}
 	if err := a.CanonicalURL.Validate(); err != nil {
 		return err
+	}
+	for _, provider := range a.CSAFProviders {
+		if err := provider.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
