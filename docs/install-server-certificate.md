@@ -2,7 +2,7 @@
 
 ## Get a webserver TLS certificate
 
-There are three ways to get to a TLS certificate for your HTTPS server:
+There are three ways to get a TLS certificate for your HTTPS server:
  1. Get it from a certificate provider who will run a certificate
  authority (CA) and also offers
  [extended validation](https://en.wikipedia.org/wiki/Extended_Validation_Certificate) (EV)
@@ -34,13 +34,13 @@ machine as part of the trust anchors for webbrowsers.
 Follow the [nginx documentation](https://docs.nginx.com/nginx/admin-guide/security-controls/terminating-ssl-http/)
 to further configure TLS with your private key and the certificates.
 
-We recommend to 
- * enable checking the validation of the certificate
- which can be done by OSCP
- * restricting the TLS protocol version and ciphers following a current
+We recommend to
+ * restrict the TLS protocol version and ciphers following a current
  recommendation (e.g. [BSI-TR-02102-2](https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TG02102/BSI-TR-02102-2.html)).
 
+
 ### Example configuration
+
 Assuming the relevant server block is in `/etc/nginx/sites-enabled/default`,
 change the `listen` configuration and add options so nginx
 finds your your private key and the certificate chain.
@@ -64,3 +64,9 @@ Replace `{domainName}` with the name for your certificate in the example.
 
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
+
+Technical hints:
+ * When allowing or requiring `TLSv1.3` webbrowsers like
+Chromium (seen with version 98) may have higher requirements
+on the server certificates they allow,
+otherwise they do not connect with `ERR_SSL_KEY_USAGE_INCOMPATIBLE`.
