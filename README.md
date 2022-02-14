@@ -21,7 +21,8 @@
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
 
-- [Install](http://nginx.org/en/docs/install.html)  **nginx**
+- [Install](https://nginx.org/en/docs/install.html)  **nginx**
+- To install server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 
 ## csaf_uploader
