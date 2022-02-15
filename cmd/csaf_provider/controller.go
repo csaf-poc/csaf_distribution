@@ -80,9 +80,9 @@ func (c *controller) auth(
 			http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		} else {
-		    hash := r.Header.Get("X-CSAF-PROVIDER-AUTH")
-		    if !c.cfg.checkPassword(hash) {
-			    http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			hash := r.Header.Get("X-CSAF-PROVIDER-AUTH")
+			if !c.cfg.checkPassword(hash) {
+				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
 		}
