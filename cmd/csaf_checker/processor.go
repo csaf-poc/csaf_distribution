@@ -64,7 +64,12 @@ type reporter interface {
 	report(*processor, *Domain)
 }
 
-var errContinue = errors.New("continue")
+var (
+	// errContinue indicates that the current check should continue.
+	errContinue = errors.New("continue")
+	// errStop indicates that the current check should stop.
+	errStop = errors.New("stop")
+)
 
 type whereType byte
 
@@ -102,8 +107,6 @@ func (wt whereType) String() string {
 func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
-		redirects:      map[string]string{},
-		noneTLS:        map[string]struct{}{},
 		alreadyChecked: map[string]whereType{},
 		builder:        gval.Full(jsonpath.Language()),
 		exprs:          map[string]gval.Evaluable{},
@@ -111,12 +114,8 @@ func newProcessor(opts *options) *processor {
 }
 
 func (p *processor) clean() {
-	for k := range p.redirects {
-		delete(p.redirects, k)
-	}
-	for k := range p.noneTLS {
-		delete(p.noneTLS, k)
-	}
+	p.redirects = nil
+	p.noneTLS = nil
 	for k := range p.alreadyChecked {
 		delete(p.alreadyChecked, k)
 	}
@@ -132,16 +131,14 @@ func (p *processor) clean() {
 	p.badIndices = nil
 	p.badChanges = nil
 }
-
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
 
-domainsLoop:
 	for _, d := range domains {
 		if err := p.checkDomain(d); err != nil {
-			if err == errContinue {
-				continue domainsLoop
+			if err == errContinue || err == errStop {
+				continue
 			}
 			return nil, err
 		}
@@ -167,6 +164,9 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkMissing,
 	} {
 		if err := check(p, domain); err != nil && err != errContinue {
+			if err == errStop {
+				return nil
+			}
 			return err
 		}
 	}
@@ -190,6 +190,9 @@ func (p *processor) jsonPath(expr string, doc interface{}) (interface{}, error) 
 }
 
 func (p *processor) checkTLS(u string) {
+	if p.noneTLS == nil {
+		p.noneTLS = map[string]struct{}{}
+	}
 	if x, err := url.Parse(u); err == nil && x.Scheme != "https" {
 		p.noneTLS[u] = struct{}{}
 	}
@@ -212,6 +215,9 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	}
 	url := r.URL.String()
 	p.checkTLS(url)
+	if p.redirects == nil {
+		p.redirects = map[string]string{}
+	}
 	p.redirects[url] = path.String()
 
 	if len(via) > 10 {
@@ -239,6 +245,16 @@ func (p *processor) httpClient() *http.Client {
 	}
 
 	return p.client
+}
+
+func use(s *[]string) {
+	if *s == nil {
+		*s = []string{}
+	}
+}
+
+func used(s []string) bool {
+	return s != nil
 }
 
 func (p *processor) badIntegrity(format string, args ...interface{}) {
@@ -337,6 +353,8 @@ func (p *processor) integrity(
 		}
 
 		// Check if file is in the right folder.
+		use(&p.badFolders)
+
 		if date, err := p.jsonPath(
 			`$.document.tracking.initial_release_date`, doc); err != nil {
 			p.badFolder(
@@ -353,6 +371,8 @@ func (p *processor) integrity(
 		}
 
 		// Check hashes
+		use(&p.badIntegrities)
+
 		for _, x := range []struct {
 			ext  string
 			hash []byte
@@ -392,6 +412,8 @@ func (p *processor) integrity(
 		// Check signature
 		sigFile := u + ".asc"
 		p.checkTLS(sigFile)
+
+		use(&p.badSignatures)
 
 		if res, err = client.Get(sigFile); err != nil {
 			p.badSignature("Fetching %s failed: %v.", sigFile, err)
@@ -490,6 +512,9 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 	index := base + "/index.txt"
 	p.checkTLS(index)
+
+	use(&p.badIndices)
+
 	res, err := client.Get(index)
 	if err != nil {
 		p.badIndex("Fetching %s failed: %v", index, err)
@@ -526,6 +551,9 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	changes := base + "/changes.csv"
 	p.checkTLS(changes)
 	res, err := client.Get(changes)
+
+	use(&p.badChanges)
+
 	if err != nil {
 		p.badChange("Fetching %s failed: %v", changes, err)
 		return errContinue
@@ -679,16 +707,18 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 
+	use(&p.badProviderMetadatas)
+
 	res, err := client.Get(url)
 	if err != nil {
 		p.badProviderMetadata("Fetching %s: %v.", url, err)
-		return errContinue
+		return errStop
 	}
 
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata("Fetching %s failed. Status code: %d (%s)",
 			url, res.StatusCode, res.Status)
-		return errContinue
+		return errStop
 	}
 
 	// Calculate checksum for later comparison.
@@ -700,7 +730,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 		return json.NewDecoder(tee).Decode(&p.pmd)
 	}(); err != nil {
 		p.badProviderMetadata("Decoding JSON failed: %v", err)
-		return errContinue
+		return errStop
 	}
 
 	p.pmd256 = hash.Sum(nil)
@@ -721,6 +751,8 @@ func (p *processor) checkProviderMetadata(domain string) error {
 func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
+
+	use(&p.badSecurities)
 
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
@@ -795,6 +827,8 @@ func (p *processor) checkSecurity(domain string) error {
 }
 
 func (p *processor) checkPGPKeys(domain string) error {
+
+	use(&p.badPGPs)
 
 	src, err := p.jsonPath("$.pgp_keys", p.pmd)
 	if err != nil {

@@ -7,7 +7,7 @@ The following instructions are for an Debian 11 server setup.
 ```(shell)
 apt-get install nginx fcgiwrap
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
-systemctl status fcgiwrap.servic
+systemctl status fcgiwrap.service
 systemctl status fcgiwrap.socket
 systemctl is-enabled fcgiwrap.service
 systemctl is-enabled fcgiwrap.socket
