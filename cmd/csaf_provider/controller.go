@@ -71,17 +71,20 @@ func (c *controller) auth(
 	fn func(http.ResponseWriter, *http.Request),
 ) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		log.Printf("SSL_CLIENT_VERIFY: %s\n", os.Getenv("SSL_CLIENT_VERIFY"))
-		if os.Getenv("SSL_CLIENT_VERIFY") == "SUCCESS" {
+
+		verify := os.Getenv("SSL_CLIENT_VERIFY")
+		log.Printf("SSL_CLIENT_VERIFY: %s\n", verify)
+
+		switch {
+		case verify == "SUCCESS":
 			log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
 			log.Printf("ca: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
-		} else if c.cfg.Password == nil {
-			log.Printf("No password set, declining access.")
+		case c.cfg.Password == nil:
+			log.Println("No password set, declining access.")
 			http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
-		} else {
-			hash := r.Header.Get("X-CSAF-PROVIDER-AUTH")
-			if !c.cfg.checkPassword(hash) {
+		default:
+			if pa := r.Header.Get("X-CSAF-PROVIDER-AUTH"); !c.cfg.checkPassword(pa) {
 				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
 			}
