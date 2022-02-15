@@ -46,6 +46,10 @@ location /cgi-bin/ {
 
   fastcgi_param PATH_INFO $fastcgi_path_info;
   fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+
+  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
+  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
+  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
 ```
 
@@ -53,6 +57,8 @@ Add to `/etc/nginx/sites-enabled/default`:
 
 ```
 server {
+
+    root /usr/share/nginx/html;
 
     location / {
         # Other config
@@ -74,7 +80,7 @@ server {
 Place the binary under `/usr/lib/cgi-bin/csaf_provider.go`.
 Make sure `/usr/lib/cgi-bin/` exists.
 
-Create configuarion file under `/usr/lib/csaf/config.toml`:
+Create configuration file under `/usr/lib/csaf/config.toml`:
 
 ```
 # upload_signature = true
