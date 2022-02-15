@@ -5,7 +5,7 @@ a web browser.
 
 ### Configure nginx
 Assuming the relevant server block is in `/etc/nginx/sites-enabled/default`,
-adjust it like show in the following example:
+adjust it like shown in the following example:
 
 ```
 server {
