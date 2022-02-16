@@ -11,19 +11,24 @@ package main
 import (
 	"errors"
 	"fmt"
+	"runtime"
 
 	"github.com/BurntSushi/toml"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
-const defaultConfigPath = "aggregator.toml"
+const (
+	defaultConfigPath = "aggregator.toml"
+	defaultWorkers    = 10
+)
 
 type provider struct {
-	Name string `toml:"name"`
-	URL  string `toml:"url"`
+	Name   string `toml:"name"`
+	Domain string `toml:"domain"`
 }
 
 type config struct {
+	Workers    int                 `tom:"workers"`
 	Aggregator csaf.AggregatorInfo `toml:"aggregator"`
 	Providers  []*provider         `toml:"providers"`
 }
@@ -35,8 +40,8 @@ func (c *config) checkProviders() error {
 		if p.Name == "" {
 			return errors.New("no name given for provider")
 		}
-		if p.URL == "" {
-			return errors.New("no URL given for provider")
+		if p.Domain == "" {
+			return errors.New("no domain given for provider")
 		}
 		if already[p.Name] {
 			return fmt.Errorf("provider '%s' is configured more than once", p.Name)
@@ -44,6 +49,20 @@ func (c *config) checkProviders() error {
 		already[p.Name] = true
 	}
 	return nil
+}
+
+func (c *config) setDefaults() {
+	if c.Workers <= 0 {
+		n := runtime.NumCPU()
+		if len(c.Providers) < n {
+			n = len(c.Providers)
+		}
+		if n > defaultWorkers {
+			c.Workers = defaultWorkers
+		} else {
+			c.Workers = n
+		}
+	}
 }
 
 func (c *config) check() error {
@@ -67,6 +86,8 @@ func loadConfig(path string) (*config, error) {
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
 		return nil, err
 	}
+
+	cfg.setDefaults()
 
 	if err := cfg.check(); err != nil {
 		return nil, err
