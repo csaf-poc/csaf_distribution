@@ -20,6 +20,9 @@ import (
 const (
 	defaultConfigPath = "aggregator.toml"
 	defaultWorkers    = 10
+	defaultFolder     = "/var/www"
+	defaultWeb        = "/var/www/html"
+	defaultDomain     = "https://example.com"
 )
 
 type provider struct {
@@ -28,7 +31,10 @@ type provider struct {
 }
 
 type config struct {
-	Workers    int                 `tom:"workers"`
+	Workers    int                 `toml:"workers"`
+	Folder     string              `toml:"folder"`
+	Web        string              `toml:"web"`
+	Domain     string              `toml:"domain"`
 	Aggregator csaf.AggregatorInfo `toml:"aggregator"`
 	Providers  []*provider         `toml:"providers"`
 }
@@ -52,6 +58,18 @@ func (c *config) checkProviders() error {
 }
 
 func (c *config) setDefaults() {
+	if c.Folder == "" {
+		c.Folder = defaultFolder
+	}
+
+	if c.Web == "" {
+		c.Web = defaultWeb
+	}
+
+	if c.Domain == "" {
+		c.Domain = defaultDomain
+	}
+
 	if c.Workers <= 0 {
 		n := runtime.NumCPU()
 		if len(c.Providers) < n {

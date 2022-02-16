@@ -9,7 +9,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -37,9 +36,6 @@ func main() {
 	cfg, err := loadConfig(opts.Config)
 	errCheck(err)
 
-	for _, p := range cfg.Providers {
-		fmt.Printf("name '%s' domain: '%s'\n", p.Name, p.Domain)
-	}
-
-	// TODO: Implement me!
+	p := processor{cfg: cfg}
+	errCheck(p.process())
 }
