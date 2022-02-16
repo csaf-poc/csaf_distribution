@@ -8,13 +8,31 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type processor struct {
 	cfg *config
 }
 
+func ensureDir(path string) error {
+	_, err := os.Stat(path)
+	if err != nil && os.IsNotExist(err) {
+		return os.MkdirAll(path, 0750)
+	}
+	return err
+}
+
 func (p *processor) process() error {
+	if err := ensureDir(p.cfg.Folder); err != nil {
+		return nil
+	}
+	if err := ensureDir(p.cfg.Web); err != nil {
+		return nil
+	}
+
 	for _, p := range p.cfg.Providers {
 		fmt.Printf("name '%s' domain: '%s'\n", p.Name, p.Domain)
 	}
