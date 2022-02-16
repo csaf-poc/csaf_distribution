@@ -27,10 +27,10 @@ func ensureDir(path string) error {
 
 func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
-		return nil
+		return err
 	}
 	if err := ensureDir(p.cfg.Web); err != nil {
-		return nil
+		return err
 	}
 
 	for _, p := range p.cfg.Providers {
