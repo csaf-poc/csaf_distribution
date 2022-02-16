@@ -2,21 +2,19 @@
 
 **WIP**: A proof of concept for a CSAF trusted provider, checker and aggregator.
 
-
 ## Setup
 
 - A recent version of **Go** (1.17+) should be installed. [Go installation](https://go.dev/doc/install)
 
 - Clone the repository `git clone https://github.com/csaf-poc/csaf_distribution.git `
 
-- Build Go components
-  Makefile supplies the following targets:
+- Build Go components Makefile supplies the following targets:
 	- Build For GNU/Linux System: `make build_linux`
 	- Build For Windows System (cross build): `make build_win`
     - Build For both linux and windows: `make build`
-	- Build from a specific github tag by passing the intended tag to the `BUILDTAG` variable.                     
-	   E.g. `make BUILDTAG=v1.0.0 build` or `make BUILDTAG=1 build_linux`.                    
-     The special value `1` means checking out the highest github tag for the build.                               
+	- Build from a specific github tag by passing the intended tag to the `BUILDTAG` variable.
+	   E.g. `make BUILDTAG=v1.0.0 build` or `make BUILDTAG=1 build_linux`.
+     The special value `1` means checking out the highest github tag for the build.
     - Remove the generated binaries und their directories: `make mostlyclean`
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
@@ -26,6 +24,7 @@ Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-wi
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 
 ## csaf_uploader
+
 csaf_uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
 Following options are supported:
 
@@ -34,13 +33,14 @@ Following options are supported:
 | -a, --action=[upload\|create]              | Action to perform (default: upload)                                                        |
 | -u, --url=URL                              | URL of the CSAF provider (default:https:<span></span>//localhost/cgi-bin/csaf_provider.go) |
 | -t, --tlp=[csaf\|white\|green\|amber\|red] | TLP of the feed (default: csaf)                                                            |
-| -x, --external-signed                      | CASF files are signed externally.                                                          |
+| -x, --external-signed                      | CASF files are signed externally. Assumes .asc files beside CSAF files                     |
 | -k, --key=KEY-FILE                         | OpenPGP key to sign the CSAF files                                                         |
 | -p, --password=PASSWORD                    | Authentication password for accessing the CSAF provider                                    |
 | -P, --passphrase=PASSPHRASE                | Passphrase to unlock the OpenPGP key                                                       |
 | -i, --password-interactive                 | Enter password interactively                                                               |
 | -I, --passphrase-interacive                | Enter passphrase interactively                                                             |
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
+| --insecure                                 | Do not check TSL certificates from provider                                                |
 | -h, --help                                 | Show help                                                                                  |
 
 E.g. creating the initial directiories and files
