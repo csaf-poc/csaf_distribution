@@ -192,11 +192,11 @@ var aggregatorVersionPattern = alternativesUnmarshal(
 
 // AggregatorInfo reflects the 'aggregator' object in the aggregator.
 type AggregatorInfo struct {
-	Category         *AggregatorCategory `json:"category,omitempty"` // required
-	Name             string              `json:"name"`               // required
-	ContactDetails   string              `json:"contact_details,omitempty"`
-	IssuingAuthority string              `json:"issuing_authority,omitempty"`
-	Namespace        string              `json:"namespace"` // required
+	Category         *AggregatorCategory `json:"category,omitempty" toml:"category"` // required
+	Name             string              `json:"name" toml:"name"`                   // required
+	ContactDetails   string              `json:"contact_details,omitempty" toml:"contact_details"`
+	IssuingAuthority string              `json:"issuing_authority,omitempty" toml:"issuing_authority"`
+	Namespace        string              `json:"namespace" toml:"namespace"` // required
 }
 
 // AggregatorURL is the URL of the aggregator document.

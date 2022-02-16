@@ -8,10 +8,35 @@
 
 package main
 
-import "github.com/csaf-poc/csaf_distribution/csaf"
+import (
+	"log"
+	"os"
+
+	"github.com/jessevdk/go-flags"
+)
+
+type options struct {
+	Config string `short:"c" long:"config" description:"File name of the configuration file" value-name:"CFG-FILE" default:"aggregator.toml"`
+}
+
+func errCheck(err error) {
+	if err != nil {
+		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
+			os.Exit(0)
+		}
+		log.Fatalf("error: %v\n", err)
+	}
+}
 
 func main() {
+	opts := new(options)
+
+	_, err := flags.Parse(opts)
+	errCheck(err)
+	cfg, err := loadConfig(opts.Config)
+	errCheck(err)
+
+	_ = cfg
+
 	// TODO: Implement me!
-	a := csaf.Aggregator{}
-	_ = a
 }
