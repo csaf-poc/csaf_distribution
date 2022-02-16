@@ -18,7 +18,7 @@ There are three ways to get a TLS certificate for your HTTPS server:
  Which has the major drawback that someone
  will have to import the root certificate in the webbrowsers manually or
  override warning on each connect.
- Suitable for development purposes.
+ Suitable for development purposes, must not be used for production servers.
 
 To decide between 1. and 2. you will need to weight the extra
 efforts and costs of the level of extended validation against
