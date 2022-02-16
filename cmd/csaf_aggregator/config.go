@@ -39,7 +39,7 @@ func (c *config) checkProviders() error {
 			return errors.New("no URL given for provider")
 		}
 		if already[p.Name] {
-			return fmt.Errorf("provider '%s' is configured more than once")
+			return fmt.Errorf("provider '%s' is configured more than once", p.Name)
 		}
 		already[p.Name] = true
 	}
