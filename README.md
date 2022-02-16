@@ -8,14 +8,19 @@
 
 - Clone the repository `git clone https://github.com/csaf-poc/csaf_distribution.git `
 
-- Build Go components
+- Build Go components Makefile supplies the following targets:
+	- Build For GNU/Linux System: `make build_linux`
+	- Build For Windows System (cross build): `make build_win`
+    - Build For both linux and windows: `make build`
+	- Build from a specific github tag by passing the intended tag to the `BUILDTAG` variable.
+	   E.g. `make BUILDTAG=v1.0.0 build` or `make BUILDTAG=1 build_linux`.
+     The special value `1` means checking out the highest github tag for the build.
+    - Remove the generated binaries und their directories: `make mostlyclean`
 
-```bash
-cd csaf_distribution
-go build -v ./cmd/...
-```
+Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
 
-- [Install](http://nginx.org/en/docs/install.html) **nginx**
+- [Install](https://nginx.org/en/docs/install.html)  **nginx**
+- To install server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 
 ## csaf_uploader
