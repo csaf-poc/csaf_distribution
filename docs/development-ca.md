@@ -65,3 +65,24 @@ echo Full path config options for nginx:
 echo "    ssl_certificate \"$PWD/bundle.crt\";"
 echo "    ssl_certificate_key \"$PWD/testserver-key.pem\";"
 ```
+
+
+## Considerations and References
+
+ * The command line and template options are explained in the
+   GnuTLS documentation at the end of _certtool Invocation_, see the
+   [https://gnutls.org/manual/html_node/certtool-Invocation.html](section of the current stable documentation), but be aware that it maybe newer than
+   the version you have installed.
+ * Using GnuTLS instead of OpenSSL, because GnuTLS is an implementation
+   with a long, good track record. Configuration is also slightly slimmer.
+   (Overall it is positive for the security of Open Standards
+   like TLS and CMS, that there are several competing compatible
+   implementations. Selecting a different implementation here and there helps
+   the ecosystem by fostering that competition.)
+ * Using the GnuTLS default algorithm (RSA 3072 at time for writing) is
+   good enough, as the goal is not to test ECC compatibility for client
+   certificates for servers, browser and tools.
+ * An example script for server certs:
+   https://gist.github.com/epcim/832cec2482a255e3f392
+ * An example for client certs as part of the libvirt setup instructions:
+   https://wiki.libvirt.org/page/TLSCreateClientCerts
