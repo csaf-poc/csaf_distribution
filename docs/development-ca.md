@@ -70,8 +70,7 @@ echo "    ssl_certificate_key \"$PWD/testserver-key.pem\";"
 ## Considerations and References
 
  * The command line and template options are explained in the
-   GnuTLS documentation at the end of _certtool Invocation_, see the
-   [https://gnutls.org/manual/html_node/certtool-Invocation.html](section of the current stable documentation), but be aware that it maybe newer than
+   GnuTLS documentation at the end of _certtool Invocation_, see the [section of the current stable documentation](https://gnutls.org/manual/html_node/certtool-Invocation.html), but be aware that it maybe newer than
    the version you have installed.
  * Using GnuTLS instead of OpenSSL, because GnuTLS is an implementation
    with a long, good track record. Configuration is also slightly slimmer.
