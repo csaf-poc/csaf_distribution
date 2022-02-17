@@ -180,7 +180,8 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 	// Extract real TLP from document.
 	if t == tlpCSAF {
 		if t = tlp(strings.ToLower(ex.tlpLabel)); !t.valid() || t == tlpCSAF {
-			return nil, fmt.Errorf("TLP label missing in the document")
+			return nil, fmt.Errorf(
+				"valid TLP label missing in document (found '%s')", t)
 		}
 	}
 
