@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -43,6 +44,7 @@ type processor struct {
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
 	alreadyChecked map[string]whereType
+	pmdURL         string
 	pmd256         []byte
 	pmd            interface{}
 	keys           []*crypto.KeyRing
@@ -119,6 +121,7 @@ func (p *processor) clean() {
 	for k := range p.alreadyChecked {
 		delete(p.alreadyChecked, k)
 	}
+	p.pmdURL = ""
 	p.pmd256 = nil
 	p.pmd = nil
 	p.keys = nil
@@ -131,6 +134,7 @@ func (p *processor) clean() {
 	p.badIndices = nil
 	p.badChanges = nil
 }
+
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
@@ -607,7 +611,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 
 func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error {
 
-	base, err := url.Parse("https://" + domain + "/.well-known/csaf/")
+	base, err := url.Parse(p.pmdURL)
 	if err != nil {
 		return err
 	}
@@ -654,7 +658,10 @@ func (p *processor) checkCSAFs(domain string) error {
 	}
 
 	// No rolie feeds
-	base := "https://" + domain + "/.well-known/csaf"
+	base, err := basePath(p.pmdURL)
+	if err != nil {
+		return err
+	}
 
 	if err := p.checkIndex(base, indexMask); err != nil && err != errContinue {
 		return err
@@ -701,49 +708,143 @@ func (p *processor) checkMissing(string) error {
 	return nil
 }
 
-func (p *processor) checkProviderMetadata(domain string) error {
+var providerMetadataLocations = [...]string{
+	".well-known/csaf",
+	"security/data/csaf",
+	"advisories/csaf",
+	"security/csaf",
+}
+
+// locateProviderMetadata searches for provider-metadata.json at various
+// locations mentioned in "7.1.7 Requirement 7: provider-metadata.json".
+func (p *processor) locateProviderMetadata(
+	domain string,
+	found func(string, io.Reader) error,
+) error {
 
 	client := p.httpClient()
 
-	url := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+	tryURL := func(url string) (bool, error) {
+		res, err := client.Get(url)
+		if err != nil || res.StatusCode != http.StatusOK ||
+			res.Header.Get("Content-Type") != "application/json" {
+			// ignore this as it is expected.
+			return false, nil
+		}
 
-	use(&p.badProviderMetadatas)
-
-	res, err := client.Get(url)
-	if err != nil {
-		p.badProviderMetadata("Fetching %s: %v.", url, err)
-		return errStop
+		if err := func() error {
+			defer res.Body.Close()
+			return found(url, res.Body)
+		}(); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
-	if res.StatusCode != http.StatusOK {
-		p.badProviderMetadata("Fetching %s failed. Status code: %d (%s)",
-			url, res.StatusCode, res.Status)
-		return errStop
+	for _, loc := range providerMetadataLocations {
+		url := "https://" + domain + "/" + loc
+		ok, err := tryURL(url)
+		if err != nil {
+			if err == errContinue {
+				continue
+			}
+			return err
+		}
+		if ok {
+			return nil
+		}
 	}
 
-	// Calculate checksum for later comparison.
-	hash := sha256.New()
+	// Read from security.txt
 
-	if err := func() error {
-		defer res.Body.Close()
-		tee := io.TeeReader(res.Body, hash)
-		return json.NewDecoder(tee).Decode(&p.pmd)
-	}(); err != nil {
-		p.badProviderMetadata("Decoding JSON failed: %v", err)
-		return errStop
-	}
-
-	p.pmd256 = hash.Sum(nil)
-
-	errors, err := csaf.ValidateProviderMetadata(p.pmd)
+	path := "https://" + domain + "/.well-known/security.txt"
+	res, err := client.Get(path)
 	if err != nil {
 		return err
 	}
-	if len(errors) > 0 {
-		p.badProviderMetadata("Validating against JSON schema failed:")
-		for _, msg := range errors {
-			p.badProviderMetadata(strings.ReplaceAll(msg, `%`, `%%`))
+
+	if res.StatusCode != http.StatusOK {
+		return err
+	}
+
+	loc, err := func() (string, error) {
+		defer res.Body.Close()
+		return extractProviderURL(res.Body)
+	}()
+
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return nil
+	}
+
+	if loc != "" {
+		if _, err = tryURL(loc); err == errContinue {
+			err = nil
 		}
+	}
+
+	return err
+}
+
+func extractProviderURL(r io.Reader) (string, error) {
+	sc := bufio.NewScanner(r)
+	const csaf = "CSAF:"
+
+	for sc.Scan() {
+		line := sc.Text()
+		if strings.HasPrefix(line, csaf) {
+			line = strings.TrimSpace(line[len(csaf):])
+			if !strings.HasPrefix(line, "https://") {
+				return "", errors.New("CASF: found in security.txt, but does not start with https://")
+			}
+			return line, nil
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return "", err
+	}
+	return "", nil
+}
+
+func (p *processor) checkProviderMetadata(domain string) error {
+
+	use(&p.badProviderMetadatas)
+
+	found := func(url string, content io.Reader) error {
+
+		// Calculate checksum for later comparison.
+		hash := sha256.New()
+
+		tee := io.TeeReader(content, hash)
+		if err := json.NewDecoder(tee).Decode(&p.pmd); err != nil {
+			p.badProviderMetadata("%s: Decoding JSON failed: %v", url, err)
+			return errContinue
+		}
+
+		p.pmd256 = hash.Sum(nil)
+
+		errors, err := csaf.ValidateProviderMetadata(p.pmd)
+		if err != nil {
+			return err
+		}
+		if len(errors) > 0 {
+			p.badProviderMetadata("%s: Validating against JSON schema failed:", url)
+			for _, msg := range errors {
+				p.badProviderMetadata(strings.ReplaceAll(msg, `%`, `%%`))
+			}
+			return errStop
+		}
+		p.pmdURL = url
+		return nil
+	}
+
+	if err := p.locateProviderMetadata(domain, found); err != nil {
+		return err
+	}
+
+	if p.pmdURL == "" {
+		p.badProviderMetadata("No provider-metadata.json found.")
+		return errStop
 	}
 	return nil
 }
@@ -851,7 +952,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 	client := p.httpClient()
 
-	base, err := url.Parse("https://" + domain + "/.well-known/csaf/provider-metadata.json")
+	base, err := url.Parse(p.pmdURL)
 	if err != nil {
 		return err
 	}
