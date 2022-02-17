@@ -9,12 +9,19 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
+	"sync"
+	"time"
 )
 
 type processor struct {
 	cfg *config
+}
+
+type job struct {
+	provider *provider
+	err      error
 }
 
 func ensureDir(path string) error {
@@ -25,6 +32,14 @@ func ensureDir(path string) error {
 	return err
 }
 
+func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan job) {
+	defer wg.Done()
+	for j := range jobs {
+		log.Printf("worker #%d: %s (%s)\n", worker, j.provider.Name, j.provider.Domain)
+		time.Sleep(time.Second / 2)
+	}
+}
+
 func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
 		return err
@@ -33,8 +48,22 @@ func (p *processor) process() error {
 		return err
 	}
 
-	for _, p := range p.cfg.Providers {
-		fmt.Printf("name '%s' domain: '%s'\n", p.Name, p.Domain)
+	var wg sync.WaitGroup
+
+	jobs := make(chan job)
+
+	log.Printf("Starting %d workers.\n", p.cfg.Workers)
+	for i := 1; i <= p.cfg.Workers; i++ {
+		wg.Add(1)
+		go p.handleProvider(&wg, i, jobs)
 	}
+
+	for _, p := range p.cfg.Providers {
+		jobs <- job{provider: p}
+	}
+	close(jobs)
+
+	wg.Wait()
+
 	return nil
 }

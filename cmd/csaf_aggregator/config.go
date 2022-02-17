@@ -71,15 +71,15 @@ func (c *config) setDefaults() {
 	}
 
 	if c.Workers <= 0 {
-		n := runtime.NumCPU()
-		if len(c.Providers) < n {
-			n = len(c.Providers)
-		}
-		if n > defaultWorkers {
+		if n := runtime.NumCPU(); n > defaultWorkers {
 			c.Workers = defaultWorkers
 		} else {
 			c.Workers = n
 		}
+	}
+
+	if c.Workers > len(c.Providers) {
+		c.Workers = len(c.Providers)
 	}
 }
 
