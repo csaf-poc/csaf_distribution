@@ -13,7 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 type processor struct {
@@ -35,9 +36,16 @@ func ensureDir(path string) error {
 
 func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan job) {
 	defer wg.Done()
+
+	mirror := p.cfg.Aggregator.Category != nil &&
+		*p.cfg.Aggregator.Category == csaf.AggregatorAggregator
+
 	for j := range jobs {
 		log.Printf("worker #%d: %s (%s)\n", worker, j.provider.Name, j.provider.Domain)
-		time.Sleep(time.Second / 2)
+
+		if mirror {
+			j.err = p.mirror(j.provider)
+		}
 	}
 }
 
