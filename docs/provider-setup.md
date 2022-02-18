@@ -56,7 +56,7 @@ server {
 
     location / {
         # Other config
-        # ... 
+        # ...
 
         # For atomic directory switches
         disable_symlinks off;
@@ -70,6 +70,7 @@ server {
     include fcgiwrap.conf;
 }
 ```
+Reload nginx to apply the changes (e.g. ```systemctl reload nginx``` on Debian or Ubuntu).
 
 Place the binary under `/usr/lib/cgi-bin/csaf_provider.go`.
 Make sure `/usr/lib/cgi-bin/` exists.
@@ -84,8 +85,10 @@ key = "/usr/lib/csaf/private.asc"
 domain = "http://192.168.56.102"
 #no_passphrase = true
 ```
+with suitable replacements
+(This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
-with suitable replacements.
+
 
 Create the folders:
 ```(shell)
