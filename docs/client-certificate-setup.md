@@ -43,5 +43,5 @@ on Debian or Ubuntu.)
 To test this see [development-client-certs.md](development-client-certs.md) and
 * From the browser after importing the `testclient1.p12`:
 nagivate to the protected directories.
-* With curl: `curl https://{serverURL}/.well-known/csaf/red/ --cert-type p12 --cert testclient1.crt`
+* With curl: `curl https://{serverURL}/.well-known/csaf/red/ --cert-type p12 --cert testclient1.p12`
 
