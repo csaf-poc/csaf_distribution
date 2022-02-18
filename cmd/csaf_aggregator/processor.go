@@ -9,8 +9,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -40,11 +42,101 @@ func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan j
 	}
 }
 
+// removeOrphans removes the directories that are not in the providers list.
+func (p *processor) removeOrphans() error {
+
+	dir, err := os.Open(p.cfg.Web)
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	entries, err := dir.ReadDir(-1)
+	if err != nil {
+		return err
+	}
+
+	keep := make(map[string]bool)
+	for _, p := range p.cfg.Providers {
+		keep[p.Name] = true
+	}
+
+	prefix, err := filepath.Abs(p.cfg.Folder)
+	if err != nil {
+		return err
+	}
+	prefix, err = filepath.EvalSymlinks(prefix)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		fi, err := entry.Info()
+		if err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+
+		name := entry.Name()
+		if keep[name] {
+			continue
+		}
+
+		// only remove the symlinks
+		if fi.Mode()&os.ModeSymlink != os.ModeSymlink {
+			continue
+		}
+
+		d := filepath.Join(p.cfg.Web, entry.Name())
+		r, err := filepath.EvalSymlinks(d)
+		if err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+		fmt.Printf("%s -> %s\n", entry.Name(), r)
+
+		fd, err := os.Stat(r)
+		if err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+
+		// If its not a drirectory its not a mirror.
+		if !fd.IsDir() {
+			continue
+		}
+
+		// As filepath.HasPrefix it deprecated relate with base name.
+		rel, err := filepath.Rel(prefix, r)
+		if err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+		if rel != filepath.Base(r) {
+			continue
+		}
+		log.Printf("to remove (link): %s\n", d)
+		log.Printf("to remove (orig): %s\n", r)
+		if err := os.Remove(d); err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+		if err := os.RemoveAll(r); err != nil {
+			log.Printf("error: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
 func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
 		return err
 	}
 	if err := ensureDir(p.cfg.Web); err != nil {
+		return err
+	}
+
+	if err := p.removeOrphans(); err != nil {
 		return err
 	}
 
