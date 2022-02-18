@@ -9,7 +9,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -45,12 +44,15 @@ func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan j
 // removeOrphans removes the directories that are not in the providers list.
 func (p *processor) removeOrphans() error {
 
-	dir, err := os.Open(p.cfg.Web)
-	if err != nil {
-		return err
-	}
-	defer dir.Close()
-	entries, err := dir.ReadDir(-1)
+	entries, err := func() ([]os.DirEntry, error) {
+		dir, err := os.Open(p.cfg.Web)
+		if err != nil {
+			return nil, err
+		}
+		defer dir.Close()
+		return dir.ReadDir(-1)
+	}()
+
 	if err != nil {
 		return err
 	}
@@ -70,14 +72,13 @@ func (p *processor) removeOrphans() error {
 	}
 
 	for _, entry := range entries {
-		fi, err := entry.Info()
-		if err != nil {
-			log.Printf("error: %v\n", err)
+		if keep[entry.Name()] {
 			continue
 		}
 
-		name := entry.Name()
-		if keep[name] {
+		fi, err := entry.Info()
+		if err != nil {
+			log.Printf("error: %v\n", err)
 			continue
 		}
 
@@ -92,7 +93,6 @@ func (p *processor) removeOrphans() error {
 			log.Printf("error: %v\n", err)
 			continue
 		}
-		fmt.Printf("%s -> %s\n", entry.Name(), r)
 
 		fd, err := os.Stat(r)
 		if err != nil {
@@ -105,23 +105,19 @@ func (p *processor) removeOrphans() error {
 			continue
 		}
 
-		// As filepath.HasPrefix it deprecated relate with base name.
-		rel, err := filepath.Rel(prefix, r)
-		if err != nil {
-			log.Printf("error: %v\n", err)
-			continue
-		}
-		if rel != filepath.Base(r) {
-			continue
-		}
-		log.Printf("to remove (link): %s\n", d)
-		log.Printf("to remove (orig): %s\n", r)
+		// Remove the link.
+		log.Printf("removing link %s -> %s\n", d, r)
 		if err := os.Remove(d); err != nil {
 			log.Printf("error: %v\n", err)
 			continue
 		}
-		if err := os.RemoveAll(r); err != nil {
-			log.Printf("error: %v\n", err)
+
+		// Only remove directories which are in our folder.
+		if rel, err := filepath.Rel(prefix, r); err == nil && rel == filepath.Base(r) {
+			log.Printf("removing directory %s\n", r)
+			if err := os.RemoveAll(r); err != nil {
+				log.Printf("error: %v\n", err)
+			}
 		}
 	}
 
