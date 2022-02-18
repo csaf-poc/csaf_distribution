@@ -100,7 +100,7 @@ func (p *processor) removeOrphans() error {
 			continue
 		}
 
-		// If its not a drirectory its not a mirror.
+		// If its not a directory its not a mirror.
 		if !fd.IsDir() {
 			continue
 		}
