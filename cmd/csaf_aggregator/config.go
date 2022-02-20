@@ -9,12 +9,15 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 
 	"github.com/BurntSushi/toml"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -26,8 +29,10 @@ const (
 )
 
 type provider struct {
-	Name   string `toml:"name"`
-	Domain string `toml:"domain"`
+	Name     string   `toml:"name"`
+	Domain   string   `toml:"domain"`
+	Rate     *float64 `toml:"rate"`
+	Insecure *bool    `toml:"insecure"`
 }
 
 type config struct {
@@ -35,8 +40,37 @@ type config struct {
 	Folder     string              `toml:"folder"`
 	Web        string              `toml:"web"`
 	Domain     string              `toml:"domain"`
+	Rate       *float64            `toml:"rate"`
+	Insecure   *bool               `toml:"insecure"`
 	Aggregator csaf.AggregatorInfo `toml:"aggregator"`
 	Providers  []*provider         `toml:"providers"`
+}
+
+func (c *config) httpClient(p *provider) client {
+
+	client := http.Client{}
+	if p.Insecure != nil && *p.Insecure || c.Insecure != nil && *c.Insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+	if p.Rate == nil && c.Rate == nil {
+		return &client
+	}
+
+	var r float64
+	if c.Rate != nil {
+		r = *c.Rate
+	}
+	if p.Rate != nil {
+		r = *p.Rate
+	}
+	return &limitingClient{
+		client:  &client,
+		limiter: rate.NewLimiter(rate.Limit(r), 1),
+	}
 }
 
 func (c *config) checkProviders() error {
