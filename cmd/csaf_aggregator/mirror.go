@@ -35,6 +35,15 @@ func (p *processor) mirror(prv *provider) error {
 	}
 	log.Printf("exists before: %t\n", existsBefore)
 
+	c := p.cfg.httpClient(prv)
+	doc, url, err := p.locateProviderMetadata(c, prv.Domain)
+	if err != nil {
+		log.Printf("error: %v\n", err)
+		return err
+	}
+	log.Printf("provider-metadata.json: %s\n", url)
+	_ = doc
+
 	if !existsBefore {
 		log.Println("-> fresh download")
 		// TODO: Implement me!

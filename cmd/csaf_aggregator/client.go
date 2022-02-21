@@ -10,6 +10,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -53,4 +54,19 @@ func (lc *limitingClient) Post(url, contentType string, body io.Reader) (*http.R
 func (lc *limitingClient) PostForm(url string, data url.Values) (*http.Response, error) {
 	lc.limiter.Wait(context.Background())
 	return lc.client.PostForm(url, data)
+}
+
+var errNotFound = errors.New("not found")
+
+func downloadJSON(c client, url string, found func(io.Reader) error) error {
+	res, err := c.Get(url)
+	if err != nil || res.StatusCode != http.StatusOK ||
+		res.Header.Get("Content-Type") != "application/json" {
+		// ignore this as it is expected.
+		return errNotFound
+	}
+	return func() error {
+		defer res.Body.Close()
+		return found(res.Body)
+	}()
 }

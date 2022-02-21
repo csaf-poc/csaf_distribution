@@ -764,12 +764,28 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return err
+		return nil
 	}
 
 	loc, err := func() (string, error) {
 		defer res.Body.Close()
-		return extractProviderURL(res.Body)
+		urls, err := csaf.ExtractProviderURL(res.Body, true)
+		if err != nil {
+			return "", err
+		}
+		if len(urls) == 0 {
+			return "", errors.New("No provider-metadata.json found")
+		}
+
+		if len(urls) > 1 {
+			use(&p.badSecurities)
+			p.badSecurity("Found %d CSAF entries in security.txt", len(urls))
+		}
+		if strings.HasPrefix(urls[0], "https://") {
+			use(&p.badSecurities)
+			p.badSecurity("CSAF URL does not start with https://: %s", urls[0])
+		}
+		return urls[0], nil
 	}()
 
 	if err != nil {
@@ -784,26 +800,6 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	return err
-}
-
-func extractProviderURL(r io.Reader) (string, error) {
-	sc := bufio.NewScanner(r)
-	const csaf = "CSAF:"
-
-	for sc.Scan() {
-		line := sc.Text()
-		if strings.HasPrefix(line, csaf) {
-			line = strings.TrimSpace(line[len(csaf):])
-			if !strings.HasPrefix(line, "https://") {
-				return "", errors.New("CASF: found in security.txt, but does not start with https://")
-			}
-			return line, nil
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return "", err
-	}
-	return "", nil
 }
 
 func (p *processor) checkProviderMetadata(domain string) error {

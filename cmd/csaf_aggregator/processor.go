@@ -9,7 +9,11 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
@@ -47,6 +51,73 @@ func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan j
 			j.err = p.mirror(j.provider)
 		}
 	}
+}
+
+var providerMetadataLocations = [...]string{
+	".well-known/csaf",
+	"security/data/csaf",
+	"advisories/csaf",
+	"security/csaf",
+}
+
+func (p *processor) locateProviderMetadata(c client, domain string) (interface{}, string, error) {
+
+	var doc interface{}
+
+	download := func(r io.Reader) error {
+		if err := json.NewDecoder(r).Decode(&doc); err != nil {
+			log.Printf("error: %s\n", err)
+			return errNotFound
+		}
+		return nil
+	}
+
+	for _, loc := range providerMetadataLocations {
+		url := "https://" + domain + "/" + loc
+		if err := downloadJSON(c, url, download); err != nil {
+			if err == errNotFound {
+				continue
+			}
+			return nil, "", err
+		}
+		if doc != nil {
+			return doc, url, nil
+		}
+	}
+
+	// Read from security.txt
+
+	path := "https://" + domain + "/.well-known/security.txt"
+	res, err := c.Get(path)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, "", nil
+	}
+
+	loc, err := func() (string, error) {
+		defer res.Body.Close()
+		urls, err := csaf.ExtractProviderURL(res.Body, false)
+		if err != nil {
+			return "", err
+		}
+		if len(urls) == 0 {
+			return "", errors.New("No provider-metadata.json found in secturity.txt")
+		}
+		return urls[0], nil
+	}()
+
+	if err != nil {
+		return nil, "", err
+	}
+
+	if err := downloadJSON(c, loc, download); err != nil {
+		return nil, "", err
+	}
+
+	return doc, loc, nil
 }
 
 // removeOrphans removes the directories that are not in the providers list.
