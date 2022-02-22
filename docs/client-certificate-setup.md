@@ -37,6 +37,8 @@ differently, you could use several location blocks
 each which a single `if` that matches the `$ssl_client_i_dn` variable
 to CAs that you would want to allow for that location.
 
+If you want to allow the access to the web-interface of the provider for some TLS client certificates, the CA issuer of these certificates should be assigned to the `issuer` key in the `/user/lib/csaf/config.toml` file.
+
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
 
