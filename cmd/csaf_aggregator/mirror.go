@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -28,6 +29,75 @@ func exists(path string) (bool, error) {
 		err = nil
 	}
 	return false, err
+}
+
+func (p *processor) handleROLIE(
+	c client,
+	loc string,
+	rolie interface{},
+	process func(*csaf.Feed, []string) error,
+
+) error {
+	base, err := url.Parse(loc)
+	if err != nil {
+		return err
+	}
+	var feeds [][]csaf.Feed
+	if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
+		return err
+	}
+	log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
+
+	for _, fs := range feeds {
+		for i := range fs {
+			feed := &fs[i]
+			if feed.URL == nil {
+				continue
+			}
+			up, err := url.Parse(string(*feed.URL))
+			if err != nil {
+				log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
+				continue
+			}
+			feedURL := base.ResolveReference(up).String()
+			log.Printf("Feed URL: %s\n", feedURL)
+
+			fb, err := util.BaseURL(feedURL)
+			if err != nil {
+				log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
+				continue
+			}
+			feedBaseURL, err := url.Parse(fb)
+			if err != nil {
+				log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
+				continue
+			}
+
+			res, err := c.Get(feedURL)
+			if err != nil {
+				log.Printf("error: Cannot get feed '%s'\n", err)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				log.Printf("error: Fetching %s failed. Status code %d (%s)",
+					feedURL, res.StatusCode, res.Status)
+				continue
+			}
+			rfeed, err := func() (*csaf.ROLIEFeed, error) {
+				defer res.Body.Close()
+				return csaf.LoadROLIEFeed(res.Body)
+			}()
+			if err != nil {
+				log.Printf("Loading ROLIE feed failed: %v.", err)
+				continue
+			}
+			files := resolveURLs(rfeed.Files(), feedBaseURL)
+			if err := process(feed, files); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (p *processor) mirror(prv *provider) error {
@@ -55,10 +125,6 @@ func (p *processor) mirror(prv *provider) error {
 		return err
 	}
 	log.Printf("provider-metadata.json: %s\n", loc)
-	base, err := url.Parse(loc)
-	if err != nil {
-		return err
-	}
 
 	expr := util.NewPathEval()
 	rolie, err := expr.Eval("$.distributions[*].rolie.feeds", doc)
@@ -70,61 +136,21 @@ func (p *processor) mirror(prv *provider) error {
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {
-		var feeds [][]csaf.Feed
-		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
-			return err
-		}
-		log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
-
-		for _, fs := range feeds {
-			for i := range fs {
-				feed := &fs[i]
-				if feed.URL == nil {
-					continue
+		if err := p.handleROLIE(
+			c, loc, rolie,
+			func(feed *csaf.Feed, files []string) error {
+				label := "unknown"
+				if feed.TLPLabel != nil {
+					label = strings.ToLower(string(*feed.TLPLabel))
 				}
-				up, err := url.Parse(string(*feed.URL))
-				if err != nil {
-					log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
-					continue
-				}
-				feedURL := base.ResolveReference(up).String()
-				log.Printf("Feed URL: %s\n", feedURL)
-
-				fb, err := util.BaseURL(feedURL)
-				if err != nil {
-					log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
-					continue
-				}
-				feedBaseURL, err := url.Parse(fb)
-				if err != nil {
-					log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
-					continue
-				}
-
-				res, err := c.Get(feedURL)
-				if err != nil {
-					log.Printf("error: Cannot get feed '%s'\n", err)
-					continue
-				}
-				if res.StatusCode != http.StatusOK {
-					log.Printf("error: Fetching %s failed. Status code %d (%s)",
-						feedURL, res.StatusCode, res.Status)
-					continue
-				}
-				rfeed, err := func() (*csaf.ROLIEFeed, error) {
-					defer res.Body.Close()
-					return csaf.LoadROLIEFeed(res.Body)
-				}()
-				if err != nil {
-					log.Printf("Loading ROLIE feed failed: %v.", err)
-					continue
-				}
-				files := resolveURLs(rfeed.Files(), feedBaseURL)
+				// TODO: Process feed files
 				for _, file := range files {
-					log.Printf("-> %s\n", file)
+					log.Printf("%s: %s\n", label, file)
 				}
-				// TODO: Process feed
-			}
+				return nil
+			},
+		); err != nil {
+			return err
 		}
 
 	} else { // No rolie feeds
