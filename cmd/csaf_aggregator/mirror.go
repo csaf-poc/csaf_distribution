@@ -9,6 +9,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,14 +20,11 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-func (p *processor) handleROLIE(
-	c client,
-	loc string,
+func (w *worker) handleROLIE(
 	rolie interface{},
 	process func(*csaf.Feed, []string) error,
-
 ) error {
-	base, err := url.Parse(loc)
+	base, err := url.Parse(w.loc)
 	if err != nil {
 		return err
 	}
@@ -61,7 +59,7 @@ func (p *processor) handleROLIE(
 				continue
 			}
 
-			res, err := c.Get(feedURL)
+			res, err := w.client.Get(feedURL)
 			if err != nil {
 				log.Printf("error: Cannot get feed '%s'\n", err)
 				continue
@@ -79,6 +77,7 @@ func (p *processor) handleROLIE(
 				log.Printf("Loading ROLIE feed failed: %v.", err)
 				continue
 			}
+			log.Printf("%v\n", rfeed)
 			files := resolveURLs(rfeed.Files(), feedBaseURL)
 			if err := process(feed, files); err != nil {
 				return err
@@ -88,8 +87,28 @@ func (p *processor) handleROLIE(
 	return nil
 }
 
-func (p *processor) mirror(prv *provider) error {
-	folder := filepath.Join(p.cfg.Folder, prv.Name)
+// mirrorAllowed checks if mirroring is allowed.
+func (w *worker) mirrorAllowed() bool {
+	if a, err := w.expr.Eval(
+		"$.mirror_on_CSAF_aggregators",
+		w.metadataProvider,
+	); err == nil {
+		if ma, ok := a.(bool); ok {
+			return ma
+		}
+	}
+	return true
+}
+
+func (w *worker) mirror(prv *provider) error {
+
+	// Check if we are allowed to mirror this domain.
+	//if false && !w.mirrorAllowed() {
+	if !w.mirrorAllowed() {
+		return fmt.Errorf("No mirroring of '%s' allowed.\n", prv.Name)
+	}
+
+	folder := filepath.Join(w.cfg.Folder, prv.Name)
 	log.Printf("target: '%s'\n", folder)
 
 	existsBefore, err := util.PathExists(folder)
@@ -106,32 +125,8 @@ func (p *processor) mirror(prv *provider) error {
 		// TODO: Implement me!
 	}
 
-	c := p.cfg.httpClient(prv)
-	doc, loc, err := p.locateProviderMetadata(c, prv.Domain)
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return err
-	}
-	log.Printf("provider-metadata.json: %s\n", loc)
-
-	expr := util.NewPathEval()
-
-	// Check if we are allowed to mirror this domain.
-	mirrorAllowed := true
-
-	if a, err := expr.Eval("$.mirror_on_CSAF_aggregators", doc); err == nil {
-		if ma, ok := a.(bool); ok {
-			mirrorAllowed = ma
-		}
-	}
-
-	if !mirrorAllowed {
-		log.Printf("mirroring not allowed for '%s'\n", prv.Name)
-		return nil
-	}
-
 	// Check if we have ROLIE feeds.
-	rolie, err := expr.Eval("$.distributions[*].rolie.feeds", doc)
+	rolie, err := w.expr.Eval("$.distributions[*].rolie.feeds", w.metadataProvider)
 	if err != nil {
 		log.Printf("rolie check failed: %v\n", err)
 		return err
@@ -141,26 +136,25 @@ func (p *processor) mirror(prv *provider) error {
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {
-		if err := p.handleROLIE(
-			c, loc, rolie,
-			func(feed *csaf.Feed, files []string) error {
-				label := "unknown"
-				if feed.TLPLabel != nil {
-					label = strings.ToLower(string(*feed.TLPLabel))
-				}
-				// TODO: Process feed files
-				for _, file := range files {
-					log.Printf("%s: %s\n", label, file)
-				}
-				return nil
-			},
-		); err != nil {
+		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
 			return err
 		}
-
-	} else { // No rolie feeds
-		// TODO: Implement me!
+		return nil
 	}
+	// No rolie feeds
+	// TODO: Implement me!
 
+	return nil
+}
+
+func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
+	label := "unknown"
+	if feed.TLPLabel != nil {
+		label = strings.ToLower(string(*feed.TLPLabel))
+	}
+	// TODO: Process feed files
+	for _, file := range files {
+		log.Printf("%s: %s\n", label, file)
+	}
 	return nil
 }

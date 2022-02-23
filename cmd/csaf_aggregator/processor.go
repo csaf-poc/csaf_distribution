@@ -32,6 +32,25 @@ type job struct {
 	err      error
 }
 
+type worker struct {
+	num  int
+	expr *util.PathEval
+	cfg  *config
+
+	client           client      // client per provider
+	metadataProvider interface{} // current metadata provider
+	loc              string      // URL of current provider-metadata.json
+
+}
+
+func newWorker(num int, config *config) *worker {
+	return &worker{
+		num:  num,
+		cfg:  config,
+		expr: util.NewPathEval(),
+	}
+}
+
 func ensureDir(path string) error {
 	_, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
@@ -40,17 +59,30 @@ func ensureDir(path string) error {
 	return err
 }
 
-func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan *job) {
+func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 	defer wg.Done()
 
-	mirror := p.cfg.Aggregator.Category != nil &&
-		*p.cfg.Aggregator.Category == csaf.AggregatorAggregator
+	mirror := w.cfg.Aggregator.Category != nil &&
+		*w.cfg.Aggregator.Category == csaf.AggregatorAggregator
 
 	for j := range jobs {
-		log.Printf("worker #%d: %s (%s)\n", worker, j.provider.Name, j.provider.Domain)
+		log.Printf("worker #%d: %s (%s)\n", w.num, j.provider.Name, j.provider.Domain)
+
+		// Each job needs a separate client.
+		w.client = w.cfg.httpClient(j.provider)
+
+		// We need the provider metadata in all cases.
+		if err := w.locateProviderMetadata(j.provider.Domain); err != nil {
+			j.err = err
+			continue
+		}
+
+		log.Printf("provider-metadata: %s\n", w.loc)
 
 		if mirror {
-			j.err = p.mirror(j.provider)
+			j.err = w.mirror(j.provider)
+		} else {
+			// TODO: Lister
 		}
 	}
 }
@@ -62,12 +94,12 @@ var providerMetadataLocations = [...]string{
 	"security/csaf",
 }
 
-func (p *processor) locateProviderMetadata(c client, domain string) (interface{}, string, error) {
+func (w *worker) locateProviderMetadata(domain string) error {
 
-	var doc interface{}
+	w.metadataProvider = nil
 
 	download := func(r io.Reader) error {
-		if err := json.NewDecoder(r).Decode(&doc); err != nil {
+		if err := json.NewDecoder(r).Decode(&w.metadataProvider); err != nil {
 			log.Printf("error: %s\n", err)
 			return errNotFound
 		}
@@ -76,50 +108,46 @@ func (p *processor) locateProviderMetadata(c client, domain string) (interface{}
 
 	for _, loc := range providerMetadataLocations {
 		url := "https://" + domain + "/" + loc
-		if err := downloadJSON(c, url, download); err != nil {
+		if err := downloadJSON(w.client, url, download); err != nil {
 			if err == errNotFound {
 				continue
 			}
-			return nil, "", err
+			return err
 		}
-		if doc != nil {
-			return doc, url, nil
+		if w.metadataProvider != nil {
+			w.loc = loc
+			return nil
 		}
 	}
 
 	// Read from security.txt
 
 	path := "https://" + domain + "/.well-known/security.txt"
-	res, err := c.Get(path)
+	res, err := w.client.Get(path)
 	if err != nil {
-		return nil, "", err
+		return err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, "", nil
+		return errNotFound
 	}
 
-	loc, err := func() (string, error) {
+	if err := func() error {
 		defer res.Body.Close()
 		urls, err := csaf.ExtractProviderURL(res.Body, false)
 		if err != nil {
-			return "", err
+			return err
 		}
 		if len(urls) == 0 {
-			return "", errors.New("No provider-metadata.json found in secturity.txt")
+			return errors.New("No provider-metadata.json found in secturity.txt")
 		}
-		return urls[0], nil
-	}()
-
-	if err != nil {
-		return nil, "", err
+		w.loc = urls[0]
+		return nil
+	}(); err != nil {
+		return err
 	}
 
-	if err := downloadJSON(c, loc, download); err != nil {
-		return nil, "", err
-	}
-
-	return doc, loc, nil
+	return downloadJSON(w.client, w.loc, download)
 }
 
 // removeOrphans removes the directories that are not in the providers list.
@@ -225,7 +253,8 @@ func (p *processor) process() error {
 	log.Printf("Starting %d workers.\n", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
-		go p.handleProvider(&wg, i, queue)
+		w := newWorker(i, p.cfg)
+		go w.work(&wg, queue)
 	}
 
 	jobs := make([]job, len(p.cfg.Providers))
