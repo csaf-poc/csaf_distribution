@@ -90,6 +90,17 @@ func (p *processor) mirror(prv *provider) error {
 				feedURL := base.ResolveReference(up).String()
 				log.Printf("Feed URL: %s\n", feedURL)
 
+				fb, err := util.BaseURL(feedURL)
+				if err != nil {
+					log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
+					continue
+				}
+				feedBaseURL, err := url.Parse(fb)
+				if err != nil {
+					log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
+					continue
+				}
+
 				res, err := c.Get(feedURL)
 				if err != nil {
 					log.Printf("error: Cannot get feed '%s'\n", err)
@@ -108,8 +119,11 @@ func (p *processor) mirror(prv *provider) error {
 					log.Printf("Loading ROLIE feed failed: %v.", err)
 					continue
 				}
+				files := resolveURLs(rfeed.Files(), feedBaseURL)
+				for _, file := range files {
+					log.Printf("-> %s\n", file)
+				}
 				// TODO: Process feed
-				_ = rfeed
 			}
 		}
 

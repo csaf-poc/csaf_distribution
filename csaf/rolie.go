@@ -98,6 +98,17 @@ func (rf *ROLIEFeed) EntryByID(id string) *Entry {
 	return nil
 }
 
+// Files extracts the files from the feed.
+func (rf *ROLIEFeed) Files() []string {
+	var files []string
+	for _, f := range rf.Entry {
+		for i := range f.Link {
+			files = append(files, f.Link[i].HRef)
+		}
+	}
+	return files
+}
+
 // SortEntriesByUpdated sorts all the entries in the feed
 // by their update times.
 func (rf *ROLIEFeed) SortEntriesByUpdated() {

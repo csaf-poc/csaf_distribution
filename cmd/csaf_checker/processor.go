@@ -469,12 +469,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 	}
 
 	// Extract the CSAF files from feed.
-	var files []string
-	for _, f := range rfeed.Entry {
-		for i := range f.Link {
-			files = append(files, f.Link[i].HRef)
-		}
-	}
+	files := rfeed.Files()
 
 	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata); err != nil &&
 		err != errContinue {
