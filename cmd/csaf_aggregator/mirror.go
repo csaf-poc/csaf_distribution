@@ -10,6 +10,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -88,10 +89,29 @@ func (p *processor) mirror(prv *provider) error {
 				}
 				feedURL := base.ResolveReference(up).String()
 				log.Printf("Feed URL: %s\n", feedURL)
+
+				res, err := c.Get(feedURL)
+				if err != nil {
+					log.Printf("error: Cannot get feed '%s'\n", err)
+					continue
+				}
+				if res.StatusCode != http.StatusOK {
+					log.Printf("error: Fetching %s failed. Status code %d (%s)",
+						feedURL, res.StatusCode, res.Status)
+					continue
+				}
+				rfeed, err := func() (*csaf.ROLIEFeed, error) {
+					defer res.Body.Close()
+					return csaf.LoadROLIEFeed(res.Body)
+				}()
+				if err != nil {
+					log.Printf("Loading ROLIE feed failed: %v.", err)
+					continue
+				}
 				// TODO: Process feed
+				_ = rfeed
 			}
 		}
-		// TODO: Process the feeds
 
 	} else { // No rolie feeds
 		// TODO: Implement me!

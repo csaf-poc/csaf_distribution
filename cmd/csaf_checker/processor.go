@@ -462,7 +462,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		p.badProviderMetadata("Loading ROLIE feed failed: %v.", err)
 		return errContinue
 	}
-	base, err := basePath(feed)
+	base, err := util.BaseURL(feed)
 	if err != nil {
 		p.badProviderMetadata("Bad base path: %v", err)
 		return errContinue
@@ -638,7 +638,7 @@ func (p *processor) checkCSAFs(domain string) error {
 	}
 
 	// No rolie feeds
-	base, err := basePath(p.pmdURL)
+	base, err := util.BaseURL(p.pmdURL)
 	if err != nil {
 		return err
 	}
