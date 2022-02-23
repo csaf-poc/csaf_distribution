@@ -58,14 +58,19 @@ type Entry struct {
 	Format    Format    `json:"format"`
 }
 
-// ROLIEFeed is a ROLIE feed.
-type ROLIEFeed struct {
+// FeedData is the contetn of the ROLIE feed.
+type FeedData struct {
 	ID       string          `json:"id"`
 	Title    string          `json:"title"`
 	Link     []Link          `json:"link,omitempty"`
 	Category []ROLIECategory `json:"category,omitempty"`
 	Updated  TimeStamp       `json:"updated"`
 	Entry    []*Entry        `json:"entry,omitempty"`
+}
+
+// ROLIEFeed is a ROLIE feed.
+type ROLIEFeed struct {
+	Feed FeedData `json:"feed"`
 }
 
 // LoadROLIEFeed loads a ROLIE feed from a reader.
@@ -90,7 +95,7 @@ func (rf *ROLIEFeed) WriteTo(w io.Writer) (int64, error) {
 // EntryByID looks up an entry by its ID.
 // Returns nil if no such entry was found.
 func (rf *ROLIEFeed) EntryByID(id string) *Entry {
-	for _, entry := range rf.Entry {
+	for _, entry := range rf.Feed.Entry {
 		if entry.ID == id {
 			return entry
 		}
@@ -101,7 +106,7 @@ func (rf *ROLIEFeed) EntryByID(id string) *Entry {
 // Files extracts the files from the feed.
 func (rf *ROLIEFeed) Files() []string {
 	var files []string
-	for _, f := range rf.Entry {
+	for _, f := range rf.Feed.Entry {
 		for i := range f.Link {
 			files = append(files, f.Link[i].HRef)
 		}
@@ -112,7 +117,7 @@ func (rf *ROLIEFeed) Files() []string {
 // SortEntriesByUpdated sorts all the entries in the feed
 // by their update times.
 func (rf *ROLIEFeed) SortEntriesByUpdated() {
-	entries := rf.Entry
+	entries := rf.Feed.Entry
 	sort.Slice(entries, func(i, j int) bool {
 		return time.Time(entries[j].Updated).Before(time.Time(entries[i].Updated))
 	})
