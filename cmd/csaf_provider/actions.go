@@ -226,16 +226,18 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			// Create new if does not exists.
 			if rolie == nil {
 				rolie = &csaf.ROLIEFeed{
-					ID:    "csaf-feed-tlp-" + ts,
-					Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
-					Link: []csaf.Link{{
-						Rel:  "rel",
-						HRef: string(feedURL),
-					}},
+					Feed: csaf.FeedData{
+						ID:    "csaf-feed-tlp-" + ts,
+						Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
+						Link: []csaf.Link{{
+							Rel:  "rel",
+							HRef: string(feedURL),
+						}},
+					},
 				}
 			}
 
-			rolie.Updated = csaf.TimeStamp(time.Now())
+			rolie.Feed.Updated = csaf.TimeStamp(time.Now())
 
 			year := strconv.Itoa(ex.initialReleaseDate.Year())
 
@@ -245,7 +247,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			e := rolie.EntryByID(ex.id)
 			if e == nil {
 				e = &csaf.Entry{ID: ex.id}
-				rolie.Entry = append(rolie.Entry, e)
+				rolie.Feed.Entry = append(rolie.Feed.Entry, e)
 			}
 
 			e.Titel = ex.title

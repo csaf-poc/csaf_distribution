@@ -490,7 +490,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 	// Extract the CSAF files from feed.
 	var files []string
-	for _, f := range rfeed.Entry {
+	for _, f := range rfeed.Feed.Entry {
 		for i := range f.Link {
 			files = append(files, f.Link[i].HRef)
 		}
