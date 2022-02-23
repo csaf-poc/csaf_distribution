@@ -9,13 +9,21 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -147,6 +155,25 @@ func (w *worker) mirror() error {
 	return errors.New("not implemented, yet")
 }
 
+// releaseYear extracts initial_release_date from advisory.
+func (w *worker) releaseYear(advisory interface{}) (int, error) {
+	date, err := w.expr.Eval(
+		`$.document.tracking.initial_release_date`, advisory)
+	if err != nil {
+		return 0, err
+	}
+	text, ok := date.(string)
+	if !ok {
+		return 0, errors.New("'initial_release_date' is not a string")
+
+	}
+	d, err := time.Parse(time.RFC3339, text)
+	if err != nil {
+		return 0, err
+	}
+	return d.UTC().Year(), nil
+}
+
 func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 	label := "unknown"
 	if feed.TLPLabel != nil {
@@ -165,9 +192,71 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 
 	log.Printf("New directory: %s\n", ndir)
 
+	var data bytes.Buffer
+
+	yearDirs := make(map[int]string)
+
 	// TODO: Process feed files
 	for _, file := range files {
-		log.Printf("%s: %s\n", label, file)
+		u, err := url.Parse(file)
+		if err != nil {
+			log.Printf("error: %s\n", err)
+			continue
+		}
+		filename := util.CleanFileName(filepath.Base(u.Path))
+
+		var advisory interface{}
+
+		s256 := sha256.New()
+		s512 := sha512.New()
+		data.Reset()
+		hasher := io.MultiWriter(s256, s512, &data)
+
+		download := func(r io.Reader) error {
+			tee := io.TeeReader(r, hasher)
+			return json.NewDecoder(tee).Decode(&advisory)
+		}
+
+		if err := downloadJSON(w.client, file, download); err != nil {
+			log.Printf("error: %v\n", err)
+			continue
+		}
+
+		errors, err := csaf.ValidateCSAF(advisory)
+		if err != nil {
+			log.Printf("error: %s: %v", file, err)
+			continue
+		}
+		if len(errors) > 0 {
+			log.Printf("CSAF file %s has %d validation errors.",
+				file, len(errors))
+			continue
+		}
+
+		year, err := w.releaseYear(advisory)
+		if err != nil {
+			log.Printf("error: %s: %v\n", file, err)
+			continue
+		}
+
+		yearDir := yearDirs[year]
+		if yearDir == "" {
+			yearDir = filepath.Join(dir, label, strconv.Itoa(year))
+			if err := os.MkdirAll(yearDir, 0755); err != nil {
+				return err
+			}
+			log.Printf("created %s\n", yearDir)
+			yearDirs[year] = yearDir
+		}
+
+		fname := filepath.Join(yearDir, filename)
+		if err := writeFileHashes(
+			fname, filename,
+			data.Bytes(), s256.Sum(nil), s512.Sum(nil),
+		); err != nil {
+			return err
+		}
+
 	}
 	return nil
 }

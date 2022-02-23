@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -29,18 +28,8 @@ import (
 
 const dateFormat = time.RFC3339
 
-// cleanFileName removes the "/" "\" charachters and replace the two or more
-// occurences of "." with only one from the passed string.
-func cleanFileName(s string) string {
-	s = strings.ReplaceAll(s, `/`, ``)
-	s = strings.ReplaceAll(s, `\`, ``)
-	r := regexp.MustCompile(`\.{2,}`)
-	s = r.ReplaceAllString(s, `.`)
-	return s
-}
-
 // loadCSAF loads the csaf file from the request, calls the "UploadLimter" function to
-// set the upload limit size of the file and the "cleanFileName" to refine
+// set the upload limit size of the file and the refines
 // the filename. It returns the filename, file content in a buffer of bytes
 // and an error.
 func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
@@ -54,7 +43,7 @@ func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 	if _, err := io.Copy(&buf, c.cfg.uploadLimiter(file)); err != nil {
 		return "", nil, err
 	}
-	return cleanFileName(handler.Filename), buf.Bytes(), nil
+	return util.CleanFileName(handler.Filename), buf.Bytes(), nil
 }
 
 func (c *controller) handleSignature(
