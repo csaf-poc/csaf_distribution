@@ -12,24 +12,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
-
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		err = nil
-	}
-	return false, err
-}
 
 func (p *processor) handleROLIE(
 	c client,
@@ -104,7 +92,7 @@ func (p *processor) mirror(prv *provider) error {
 	folder := filepath.Join(p.cfg.Folder, prv.Name)
 	log.Printf("target: '%s'\n", folder)
 
-	existsBefore, err := exists(folder)
+	existsBefore, err := util.PathExists(folder)
 	if err != nil {
 		return err
 	}
@@ -145,6 +133,7 @@ func (p *processor) mirror(prv *provider) error {
 	// Check if we have ROLIE feeds.
 	rolie, err := expr.Eval("$.distributions[*].rolie.feeds", doc)
 	if err != nil {
+		log.Printf("rolie check failed: %v\n", err)
 		return err
 	}
 

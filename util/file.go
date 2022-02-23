@@ -17,6 +17,18 @@ import (
 	"time"
 )
 
+// PathExists returns true if path exits.
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		err = nil
+	}
+	return false, err
+}
+
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {
 	io.Writer
