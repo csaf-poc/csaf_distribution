@@ -9,6 +9,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -77,7 +78,6 @@ func (w *worker) handleROLIE(
 				log.Printf("Loading ROLIE feed failed: %v.", err)
 				continue
 			}
-			log.Printf("%v\n", rfeed)
 			files := resolveURLs(rfeed.Files(), feedBaseURL)
 			if err := process(feed, files); err != nil {
 				return err
@@ -100,15 +100,15 @@ func (w *worker) mirrorAllowed() bool {
 	return true
 }
 
-func (w *worker) mirror(prv *provider) error {
+func (w *worker) mirror() error {
 
 	// Check if we are allowed to mirror this domain.
 	//if false && !w.mirrorAllowed() {
 	if !w.mirrorAllowed() {
-		return fmt.Errorf("No mirroring of '%s' allowed.\n", prv.Name)
+		return fmt.Errorf("No mirroring of '%s' allowed.\n", w.provider.Name)
 	}
 
-	folder := filepath.Join(w.cfg.Folder, prv.Name)
+	folder := filepath.Join(w.cfg.Folder, w.provider.Name)
 	log.Printf("target: '%s'\n", folder)
 
 	existsBefore, err := util.PathExists(folder)
@@ -139,12 +139,12 @@ func (w *worker) mirror(prv *provider) error {
 		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
 			return err
 		}
-		return nil
+		return errors.New("not implemented, yet")
 	}
 	// No rolie feeds
 	// TODO: Implement me!
 
-	return nil
+	return errors.New("not implemented, yet")
 }
 
 func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
@@ -152,6 +152,19 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 	if feed.TLPLabel != nil {
 		label = strings.ToLower(string(*feed.TLPLabel))
 	}
+
+	dir, err := w.createDir()
+	if err != nil {
+		return err
+	}
+
+	ndir, err := util.MakeUniqDir(filepath.Join(dir, label))
+	if err != nil {
+		return err
+	}
+
+	log.Printf("New directory: %s\n", ndir)
+
 	// TODO: Process feed files
 	for _, file := range files {
 		log.Printf("%s: %s\n", label, file)

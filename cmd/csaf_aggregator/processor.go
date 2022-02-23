@@ -38,8 +38,10 @@ type worker struct {
 	cfg  *config
 
 	client           client      // client per provider
+	provider         *provider   // current provider
 	metadataProvider interface{} // current metadata provider
 	loc              string      // URL of current provider-metadata.json
+	dir              string      // Directory to store data to.
 
 }
 
@@ -59,6 +61,17 @@ func ensureDir(path string) error {
 	return err
 }
 
+func (w *worker) createDir() (string, error) {
+	if w.dir != "" {
+		return w.dir, nil
+	}
+	dir, err := util.MakeUniqDir(filepath.Join(w.cfg.Folder, w.provider.Name))
+	if err != nil {
+		w.dir = dir
+	}
+	return dir, err
+}
+
 func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 	defer wg.Done()
 
@@ -67,6 +80,9 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 
 	for j := range jobs {
 		log.Printf("worker #%d: %s (%s)\n", w.num, j.provider.Name, j.provider.Domain)
+
+		w.dir = ""
+		w.provider = j.provider
 
 		// Each job needs a separate client.
 		w.client = w.cfg.httpClient(j.provider)
@@ -80,7 +96,12 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 		log.Printf("provider-metadata: %s\n", w.loc)
 
 		if mirror {
-			j.err = w.mirror(j.provider)
+			if j.err = w.mirror(); j.err != nil && w.dir != "" {
+				// If something goes wrong remove the debris.
+				if err := os.RemoveAll(w.dir); err != nil {
+					log.Printf("error: %v\n", err)
+				}
+			}
 		} else {
 			// TODO: Lister
 		}
