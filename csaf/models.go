@@ -664,3 +664,12 @@ func LoadProviderMetadata(r io.Reader) (*ProviderMetadata, error) {
 
 	return &pmd, nil
 }
+
+// WriteTo saves an AggregatorURL to a writer.
+func (a *Aggregator) WriteTo(w io.Writer) (int64, error) {
+	nw := util.NWriter{Writer: w, N: 0}
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(a)
+	return nw.N, err
+}

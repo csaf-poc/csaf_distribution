@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 type processor struct {
@@ -27,6 +28,7 @@ type processor struct {
 
 type job struct {
 	provider *provider
+	result   *csaf.AggregatorCSAFProvider
 	err      error
 }
 
@@ -38,7 +40,7 @@ func ensureDir(path string) error {
 	return err
 }
 
-func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan job) {
+func (p *processor) handleProvider(wg *sync.WaitGroup, worker int, jobs <-chan *job) {
 	defer wg.Done()
 
 	mirror := p.cfg.Aggregator.Category != nil &&
@@ -207,7 +209,8 @@ func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
 		return err
 	}
-	if err := ensureDir(p.cfg.Web); err != nil {
+	web := filepath.Join(p.cfg.Web, ".well-known", "csaf")
+	if err := ensureDir(web); err != nil {
 		return err
 	}
 
@@ -217,20 +220,66 @@ func (p *processor) process() error {
 
 	var wg sync.WaitGroup
 
-	jobs := make(chan job)
+	queue := make(chan *job)
 
 	log.Printf("Starting %d workers.\n", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
-		go p.handleProvider(&wg, i, jobs)
+		go p.handleProvider(&wg, i, queue)
 	}
 
-	for _, p := range p.cfg.Providers {
-		jobs <- job{provider: p}
+	jobs := make([]job, len(p.cfg.Providers))
+
+	for i, p := range p.cfg.Providers {
+		jobs[i] = job{provider: p}
+		queue <- &jobs[i]
 	}
-	close(jobs)
+	close(queue)
 
 	wg.Wait()
 
-	return nil
+	// Assemble aggretaor data structure.
+
+	csafProviders := make([]*csaf.AggregatorCSAFProvider, 0, len(jobs))
+
+	for i := range jobs {
+		j := &jobs[i]
+		if j.err != nil {
+			log.Printf("error: '%s' failed: %v\n", j.provider.Name, j.err)
+			continue
+		}
+		if j.result == nil {
+			log.Printf("error: '%s' does not produce any result.\n", j.provider.Name)
+			continue
+		}
+		csafProviders = append(csafProviders, j.result)
+	}
+
+	version := csaf.AggregatorVersion20
+	canonicalURL := csaf.AggregatorURL(p.cfg.Domain + "/.well-known/csaf/aggregator.json")
+
+	agg := csaf.Aggregator{
+		Aggregator:    &p.cfg.Aggregator,
+		Version:       &version,
+		CanonicalURL:  &canonicalURL,
+		CSAFProviders: csafProviders,
+	}
+
+	dstName := filepath.Join(web, "aggregator.json")
+
+	fname, file, err := util.MakeUniqFile(dstName)
+	if err != nil {
+		return err
+	}
+
+	if _, err := agg.WriteTo(file); err != nil {
+		file.Close()
+		return err
+	}
+
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	return os.Rename(fname, dstName)
 }
