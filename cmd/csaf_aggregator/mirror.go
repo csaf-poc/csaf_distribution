@@ -127,6 +127,22 @@ func (p *processor) mirror(prv *provider) error {
 	log.Printf("provider-metadata.json: %s\n", loc)
 
 	expr := util.NewPathEval()
+
+	// Check if we are allowed to mirror this domain.
+	mirrorAllowed := true
+
+	if a, err := expr.Eval("$.mirror_on_CSAF_aggregators", doc); err == nil {
+		if ma, ok := a.(bool); ok {
+			mirrorAllowed = ma
+		}
+	}
+
+	if !mirrorAllowed {
+		log.Printf("mirroring not allowed for '%s'\n", prv.Name)
+		return nil
+	}
+
+	// Check if we have ROLIE feeds.
 	rolie, err := expr.Eval("$.distributions[*].rolie.feeds", doc)
 	if err != nil {
 		return err
