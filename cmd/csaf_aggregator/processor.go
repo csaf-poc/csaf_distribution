@@ -111,7 +111,7 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 		}
 		if len(errors) > 0 {
 			j.err = fmt.Errorf(
-				"provider-metadata.json has %s validation issues", len(errors))
+				"provider-metadata.json has %d validation issues", len(errors))
 			continue
 		}
 
