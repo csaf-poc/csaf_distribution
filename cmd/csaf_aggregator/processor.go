@@ -11,6 +11,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -72,7 +73,8 @@ func (w *worker) createDir() (string, error) {
 	if w.dir != "" {
 		return w.dir, nil
 	}
-	dir, err := util.MakeUniqDir(filepath.Join(w.cfg.Folder, w.provider.Name))
+	dir, err := util.MakeUniqDir(
+		filepath.Join(w.cfg.Folder, w.provider.Name))
 	if err == nil {
 		w.dir = dir
 	}
@@ -86,7 +88,8 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 		*w.cfg.Aggregator.Category == csaf.AggregatorAggregator
 
 	for j := range jobs {
-		log.Printf("worker #%d: %s (%s)\n", w.num, j.provider.Name, j.provider.Domain)
+		log.Printf("worker #%d: %s (%s)\n",
+			w.num, j.provider.Name, j.provider.Domain)
 
 		w.dir = ""
 		w.provider = j.provider
@@ -97,6 +100,18 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 		// We need the provider metadata in all cases.
 		if err := w.locateProviderMetadata(j.provider.Domain); err != nil {
 			j.err = err
+			continue
+		}
+
+		// Validate the provider metadata.
+		errors, err := csaf.ValidateProviderMetadata(w.metadataProvider)
+		if err != nil {
+			j.err = err
+			continue
+		}
+		if len(errors) > 0 {
+			j.err = fmt.Errorf(
+				"provider-metadata.json has %s validation issues", len(errors))
 			continue
 		}
 
