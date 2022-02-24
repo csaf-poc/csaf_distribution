@@ -11,7 +11,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/tls"
@@ -29,8 +28,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/gval"
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -58,8 +55,7 @@ type processor struct {
 	badChanges           []string
 	badFolders           []string
 
-	builder gval.Language
-	exprs   map[string]gval.Evaluable
+	expr *util.PathEval
 }
 
 type reporter interface {
@@ -110,8 +106,7 @@ func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
 		alreadyChecked: map[string]whereType{},
-		builder:        gval.Full(jsonpath.Language()),
-		exprs:          map[string]gval.Evaluable{},
+		expr:           util.NewPathEval(),
 	}
 }
 
@@ -176,21 +171,6 @@ func (p *processor) checkDomain(domain string) error {
 	}
 
 	return nil
-}
-
-func (p *processor) jsonPath(expr string, doc interface{}) (interface{}, error) {
-	if doc == nil {
-		return nil, errors.New("no document to extract data from")
-	}
-	eval := p.exprs[expr]
-	if eval == nil {
-		var err error
-		if eval, err = p.builder.NewEvaluable(expr); err != nil {
-			return nil, err
-		}
-		p.exprs[expr] = eval
-	}
-	return eval(context.Background(), doc)
 }
 
 func (p *processor) checkTLS(u string) {
@@ -359,7 +339,7 @@ func (p *processor) integrity(
 		// Check if file is in the right folder.
 		use(&p.badFolders)
 
-		if date, err := p.jsonPath(
+		if date, err := p.expr.Eval(
 			`$.document.tracking.initial_release_date`, doc); err != nil {
 			p.badFolder(
 				"Extracting 'initial_release_date' from %s failed: %v", u, err)
@@ -638,7 +618,7 @@ func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error 
 
 func (p *processor) checkCSAFs(domain string) error {
 	// Check for ROLIE
-	rolie, err := p.jsonPath("$.distributions[*].rolie.feeds", p.pmd)
+	rolie, err := p.expr.Eval("$.distributions[*].rolie.feeds", p.pmd)
 	if err != nil {
 		return err
 	}
@@ -931,7 +911,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 	use(&p.badPGPs)
 
-	src, err := p.jsonPath("$.pgp_keys", p.pmd)
+	src, err := p.expr.Eval("$.pgp_keys", p.pmd)
 	if err != nil {
 		p.badPGP("No PGP keys found: %v.", err)
 		return errContinue
