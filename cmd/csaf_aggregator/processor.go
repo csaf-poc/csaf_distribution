@@ -280,7 +280,7 @@ func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
 		return err
 	}
-	web := filepath.Join(p.cfg.Web, ".well-known", "csaf")
+	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
 	if err := ensureDir(web); err != nil {
 		return err
 	}
@@ -321,14 +321,16 @@ func (p *processor) process() error {
 			continue
 		}
 		if j.result == nil {
-			log.Printf("error: '%s' does not produce any result.\n", j.provider.Name)
+			log.Printf(
+				"error: '%s' does not produce any result.\n", j.provider.Name)
 			continue
 		}
 		csafProviders = append(csafProviders, j.result)
 	}
 
 	version := csaf.AggregatorVersion20
-	canonicalURL := csaf.AggregatorURL(p.cfg.Domain + "/.well-known/csaf/aggregator.json")
+	canonicalURL := csaf.AggregatorURL(
+		p.cfg.Domain + "/.well-known/csaf-aggregator/aggregator.json")
 
 	agg := csaf.Aggregator{
 		Aggregator:    &p.cfg.Aggregator,
