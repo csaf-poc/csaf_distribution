@@ -17,10 +17,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-func (w *worker) writeCSV(fname string, summaries []summary) error {
+func (w *worker) writeCSV(label string, summaries []summary) error {
 
 	// Do not sort in-place.
 	ss := make([]summary, len(summaries))
@@ -31,6 +35,7 @@ func (w *worker) writeCSV(fname string, summaries []summary) error {
 			ss[j].summary.CurrentReleaseDate)
 	})
 
+	fname := filepath.Join(w.dir, label, "changes.csv")
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
@@ -59,8 +64,9 @@ func (w *worker) writeCSV(fname string, summaries []summary) error {
 	return err2
 }
 
-func (w *worker) writeIndex(fname string, summaries []summary) error {
+func (w *worker) writeIndex(label string, summaries []summary) error {
 
+	fname := filepath.Join(w.dir, label, "index.txt")
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
@@ -81,6 +87,70 @@ func (w *worker) writeIndex(fname string, summaries []summary) error {
 	return err2
 }
 
+func (w *worker) writeROLIE(label string, summaries []summary) error {
+
+	fname := "csaf-feed-tlp-" + strings.ToLower(label) + ".json"
+
+	feedURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
+		w.provider.Name + "/" + fname
+
+	entries := make([]*csaf.Entry, len(summaries))
+
+	format := csaf.Format{
+		Schema:  "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
+		Version: "2.0",
+	}
+
+	for i := range summaries {
+		s := &summaries[i]
+
+		csafURL := w.cfg.Domain + "./well-known/csaf-aggregator/" +
+			w.provider.Name + "/" + label + "/" +
+			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" +
+			s.filename
+
+		entries[i] = &csaf.Entry{
+			ID:        s.summary.ID,
+			Titel:     s.summary.Title,
+			Published: csaf.TimeStamp(s.summary.InitialReleaseDate),
+			Updated:   csaf.TimeStamp(s.summary.CurrentReleaseDate),
+			Link: []csaf.Link{{
+				Rel:  "self",
+				HRef: csafURL,
+			}},
+			Format: format,
+			Content: csaf.Content{
+				Type: "application/json",
+				Src:  csafURL,
+			},
+		}
+		if s.summary.Summary != "" {
+			entries[i].Summary = &csaf.Summary{
+				Content: s.summary.Summary,
+			}
+		}
+	}
+
+	rolie := &csaf.ROLIEFeed{
+		Feed: csaf.FeedData{
+			ID:    "csaf-feed-tlp-" + strings.ToLower(label),
+			Title: "CSAF feed (TLP:" + strings.ToUpper(label) + ")",
+			Link: []csaf.Link{{
+				Rel:  "rel",
+				HRef: feedURL,
+			}},
+			Updated: csaf.TimeStamp(time.Now()),
+			Entry:   entries,
+		},
+	}
+
+	// Sort by descending updated order.
+	rolie.SortEntriesByUpdated()
+
+	path := filepath.Join(w.dir, fname)
+	return util.WriteToFile(path, rolie)
+}
+
 func (w *worker) writeIndices() error {
 
 	if len(w.summaries) == 0 || w.dir == "" {
@@ -89,12 +159,13 @@ func (w *worker) writeIndices() error {
 
 	for label, summaries := range w.summaries {
 		log.Printf("%s: %d\n", label, len(summaries))
-		csvFile := filepath.Join(w.dir, label, "changes.csv")
-		if err := w.writeCSV(csvFile, summaries); err != nil {
+		if err := w.writeCSV(label, summaries); err != nil {
 			return err
 		}
-		indexFile := filepath.Join(w.dir, label, "index.txt")
-		if err := w.writeIndex(indexFile, summaries); err != nil {
+		if err := w.writeIndex(label, summaries); err != nil {
+			return err
+		}
+		if err := w.writeROLIE(label, summaries); err != nil {
 			return err
 		}
 	}

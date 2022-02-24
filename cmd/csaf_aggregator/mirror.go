@@ -112,14 +112,16 @@ func (w *worker) mirror() error {
 	// Check if we are allowed to mirror this domain.
 	//if false && !w.mirrorAllowed() {
 	if !w.mirrorAllowed() {
-		return fmt.Errorf("no mirroring of '%s' allowed", w.provider.Name)
+		return fmt.Errorf(
+			"no mirroring of '%s' allowed", w.provider.Name)
 	}
 
 	// Collecting the summaries of the advisories.
 	w.summaries = make(map[string][]summary)
 
 	// Check if we have ROLIE feeds.
-	rolie, err := w.expr.Eval("$.distributions[*].rolie.feeds", w.metadataProvider)
+	rolie, err := w.expr.Eval(
+		"$.distributions[*].rolie.feeds", w.metadataProvider)
 	if err != nil {
 		log.Printf("rolie check failed: %v\n", err)
 		return err
