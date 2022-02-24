@@ -13,9 +13,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"runtime"
+	"sync"
 
 	"github.com/BurntSushi/toml"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"golang.org/x/time/rate"
 )
@@ -44,6 +47,30 @@ type config struct {
 	Insecure   *bool               `toml:"insecure"`
 	Aggregator csaf.AggregatorInfo `toml:"aggregator"`
 	Providers  []*provider         `toml:"providers"`
+	Key        string              `toml:"key"`
+	Passphrase *string             `toml:"passphrase"`
+
+	keyMu  sync.Mutex
+	key    *crypto.Key
+	keyErr error
+}
+
+func (c *config) cryptoKey() (*crypto.Key, error) {
+	if c.Key == "" {
+		return nil, nil
+	}
+	c.keyMu.Lock()
+	defer c.keyMu.Unlock()
+	if c.key != nil || c.keyErr != nil {
+		return c.key, c.keyErr
+	}
+	var f *os.File
+	if f, c.keyErr = os.Open(c.Key); c.keyErr != nil {
+		return nil, c.keyErr
+	}
+	defer f.Close()
+	c.key, c.keyErr = crypto.NewKeyFromArmoredReader(f)
+	return c.key, c.keyErr
 }
 
 func (c *config) httpClient(p *provider) client {

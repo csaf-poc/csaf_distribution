@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
@@ -155,6 +156,29 @@ func (w *worker) mirror() error {
 	return errors.New("not implemented, yet")
 }
 
+// downloadSignature downloads an OpenPGP signature from a given url.
+func (w *worker) downloadSignature(path string) (string, error) {
+	res, err := w.client.Get(path)
+	if err != nil {
+		return "", err
+	}
+	if res.StatusCode != http.StatusOK {
+		return "", errNotFound
+	}
+	data, err := func() ([]byte, error) {
+		defer res.Body.Close()
+		return io.ReadAll(res.Body)
+	}()
+	if err != nil {
+		return "", err
+	}
+	result := string(data)
+	if _, err := crypto.NewPGPMessageFromArmored(result); err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
 // releaseYear extracts initial_release_date from advisory.
 func (w *worker) releaseYear(advisory interface{}) (int, error) {
 	date, err := w.expr.Eval(
@@ -172,6 +196,32 @@ func (w *worker) releaseYear(advisory interface{}) (int, error) {
 		return 0, err
 	}
 	return d.UTC().Year(), nil
+}
+
+// sign signs the given data with the configured key.
+func (w *worker) sign(data []byte) (string, error) {
+	if w.signRing == nil {
+		key, err := w.cfg.cryptoKey()
+		if err != nil {
+			return "", err
+		}
+		if key == nil {
+			return "", nil
+		}
+		if pp := w.cfg.Passphrase; pp != nil {
+			if key, err = key.Unlock([]byte(*pp)); err != nil {
+				return "", err
+			}
+		}
+		if w.signRing, err = crypto.NewKeyRing(key); err != nil {
+			return "", err
+		}
+	}
+	sig, err := w.signRing.SignDetached(crypto.NewPlainMessage(data))
+	if err != nil {
+		return "", err
+	}
+	return sig.GetArmored()
 }
 
 func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
@@ -192,7 +242,7 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 
 	log.Printf("New directory: %s\n", ndir)
 
-	var data bytes.Buffer
+	var content bytes.Buffer
 
 	yearDirs := make(map[int]string)
 
@@ -209,8 +259,8 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 
 		s256 := sha256.New()
 		s512 := sha512.New()
-		data.Reset()
-		hasher := io.MultiWriter(s256, s512, &data)
+		content.Reset()
+		hasher := io.MultiWriter(s256, s512, &content)
 
 		download := func(r io.Reader) error {
 			tee := io.TeeReader(r, hasher)
@@ -245,16 +295,38 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 			if err := os.MkdirAll(yearDir, 0755); err != nil {
 				return err
 			}
-			log.Printf("created %s\n", yearDir)
+			//log.Printf("created %s\n", yearDir)
 			yearDirs[year] = yearDir
 		}
 
 		fname := filepath.Join(yearDir, filename)
+		//log.Printf("write: %s\n", fname)
+		data := content.Bytes()
 		if err := writeFileHashes(
 			fname, filename,
-			data.Bytes(), s256.Sum(nil), s512.Sum(nil),
+			data, s256.Sum(nil), s512.Sum(nil),
 		); err != nil {
 			return err
+		}
+
+		// Try to fetch signature file.
+		sigURL := file + ".asc"
+		sig, err := w.downloadSignature(sigURL)
+
+		if err != nil {
+			if err != errNotFound {
+				log.Printf("error: %s: %v\n", sigURL, err)
+			}
+			// Sign it our self.
+			if sig, err = w.sign(data); err != nil {
+				return err
+			}
+		}
+
+		if sig != "" {
+			if err := os.WriteFile(fname+".asc", []byte(sig), 0644); err != nil {
+				return err
+			}
 		}
 
 	}

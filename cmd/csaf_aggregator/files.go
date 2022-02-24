@@ -10,7 +10,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -27,7 +26,7 @@ func writeHash(fname, name string, hash []byte) error {
 // writeFileHashes writes a file and its hashes to files.
 func writeFileHashes(fname, name string, data, s256, s512 []byte) error {
 	// Write the file itself.
-	if err := ioutil.WriteFile(fname, data, 0644); err != nil {
+	if err := os.WriteFile(fname, data, 0644); err != nil {
 		return err
 	}
 	// Write SHA256 sum.

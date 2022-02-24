@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
@@ -33,9 +34,10 @@ type job struct {
 }
 
 type worker struct {
-	num  int
-	expr *util.PathEval
-	cfg  *config
+	num      int
+	expr     *util.PathEval
+	cfg      *config
+	signRing *crypto.KeyRing
 
 	client           client      // client per provider
 	provider         *provider   // current provider

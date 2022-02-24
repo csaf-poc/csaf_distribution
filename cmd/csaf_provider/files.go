@@ -33,7 +33,7 @@ func writeHash(fname, name string, h hash.Hash, data []byte) error {
 
 func writeHashedFile(fname, name string, data []byte, armored string) error {
 	// Write the file itself.
-	if err := ioutil.WriteFile(fname, data, 0644); err != nil {
+	if err := os.WriteFile(fname, data, 0644); err != nil {
 		return err
 	}
 	// Write SHA256 sum.
