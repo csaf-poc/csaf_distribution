@@ -265,7 +265,8 @@ func (p *processor) removeOrphans() error {
 		}
 
 		// Only remove directories which are in our folder.
-		if rel, err := filepath.Rel(prefix, r); err == nil && rel == filepath.Base(r) {
+		if rel, err := filepath.Rel(prefix, r); err == nil &&
+			rel == filepath.Base(r) {
 			log.Printf("removing directory %s\n", r)
 			if err := os.RemoveAll(r); err != nil {
 				log.Printf("error: %v\n", err)
@@ -310,7 +311,7 @@ func (p *processor) process() error {
 
 	wg.Wait()
 
-	// Assemble aggretaor data structure.
+	// Assemble aggregator data structure.
 
 	csafProviders := make([]*csaf.AggregatorCSAFProvider, 0, len(jobs))
 

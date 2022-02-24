@@ -13,7 +13,6 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -116,23 +115,6 @@ func (w *worker) mirror() error {
 		return fmt.Errorf("no mirroring of '%s' allowed", w.provider.Name)
 	}
 
-	folder := filepath.Join(w.cfg.Folder, w.provider.Name)
-	log.Printf("target: '%s'\n", folder)
-
-	existsBefore, err := util.PathExists(folder)
-	if err != nil {
-		return err
-	}
-	log.Printf("exists before: %t\n", existsBefore)
-
-	if !existsBefore {
-		log.Println("-> fresh download")
-		// TODO: Implement me!
-	} else {
-		log.Println("-> delta download")
-		// TODO: Implement me!
-	}
-
 	// Collecting the summaries of the advisories.
 	w.summaries = make(map[string][]summary)
 
@@ -159,7 +141,60 @@ func (w *worker) mirror() error {
 		return err
 	}
 
-	return errors.New("not implemented, yet")
+	// Do transaction
+
+	webTarget := filepath.Join(
+		w.cfg.Web, ".well-known", "csaf-aggregator", w.provider.Name)
+
+	var oldWeb string
+
+	// Resolve old to be removed later
+	if _, err := os.Stat(webTarget); err != nil {
+		if !os.IsNotExist(err) {
+			os.RemoveAll(w.dir)
+			return err
+		}
+	} else {
+		if oldWeb, err = filepath.EvalSymlinks(webTarget); err != nil {
+			os.RemoveAll(w.dir)
+			return err
+		}
+	}
+
+	// Check if there is a sysmlink already.
+	target := filepath.Join(w.cfg.Folder, w.provider.Name)
+	log.Printf("target: '%s'\n", target)
+
+	exists, err := util.PathExists(target)
+	if err != nil {
+		os.RemoveAll(w.dir)
+		return err
+	}
+
+	if exists {
+		if err := os.RemoveAll(target); err != nil {
+			os.RemoveAll(w.dir)
+			return err
+		}
+	}
+
+	// Create a new symlink
+	if err := os.Symlink(w.dir, target); err != nil {
+		os.RemoveAll(w.dir)
+		return err
+	}
+
+	// Move the symlink
+	if err := os.Rename(target, webTarget); err != nil {
+		os.RemoveAll(w.dir)
+		return err
+	}
+
+	// Finally remove the old folder.
+	if oldWeb != "" {
+		return os.RemoveAll(oldWeb)
+	}
+	return nil
 }
 
 // downloadSignature downloads an OpenPGP signature from a given url.
