@@ -114,7 +114,7 @@ func (w *worker) mirror() error {
 	// Check if we are allowed to mirror this domain.
 	//if false && !w.mirrorAllowed() {
 	if !w.mirrorAllowed() {
-		return fmt.Errorf("No mirroring of '%s' allowed.\n", w.provider.Name)
+		return fmt.Errorf("no mirroring of '%s' allowed", w.provider.Name)
 	}
 
 	folder := filepath.Join(w.cfg.Folder, w.provider.Name)
