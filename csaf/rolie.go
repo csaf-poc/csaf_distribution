@@ -58,7 +58,7 @@ type Entry struct {
 	Format    Format    `json:"format"`
 }
 
-// FeedData is the contetn of the ROLIE feed.
+// FeedData is the content of the ROLIE feed.
 type FeedData struct {
 	ID       string          `json:"id"`
 	Title    string          `json:"title"`
