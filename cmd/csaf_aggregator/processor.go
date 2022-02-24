@@ -33,18 +33,23 @@ type job struct {
 	err      error
 }
 
+type summary struct {
+	filename string
+	summary  *csaf.AdvisorySummary
+}
+
 type worker struct {
 	num      int
 	expr     *util.PathEval
 	cfg      *config
 	signRing *crypto.KeyRing
 
-	client           client      // client per provider
-	provider         *provider   // current provider
-	metadataProvider interface{} // current metadata provider
-	loc              string      // URL of current provider-metadata.json
-	dir              string      // Directory to store data to.
-
+	client           client               // client per provider
+	provider         *provider            // current provider
+	metadataProvider interface{}          // current metadata provider
+	loc              string               // URL of current provider-metadata.json
+	dir              string               // Directory to store data to.
+	summaries        map[string][]summary // the summaries of the advisories.
 }
 
 func newWorker(num int, config *config) *worker {
@@ -68,7 +73,7 @@ func (w *worker) createDir() (string, error) {
 		return w.dir, nil
 	}
 	dir, err := util.MakeUniqDir(filepath.Join(w.cfg.Folder, w.provider.Name))
-	if err != nil {
+	if err == nil {
 		w.dir = dir
 	}
 	return dir, err

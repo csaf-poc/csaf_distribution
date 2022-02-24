@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -134,6 +133,9 @@ func (w *worker) mirror() error {
 		// TODO: Implement me!
 	}
 
+	// Collecting the summaries of the advisories.
+	w.summaries = make(map[string][]summary)
+
 	// Check if we have ROLIE feeds.
 	rolie, err := w.expr.Eval("$.distributions[*].rolie.feeds", w.metadataProvider)
 	if err != nil {
@@ -148,10 +150,14 @@ func (w *worker) mirror() error {
 		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
 			return err
 		}
-		return errors.New("not implemented, yet")
+	} else {
+		// No rolie feeds
+		// TODO: Implement me!
 	}
-	// No rolie feeds
-	// TODO: Implement me!
+
+	if err := w.writeIndices(); err != nil {
+		return err
+	}
 
 	return errors.New("not implemented, yet")
 }
@@ -177,25 +183,6 @@ func (w *worker) downloadSignature(path string) (string, error) {
 		return "", err
 	}
 	return result, nil
-}
-
-// releaseYear extracts initial_release_date from advisory.
-func (w *worker) releaseYear(advisory interface{}) (int, error) {
-	date, err := w.expr.Eval(
-		`$.document.tracking.initial_release_date`, advisory)
-	if err != nil {
-		return 0, err
-	}
-	text, ok := date.(string)
-	if !ok {
-		return 0, errors.New("'initial_release_date' is not a string")
-
-	}
-	d, err := time.Parse(time.RFC3339, text)
-	if err != nil {
-		return 0, err
-	}
-	return d.UTC().Year(), nil
 }
 
 // sign signs the given data with the configured key.
@@ -229,6 +216,8 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 	if feed.TLPLabel != nil {
 		label = strings.ToLower(string(*feed.TLPLabel))
 	}
+
+	summaries := w.summaries[label]
 
 	dir, err := w.createDir()
 	if err != nil {
@@ -283,11 +272,17 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 			continue
 		}
 
-		year, err := w.releaseYear(advisory)
+		sum, err := csaf.NewAdvisorySummary(w.expr, advisory)
 		if err != nil {
 			log.Printf("error: %s: %v\n", file, err)
 			continue
 		}
+		summaries = append(summaries, summary{
+			filename: filename,
+			summary:  sum,
+		})
+
+		year := sum.InitialReleaseDate.Year()
 
 		yearDir := yearDirs[year]
 		if yearDir == "" {
@@ -328,7 +323,8 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 				return err
 			}
 		}
-
 	}
+	w.summaries[label] = summaries
+
 	return nil
 }
