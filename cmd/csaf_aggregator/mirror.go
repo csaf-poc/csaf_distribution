@@ -259,18 +259,10 @@ func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
 		return err
 	}
 
-	ndir, err := util.MakeUniqDir(filepath.Join(dir, label))
-	if err != nil {
-		return err
-	}
-
-	log.Printf("New directory: %s\n", ndir)
-
 	var content bytes.Buffer
 
 	yearDirs := make(map[int]string)
 
-	// TODO: Process feed files
 	for _, file := range files {
 		u, err := url.Parse(file)
 		if err != nil {
