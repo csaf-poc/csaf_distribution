@@ -775,7 +775,7 @@ func extractProviderURL(r io.Reader) (string, error) {
 		if strings.HasPrefix(line, csaf) {
 			line = strings.TrimSpace(line[len(csaf):])
 			if !strings.HasPrefix(line, "https://") {
-				return "", errors.New("CASF: found in security.txt, but does not start with https://")
+				return "", errors.New("CSAF: found in security.txt, but does not start with https://")
 			}
 			return line, nil
 		}

@@ -33,7 +33,7 @@ Following options are supported:
 | -a, --action=[upload\|create]              | Action to perform (default: upload)                                                        |
 | -u, --url=URL                              | URL of the CSAF provider (default:https:<span></span>//localhost/cgi-bin/csaf_provider.go) |
 | -t, --tlp=[csaf\|white\|green\|amber\|red] | TLP of the feed (default: csaf)                                                            |
-| -x, --external-signed                      | CASF files are signed externally. Assumes .asc files beside CSAF files                     |
+| -x, --external-signed                      | CSAF files are signed externally. Assumes .asc files beside CSAF files                     |
 | -k, --key=KEY-FILE                         | OpenPGP key to sign the CSAF files                                                         |
 | -p, --password=PASSWORD                    | Authentication password for accessing the CSAF provider                                    |
 | -P, --passphrase=PASSPHRASE                | Passphrase to unlock the OpenPGP key                                                       |
