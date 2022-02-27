@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 package csaf
 
@@ -72,13 +72,13 @@ type Distribution struct {
 type TimeStamp time.Time
 
 // Fingerprint is the fingerprint of a OpenPGP key used to sign
-// the CASF documents.
+// the CSAF documents.
 type Fingerprint string
 
 var fingerprintPattern = patternUnmarshal(`^[0-9a-fA-F]{40,}$`)
 
 // PGPKey is location and the fingerprint of the key
-// used to sign the CASF documents.
+// used to sign the CSAF documents.
 type PGPKey struct {
 	Fingerprint Fingerprint `json:"fingerprint,omitempty"`
 	URL         *string     `json:"url"` // required
