@@ -219,15 +219,20 @@ func (p *processor) httpClient() *http.Client {
 	p.client = &http.Client{
 		CheckRedirect: p.checkRedirect,
 	}
-
+	var tlsConfig tls.Config
 	if p.opts.Insecure {
-		p.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		}
+		tlsConfig.InsecureSkipVerify = true
 	}
-
+	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
+		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	p.client.Transport = &http.Transport{
+		TLSClientConfig: &tlsConfig,
+	}
 	return p.client
 }
 
@@ -775,7 +780,7 @@ func extractProviderURL(r io.Reader) (string, error) {
 		if strings.HasPrefix(line, csaf) {
 			line = strings.TrimSpace(line[len(csaf):])
 			if !strings.HasPrefix(line, "https://") {
-				return "", errors.New("CSAF: found in security.txt, but does not start with https://")
+				return "", errors.New("CASF: found in security.txt, but does not start with https://")
 			}
 			return line, nil
 		}
