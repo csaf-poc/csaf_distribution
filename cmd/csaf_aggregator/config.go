@@ -39,16 +39,17 @@ type provider struct {
 }
 
 type config struct {
-	Workers    int                 `toml:"workers"`
-	Folder     string              `toml:"folder"`
-	Web        string              `toml:"web"`
-	Domain     string              `toml:"domain"`
-	Rate       *float64            `toml:"rate"`
-	Insecure   *bool               `toml:"insecure"`
-	Aggregator csaf.AggregatorInfo `toml:"aggregator"`
-	Providers  []*provider         `toml:"providers"`
-	Key        string              `toml:"key"`
-	Passphrase *string             `toml:"passphrase"`
+	Workers             int                 `toml:"workers"`
+	Folder              string              `toml:"folder"`
+	Web                 string              `toml:"web"`
+	Domain              string              `toml:"domain"`
+	Rate                *float64            `toml:"rate"`
+	Insecure            *bool               `toml:"insecure"`
+	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
+	Providers           []*provider         `toml:"providers"`
+	Key                 string              `toml:"key"`
+	Passphrase          *string             `toml:"passphrase"`
+	AllowSingleProvider bool                `toml:"allow_single_provider"`
 
 	keyMu  sync.Mutex
 	key    *crypto.Key
@@ -101,6 +102,11 @@ func (c *config) httpClient(p *provider) client {
 }
 
 func (c *config) checkProviders() error {
+
+	if !c.AllowSingleProvider && len(c.Providers) < 2 {
+		return errors.New("need at least two providers")
+	}
+
 	already := make(map[string]bool)
 
 	for _, p := range c.Providers {
