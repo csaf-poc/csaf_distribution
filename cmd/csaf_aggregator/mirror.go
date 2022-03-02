@@ -180,6 +180,8 @@ func (w *worker) mirror() error {
 		}
 	}
 
+	log.Printf("sym link: %s -> %s\n", w.dir, target)
+
 	// Create a new symlink
 	if err := os.Symlink(w.dir, target); err != nil {
 		os.RemoveAll(w.dir)
@@ -187,6 +189,7 @@ func (w *worker) mirror() error {
 	}
 
 	// Move the symlink
+	log.Printf("Move: %s -> %s\n", target, webTarget)
 	if err := os.Rename(target, webTarget); err != nil {
 		os.RemoveAll(w.dir)
 		return err

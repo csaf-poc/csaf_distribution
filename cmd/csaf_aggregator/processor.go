@@ -196,8 +196,15 @@ func (w *worker) locateProviderMetadata(domain string) error {
 // removeOrphans removes the directories that are not in the providers list.
 func (p *processor) removeOrphans() error {
 
+	keep := make(map[string]bool)
+	for _, p := range p.cfg.Providers {
+		keep[p.Name] = true
+	}
+
+	path := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
+
 	entries, err := func() ([]os.DirEntry, error) {
-		dir, err := os.Open(p.cfg.Web)
+		dir, err := os.Open(path)
 		if err != nil {
 			return nil, err
 		}
@@ -207,11 +214,6 @@ func (p *processor) removeOrphans() error {
 
 	if err != nil {
 		return err
-	}
-
-	keep := make(map[string]bool)
-	for _, p := range p.cfg.Providers {
-		keep[p.Name] = true
 	}
 
 	prefix, err := filepath.Abs(p.cfg.Folder)
@@ -239,7 +241,7 @@ func (p *processor) removeOrphans() error {
 			continue
 		}
 
-		d := filepath.Join(p.cfg.Web, entry.Name())
+		d := filepath.Join(path, entry.Name())
 		r, err := filepath.EvalSymlinks(d)
 		if err != nil {
 			log.Printf("error: %v\n", err)
