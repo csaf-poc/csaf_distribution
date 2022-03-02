@@ -40,8 +40,8 @@ type options struct {
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
 	Passphrase *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	ClientCert *string `long:"client-cert" description:"TLS client certificate file" value-name:"CERT-FILE"`
-	ClientKey  *string `long:"client-key" description:"TLS client private key file" value-name:"KEY-FILE"`
+	ClientCert *string `long:"client-cert" description:"TLS client certificate file (file must contain PEM encoded data)" value-name:"CERT-FILE.crt"`
+	ClientKey  *string `long:"client-key" description:"TLS client private key file (file must contain PEM encoded data)" value-name:"KEY-FILE.pem"`
 
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
