@@ -113,14 +113,12 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 func (r *wellknownMetadataReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
-	_ = req
 	req.message("(Not checked, missing implementation.)")
 }
 
 func (r *dnsPathReporter) report(_ *processor, domain *Domain) {
 	// TODO: Implement me!
 	req := r.requirement(domain)
-	_ = req
 	req.message("(Not checked, missing implementation.)")
 }
 
