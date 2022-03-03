@@ -4,7 +4,7 @@ Assuming the userA.pfx file is available, which can be imported into
 a web browser.
 
 ### Configure nginx
-Assuming the relevant server block is in `/etc/nginx/sites-enabled/default`,
+Assuming the relevant server block is in `/etc/nginx/sites-enabled/default` and the CA used to verify the client certificates is under `/etc/ssl/`,
 adjust it like shown in the following example:
 
 ```

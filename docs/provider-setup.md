@@ -58,7 +58,7 @@ Add to `/etc/nginx/sites-enabled/default`:
 ```
 server {
 
-    root /usr/share/nginx/html;
+    root /var/www/html;
 
     location / {
         # Other config
