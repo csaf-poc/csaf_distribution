@@ -913,18 +913,18 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 	src, err := p.expr.Eval("$.pgp_keys", p.pmd)
 	if err != nil {
-		p.badPGP("No PGP keys found: %v.", err)
+		p.badPGP("No public OpenPGP keys found: %v.", err)
 		return errContinue
 	}
 
 	var keys []csaf.PGPKey
 	if err := util.ReMarshalJSON(&keys, src); err != nil {
-		p.badPGP("PGP keys invalid: %v.", err)
+		p.badPGP("Invalid public OpenPGP keys: %v.", err)
 		return errContinue
 	}
 
 	if len(keys) == 0 {
-		p.badPGP("No PGP keys found.")
+		p.badPGP("No public OpenPGP keys found.")
 		return errContinue
 	}
 
@@ -954,11 +954,11 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 		res, err := client.Get(u)
 		if err != nil {
-			p.badPGP("Fetching PGP key %s failed: %v.", u, err)
+			p.badPGP("Fetching public OpenPGP key %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			p.badPGP("Fetching PGP key %s status code: %d (%s)",
+			p.badPGP("Fetching public OpenPGP key %s status code: %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -969,24 +969,24 @@ func (p *processor) checkPGPKeys(domain string) error {
 		}()
 
 		if err != nil {
-			p.badPGP("Reading PGP key %s failed: %v", u, err)
+			p.badPGP("Reading public OpenPGP key %s failed: %v", u, err)
 			continue
 		}
 
 		if ckey.GetFingerprint() != string(key.Fingerprint) {
-			p.badPGP("Fingerprint of PGP key %s do not match remotely loaded.", u)
+			p.badPGP("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
 		keyring, err := crypto.NewKeyRing(ckey)
 		if err != nil {
-			p.badPGP("Creating key ring for %s failed: %v.", u, err)
+			p.badPGP("Creating store for public OpenPGP key %s failed: %v.", u, err)
 			continue
 		}
 		p.keys = append(p.keys, keyring)
 	}
 
 	if len(p.keys) == 0 {
-		p.badPGP("No PGP keys loaded.")
+		p.badPGP("No OpenPGP keys loaded.")
 	}
 	return nil
 }
