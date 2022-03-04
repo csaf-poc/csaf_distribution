@@ -58,6 +58,9 @@ type processor struct {
 	expr *util.PathEval
 }
 
+// reporter is implemented by any value that has a report method.
+// The implementation of the report controls how to test
+// the respective requirement and generate the report.
 type reporter interface {
 	report(*processor, *Domain)
 }
@@ -102,6 +105,8 @@ func (wt whereType) String() string {
 	}
 }
 
+// newProcessor returns a processor structure after assigning the given options to the opts attribute
+// and initializing the "alreadyChecked" and "expr" fields.
 func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
@@ -110,6 +115,7 @@ func newProcessor(opts *options) *processor {
 	}
 }
 
+// clean clears the fields values of the given processor.
 func (p *processor) clean() {
 	p.redirects = nil
 	p.noneTLS = nil
@@ -130,6 +136,9 @@ func (p *processor) clean() {
 	p.badChanges = nil
 }
 
+// run calls checkDomain function for each domain in the given "domains" parameter.
+// Then it calls the report method on each report from the given "reporters" paramerter for each domain.
+// It return a poiter to the report and nil, otherwise an error.
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
@@ -786,6 +795,10 @@ func extractProviderURL(r io.Reader) (string, error) {
 	return "", nil
 }
 
+// checkProviderMetadata checks the provider-metatdata if exists, decodes,
+// and validates against the JSON schema. According to the result the respective
+// error messages are passed to the badProviderMetadatas method in case of errors.
+// It returns nil if all checks are passed.
 func (p *processor) checkProviderMetadata(domain string) error {
 
 	use(&p.badProviderMetadatas)
@@ -829,6 +842,11 @@ func (p *processor) checkProviderMetadata(domain string) error {
 	return nil
 }
 
+// checkSecurity checks the security.txt file by making HTTP request to fetch it.
+// It checks the existence of the CSAF field in the file content and tries to fetch
+// the value of this field. As a result of these a respective error messages are
+// passed to the badSecurity method in case of errors.
+// It returns nil if all checks are passed.
 func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
@@ -907,6 +925,10 @@ func (p *processor) checkSecurity(domain string) error {
 	return nil
 }
 
+// checkPGPKeys checks if the OpenPGP keys are available and valid, fetchs
+// the the remotely keys and compares the fingerprints.
+// As a result of these a respective error messages are passed to badPGP method
+// in case of errors. It returns nil if all checks are passed.
 func (p *processor) checkPGPKeys(domain string) error {
 
 	use(&p.badPGPs)

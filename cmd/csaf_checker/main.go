@@ -98,6 +98,8 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
+// buildReporters initializes each report by assigning a number and description to it.
+// It returns an array of the reporter interface type.
 func buildReporters() []reporter {
 	return []reporter{
 		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
