@@ -182,6 +182,8 @@ func (p *processor) checkDomain(domain string) error {
 	return nil
 }
 
+// checkTLS parses the given URL to check its schema, as a result set
+// the value of "noneTLS" field if it is not HTTPS.
 func (p *processor) checkTLS(u string) {
 	if p.noneTLS == nil {
 		p.noneTLS = map[string]struct{}{}

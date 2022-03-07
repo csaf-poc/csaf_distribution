@@ -38,6 +38,8 @@ func errCheck(err error) {
 	}
 }
 
+// writeJSON writes the JSON encoding of the given report to the given stream.
+// It returns nil, otherwise an error.
 func writeJSON(report *Report, w io.WriteCloser) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -48,6 +50,8 @@ func writeJSON(report *Report, w io.WriteCloser) error {
 	return err
 }
 
+// writeHTML writes the given report to the given writer, it uses the template
+// in the "reportHTML" variable. It returns nil, otherwise an error.
 func writeHTML(report *Report, w io.WriteCloser) error {
 	tmpl, err := template.New("Report HTML").Parse(reportHTML)
 	if err != nil {
@@ -72,6 +76,8 @@ type nopCloser struct{ io.Writer }
 
 func (nc *nopCloser) Close() error { return nil }
 
+// writeReport defines where to write the report according to the "output" flag options.
+// It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
 func writeReport(report *Report, opts *options) error {
 
 	var w io.WriteCloser
