@@ -76,7 +76,7 @@ func (c *controller) auth(
 		log.Printf("SSL_CLIENT_VERIFY: %s\n", verify)
 
 		switch {
-		case verify == "SUCCESS" && os.Getenv("SSL_CLIENT_I_DN") == c.cfg.Issuer:
+		case verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")):
 			log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
 			log.Printf("ca: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
 		case c.cfg.Password == nil:
