@@ -25,6 +25,6 @@ func TestNWriter(t *testing.T) {
 	}
 
 	if out := buf.Bytes(); !bytes.Equal(msg, out) {
-		t.Errorf("Expected '%s' bytes, but got %s", msg, out)
+		t.Errorf("Expected %q, but got %q", msg, out)
 	}
 }
