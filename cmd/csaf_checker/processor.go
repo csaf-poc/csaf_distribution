@@ -182,7 +182,7 @@ func (p *processor) checkDomain(domain string) error {
 	return nil
 }
 
-// checkTLS parses the given URL to check its schema, as a result set
+// checkTLS parses the given URL to check its schema, as a result it sets
 // the value of "noneTLS" field if it is not HTTPS.
 func (p *processor) checkTLS(u string) {
 	if p.noneTLS == nil {
@@ -242,6 +242,7 @@ func (p *processor) httpClient() *http.Client {
 	return p.client
 }
 
+// use checks the given array and initializes an empty array if its nil.
 func use(s *[]string) {
 	if *s == nil {
 		*s = []string{}
@@ -252,34 +253,50 @@ func used(s []string) bool {
 	return s != nil
 }
 
+// badIntegrity appends a message to the value of "badIntegrity" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badIntegrity(format string, args ...interface{}) {
 	p.badIntegrities = append(p.badIntegrities, fmt.Sprintf(format, args...))
 }
 
+// badSignature appends a message to the value of "badSignature" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badSignature(format string, args ...interface{}) {
 	p.badSignatures = append(p.badSignatures, fmt.Sprintf(format, args...))
 }
 
+// badProviderMetadata appends a message to the value of "badProviderMetadatas" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badProviderMetadata(format string, args ...interface{}) {
 	p.badProviderMetadatas = append(p.badProviderMetadatas, fmt.Sprintf(format, args...))
 }
 
+// badPGP appends a message to the value of "badPGPs" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badPGP(format string, args ...interface{}) {
 	p.badPGPs = append(p.badPGPs, fmt.Sprintf(format, args...))
 }
 
+// badSecurity appends a message to the value of "badSecurity" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badSecurity(format string, args ...interface{}) {
 	p.badSecurities = append(p.badSecurities, fmt.Sprintf(format, args...))
 }
 
+// badIndex appends a message to the value of "badIndices" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badIndex(format string, args ...interface{}) {
 	p.badIndices = append(p.badIndices, fmt.Sprintf(format, args...))
 }
 
+// badChange appends a message to the value of "badChanges" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badChange(format string, args ...interface{}) {
 	p.badChanges = append(p.badChanges, fmt.Sprintf(format, args...))
 }
 
+// badFolder appends a message to the value of "badFolders" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badFolder(format string, args ...interface{}) {
 	p.badFolders = append(p.badFolders, fmt.Sprintf(format, args...))
 }
@@ -503,6 +520,9 @@ func (p *processor) processROLIEFeed(feed string) error {
 	return nil
 }
 
+// checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
+// It extracts the file names from the file and passes them to "integrity" function.
+// It returns error if fetching/reading the file(s) fails, otherwise nil.
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 	index := base + "/index.txt"
@@ -541,6 +561,10 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	return p.integrity(files, base, mask, p.badIndex)
 }
 
+// checkChanges fetches the "changes.csv" and calls the "checkTLS" method for HTTPs checks.
+// It extracts the file content, tests the column number and the validity of the time format
+// of the fields' values and if they are sorted properly. Then it passes the files to the
+// "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
 	changes := base + "/changes.csv"
@@ -927,7 +951,7 @@ func (p *processor) checkSecurity(domain string) error {
 	return nil
 }
 
-// checkPGPKeys checks if the OpenPGP keys are available and valid, fetchs
+// checkPGPKeys checks if the OpenPGP keys are available and valid, fetches
 // the the remotely keys and compares the fingerprints.
 // As a result of these a respective error messages are passed to badPGP method
 // in case of errors. It returns nil if all checks are passed.
