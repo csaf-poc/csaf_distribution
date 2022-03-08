@@ -21,7 +21,7 @@ func TestNWriter(t *testing.T) {
 	}
 
 	if n := int64(len(msg)); nw.N != n {
-		t.Errorf("Expected %d bytes, but counted %d", n, nw.N)
+		t.Errorf("Expected %d bytes, but counted %d.", n, nw.N)
 	}
 
 	if out := buf.Bytes(); !bytes.Equal(msg, out) {
