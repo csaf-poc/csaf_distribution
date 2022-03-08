@@ -76,7 +76,7 @@ type nopCloser struct{ io.Writer }
 
 func (nc *nopCloser) Close() error { return nil }
 
-// writeReport defines where to write the report according to the "output" flag options.
+// writeReport defines where to write the report according to the "output" flag option.
 // It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
 func writeReport(report *Report, opts *options) error {
 
