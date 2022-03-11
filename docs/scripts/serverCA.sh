@@ -15,8 +15,7 @@
 # ORGANAME: The organization name used in the CA template.
 # Usage Example: env FOLDERNAME=devca1 ORGANAME=CSAF Tools Development (internal) ./serverCA.sh
 
-#NGINX_Config=/etc/nginx/sites-available/default
-NGINX_Config=test2.txt
+NGINX_Config=/etc/nginx/sites-available/default
 # Install gnutls
 echo "Install gnutls "
 apt install gnutls-bin
