@@ -15,9 +15,9 @@
 # ORGANAME: The organization name used in the CA template.
 # Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./serverCA.sh
 
-NGINX_Config=/etc/nginx/sites-available/default
+NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 # Install gnutls
-echo "Install gnutls "
+echo "Install gnutls"
 apt install gnutls-bin
 
 ## Create Root CA
@@ -74,28 +74,30 @@ SSL_CERTIFICATE_KEY=$(echo "        ssl_certificate_key \"$PWD/testserver-key.pe
 
 # Cofigure nginx
 # Assign the generated CA and key to ssl_certificate and ssl_certificate_key directives.
-if grep  "^\s*ssl_certificate .*" $NGINX_Config; then
+if grep  "^\s*ssl_certificate .*" $NGINX_CONFIG_PATH; then
     # Update the value of the ssl_certificate if available.
-    sed -i "s|^\s*ssl_certificate .*|$SSL_CERTIFICATE|"  $NGINX_Config;
-elif  grep "^\s*# SSL configuration" $NGINX_Config; then
+    sed -i "s|^\s*ssl_certificate .*|$SSL_CERTIFICATE|"  $NGINX_CONFIG_PATH;
+elif  grep "^\s*# SSL configuration" $NGINX_CONFIG_PATH; then
     # Place the  ssl configuration under # SSL configuration
-    sed -i "/^\s*# SSL configuration/a $SSL_CERTIFICATE" $NGINX_Config;
+    sed -i "/^\s*# SSL configuration/a $SSL_CERTIFICATE" $NGINX_CONFIG_PATH;
     else
-    sed -i "/^server {/a $SSL_CERTIFICATE"  $NGINX_Config;
+    sed -i "/^server {/a $SSL_CERTIFICATE"  $NGINX_CONFIG_PATH;
 fi
 
-if grep  "^\s*ssl_certificate_key .*" $NGINX_Config; then
+if grep  "^\s*ssl_certificate_key .*" $NGINX_CONFIG_PATH; then
     # Update the value of the ssl_certificate if available.
-    sed -i "s|^\s*ssl_certificate_key .*|$SSL_CERTIFICATE_KEY|"  $NGINX_Config;
-elif  grep "^\s*# SSL configuration" $NGINX_Config; then
-    sed -i "/^\s*# SSL configuration/a $SSL_CERTIFICATE_KEY" $NGINX_Config;
+    sed -i "s|^\s*ssl_certificate_key .*|$SSL_CERTIFICATE_KEY|"  $NGINX_CONFIG_PATH;
+elif  grep "^\s*# SSL configuration" $NGINX_CONFIG_PATH; then
+    sed -i "/^\s*# SSL configuration/a $SSL_CERTIFICATE_KEY" $NGINX_CONFIG_PATH;
     else
-    sed -i "/^server {/a $SSL_CERTIFICATE_KEY"  $NGINX_Config;
+    sed -i "/^server {/a $SSL_CERTIFICATE_KEY"  $NGINX_CONFIG_PATH;
 fi
 # Enable the ssl parameters of the nginx configurations by commiting them out.
-sed -i "/# listen.*443/s/#//" $NGINX_Config;
+sed -i "/# listen.*443/s/#//" $NGINX_CONFIG_PATH;
 # Enable the specified protocols. If condition to avoid duplication.
-if  [ -z  "$(grep "ssl_protocols*" $NGINX_Config)" ]  ; then
-    sed -i "/^\s*# SSL configuration/a ssl_protocols TLSv1.2 TLSv1.3;" $NGINX_Config;
+if  [ -z  "$(grep "^\s*ssl_protocols*" $NGINX_CONFIG_PATH)" ]; then
+    sed -i "/^\s*# SSL configuration/a ssl_protocols TLSv1.2 TLSv1.3;" $NGINX_CONFIG_PATH;
 fi
 
+# Reload nginx
+systemctl reload nginx
