@@ -13,7 +13,7 @@
 # FOLDERNAME and ORGANAME valriables should be set.
 # FOLDERNAME: Where to store the CAs and keys.
 # ORGANAME: The organization name used in the CA template.
-# Usage Example: env FOLDERNAME=devca1 ORGANAME=CSAF Tools Development (internal) ./serverCA.sh
+# Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./serverCA.sh
 
 NGINX_Config=/etc/nginx/sites-available/default
 # Install gnutls
