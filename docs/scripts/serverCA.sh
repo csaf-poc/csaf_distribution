@@ -8,7 +8,7 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-# This Script generates webserver cert that is signed with the generated root CA.
+# This script generates webserver cert that is signed with the generated root CA.
 # It sets the right nginx configurations for serving TLS connections.
 # FOLDERNAME and ORGANAME valriables should be set.
 # FOLDERNAME: Where to store the CAs and keys.
