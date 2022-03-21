@@ -112,7 +112,7 @@ func buildReporters() []reporter {
 		&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
 		&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
 		&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
-		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public PGP Key"}},
+		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
 	}
 }
 
