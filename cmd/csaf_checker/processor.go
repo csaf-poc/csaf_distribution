@@ -138,7 +138,7 @@ func (p *processor) clean() {
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
 // Then it calls the report method on each report from the given "reporters" paramerter for each domain.
-// It return a poiter to the report and nil, otherwise an error.
+// It returns a pointer to the report and nil, otherwise an error.
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
