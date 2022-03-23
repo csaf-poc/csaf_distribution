@@ -219,7 +219,8 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			}
 
 			feedURL := csaf.JSONURL(
-				c.cfg.Domain + "/.well-known/csaf/" + ts + "/" + feedName)
+				c.cfg.CanonicalURLPrefix +
+					"/.well-known/csaf/" + ts + "/" + feedName)
 
 			tlpLabel := csaf.TLPLabel(strings.ToUpper(ts))
 
@@ -241,7 +242,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 			year := strconv.Itoa(ex.InitialReleaseDate.Year())
 
-			csafURL := c.cfg.Domain +
+			csafURL := c.cfg.CanonicalURLPrefix +
 				"/.well-known/csaf/" + ts + "/" + year + "/" + newCSAF
 
 			e := rolie.EntryByID(ex.ID)
