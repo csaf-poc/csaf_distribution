@@ -71,6 +71,7 @@ SSL_CERTIFICATE_KEY=$(echo "        ssl_certificate_key \"$PWD/testserver-key.pe
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
+Replace `{FOLDERNAME}` with the folder name you want to save the keys into it and `{ORGANAME}` with the organisation name that should be used by creating the Certificate.
 
 ## Considerations and References
 
