@@ -87,7 +87,7 @@ Create configuarion file under `/usr/lib/csaf/config.toml`:
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
-domain = "http://192.168.56.102"
+canonical_url_prefix = "http://192.168.56.102"
 #no_passphrase = true
 ```
 
@@ -115,7 +115,7 @@ Provider has many config options described as following:
    Default: `["csaf", "white", "amber", "green", "red"]`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.
- - domain: The domain name. Default: `http://$SERVER_NAME`.
+ - canonical_url_prefix: start of the URL where contents shall be accessible from the internet. Default: `https://$SERVER_NAME`.
  - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
  - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.

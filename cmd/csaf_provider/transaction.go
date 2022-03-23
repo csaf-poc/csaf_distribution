@@ -30,7 +30,7 @@ func doTransaction(
 		f, err := os.Open(metadata)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return csaf.NewProviderMetadataDomain(cfg.Domain, cfg.modelTLPs()), nil
+				return csaf.NewProviderMetadataDomain(cfg.CanonicalURLPrefix, cfg.modelTLPs()), nil
 			}
 			return nil, err
 		}
