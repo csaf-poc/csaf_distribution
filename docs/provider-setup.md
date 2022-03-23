@@ -120,5 +120,5 @@ Provider has many config options described as following:
  - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
- - publisher: Set the publisher. Default: `{"category": "vendor", "name": "ACME", "namespace": "https:/example.com"}`.
+ - publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
  - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
