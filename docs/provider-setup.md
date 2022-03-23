@@ -74,6 +74,7 @@ server {
     include fcgiwrap.conf;
 }
 ```
+Reload nginx to apply the changes (e.g. ```systemctl reload nginx``` on Debian or Ubuntu).
 
 Create `cgi-bin` folder if not exists `mkdir -p /usr/lib/cgi-bin/`.
 
@@ -90,6 +91,9 @@ key = "/usr/lib/csaf/private.asc"
 canonical_url_prefix = "http://192.168.56.102"
 #no_passphrase = true
 ```
+with suitable replacements
+(This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
+
 
 with suitable [replacements](#provider-options).
 

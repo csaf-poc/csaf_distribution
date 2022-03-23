@@ -38,6 +38,8 @@ func errCheck(err error) {
 	}
 }
 
+// writeJSON writes the JSON encoding of the given report to the given stream.
+// It returns nil, otherwise an error.
 func writeJSON(report *Report, w io.WriteCloser) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -48,6 +50,8 @@ func writeJSON(report *Report, w io.WriteCloser) error {
 	return err
 }
 
+// writeHTML writes the given report to the given writer, it uses the template
+// in the "reportHTML" variable. It returns nil, otherwise an error.
 func writeHTML(report *Report, w io.WriteCloser) error {
 	tmpl, err := template.New("Report HTML").Parse(reportHTML)
 	if err != nil {
@@ -72,6 +76,8 @@ type nopCloser struct{ io.Writer }
 
 func (nc *nopCloser) Close() error { return nil }
 
+// writeReport defines where to write the report according to the "output" flag option.
+// It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
 func writeReport(report *Report, opts *options) error {
 
 	var w io.WriteCloser
@@ -98,6 +104,8 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
+// buildReporters initializes each report by assigning a number and description to it.
+// It returns an array of the reporter interface type.
 func buildReporters() []reporter {
 	return []reporter{
 		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
@@ -112,7 +120,7 @@ func buildReporters() []reporter {
 		&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
 		&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
 		&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
-		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public PGP Key"}},
+		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
 	}
 }
 

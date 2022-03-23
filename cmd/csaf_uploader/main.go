@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-// Implemnts a command line tool that loads csaf documents to a trusted provider
+// Implements a command line tool that uploads csaf documents to csaf_provider.
 package main
 
 import (
@@ -34,7 +34,7 @@ type options struct {
 	Action         string `short:"a" long:"action" choice:"upload" choice:"create" default:"upload" description:"Action to perform"`
 	URL            string `short:"u" long:"url" description:"URL of the CSAF provider" default:"https://localhost/cgi-bin/csaf_provider.go" value-name:"URL"`
 	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" default:"csaf" description:"TLP of the feed"`
-	ExternalSigned bool   `short:"x" long:"external-signed" description:"CASF files are signed externally. Assumes .asc files beside CSAF files."`
+	ExternalSigned bool   `short:"x" long:"external-signed" description:"CSAF files are signed externally. Assumes .asc files beside CSAF files."`
 	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally."`
 
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
