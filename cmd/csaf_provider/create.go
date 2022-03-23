@@ -95,7 +95,7 @@ func createSecurity(c *config, wellknown string) error {
 			}
 			fmt.Fprintf(
 				f, "CSAF: %s/.well-known/csaf/provider-metadata.json\n",
-				c.Domain)
+				c.CanonicalURLPrefix)
 			return f.Close()
 		}
 		return err
@@ -113,7 +113,7 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	if !os.IsNotExist(err) {
 		return err
 	}
-	pm := csaf.NewProviderMetadataDomain(c.Domain, c.modelTLPs())
+	pm := csaf.NewProviderMetadataDomain(c.CanonicalURLPrefix, c.modelTLPs())
 	pm.Publisher = c.Publisher
 
 	// Set OpenPGP key.
