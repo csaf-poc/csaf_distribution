@@ -14,9 +14,11 @@ There are three ways to get a TLS certificate for your HTTPS server:
  [Let's encrypt](https://letsencrypt.org/) without a fee.
  See their instruction, e.g.
  [certbot for nignx on Ubuntu](https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal).
- 3. Run your own little CA. Which has the major drawback that someone
- will have to import the root certificate in the webbrowsers manually.
- Suitable for development purposes.
+ 3. [Run your own little CA](development-ca.md).
+ Which has the major drawback that someone
+ will have to import the root certificate in the webbrowsers manually or
+ override warning on each connect.
+ Suitable for development purposes, must not be used for production servers.
 
 To decide between 1. and 2. you will need to weight the extra
 efforts and costs of the level of extended validation against

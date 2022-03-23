@@ -29,6 +29,8 @@ import (
 
 const dateFormat = time.RFC3339
 
+// cleanFileName removes the "/" "\" charachters and replace the two or more
+// occurences of "." with only one from the passed string.
 func cleanFileName(s string) string {
 	s = strings.ReplaceAll(s, `/`, ``)
 	s = strings.ReplaceAll(s, `\`, ``)
@@ -37,6 +39,10 @@ func cleanFileName(s string) string {
 	return s
 }
 
+// loadCSAF loads the csaf file from the request, calls the "UploadLimter" function to
+// set the upload limit size of the file and the "cleanFileName" to refine
+// the filename. It returns the filename, file content in a buffer of bytes
+// and an error.
 func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 	file, handler, err := r.FormFile("csaf")
 	if err != nil {
@@ -123,6 +129,8 @@ func (c *controller) tlpParam(r *http.Request) (tlp, error) {
 	return "", fmt.Errorf("unsupported TLP type '%s'", t)
 }
 
+// create calls the "ensureFolders" functions to create the directories and files.
+// It returns a struct by success, otherwise an error.
 func (c *controller) create(*http.Request) (interface{}, error) {
 	if err := ensureFolders(c.cfg); err != nil {
 		return nil, err
@@ -159,7 +167,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		}
 	}
 
-	ex, err := newExtraction(content)
+	ex, err := csaf.NewAdvisorySummary(util.NewPathEval(), content)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +179,9 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 	// Extract real TLP from document.
 	if t == tlpCSAF {
-		if t = tlp(strings.ToLower(ex.tlpLabel)); !t.valid() || t == tlpCSAF {
-			return nil, fmt.Errorf("not a valid TL: %s", ex.tlpLabel)
+		if t = tlp(strings.ToLower(ex.TLPLabel)); !t.valid() || t == tlpCSAF {
+			return nil, fmt.Errorf(
+				"valid TLP label missing in document (found '%s')", t)
 		}
 	}
 
@@ -217,31 +226,33 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			// Create new if does not exists.
 			if rolie == nil {
 				rolie = &csaf.ROLIEFeed{
-					ID:    "csaf-feed-tlp-" + ts,
-					Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
-					Link: []csaf.Link{{
-						Rel:  "rel",
-						HRef: string(feedURL),
-					}},
+					Feed: csaf.FeedData{
+						ID:    "csaf-feed-tlp-" + ts,
+						Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
+						Link: []csaf.Link{{
+							Rel:  "rel",
+							HRef: string(feedURL),
+						}},
+					},
 				}
 			}
 
-			rolie.Updated = csaf.TimeStamp(time.Now())
+			rolie.Feed.Updated = csaf.TimeStamp(time.Now())
 
-			year := strconv.Itoa(ex.initialReleaseDate.Year())
+			year := strconv.Itoa(ex.InitialReleaseDate.Year())
 
 			csafURL := c.cfg.Domain +
 				"/.well-known/csaf/" + ts + "/" + year + "/" + newCSAF
 
-			e := rolie.EntryByID(ex.id)
+			e := rolie.EntryByID(ex.ID)
 			if e == nil {
-				e = &csaf.Entry{ID: ex.id}
-				rolie.Entry = append(rolie.Entry, e)
+				e = &csaf.Entry{ID: ex.ID}
+				rolie.Feed.Entry = append(rolie.Feed.Entry, e)
 			}
 
-			e.Titel = ex.title
-			e.Published = csaf.TimeStamp(ex.initialReleaseDate)
-			e.Updated = csaf.TimeStamp(ex.currentReleaseDate)
+			e.Titel = ex.Title
+			e.Published = csaf.TimeStamp(ex.InitialReleaseDate)
+			e.Updated = csaf.TimeStamp(ex.CurrentReleaseDate)
 			e.Link = []csaf.Link{{
 				Rel:  "self",
 				HRef: csafURL,
@@ -254,8 +265,8 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				Type: "application/json",
 				Src:  csafURL,
 			}
-			if ex.summary != "" {
-				e.Summary = &csaf.Summary{Content: ex.summary}
+			if ex.Summary != "" {
+				e.Summary = &csaf.Summary{Content: ex.Summary}
 			} else {
 				e.Summary = nil
 			}
@@ -291,7 +302,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 			if err := updateIndices(
 				folder, filepath.Join(year, newCSAF),
-				ex.currentReleaseDate,
+				ex.CurrentReleaseDate,
 			); err != nil {
 				return err
 			}
@@ -302,9 +313,9 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				warn("Publisher in provider metadata is not initialized. Forgot to configure?")
 				if c.cfg.DynamicProviderMetaData {
 					warn("Taking publisher from CSAF")
-					pmd.Publisher = ex.publisher
+					pmd.Publisher = ex.Publisher
 				}
-			case !pmd.Publisher.Equals(ex.publisher):
+			case !pmd.Publisher.Equals(ex.Publisher):
 				warn("Publishers in provider metadata and CSAF do not match.")
 			}
 
@@ -323,7 +334,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		Error       error    `json:"-"`
 	}{
 		Name:        newCSAF,
-		ReleaseDate: ex.currentReleaseDate.Format(dateFormat),
+		ReleaseDate: ex.CurrentReleaseDate.Format(dateFormat),
 		Warnings:    warnings,
 	}
 

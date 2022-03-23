@@ -6,17 +6,12 @@
 // SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
 
-package main
+package csaf
 
 import (
-	"context"
 	"errors"
 	"time"
 
-	"github.com/PaesslerAG/gval"
-	"github.com/PaesslerAG/jsonpath"
-
-	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
@@ -30,39 +25,39 @@ const (
 	summaryExpr            = `$.document.notes[? @.category=="summary" || @.type=="summary"].text`
 )
 
-type extraction struct {
-	id                 string
-	title              string
-	publisher          *csaf.Publisher
-	initialReleaseDate time.Time
-	currentReleaseDate time.Time
-	summary            string
-	tlpLabel           string
+// AdvisorySummary is a summary of some essentials of an CSAF advisory.
+type AdvisorySummary struct {
+	ID                 string
+	Title              string
+	Publisher          *Publisher
+	InitialReleaseDate time.Time
+	CurrentReleaseDate time.Time
+	Summary            string
+	TLPLabel           string
 }
 
 type extractFunc func(string) (interface{}, error)
 
-func newExtraction(content interface{}) (*extraction, error) {
+// NewAdvisorySummary creates a summary from an advisory doc
+// with the help of an expression evaluator expr.
+func NewAdvisorySummary(
+	expr *util.PathEval,
+	doc interface{},
+) (*AdvisorySummary, error) {
 
-	builder := gval.Full(jsonpath.Language())
+	e := new(AdvisorySummary)
 
-	path := func(expr string) (interface{}, error) {
-		eval, err := builder.NewEvaluable(expr)
-		if err != nil {
-			return nil, err
-		}
-		return eval(context.Background(), content)
+	path := func(s string) (interface{}, error) {
+		return expr.Eval(s, doc)
 	}
 
-	e := new(extraction)
-
 	for _, fn := range []func(extractFunc) error{
-		extractText(idExpr, &e.id),
-		extractText(titleExpr, &e.title),
-		extractTime(currentReleaseDateExpr, &e.currentReleaseDate),
-		extractTime(initialReleaseDateExpr, &e.initialReleaseDate),
-		extractText(summaryExpr, &e.summary),
-		extractText(tlpLabelExpr, &e.tlpLabel),
+		extractText(idExpr, &e.ID),
+		extractText(titleExpr, &e.Title),
+		extractTime(currentReleaseDateExpr, &e.CurrentReleaseDate),
+		extractTime(initialReleaseDateExpr, &e.InitialReleaseDate),
+		extractText(summaryExpr, &e.Summary),
+		extractText(tlpLabelExpr, &e.TLPLabel),
 		e.extractPublisher,
 	} {
 		if err := fn(path); err != nil {
@@ -95,7 +90,7 @@ func extractTime(expr string, store *time.Time) func(extractFunc) error {
 		if !ok {
 			return errors.New("not a string")
 		}
-		date, err := time.Parse(dateFormat, text)
+		date, err := time.Parse(time.RFC3339, text)
 		if err == nil {
 			*store = date.UTC()
 		}
@@ -103,7 +98,7 @@ func extractTime(expr string, store *time.Time) func(extractFunc) error {
 	}
 }
 
-func (e *extraction) extractPublisher(path extractFunc) error {
+func (e *AdvisorySummary) extractPublisher(path extractFunc) error {
 	p, err := path(publisherExpr)
 	if err != nil {
 		return err
@@ -111,13 +106,13 @@ func (e *extraction) extractPublisher(path extractFunc) error {
 
 	// XXX: It's a bit cumbersome to serialize and deserialize
 	// it into our own structure.
-	publisher := new(csaf.Publisher)
+	publisher := new(Publisher)
 	if err := util.ReMarshalJSON(publisher, p); err != nil {
 		return err
 	}
 	if err := publisher.Validate(); err != nil {
 		return err
 	}
-	e.publisher = publisher
+	e.Publisher = publisher
 	return nil
 }
