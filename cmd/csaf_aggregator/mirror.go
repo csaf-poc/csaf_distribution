@@ -143,7 +143,11 @@ func (w *worker) mirror() error {
 		return err
 	}
 
-	// Do transaction
+	return w.doMirrorTransaction()
+}
+
+// doMirrorTransaction performs an atomic directory swap.
+func (w *worker) doMirrorTransaction() error {
 
 	webTarget := filepath.Join(
 		w.cfg.Web, ".well-known", "csaf-aggregator", w.provider.Name)
