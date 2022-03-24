@@ -29,3 +29,6 @@ jobs:
 
       - name: golint
         uses: Jerome1337/golint-action@v1.0.2
+
+      - name: Tests
+        run: go test -v ./...

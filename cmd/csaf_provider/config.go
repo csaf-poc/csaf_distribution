@@ -23,7 +23,7 @@ import (
 const (
 	// The environment name, that contains the path to the config file.
 	configEnv          = "CSAF_CONFIG"
-	defaultConfigPath  = "/usr/lib/casf/config.toml"                                        // Default path to the config file.
+	defaultConfigPath  = "/usr/lib/csaf/config.toml"                                        // Default path to the config file.
 	defaultFolder      = "/var/www/"                                                        // Default folder path.
 	defaultWeb         = "/var/www/html"                                                    // Default web path.
 	defaultOpenPGPURL  = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}" // Default OpenPGP URL.
@@ -39,7 +39,7 @@ type config struct {
 	TLPs                    []tlp           `toml:"tlps"`
 	UploadSignature         bool            `toml:"upload_signature"`
 	OpenPGPURL              string          `toml:"openpgp_url"`
-	Domain                  string          `toml:"domain"`
+	CanonicalURLPrefix      string          `toml:"canonical_url_prefix"`
 	NoPassphrase            bool            `toml:"no_passphrase"`
 	NoValidation            bool            `toml:"no_validation"`
 	NoWebUI                 bool            `toml:"no_web_ui"`
@@ -148,8 +148,8 @@ func loadConfig() (*config, error) {
 		cfg.Web = defaultWeb
 	}
 
-	if cfg.Domain == "" {
-		cfg.Domain = "http://" + os.Getenv("SERVER_NAME")
+	if cfg.CanonicalURLPrefix == "" {
+		cfg.CanonicalURLPrefix = "https://" + os.Getenv("SERVER_NAME")
 	}
 
 	if cfg.TLPs == nil {
