@@ -76,11 +76,12 @@ mkdir -p /usr/lib/cgi-bin/
 cp csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
 mkdir -p /usr/lib/csaf/
+cp docs/test-keys/*.asc /usr/lib/csaf/
 # Configuration file
 echo '
 # upload_signature = true
 # key = "/usr/lib/csaf/public.asc"
-# key = "/usr/lib/csaf/private.asc"
+key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 domain = "http://localhost"
 #no_passphrase = true
