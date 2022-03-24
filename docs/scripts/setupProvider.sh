@@ -65,9 +65,7 @@ git clone https://github.com/csaf-poc/csaf_distribution.git
 
 # Install Go
 if [ -z "$(which go)" ]; then
-    ./csaf_distribution/docs/scripts/installGo.sh
-    # Apply the changes (GOPATH) in ".profile" immediately
-    source ~/.profile
+    source ./csaf_distribution/docs/scripts/installGo.sh
 fi
 
 cd csaf_distribution

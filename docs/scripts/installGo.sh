@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # This file is Free Software under the MIT License
 # without warranty, see README.md and LICENSES/MIT.txt for details.
 #
@@ -12,8 +10,7 @@
 
 curl -O https://storage.googleapis.com/golang/go1.18.linux-amd64.tar.gz
 
-rm -rf /usr/local/go && tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz
 
-echo export PATH=$PATH:/usr/local/go/bin >> ~/.profile
+export PATH=$PATH:/usr/local/go/bin
 
-source ~/.profile
