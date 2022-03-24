@@ -132,3 +132,4 @@ Provider has many config options described as following:
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
  - publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
  - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
+ - issuer: The issuer of the CA, which if set, restricts the writing permission and the accessing to the web-interface to only the client certificates signed with this CA.

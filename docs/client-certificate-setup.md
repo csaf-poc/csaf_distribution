@@ -38,6 +38,7 @@ each which a single `if` that matches the `$ssl_client_i_dn` variable
 to CAs that you would want to allow for that location.
 
 If you want to restrict the access to the web-interface of the `csaf_provider` for only some TLS client certificates, the CA issuer of these certificates should be assigned to the `issuer` key in the `/user/lib/csaf/config.toml` file e.g. `issuer = "C=DE,O=CSAF Tools Development (internal),CN=Tester" `.
+To inspect the accepted format for this field you can check the value of the `ca:` in the nginx log file `/var/log/nginx/error.log`.
 
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
