@@ -49,6 +49,10 @@ location /cgi-bin/ {
 
   fastcgi_param PATH_INFO $fastcgi_path_info;
   fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+
+  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
+  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
+  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
 ```
 
@@ -56,6 +60,8 @@ Add to `/etc/nginx/sites-enabled/default`:
 
 ```
 server {
+    root /var/www/html;
+
       # Other config
       # ...
     location / {
@@ -81,7 +87,7 @@ Create `cgi-bin` folder if not exists `mkdir -p /usr/lib/cgi-bin/`.
 Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_provider.go`.
 
 
-Create configuarion file under `/usr/lib/csaf/config.toml`:
+Create configuration file under `/usr/lib/csaf/config.toml`:
 
 ```
 # upload_signature = true
@@ -126,3 +132,4 @@ Provider has many config options described as following:
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
  - publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
  - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
+ - issuer: The issuer of the CA, which if set, restricts the writing permission and the accessing to the web-interface to only the client certificates signed with this CA.

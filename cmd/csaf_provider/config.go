@@ -46,6 +46,7 @@ type config struct {
 	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
 	Publisher               *csaf.Publisher `toml:"publisher"`
 	UploadLimit             *int64          `toml:"upload_limit"`
+	Issuer                  *string         `toml:"issuer"`
 }
 
 type tlp string
