@@ -42,6 +42,9 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	return req
 }
 
+// report tests if the URLs are HTTPS and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+// A list of non HTTPS URLs is included in the value of the "message" field.
 func (r *tlsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if p.noneTLS == nil {
@@ -64,6 +67,8 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 	req.message(urls...)
 }
 
+// report tests if redirects are used and sets the "message" field value
+// of the "Requirement" struct as a result of that.
 func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.redirects) == 0 {
@@ -84,6 +89,8 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req.Messages = keys
 }
 
+// report tests if an provider-metatdata.json are available and sets the
+// "message" field value of the "Requirement" struct as a result of that.
 func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !used(p.badProviderMetadatas) {
@@ -97,6 +104,8 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req.Messages = p.badProviderMetadatas
 }
 
+// report tests the "security.txt" file and sets the "message" field value
+// of the "Requirement" struct as a result of that.
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !used(p.badSecurities) {

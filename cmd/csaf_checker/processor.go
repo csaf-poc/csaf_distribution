@@ -58,6 +58,9 @@ type processor struct {
 	expr *util.PathEval
 }
 
+// reporter is implemented by any value that has a report method.
+// The implementation of the report controls how to test
+// the respective requirement and generate the report.
 type reporter interface {
 	report(*processor, *Domain)
 }
@@ -102,6 +105,8 @@ func (wt whereType) String() string {
 	}
 }
 
+// newProcessor returns a processor structure after assigning the given options to the opts attribute
+// and initializing the "alreadyChecked" and "expr" fields.
 func newProcessor(opts *options) *processor {
 	return &processor{
 		opts:           opts,
@@ -110,6 +115,7 @@ func newProcessor(opts *options) *processor {
 	}
 }
 
+// clean clears the fields values of the given processor.
 func (p *processor) clean() {
 	p.redirects = nil
 	p.noneTLS = nil
@@ -130,6 +136,9 @@ func (p *processor) clean() {
 	p.badChanges = nil
 }
 
+// run calls checkDomain function for each domain in the given "domains" parameter.
+// Then it calls the report method on each report from the given "reporters" paramerter for each domain.
+// It returns a pointer to the report and nil, otherwise an error.
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	var report Report
@@ -173,6 +182,8 @@ func (p *processor) checkDomain(domain string) error {
 	return nil
 }
 
+// checkTLS parses the given URL to check its schema, as a result it sets
+// the value of "noneTLS" field if it is not HTTPS.
 func (p *processor) checkTLS(u string) {
 	if p.noneTLS == nil {
 		p.noneTLS = map[string]struct{}{}
@@ -231,6 +242,7 @@ func (p *processor) httpClient() *http.Client {
 	return p.client
 }
 
+// use checks the given array and initializes an empty array if its nil.
 func use(s *[]string) {
 	if *s == nil {
 		*s = []string{}
@@ -241,34 +253,50 @@ func used(s []string) bool {
 	return s != nil
 }
 
+// badIntegrity appends a message to the value of "badIntegrity" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badIntegrity(format string, args ...interface{}) {
 	p.badIntegrities = append(p.badIntegrities, fmt.Sprintf(format, args...))
 }
 
+// badSignature appends a message to the value of "badSignature" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badSignature(format string, args ...interface{}) {
 	p.badSignatures = append(p.badSignatures, fmt.Sprintf(format, args...))
 }
 
+// badProviderMetadata appends a message to the value of "badProviderMetadatas" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badProviderMetadata(format string, args ...interface{}) {
 	p.badProviderMetadatas = append(p.badProviderMetadatas, fmt.Sprintf(format, args...))
 }
 
+// badPGP appends a message to the value of "badPGPs" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badPGP(format string, args ...interface{}) {
 	p.badPGPs = append(p.badPGPs, fmt.Sprintf(format, args...))
 }
 
+// badSecurity appends a message to the value of "badSecurity" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badSecurity(format string, args ...interface{}) {
 	p.badSecurities = append(p.badSecurities, fmt.Sprintf(format, args...))
 }
 
+// badIndex appends a message to the value of "badIndices" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badIndex(format string, args ...interface{}) {
 	p.badIndices = append(p.badIndices, fmt.Sprintf(format, args...))
 }
 
+// badChange appends a message to the value of "badChanges" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badChange(format string, args ...interface{}) {
 	p.badChanges = append(p.badChanges, fmt.Sprintf(format, args...))
 }
 
+// badFolder appends a message to the value of "badFolders" field of
+// the "processor" struct according to the given format and parameters.
 func (p *processor) badFolder(format string, args ...interface{}) {
 	p.badFolders = append(p.badFolders, fmt.Sprintf(format, args...))
 }
@@ -492,6 +520,9 @@ func (p *processor) processROLIEFeed(feed string) error {
 	return nil
 }
 
+// checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
+// It extracts the file names from the file and passes them to "integrity" function.
+// It returns error if fetching/reading the file(s) fails, otherwise nil.
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 	index := base + "/index.txt"
@@ -530,6 +561,10 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	return p.integrity(files, base, mask, p.badIndex)
 }
 
+// checkChanges fetches the "changes.csv" and calls the "checkTLS" method for HTTPs checks.
+// It extracts the file content, tests the column number and the validity of the time format
+// of the fields' values and if they are sorted properly. Then it passes the files to the
+// "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
 	changes := base + "/changes.csv"
@@ -786,6 +821,10 @@ func extractProviderURL(r io.Reader) (string, error) {
 	return "", nil
 }
 
+// checkProviderMetadata checks the provider-metatdata if exists, decodes,
+// and validates against the JSON schema. According to the result the respective
+// error messages are passed to the badProviderMetadatas method in case of errors.
+// It returns nil if all checks are passed.
 func (p *processor) checkProviderMetadata(domain string) error {
 
 	use(&p.badProviderMetadatas)
@@ -829,6 +868,11 @@ func (p *processor) checkProviderMetadata(domain string) error {
 	return nil
 }
 
+// checkSecurity checks the security.txt file by making HTTP request to fetch it.
+// It checks the existence of the CSAF field in the file content and tries to fetch
+// the value of this field. As a result of these a respective error messages are
+// passed to the badSecurity method in case of errors.
+// It returns nil if all checks are passed.
 func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
@@ -907,24 +951,28 @@ func (p *processor) checkSecurity(domain string) error {
 	return nil
 }
 
+// checkPGPKeys checks if the OpenPGP keys are available and valid, fetches
+// the the remotely keys and compares the fingerprints.
+// As a result of these a respective error messages are passed to badPGP method
+// in case of errors. It returns nil if all checks are passed.
 func (p *processor) checkPGPKeys(domain string) error {
 
 	use(&p.badPGPs)
 
 	src, err := p.expr.Eval("$.pgp_keys", p.pmd)
 	if err != nil {
-		p.badPGP("No PGP keys found: %v.", err)
+		p.badPGP("No public OpenPGP keys found: %v.", err)
 		return errContinue
 	}
 
 	var keys []csaf.PGPKey
 	if err := util.ReMarshalJSON(&keys, src); err != nil {
-		p.badPGP("PGP keys invalid: %v.", err)
+		p.badPGP("Invalid public OpenPGP keys: %v.", err)
 		return errContinue
 	}
 
 	if len(keys) == 0 {
-		p.badPGP("No PGP keys found.")
+		p.badPGP("No public OpenPGP keys found.")
 		return errContinue
 	}
 
@@ -954,11 +1002,11 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 		res, err := client.Get(u)
 		if err != nil {
-			p.badPGP("Fetching PGP key %s failed: %v.", u, err)
+			p.badPGP("Fetching public OpenPGP key %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			p.badPGP("Fetching PGP key %s status code: %d (%s)",
+			p.badPGP("Fetching public OpenPGP key %s status code: %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -969,24 +1017,24 @@ func (p *processor) checkPGPKeys(domain string) error {
 		}()
 
 		if err != nil {
-			p.badPGP("Reading PGP key %s failed: %v", u, err)
+			p.badPGP("Reading public OpenPGP key %s failed: %v", u, err)
 			continue
 		}
 
 		if ckey.GetFingerprint() != string(key.Fingerprint) {
-			p.badPGP("Fingerprint of PGP key %s do not match remotely loaded.", u)
+			p.badPGP("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
 		keyring, err := crypto.NewKeyRing(ckey)
 		if err != nil {
-			p.badPGP("Creating key ring for %s failed: %v.", u, err)
+			p.badPGP("Creating store for public OpenPGP key %s failed: %v.", u, err)
 			continue
 		}
 		p.keys = append(p.keys, keyring)
 	}
 
 	if len(p.keys) == 0 {
-		p.badPGP("No PGP keys loaded.")
+		p.badPGP("No OpenPGP keys loaded.")
 	}
 	return nil
 }
