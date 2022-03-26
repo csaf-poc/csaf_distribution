@@ -8,12 +8,9 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-# This script sets up the csaf_provider. It installs nginx, fcgiwrap, git and go if they are not installed.
-# It also configures nginx and set the paths.
+# This script sets up the csaf_provider and writes the required nginx configurations.
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
-# Install nginx and fcgiwrap
-apt-get install -y nginx fcgiwrap
 
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 

@@ -16,9 +16,6 @@
 # Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./serverCA.sh
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
-# Install gnutls
-echo "Install gnutls"
-apt install -y gnutls-bin
 
 cd csaf_distribution/docs/scripts/
 ## Create Root CA
@@ -56,3 +53,4 @@ fi
 
 # Reload nginx
 systemctl reload nginx
+
