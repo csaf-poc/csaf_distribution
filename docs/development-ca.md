@@ -11,29 +11,7 @@ which is suitable for testing in development setups.
 
 ## create root CA
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCA.sh&lines=11-50) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/createRootCA.sh -->
-```sh
-mkdir -p ~/${FOLDERNAME}
-cd ~/${FOLDERNAME}
-
-certtool --generate-privkey --outfile rootca-key.pem
-
-echo '
-organization = "'${ORGANAME}'"
-country = DE
-cn = "Tester"
-
-ca
-cert_signing_key
-crl_signing_key
-
-serial = 001
-expiration_days = 100
-' >gnutls-certtool.rootca.template
-
-certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForIT.sh&lines=11-50) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 ## create webserver cert
