@@ -12,15 +12,73 @@ which is suitable for testing in development setups.
 ## create root CA
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForIT.sh&lines=11-50) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForIT.sh -->
+```sh
+mkdir -p ~/${FOLDERNAME}
+cd ~/${FOLDERNAME}
+
+certtool --generate-privkey --outfile rootca-key.pem
+
+echo '
+organization = "'${ORGANAME}'"
+country = DE
+cn = "Tester"
+
+ca
+cert_signing_key
+crl_signing_key
+
+serial = 001
+expiration_days = 100
+' >gnutls-certtool.rootca.template
+
+certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 ## create webserver cert
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForIT.sh&lines=11-35) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForIT.sh -->
+```sh
+cd ~/${FOLDERNAME}
+
+certtool --generate-privkey --outfile testserver-key.pem
+
+echo '
+organization = "'${ORGANAME}'"
+country = DE
+cn = "Service Testing"
+
+tls_www_server
+signing_key
+encryption_key
+non_repudiation
+
+dns_name = "*.local"
+dns_name = "localhost"
+
+serial = 010
+expiration_days = 50
+' > gnutls-certtool.testserver.template
+
+certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template
+
+cat testserver.crt rootca-cert.pem >bundle.crt
+echo Full path config options for nginx:
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForIT.sh&lines=38-38) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForIT.sh -->
+```sh
+echo "      ssl_certificate $PWD/bundle.crt;"
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForIT.sh&lines=41-41) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForIT.sh -->
+```sh
+echo "      ssl_certificate_key $PWD/testserver-key.pem;"
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 Replace `{FOLDERNAME}` with the folder name you want to save the keys into it and `{ORGANAME}` with the organisation name that should be used by creating the Certificate.
