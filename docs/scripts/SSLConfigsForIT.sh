@@ -10,7 +10,7 @@
 
 # This script generates webserver cert that is signed with the generated root CA.
 # It sets the right nginx configurations for serving TLS connections.
-# FOLDERNAME and ORGANAME valriables should be set.
+# FOLDERNAME and ORGANAME variables must be set.
 # FOLDERNAME: Where to store the CAs and keys.
 # ORGANAME: The organization name used in the CA template.
 # Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./SSLConfigsForIT.sh
@@ -33,9 +33,6 @@ echo '
        '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
-
-        # Other Config
-        # ...
 ' > SSLConfigs.txt
 
 
