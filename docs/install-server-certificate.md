@@ -56,10 +56,10 @@ finds your your private key and the certificate chain.
        '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
-
-        # Other Config
-        # ...
 ' > SSLConfigs.txt
+
+
+sed -i "26r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
