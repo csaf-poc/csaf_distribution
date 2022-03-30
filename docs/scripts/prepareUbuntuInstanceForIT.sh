@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
-# This script prepares a naked Ubuntu 20.04 LTS instance for the integration test
+# This script prepares a naked Ubuntu 20.04 LTS amd64
+# for the csaf_distribution integration tests
 # by installing the required packages.
 
 apt install -y make git nginx fcgiwrap gnutls-bin
 
-# Install Go
+# Install Go from binary distribution
 curl -O https://storage.googleapis.com/golang/go1.18.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz
