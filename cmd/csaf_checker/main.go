@@ -26,7 +26,7 @@ var reportHTML string
 type options struct {
 	Output     string  `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
 	Format     string  `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
-	Insecure   bool    `long:"insecure" description:"Do not check TSL certificates from provider"`
+	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
 	ClientCert *string `long:"client-cert" description:"TLS client certificate file" value-name:"CERT-FILE"`
 	ClientKey  *string `long:"client-key" description:"TLS client private key file" value-name:"KEY-FILE"`
 }

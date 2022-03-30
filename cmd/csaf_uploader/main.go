@@ -44,7 +44,7 @@ type options struct {
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
 
-	Insecure bool `long:"insecure" description:"Do not check TSL certificates from provider"`
+	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider"`
 
 	Config *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
 }

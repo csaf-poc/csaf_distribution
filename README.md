@@ -40,7 +40,7 @@ Following options are supported:
 | -i, --password-interactive                 | Enter password interactively                                                               |
 | -I, --passphrase-interacive                | Enter passphrase interactively                                                             |
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
-| --insecure                                 | Do not check TSL certificates from provider                                                |
+| --insecure                                 | Do not check TLS certificates from provider                                                |
 | -h, --help                                 | Show help                                                                                  |
 
 E.g. creating the initial directiories and files
