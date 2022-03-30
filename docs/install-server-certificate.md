@@ -50,7 +50,6 @@ finds your your private key and the certificate chain.
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/SSLConfigsForIT.sh&lines=30-39) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/SSLConfigsForIT.sh -->
 ```sh
-        listen 443 ssl default_server; # ipv4
         listen [::]:443 ssl http2 default_server;  # ipv6
 
        '${SSL_CERTIFICATE}' # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
@@ -60,6 +59,7 @@ finds your your private key and the certificate chain.
 
         # Other Config
         # ...
+' > SSLConfigs.txt
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
