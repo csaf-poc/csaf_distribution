@@ -24,38 +24,8 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-```
-# Include this file on your nginx.conf to support debian cgi-bin scripts using
-# fcgiwrap
-location /cgi-bin/ {
-  # Disable gzip (it makes scripts feel slower since they have to complete
-  # before getting gzipped)
-  gzip off;
-
-  # Set the root to /usr/lib (inside this location this means that we are
-  # giving access to the files under /usr/lib/cgi-bin)
-  root  /usr/lib;
-
-  # Fastcgi socket
-  fastcgi_pass  unix:/var/run/fcgiwrap.socket;
-
-  # Fastcgi parameters, include the standard ones
-  include /etc/nginx/fastcgi_params;
-
-  fastcgi_split_path_info ^(.+\.go)(.*)$;
-
-  # Adjust non standard parameters (SCRIPT_FILENAME)
-  fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
-
-  fastcgi_param PATH_INFO $fastcgi_path_info;
-  fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
-
-  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
-  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
-  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
-}
-```
-
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForIT.sh&lines=22-46) -->
+<!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
 
 ```
@@ -89,17 +59,11 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-```
-# upload_signature = true
-# key = "/usr/lib/csaf/public.asc"
-key = "/usr/lib/csaf/private.asc"
-#tlps = ["green", "red"]
-canonical_url_prefix = "http://192.168.56.102"
-#no_passphrase = true
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForIT.sh&lines=80-85) -->
+<!-- MARKDOWN-AUTO-DOCS:END -->
+
 with suitable replacements
 (This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
-
 
 with suitable [replacements](#provider-options).
 

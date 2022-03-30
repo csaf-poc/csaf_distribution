@@ -25,7 +25,6 @@ cd ~/csaf_distribution/docs/scripts/
 source ./createWebserverCertForIT.sh
 
 # Cofigure nginx
-echo $
 echo '
         listen 443 ssl default_server; # ipv4
         listen [::]:443 ssl http2 default_server;  # ipv6
@@ -40,7 +39,7 @@ echo '
 ' > SSLConfigs.txt
 
 
-sed -i "22r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
+sed -i "26r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
 
 # Reload nginx
 systemctl reload nginx

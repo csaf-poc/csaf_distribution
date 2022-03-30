@@ -14,6 +14,7 @@ NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
+
 cd /var/www
 chgrp -R www-data .
 chmod -R g+w .
@@ -43,30 +44,29 @@ location /cgi-bin/ {
 
   fastcgi_param PATH_INFO $fastcgi_path_info;
   fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+
+  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
+  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
+  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
 ' > /etc/nginx/fcgiwrap.conf
 
-# Configure nginx to use the fcgiwrwrap.conf
-if  [ -z  "$(grep "^\s*include fcgiwrap*" $NGINX_CONFIG_PATH)" ]; then
-    sed -i "/^server {/a include fcgiwrap.conf;" $NGINX_CONFIG_PATH;
-fi
+FCGIWRAP=$(echo "
+        include fcgiwrap.conf;
+")
+echo $FCGIWRAP
+sed -i "22i\\$FCGIWRAP" $NGINX_CONFIG_PATH
+
 # Reload nginx
 systemctl reload nginx
 
-# Install git
-apt install -y git
 cd ~
-# Clone repository
-rm -rf csaf_distribution/
+mkdir -p tmp
+cd tmp
 git clone https://github.com/csaf-poc/csaf_distribution.git
-
-# Install Go
-if [ -z "$(which go)" ]; then
-    source ./csaf_distribution/docs/scripts/installGo.sh
-fi
-
 cd csaf_distribution
-echo "Building csaf_provider binary ...."
+
+export PATH=$PATH:/usr/local/go/bin
 go build -o ./ -v ./cmd/csaf_provider/
 # Place the binary under the corresponding path.
 mkdir -p /usr/lib/cgi-bin/
@@ -80,7 +80,7 @@ echo '
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
-domain = "http://localhost"
+canonical_url_prefix = "http://localhost"
 #no_passphrase = true
 ' > /usr/lib/csaf/config.toml
 
