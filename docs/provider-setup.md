@@ -99,10 +99,8 @@ canonical_url_prefix = "http://localhost"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
-with suitable replacements
+with suitable [replacements](#provider-options)
 (This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
-
-with suitable [replacements](#provider-options).
 
 Create the folders:
 ```(shell)
