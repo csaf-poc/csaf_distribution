@@ -102,7 +102,7 @@ canonical_url_prefix = "http://localhost"
 with suitable [replacements](#provider-options)
 (This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
-Create the folders (Authentification with client-certificat):
+Create the folders:
 ```(shell)
 curl http://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
 ```
@@ -112,6 +112,7 @@ Or using the uploader:
 ./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}
 ```
 Replace {password} with the password used for the authentication with csaf_provider.
+This needs to set the `password` option in `config.toml`.
 
 ## Provider options
 Provider has many config options described as following:
