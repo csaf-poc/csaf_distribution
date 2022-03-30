@@ -102,14 +102,16 @@ canonical_url_prefix = "http://localhost"
 with suitable [replacements](#provider-options)
 (This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
-Create the folders:
+Create the folders (Authentification with client-certificat):
 ```(shell)
-curl http://192.168.56.102/cgi-bin/csaf_provider.go/create
+curl http://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
 ```
+Replace {clientCertificate} with the client certificate file.          
 Or using the uploader:
 ```(shell)
-./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go
+./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}
 ```
+Replace {password} with the password used for the authentication with csaf_provider.
 
 ## Provider options
 Provider has many config options described as following:

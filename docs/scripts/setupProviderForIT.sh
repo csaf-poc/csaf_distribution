@@ -85,6 +85,6 @@ canonical_url_prefix = "http://localhost"
 ' > /usr/lib/csaf/config.toml
 
 # Create the Folders
-curl http://localhost/cgi-bin/csaf_provider.go/create
+curl http://localhost/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testcleint1.p12
 
 
