@@ -27,8 +27,8 @@ type options struct {
 	Output     string  `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
 	Format     string  `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
 	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
-	ClientCert *string `long:"client-cert" description:"TLS client certificate file" value-name:"CERT-FILE"`
-	ClientKey  *string `long:"client-key" description:"TLS client private key file" value-name:"KEY-FILE"`
+	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
+	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
 }
 
 func errCheck(err error) {
@@ -126,6 +126,11 @@ func main() {
 
 	if len(domains) == 0 {
 		log.Println("No domains given.")
+		return
+	}
+
+	if (opts.ClientCert != nil && opts.ClientKey == nil) || (opts.ClientCert == nil && opts.ClientKey != nil) {
+		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}
 
