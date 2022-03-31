@@ -42,6 +42,8 @@ Following options are supported:
 | -I, --passphrase-interacive                | Enter passphrase interactively                                                             |
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
 | --insecure                                 | Do not check TSL certificates from provider                                                |
+| --client-cert                              | TLS client certificate file (PEM encoded data)                                             |
+| --client-key                               | TLS client private key file (PEM encoded data)                                             |
 | -h, --help                                 | Show help                                                                                  |
 
 E.g. creating the initial directiories and files
