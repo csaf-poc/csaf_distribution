@@ -82,7 +82,13 @@ func (c *controller) auth(
 
 		verify := os.Getenv("SSL_CLIENT_VERIFY")
 		log.Printf("SSL_CLIENT_VERIFY: %s\n", verify)
-		log.Printf("ca: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
+		if verify == "SUCCESS" || strings.HasPrefix(verify, "FAILED") {
+			// potentially we want to see the Issuer when there is a problem
+			// but it is not clear if we get this far in case of "FAILED".
+			// docs (accessed 2022-03-31 when 1.20.2 was current stable):
+			// https://nginx.org/en/docs/http/ngx_http_ssl_module.html#var_ssl_client_verify
+			log.Printf("SSL_CLIENT_I_DN: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
+		}
 
 		switch {
 		case verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")):
