@@ -24,35 +24,7 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForIT.sh&lines=22-46) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForIT.sh -->
-```sh
-echo '
-# Include this file on your nginx.conf to support debian cgi-bin scripts using
-# fcgiwrap
-location /cgi-bin/ {
-  # Disable gzip (it makes scripts feel slower since they have to complete
-  # before getting gzipped)
-  gzip off;
-
-  # Set the root to /usr/lib (inside this location this means that we are
-  # giving access to the files under /usr/lib/cgi-bin)
-  root  /usr/lib;
-
-  # Fastcgi socket
-  fastcgi_pass  unix:/var/run/fcgiwrap.socket;
-
-  # Fastcgi parameters, include the standard ones
-  include /etc/nginx/fastcgi_params;
-
-  fastcgi_split_path_info ^(.+\.go)(.*)$;
-
-  # Adjust non standard parameters (SCRIPT_FILENAME)
-  fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
-
-  fastcgi_param PATH_INFO $fastcgi_path_info;
-  fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=22-46) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
 
@@ -87,16 +59,7 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForIT.sh&lines=80-85) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForIT.sh -->
-```sh
-# key = "/usr/lib/csaf/public.asc"
-key = "/usr/lib/csaf/private.asc"
-#tlps = ["green", "red"]
-canonical_url_prefix = "http://localhost"
-#no_passphrase = true
-' > /usr/lib/csaf/config.toml
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=80-85) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 with suitable [replacements](#provider-options)

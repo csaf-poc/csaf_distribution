@@ -13,16 +13,16 @@
 # FOLDERNAME and ORGANAME variables must be set.
 # FOLDERNAME: Where to store the CAs and keys.
 # ORGANAME: The organization name used in the CA template.
-# Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./SSLConfigsForIT.sh
+# Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
 cd ~/csaf_distribution/docs/scripts/
 ## Create Root CA
-./createRootCAForIT.sh
+./createRootCAForITest.sh
 
 ## Create webserver cert
-source ./createWebserverCertForIT.sh
+source ./createWebserverCertForITest.sh
 
 # Cofigure nginx
 echo '
@@ -34,7 +34,6 @@ echo '
 
         ssl_protocols TLSv1.2 TLSv1.3;
 ' > SSLConfigs.txt
-
 
 sed -i "26r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
 
