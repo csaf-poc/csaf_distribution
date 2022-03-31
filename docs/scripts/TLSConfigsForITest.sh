@@ -35,7 +35,7 @@ echo '
         ssl_protocols TLSv1.2 TLSv1.3;
 ' > SSLConfigs.txt
 
-sed -i "26r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
+sed -i "/^server {/r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
 
 # Reload nginx
 systemctl reload nginx
