@@ -104,9 +104,9 @@ with suitable [replacements](#provider-options)
 
 Create the folders:
 ```(shell)
-curl http://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
+curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
 ```
-Replace {clientCertificate} with the client certificate file.          
+Replace {clientCertificate} with the client certificate file.
 Or using the uploader:
 ```(shell)
 ./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}

@@ -47,6 +47,6 @@ To test this see [development-client-certs.md](development-client-certs.md) and
 * From the browser after importing the `testclient1.p12`:
 nagivate to the protected directories.
 * With curl: `curl https://{serverURL}/.well-known/csaf/red/ --cert-type p12 --cert testclient1.p12`.
-(If the server uses self-signed certifcate one of the following options should be added to the `curl` command:
+(If the server uses a root certifcate that is not in the default certificate store one of the following options should be added to the `curl` command:
 `--insecure` to disable the verification,
 `--cacert {CA-Certificate-File}` to pass the CA-Certificate that verifies the server).
