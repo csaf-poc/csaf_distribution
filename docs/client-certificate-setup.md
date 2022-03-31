@@ -7,6 +7,26 @@ a web browser.
 Assuming the relevant server block is in `/etc/nginx/sites-enabled/default` and the CA used to verify the client certificates is under `/etc/ssl/`,
 adjust it like shown in the following example:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSClientConfigsForITest.sh&lines=23-39) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/TLSClientConfigsForITest.sh -->
+```sh
+        # Other Config
+        # ...
+
+        '${SSL_CLIENT_CERTIFICATE}' #ssl_client_certificate /etc/ssl/rootca-cert.pem;
+        ssl_verify_client optional;
+        ssl_verify_depth 2;
+
+        # This example allows access to all three TLP locations for all certs.
+        location ~ /.well-known/csaf/(red|green|amber)/{
+        autoindex on;
+        # in this location access is only allowed with client certs
+        if  ($ssl_client_verify != SUCCESS){
+            # we use status code 404 == "Not Found", because we do not
+            # want to reveal if this location exists or not.
+            return 404;
+            }
+       }
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 This will restrict the access to the defined paths in the ```location```
