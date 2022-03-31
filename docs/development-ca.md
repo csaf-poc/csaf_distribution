@@ -11,8 +11,8 @@ which is suitable for testing in development setups.
 
 ## create root CA
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForIT.sh&lines=11-50) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForIT.sh -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=11-50) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForITest.sh -->
 ```sh
 mkdir -p ~/${FOLDERNAME}
 cd ~/${FOLDERNAME}
@@ -38,8 +38,8 @@ certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-c
 
 ## create webserver cert
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForIT.sh&lines=11-55) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForIT.sh -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForITest.sh&lines=11-55) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForITest.sh -->
 ```sh
 cd ~/${FOLDERNAME}
 
