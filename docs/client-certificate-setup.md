@@ -5,7 +5,7 @@ a web browser.
 
 ### Configure nginx
 Assuming the relevant server block is in `/etc/nginx/sites-enabled/default` and the CA used to verify the client certificates is under `/etc/ssl/`,
-adjust it like shown in the following example:
+adjust the content of the `server{}` block like shown in the following example:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSClientConfigsForITest.sh&lines=23-39) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/TLSClientConfigsForITest.sh -->
 ```sh
