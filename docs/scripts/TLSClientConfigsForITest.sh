@@ -20,6 +20,9 @@ cd ~/csaf_distribution/docs/scripts/
 source ./createCCForITest.sh
 
 echo '
+        # Other Config
+        # ...
+
         '${SSL_CLIENT_CERTIFICATE}' #ssl_client_certificate /etc/ssl/rootca-cert.pem;
         ssl_verify_client optional;
         ssl_verify_depth 2;
