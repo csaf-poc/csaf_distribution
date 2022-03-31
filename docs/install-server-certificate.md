@@ -48,6 +48,16 @@ change the `listen` configuration in the `server {}` block and add options so ng
 finds your your private key and the certificate chain.
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSConfigsForITest.sh&lines=29-35) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/TLSConfigsForITest.sh -->
+```sh
+        listen 443 ssl default_server; # ipv4
+        listen [::]:443 ssl http2 default_server;  # ipv6
+
+       '${SSL_CERTIFICATE}' # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+       '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
+
+        ssl_protocols TLSv1.2 TLSv1.3;
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
