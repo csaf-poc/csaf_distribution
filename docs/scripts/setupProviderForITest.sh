@@ -9,6 +9,8 @@
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 # This script sets up the csaf_provider and writes the required nginx configurations.
+# It creates the initial folders and uploads some example files to the csaf_provider with the help of `uploadToProvider.sh`
+
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
@@ -73,7 +75,7 @@ git clone https://github.com/csaf-poc/csaf_distribution.git
 cd csaf_distribution
 
 export PATH=$PATH:/usr/local/go/bin
-go build -o ./ -v ./cmd/csaf_provider/
+go build -o ./ -v ./cmd/...
 # Place the binary under the corresponding path.
 mkdir -p /usr/lib/cgi-bin/
 cp csaf_provider /usr/lib/cgi-bin/csaf_provider.go
@@ -92,3 +94,6 @@ canonical_url_prefix = "https://localhost"
 
 # Create the Folders
 curl https://localhost/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12
+
+# Upload files
+./uploadToProvider.sh

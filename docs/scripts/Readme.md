@@ -7,9 +7,9 @@ and configures nginx for serving TLS connections.
 
 - `TLSClientConfigsForITest.sh` generates client certificates by calling `createCCForITest.sh` which uses the root certificate initialized before with `createRootCAForITest.sh`. It configures nginx to enable the authentication with client certificate. (This assumes that the same folder name is used to create the root certificate)
 
-- `setupProviderForITest.sh` builds the csaf_provider, writes the required nginx configurations and create the initial folders.
+- `setupProviderForITest.sh` builds the csaf_provider, writes the required nginx configurations and create the initial folders. IT calls `uploadToProvider.sh` to upload some csaf example files to the provider.
 
-As creating the folders needs to authenticate with the csaf_provider, the configurations of TLS server and Client certificate authentication  should be set. So it is recommanded to call the scripts in this order: `TLSConfigsForITest.sh`, `TLSClientConfigsForITest.sh`, `setupProviderForITest`
+As creating the folders needs to authenticate with the csaf_provider, the configurations of TLS server and Client certificate authentication should be set. So it is recommended to call the scripts in this order: `TLSConfigsForITest.sh`, `TLSClientConfigsForITest.sh`, `setupProviderForITest.sh`
 
 Calling example:
 ``` bash

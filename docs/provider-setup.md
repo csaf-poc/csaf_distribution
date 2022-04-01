@@ -24,7 +24,7 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=23-51) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -91,7 +91,7 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=85-90) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=87-92) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # upload_signature = true
