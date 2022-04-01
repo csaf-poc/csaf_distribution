@@ -26,12 +26,14 @@ echo '
 
         # This example allows access to all three TLP locations for all certs.
         location ~ /.well-known/csaf/(red|green|amber)/{
-        autoindex on;
-        # in this location access is only allowed with client certs
-        if  ($ssl_client_verify != SUCCESS){
-            # we use status code 404 == "Not Found", because we do not
-            # want to reveal if this location exists or not.
-            return 404;
+            # TODO: do we need?: disable_symlinks off;
+            autoindex on;
+
+            # in this location access is only allowed with client certs
+            if  ($ssl_client_verify != SUCCESS){
+                # we use status code 404 == "Not Found", because we do not
+                # want to reveal if this location exists or not.
+                return 404;
             }
        }
 '> clientCertificateConfigs.txt

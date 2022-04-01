@@ -33,10 +33,18 @@ echo '
        '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
-' > SSLConfigs.txt
+' > TLSConfigs.txt
+
+# a second listener port for testing setup where someone wants to tunnel access
+# to an unpriviledged port and still have the same access url
+echo '
+        listen 8443 ssl default_server; # ipv4
+        listen [::]:8443 ssl http2 default_server;  # ipv6
+' > TLS8443Configs.txt
 
 cp $NGINX_CONFIG_PATH $NGINX_CONFIG_PATH.org
-sed -i "/^server {/r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
+sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLSConfigs.txt" $NGINX_CONFIG_PATH
+sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLS8443Configs.txt" $NGINX_CONFIG_PATH
 sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
 systemctl reload nginx
 
