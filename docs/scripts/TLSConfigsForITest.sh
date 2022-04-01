@@ -36,7 +36,7 @@ echo '
 ' > SSLConfigs.txt
 
 sed -i "/^server {/r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
-
+sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
 # Reload nginx
 systemctl reload nginx
 

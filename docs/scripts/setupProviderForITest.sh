@@ -86,7 +86,7 @@ echo '
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
-canonical_url_prefix = "http://localhost"
+canonical_url_prefix = "https://localhost"
 #no_passphrase = true
 ' > /usr/lib/csaf/config.toml
 
