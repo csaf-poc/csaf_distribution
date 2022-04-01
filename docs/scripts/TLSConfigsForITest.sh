@@ -24,7 +24,7 @@ cd ~/csaf_distribution/docs/scripts/
 ## Create webserver cert
 source ./createWebserverCertForITest.sh
 
-# Cofigure nginx
+# Configure nginx
 echo '
         listen 443 ssl default_server; # ipv4
         listen [::]:443 ssl http2 default_server;  # ipv6
@@ -35,8 +35,8 @@ echo '
         ssl_protocols TLSv1.2 TLSv1.3;
 ' > SSLConfigs.txt
 
+cp $NGINX_CONFIG_PATH $NGINX_CONFIG_PATH.org
 sed -i "/^server {/r ${HOME}/${FOLDERNAME}/SSLConfigs.txt" $NGINX_CONFIG_PATH
 sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
-# Reload nginx
 systemctl reload nginx
 

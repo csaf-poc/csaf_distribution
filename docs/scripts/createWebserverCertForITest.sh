@@ -29,10 +29,9 @@ serial = 010
 expiration_days = 50
 ' > gnutls-certtool.testserver.template
 
-certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template
+certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template --stdout | head -1
 
 cat testserver.crt rootca-cert.pem >bundle.crt
-echo Full path config options for nginx:
 
 SSL_CERTIFICATE=$(
 echo "      ssl_certificate $PWD/bundle.crt;"
