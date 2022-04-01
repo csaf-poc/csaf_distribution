@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # This file is Free Software under the MIT License
 # without warranty, see README.md and LICENSES/MIT.txt for details.
 #
@@ -29,7 +27,7 @@ serial = 020
 expiration_days = 50
 ' > gnutls-certtool.testclient1.template
 
-certtool --generate-certificate --load-privkey testclient1-key.pem --outfile testclient1.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testclient1.template
+certtool --generate-certificate --load-privkey testclient1-key.pem --outfile testclient1.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testclient1.template --stdout | head -1
 
 certtool --load-ca-certificate rootca-cert.pem --load-certificate testclient1.crt --load-privkey testclient1-key.pem --to-p12 --p12-name "Test Client 1" --null-password --outder --outfile testclient1.p12
 
@@ -48,11 +46,11 @@ serial = 021
 expiration_days = 1
 ' > gnutls-certtool.testclient2.template
 
-certtool --generate-certificate --load-privkey testclient2-key.pem --outfile testclient2.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testclient2.template
+certtool --generate-certificate --load-privkey testclient2-key.pem --outfile testclient2.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testclient2.template --stdout | head -1
 
 certtool --load-ca-certificate rootca-cert.pem --load-certificate testclient2.crt --load-privkey testclient2-key.pem --to-p12 --p12-name "Test Client 2" --null-password --outder --outfile testclient2.p12
 
 
 SSL_CLIENT_CERTIFICATE=$(
-echo "      ssl_client_certificate $PWD/rootca-cert.pem;"
+echo "        ssl_client_certificate $PWD/rootca-cert.pem;"
 )

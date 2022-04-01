@@ -20,10 +20,7 @@ cd ~/csaf_distribution/docs/scripts/
 source ./createCCForITest.sh
 
 echo '
-        # Other Config
-        # ...
-
-        '${SSL_CLIENT_CERTIFICATE}' # e.g. ssl_client_certificate /etc/ssl/rootca-cert.pem;
+       '${SSL_CLIENT_CERTIFICATE}' # e.g. ssl_client_certificate /etc/ssl/rootca-cert.pem;
         ssl_verify_client optional;
         ssl_verify_depth 2;
 
@@ -41,5 +38,4 @@ echo '
 
 sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH
 
-# Reload nginx
 systemctl reload nginx
