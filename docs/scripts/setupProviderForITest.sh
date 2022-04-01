@@ -51,18 +51,24 @@ location /cgi-bin/ {
 }
 ' > /etc/nginx/fcgiwrap.conf
 
-FCGIWRAP=$(echo "
-        include fcgiwrap.conf;
-")
-echo $FCGIWRAP
-sed -i "22i\\$FCGIWRAP" $NGINX_CONFIG_PATH
+sed -i "/^server {/a include fcgiwrap.conf;" $NGINX_CONFIG_PATH # Enable CGI
+
+echo "
+        # For atomic directory switches
+        disable_symlinks off;
+
+        # directory listings
+        autoindex on;
+" > locationConfig.txt
+sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
 
 # Reload nginx
 systemctl reload nginx
 
 cd ~
-mkdir -p tmp
-cd tmp
+rm -rf csaf_tmp
+mkdir -p csaf_tmp
+cd csaf_tmp
 git clone https://github.com/csaf-poc/csaf_distribution.git
 cd csaf_distribution
 
