@@ -27,9 +27,6 @@ Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
-# Include this file on your nginx.conf to support debian cgi-bin scripts using
-# fcgiwrap
-location /cgi-bin/ {
   # Disable gzip (it makes scripts feel slower since they have to complete
   # before getting gzipped)
   gzip off;
@@ -56,6 +53,9 @@ location /cgi-bin/ {
   fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
   fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
+' > /etc/nginx/fcgiwrap.conf
+
+sed -i "/^server {/a include fcgiwrap.conf;" $NGINX_CONFIG_PATH # Enable CGI
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
@@ -94,12 +94,12 @@ Create configuration file under `/usr/lib/csaf/config.toml`:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=87-92) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
-# upload_signature = true
-# key = "/usr/lib/csaf/public.asc"
-key = "/usr/lib/csaf/private.asc"
-#tlps = ["green", "red"]
-canonical_url_prefix = "https://localhost"
+canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
+' > /usr/lib/csaf/config.toml
+
+# Create the Folders
+curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
