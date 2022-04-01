@@ -27,7 +27,6 @@ Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=23-51) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
-echo '
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
 # fcgiwrap
 location /cgi-bin/ {
@@ -52,6 +51,11 @@ location /cgi-bin/ {
 
   fastcgi_param PATH_INFO $fastcgi_path_info;
   fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+
+  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
+  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
+  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
+}
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
@@ -90,12 +94,12 @@ Create configuration file under `/usr/lib/csaf/config.toml`:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=85-90) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
+# upload_signature = true
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "http://localhost"
 #no_passphrase = true
-' > /usr/lib/csaf/config.toml
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
