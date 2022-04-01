@@ -9,10 +9,7 @@ adjust the content of the `server{}` block like shown in the following example:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSClientConfigsForITest.sh&lines=23-39) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/TLSClientConfigsForITest.sh -->
 ```sh
-        # Other Config
-        # ...
-
-        '${SSL_CLIENT_CERTIFICATE}' # e.g. ssl_client_certificate /etc/ssl/rootca-cert.pem;
+       '${SSL_CLIENT_CERTIFICATE}' # e.g. ssl_client_certificate /etc/ssl/rootca-cert.pem;
         ssl_verify_client optional;
         ssl_verify_depth 2;
 
@@ -26,6 +23,9 @@ adjust the content of the `server{}` block like shown in the following example:
             return 404;
             }
        }
+'> clientCertificateConfigs.txt
+
+sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
