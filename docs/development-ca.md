@@ -32,7 +32,7 @@ serial = 001
 expiration_days = 100
 ' >gnutls-certtool.rootca.template
 
-certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template
+certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template --stdout | head -1
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
@@ -62,10 +62,9 @@ serial = 010
 expiration_days = 50
 ' > gnutls-certtool.testserver.template
 
-certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template
+certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template --stdout | head -1
 
 cat testserver.crt rootca-cert.pem >bundle.crt
-echo Full path config options for nginx:
 
 SSL_CERTIFICATE=$(
 echo "      ssl_certificate $PWD/bundle.crt;"
