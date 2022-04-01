@@ -10,9 +10,10 @@
 #
 # This script uploads the downloaded csaf examples to the csaf_provider with the help of the csaf_uploader.
 
-cd ~
 ./downloadExamples.sh
 
+#TODO FIXME make sure that we do not fall prey to funky filenames
+# TODO upload in several tlp categories
 for f in $(ls ~/csaf_examples);
     do
         ./csaf_tmp/csaf_distribution/csaf_uploader -a upload -t red \

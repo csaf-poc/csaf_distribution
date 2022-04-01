@@ -15,5 +15,5 @@ Calling example:
 ``` bash
     env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
     env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
-    ./setupProviderForITest
+    ./setupProviderForITest.sh
 ```

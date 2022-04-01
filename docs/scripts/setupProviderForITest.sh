@@ -11,15 +11,12 @@
 # This script sets up the csaf_provider and writes the required nginx configurations.
 # It creates the initial folders and uploads some example files to the csaf_provider with the help of `uploadToProvider.sh`
 
+chgrp -R www-data  /var/www
+chmod -R g+w  /var/www
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
-
-
-cd /var/www
-chgrp -R www-data .
-chmod -R g+w .
 
 echo '
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -64,12 +61,11 @@ echo "
 " > locationConfig.txt
 sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
 
-# Reload nginx
 systemctl reload nginx
 
-cd ~
+pushd ~
 rm -rf csaf_tmp
-mkdir -p csaf_tmp
+mkdir csaf_tmp
 cd csaf_tmp
 git clone https://github.com/csaf-poc/csaf_distribution.git
 cd csaf_distribution
@@ -88,12 +84,14 @@ echo '
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
-canonical_url_prefix = "https://localhost"
+canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
 ' > /usr/lib/csaf/config.toml
 
 # Create the Folders
-curl https://localhost/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12
+curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
+
+popd
 
 # Upload files
 ./uploadToProvider.sh
