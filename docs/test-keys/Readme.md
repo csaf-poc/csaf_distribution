@@ -22,3 +22,4 @@ comment:
 gpg --export-secret-key --armor test1 > private.asc
 gpg --export --armor test1 > public.asc
 ```
+The passphrase for this test OpenPGP key-pair is: security123
