@@ -5,7 +5,15 @@ Scripts for assisting the Integration tests. They are written on Ubuntu 20.04 TL
 - `TLSConfigsForITest.sh` generates a root CA and webserver cert by running `createRootCAForITest.sh` and `createWebserverCertForITest.sh`
 and configures nginx for serving TLS connections.
 
-- `setupProviderForITest.sh` builds the csaf_provider, writes the required nginx configurations and create the initial folders.
-
 - `TLSClientConfigsForITest.sh` generates client certificates by calling `createCCForITest.sh` which uses the root certificate initialized before with `createRootCAForITest.sh`. It configures nginx to enable the authentication with client certificate. (This assumes that the same folder name is used to create the root certificate)
 
+- `setupProviderForITest.sh` builds the csaf_provider, writes the required nginx configurations and create the initial folders.
+
+As creating the folders needs to authenticate with the csaf_provider, the configurations of TLS server and Client certificate authentication  should be set. So it is recommanded to call the scripts in this order: `TLSConfigsForITest.sh`, `TLSClientConfigsForITest.sh`, `setupProviderForITest`
+
+Calling example:
+``` bash
+    env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
+    env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
+    ./setupProviderForITest
+```
