@@ -13,12 +13,14 @@
 ./downloadExamples.sh
 
 #TODO FIXME make sure that we do not fall prey to funky filenames
-# TODO upload in several tlp categories
+TLPs=("red" "amber" "green" "white")
+COUNTER=0
 for f in $(ls ~/csaf_examples);
     do
-        /$HOME/csaf_tmp/csaf_distribution/csaf_uploader -a upload -t red \
+        /$HOME/csaf_tmp/csaf_distribution/csaf_uploader -a upload -t ${TLPs[$COUNTER]} \
         -u https://localhost/cgi-bin/csaf_provider.go --insecure -P security123 \
         --client-cert ~/devca1/testclient1.crt --client-key ~/devca1/testclient1-key.pem \
         ~/csaf_examples/$f;
+        let COUNTER++
     done;
 
