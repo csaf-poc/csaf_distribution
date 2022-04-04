@@ -15,7 +15,7 @@ adjust the content of the `server{}` block like shown in the following example:
 
         # This example allows access to all three TLP locations for all certs.
         location ~ /.well-known/csaf/(red|green|amber)/{
-            # TODO: do we need?: disable_symlinks off;
+
             autoindex on;
 
             # in this location access is only allowed with client certs
