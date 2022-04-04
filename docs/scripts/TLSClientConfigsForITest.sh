@@ -26,7 +26,7 @@ echo '
 
         # This example allows access to all three TLP locations for all certs.
         location ~ /.well-known/csaf/(red|green|amber)/{
-            # TODO: do we need?: disable_symlinks off;
+
             autoindex on;
 
             # in this location access is only allowed with client certs
