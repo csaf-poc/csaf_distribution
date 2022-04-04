@@ -24,7 +24,7 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=22-50) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
   # Disable gzip (it makes scripts feel slower since they have to complete
@@ -91,7 +91,7 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=87-92) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=83-88) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 canonical_url_prefix = "https://localhost:8443"
@@ -125,9 +125,9 @@ Provider has many config options described as following:
  - key: The private OpenPGP key.
  - folder: Specify the root folder. Default: `/var/www/`.
  - web: Specify the web folder. Default: `/var/www/html`.
- - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").             
-   The "csaf" selection lets the provider takes the value from the CSAF document.         
-   These affects the list items in the web interface.      
+ - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").
+   The "csaf" selection lets the provider takes the value from the CSAF document.
+   These affects the list items in the web interface.
    Default: `["csaf", "white", "amber", "green", "red"]`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.

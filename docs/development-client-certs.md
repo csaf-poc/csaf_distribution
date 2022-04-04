@@ -10,7 +10,7 @@ would used for server and for client certificates.)
 The following lines directly create the client certificate.
 (As opposed to first creating a certificate signing request and
 then signing it.)
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=17-35) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=15-35) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createCCForITest.sh -->
 ```sh
 echo '
@@ -36,7 +36,7 @@ certtool --generate-privkey --outfile testclient2-key.pem
 
 and we do a second one with shorter expiration day:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=36-54) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=34-52) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createCCForITest.sh -->
 ```sh
 echo '
