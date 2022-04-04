@@ -13,6 +13,8 @@ then signing it.)
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=15-35) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createCCForITest.sh -->
 ```sh
+certtool --generate-privkey --outfile testclient1-key.pem
+
 echo '
 organization = "'${ORGANAME}'"
 country = DE
@@ -39,6 +41,8 @@ and we do a second one with shorter expiration day:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createCCForITest.sh&lines=34-52) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createCCForITest.sh -->
 ```sh
+certtool --generate-privkey --outfile testclient2-key.pem
+
 echo '
 organization = "'${ORGANAME}'"
 country = DE
@@ -55,9 +59,6 @@ expiration_days = 1
 certtool --generate-certificate --load-privkey testclient2-key.pem --outfile testclient2.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testclient2.template --stdout | head -1
 
 certtool --load-ca-certificate rootca-cert.pem --load-certificate testclient2.crt --load-privkey testclient2-key.pem --to-p12 --p12-name "Test Client 2" --null-password --outder --outfile testclient2.p12
-
-
-SSL_CLIENT_CERTIFICATE=$(
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 

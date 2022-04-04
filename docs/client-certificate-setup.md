@@ -25,7 +25,6 @@ adjust the content of the `server{}` block like shown in the following example:
                 return 404;
             }
        }
-'> clientCertificateConfigs.txt
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
