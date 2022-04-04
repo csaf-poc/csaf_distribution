@@ -9,7 +9,7 @@
 #
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
-
+pushd ~
 curl --silent --show-error -H 'Accept: application/vnd.github.v3.raw' \
  https://api.github.com/repos/oasis-tcs/csaf/contents/csaf_2.0/examples/csaf \
  | grep '"path":' |  sed -e 's/".*": "\(.*\)",/\1/' \
@@ -26,4 +26,4 @@ cat ../csaf_examples_pathnames.txt | \
   curl --silent --show-error -H 'Accept: application/vnd.github.v3.raw' \
    https://api.github.com/repos/oasis-tcs/csaf/contents/{} -O
 
-cd ..
+popd

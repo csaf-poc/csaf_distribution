@@ -16,8 +16,9 @@
 # TODO upload in several tlp categories
 for f in $(ls ~/csaf_examples);
     do
-        ./csaf_tmp/csaf_distribution/csaf_uploader -a upload -t red \
+        /$HOME/csaf_tmp/csaf_distribution/csaf_uploader -a upload -t red \
         -u https://localhost/cgi-bin/csaf_provider.go --insecure -P security123 \
         --client-cert ~/devca1/testclient1.crt --client-key ~/devca1/testclient1-key.pem \
         ~/csaf_examples/$f;
     done;
+
