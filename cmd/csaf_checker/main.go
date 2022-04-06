@@ -12,10 +12,13 @@ import (
 	"bufio"
 	_ "embed" // Used for embedding.
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 )
@@ -29,6 +32,7 @@ type options struct {
 	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
 	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
 	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
+	Version    bool    `long:"version" short:"v" description:"Display version of the binary"`
 }
 
 func errCheck(err error) {
@@ -126,14 +130,64 @@ func buildReporters() []reporter {
 	}
 }
 
+// getVersion returns the version of the binary file. It distinguishes between two cases:
+// a) if the current commit is the same commit of the last tag it returns the tag's name.
+// b) if the current commit differs from the commit of the last tag it returns
+// the short commit hash of the actual commit appended to the "dev" and date of commit.
+func getVersion() (string, error) {
+	var err error
+	versionCmd := exec.Command("git", "describe", "--tag")
+	versionStr := new(strings.Builder)
+	versionCmd.Stdout = versionStr
+	err = versionCmd.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	version := strings.TrimRight(versionStr.String(), "\n")
+	lastTagHashbStr := exec.Command("git", "show-ref", "-s", version)
+	lasTagHashCmd := new(strings.Builder)
+	lastTagHashbStr.Stdout = lasTagHashCmd
+	err = lastTagHashbStr.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	currentCommitCmd := exec.Command("git", "log", "-1", "--format=format:%H%cd", "--date=format:-%Y%m%d")
+	currenCommitStr := new(strings.Builder)
+	currentCommitCmd.Stdout = currenCommitStr
+	err = currentCommitCmd.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	date := strings.Split(currenCommitStr.String(), "-")[1]
+	currentcCommitHash := strings.Split(currenCommitStr.String(), "-")[0]
+
+	if currentcCommitHash == lastTagHashbStr.String() {
+		return version, nil
+	} else {
+		return "dev-" + date + "-" + currentcCommitHash[0:7], nil
+	}
+}
+
 func main() {
 	opts := new(options)
 
 	domains, err := flags.Parse(opts)
 	errCheck(err)
 
-	if len(domains) == 0 {
+	if len(domains) == 0 && !opts.Version {
 		log.Println("No domains given.")
+		return
+	}
+	if opts.Version {
+		version, err := getVersion()
+		if err != nil {
+			log.Printf("Command finished with error: %v", err)
+			return
+		}
+		fmt.Println(version)
 		return
 	}
 
