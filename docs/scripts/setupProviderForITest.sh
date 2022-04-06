@@ -63,18 +63,15 @@ sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert con
 
 systemctl reload nginx
 
-pushd ~
-rm -rf csaf_tmp
-mkdir csaf_tmp
-cd csaf_tmp
-git clone https://github.com/csaf-poc/csaf_distribution.git
-cd csaf_distribution
+# assuming that we are in a checked out version in the docs/scripts directory
+# and we want to build the version that is currently checked out
+pushd ../..
 
 export PATH=$PATH:/usr/local/go/bin
-go build -o ./ -v ./cmd/...
+make build_linux
 # Place the binary under the corresponding path.
 mkdir -p /usr/lib/cgi-bin/
-cp csaf_provider /usr/lib/cgi-bin/csaf_provider.go
+cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
 mkdir -p /usr/lib/csaf/
 cp docs/test-keys/*.asc /usr/lib/csaf/
