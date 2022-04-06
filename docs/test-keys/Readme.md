@@ -1,12 +1,10 @@
 OpenPGP key-pair for testing.
 
 This has been created with:
+* gpg (GnuPG) 2.2.19
+* (linked with) libgcrypt 1.8.5
 
-gpg (GnuPG) 2.2.19
-
-libgcrypt 1.8.5
-
-## test1@example.com
+### `test1@example.com`
 
 ```bash
 gpg --full-gen-key
@@ -22,4 +20,4 @@ comment:
 gpg --export-secret-key --armor test1 > private.asc
 gpg --export --armor test1 > public.asc
 ```
-The passphrase for this test OpenPGP key-pair is: security123
+The passphrase for this test OpenPGP key-pair is: `security123`
