@@ -166,9 +166,9 @@ func getVersion() (string, error) {
 
 	if currentcCommitHash == lastTagHashbStr.String() {
 		return version, nil
-	} else {
-		return "dev-" + date + "-" + currentcCommitHash[0:7], nil
 	}
+	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
+
 }
 
 func main() {
