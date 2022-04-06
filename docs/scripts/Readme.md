@@ -11,8 +11,14 @@ and configures nginx for serving TLS connections.
 
 As creating the folders needs to authenticate with the csaf_provider, the configurations of TLS server and Client certificate authentication should be set. So it is recommended to call the scripts in this order: `TLSConfigsForITest.sh`, `TLSClientConfigsForITest.sh`, `setupProviderForITest.sh`
 
-Calling example:
+Calling example (as root):
 ``` bash
+    curl -O https://raw.githubusercontent.com/csaf-poc/csaf_distribution/main/docs/scripts/prepareUbuntuInstanceForITests.sh
+    bash prepareUbuntuInstanceForITests.sh
+
+    git clone https://github.com/csaf-poc/csaf_distribution.git
+    pushd csaf_distribution/docs/scripts/
+
     env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
     env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
     ./setupProviderForITest.sh
