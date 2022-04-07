@@ -14,8 +14,6 @@ which is suitable for testing in development setups.
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=13-50) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForITest.sh -->
 ```sh
-set -e
-
 mkdir -p ~/${FOLDERNAME}
 cd ~/${FOLDERNAME}
 
