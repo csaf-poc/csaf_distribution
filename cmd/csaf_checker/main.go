@@ -17,9 +17,8 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
-	"strings"
 
+	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -130,47 +129,6 @@ func buildReporters() []reporter {
 	}
 }
 
-// getVersion returns the version of the binary file. It distinguishes between two cases:
-// a) if the current commit is the same commit of the last tag it returns the tag's name.
-// b) if the current commit differs from the commit of the last tag it returns
-// the short commit hash of the actual commit appended to the "dev" and date of commit.
-func getVersion() (string, error) {
-	var err error
-	versionCmd := exec.Command("git", "describe", "--tag")
-	versionStr := new(strings.Builder)
-	versionCmd.Stdout = versionStr
-	err = versionCmd.Run()
-	if err != nil {
-		return "", nil
-	}
-
-	version := strings.TrimRight(versionStr.String(), "\n")
-	lastTagHashbStr := exec.Command("git", "show-ref", "-s", version)
-	lasTagHashCmd := new(strings.Builder)
-	lastTagHashbStr.Stdout = lasTagHashCmd
-	err = lastTagHashbStr.Run()
-	if err != nil {
-		return "", nil
-	}
-
-	currentCommitCmd := exec.Command("git", "log", "-1", "--format=format:%H%cd", "--date=format:-%Y%m%d")
-	currenCommitStr := new(strings.Builder)
-	currentCommitCmd.Stdout = currenCommitStr
-	err = currentCommitCmd.Run()
-	if err != nil {
-		return "", nil
-	}
-
-	date := strings.Split(currenCommitStr.String(), "-")[1]
-	currentcCommitHash := strings.Split(currenCommitStr.String(), "-")[0]
-
-	if currentcCommitHash == lastTagHashbStr.String() {
-		return version, nil
-	}
-	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
-
-}
-
 func main() {
 	opts := new(options)
 
@@ -182,7 +140,7 @@ func main() {
 		return
 	}
 	if opts.Version {
-		version, err := getVersion()
+		version, err := util.GetVersion()
 		if err != nil {
 			log.Printf("Command finished with error: %v", err)
 			return

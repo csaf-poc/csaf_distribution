@@ -12,8 +12,10 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -139,4 +141,45 @@ func mkUniq(prefix string, create func(string) error) (string, error) {
 	}
 
 	return "", err
+}
+
+// getVersion returns the version of the binary file. It distinguishes between two cases:
+// a) if the current commit is the same commit of the last tag it returns the tag's name.
+// b) if the current commit differs from the commit of the last tag it returns
+// the short commit hash of the actual commit appended to the "dev" and date of commit.
+func GetVersion() (string, error) {
+	var err error
+	versionCmd := exec.Command("git", "describe", "--tag")
+	versionStr := new(strings.Builder)
+	versionCmd.Stdout = versionStr
+	err = versionCmd.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	version := strings.TrimRight(versionStr.String(), "\n")
+	lastTagHashbStr := exec.Command("git", "show-ref", "-s", version)
+	lasTagHashCmd := new(strings.Builder)
+	lastTagHashbStr.Stdout = lasTagHashCmd
+	err = lastTagHashbStr.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	currentCommitCmd := exec.Command("git", "log", "-1", "--format=format:%H%cd", "--date=format:-%Y%m%d")
+	currenCommitStr := new(strings.Builder)
+	currentCommitCmd.Stdout = currenCommitStr
+	err = currentCommitCmd.Run()
+	if err != nil {
+		return "", nil
+	}
+
+	date := strings.Split(currenCommitStr.String(), "-")[1]
+	currentcCommitHash := strings.Split(currenCommitStr.String(), "-")[0]
+
+	if currentcCommitHash == lastTagHashbStr.String() {
+		return version, nil
+	} else {
+		return "dev-" + date + "-" + currentcCommitHash[0:7], nil
+	}
 }
