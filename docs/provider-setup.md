@@ -97,11 +97,9 @@ key = "/usr/lib/csaf/private.asc"
 canonical_url_prefix = "http://192.168.56.102"
 #no_passphrase = true
 ```
-with suitable replacements
-(This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
+with suitable [replacements](#provider-options)
+(This configuration examples assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
-
-with suitable [replacements](#provider-options).
 
 Create the folders:
 ```(shell)
