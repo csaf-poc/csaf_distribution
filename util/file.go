@@ -143,7 +143,7 @@ func mkUniq(prefix string, create func(string) error) (string, error) {
 	return "", err
 }
 
-// getVersion returns the version of the binary file. It distinguishes between two cases:
+// GetVersion returns the version of the binary file. It distinguishes between two cases:
 // a) if the current commit is the same commit of the last tag it returns the tag's name.
 // b) if the current commit differs from the commit of the last tag it returns
 // the short commit hash of the actual commit appended to the "dev" and date of commit.
@@ -179,7 +179,7 @@ func GetVersion() (string, error) {
 
 	if currentcCommitHash == lastTagHashbStr.String() {
 		return version, nil
-	} else {
-		return "dev-" + date + "-" + currentcCommitHash[0:7], nil
 	}
+	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
+
 }
