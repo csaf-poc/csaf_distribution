@@ -149,7 +149,7 @@ func mkUniq(prefix string, create func(string) error) (string, error) {
 // the short commit hash of the actual commit appended to the "dev" and date of commit.
 func GetVersion() (string, error) {
 	var err error
-	versionCmd := exec.Command("git", "describe", "--tag")
+	versionCmd := exec.Command("git", "describe", "--tag", "--abbrev=0")
 	versionStr := new(strings.Builder)
 	versionCmd.Stdout = versionStr
 	err = versionCmd.Run()
@@ -158,10 +158,10 @@ func GetVersion() (string, error) {
 	}
 
 	version := strings.TrimRight(versionStr.String(), "\n")
-	lastTagHashbStr := exec.Command("git", "show-ref", "-s", version)
-	lasTagHashCmd := new(strings.Builder)
-	lastTagHashbStr.Stdout = lasTagHashCmd
-	err = lastTagHashbStr.Run()
+	lastTagHashbCmd := exec.Command("git", "rev-list", "-n", "1", version)
+	lasTagHashStr := new(strings.Builder)
+	lastTagHashbCmd.Stdout = lasTagHashStr
+	err = lastTagHashbCmd.Run()
 	if err != nil {
 		return "", nil
 	}
@@ -177,7 +177,7 @@ func GetVersion() (string, error) {
 	date := strings.Split(currenCommitStr.String(), "-")[1]
 	currentcCommitHash := strings.Split(currenCommitStr.String(), "-")[0]
 
-	if currentcCommitHash == lastTagHashbStr.String() {
+	if currentcCommitHash == strings.TrimRight(lasTagHashStr.String(), "\n") {
 		return version, nil
 	}
 	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
