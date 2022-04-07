@@ -102,9 +102,9 @@ canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
-
 with suitable [replacements](#provider-options)
-(This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
+(This configuration examples assumes that the private/public keys are available under `/usr/lib/csaf/`).
+
 
 Create the folders:
 ```(shell)
