@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+set -e
 
 # This script prepares a naked Ubuntu 20.04 LTS amd64
 # for the csaf_distribution integration tests
 # by installing the required packages.
+
 
 apt install -y make git nginx fcgiwrap gnutls-bin
 

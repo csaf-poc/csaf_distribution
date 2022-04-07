@@ -10,6 +10,8 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
+set -e
+
 
 # assumes that the following script only downloads file with filenames
 # following https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#51-filename

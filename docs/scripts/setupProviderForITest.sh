@@ -11,6 +11,8 @@
 # This script sets up the csaf_provider and writes the required nginx configurations.
 # It creates the initial folders and uploads some example files to the csaf_provider with the help of `uploadToProvider.sh`
 
+set -e
+
 chgrp -R www-data  /var/www
 chmod -R g+w  /var/www
 
@@ -50,7 +52,7 @@ location /cgi-bin/ {
 }
 ' > /etc/nginx/fcgiwrap.conf
 
-sed -i "/^server {/a include fcgiwrap.conf;" $NGINX_CONFIG_PATH # Enable CGI
+sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
 
 echo "
         # For atomic directory switches

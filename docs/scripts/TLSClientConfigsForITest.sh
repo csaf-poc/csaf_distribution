@@ -14,6 +14,8 @@
 # ORGANAME: The organization name used in the CA template.
 # Usage Example: env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
 
+set -e
+
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
 cd ~/csaf_distribution/docs/scripts/

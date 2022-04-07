@@ -9,6 +9,8 @@
 # This scripts creates two client certificates. It uses for signing the root certifcate
 # created with `createRootCAForITest.sh` that must be run earlier.
 
+set -e
+
 mkdir -p ~/${FOLDERNAME}
 cd ~/${FOLDERNAME}
 

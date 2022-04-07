@@ -10,6 +10,7 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
+set -e
 
 # using an extended regular expression to whitelist only CSAF 2.0 filenames
 # with a sane path
