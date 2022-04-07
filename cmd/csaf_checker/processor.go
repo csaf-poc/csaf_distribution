@@ -230,15 +230,20 @@ func (p *processor) httpClient() *http.Client {
 	p.client = &http.Client{
 		CheckRedirect: p.checkRedirect,
 	}
-
+	var tlsConfig tls.Config
 	if p.opts.Insecure {
-		p.client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		}
+		tlsConfig.InsecureSkipVerify = true
 	}
-
+	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
+		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+	p.client.Transport = &http.Transport{
+		TLSClientConfig: &tlsConfig,
+	}
 	return p.client
 }
 
