@@ -126,19 +126,14 @@ func buildReporters() []reporter {
 	}
 }
 
-func main() {
+func realMain(args []string) {
 	opts := new(options)
 
-	domains, err := flags.Parse(opts)
+	domains, err := flags.ParseArgs(opts, args)
 	errCheck(err)
 
 	if len(domains) == 0 {
 		log.Println("No domains given.")
-		return
-	}
-
-	if (opts.ClientCert != nil && opts.ClientKey == nil) || (opts.ClientCert == nil && opts.ClientKey != nil) {
-		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}
 
@@ -148,4 +143,8 @@ func main() {
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))
+}
+
+func main() {
+	realMain(os.Args[1:])
 }
