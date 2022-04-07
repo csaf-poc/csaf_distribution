@@ -11,7 +11,7 @@ which is suitable for testing in development setups.
 
 ## create root CA
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=11-50) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=13-50) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForITest.sh -->
 ```sh
 set -e
