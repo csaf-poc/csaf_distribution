@@ -9,6 +9,7 @@ adjust the content of the `server{}` block like shown in the following example:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSClientConfigsForITest.sh&lines=23-38) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/TLSClientConfigsForITest.sh -->
 ```sh
+echo '
        '${SSL_CLIENT_CERTIFICATE}' # e.g. ssl_client_certificate /etc/ssl/rootca-cert.pem;
         ssl_verify_client optional;
         ssl_verify_depth 2;
@@ -23,8 +24,6 @@ adjust the content of the `server{}` block like shown in the following example:
                 # we use status code 404 == "Not Found", because we do not
                 # want to reveal if this location exists or not.
                 return 404;
-            }
-       }
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 

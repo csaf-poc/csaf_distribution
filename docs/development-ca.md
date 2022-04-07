@@ -14,6 +14,8 @@ which is suitable for testing in development setups.
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=11-50) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForITest.sh -->
 ```sh
+set -e
+
 mkdir -p ~/${FOLDERNAME}
 cd ~/${FOLDERNAME}
 
@@ -41,6 +43,8 @@ certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-c
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForITest.sh&lines=11-55) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForITest.sh -->
 ```sh
+cd ~/${FOLDERNAME}
+
 certtool --generate-privkey --outfile testserver-key.pem
 
 echo '
