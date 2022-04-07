@@ -23,7 +23,7 @@ COUNTER=0
 for f in $(ls csaf_examples);
     do
         ../../bin-linux-amd64/csaf_uploader -a upload -t ${TLPs[$COUNTER]} \
-        -u https://localhost/cgi-bin/csaf_provider.go --insecure -P security123 \
+        -u https://localhost:8443/cgi-bin/csaf_provider.go --insecure -P security123 \
         --client-cert ~/devca1/testclient1.crt --client-key ~/devca1/testclient1-key.pem \
         ./csaf_examples/"$f";
         let COUNTER++

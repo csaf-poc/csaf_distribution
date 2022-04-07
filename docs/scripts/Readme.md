@@ -13,7 +13,7 @@ As creating the folders needs to authenticate with the csaf_provider, the config
 
 Calling example (as root):
 ``` bash
-    curl -O https://raw.githubusercontent.com/csaf-poc/csaf_distribution/main/docs/scripts/prepareUbuntuInstanceForITests.sh
+    curl --fail -O https://raw.githubusercontent.com/csaf-poc/csaf_distribution/main/docs/scripts/prepareUbuntuInstanceForITests.sh
     bash prepareUbuntuInstanceForITests.sh
 
     git clone https://github.com/csaf-poc/csaf_distribution.git
