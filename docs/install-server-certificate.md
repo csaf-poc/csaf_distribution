@@ -47,7 +47,7 @@ Assuming the relevant server block is in `/etc/nginx/sites-enabled/default`,
 change the `listen` configuration in the `server {}` block and add options so nginx
 finds your your private key and the certificate chain.
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSConfigsForITest.sh&lines=29-35) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSConfigsForITest.sh&lines=31-37) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/TLSConfigsForITest.sh -->
 ```sh
 # Configure nginx
