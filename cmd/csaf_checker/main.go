@@ -31,7 +31,7 @@ type options struct {
 	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
 	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
 	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
-	Version    bool    `long:"version" short:"v" description:"Display version of the binary"`
+	Version    bool    `long:"version" description:"Display version of the binary"`
 }
 
 func errCheck(err error) {

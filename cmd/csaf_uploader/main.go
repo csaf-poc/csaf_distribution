@@ -50,7 +50,7 @@ type options struct {
 	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider"`
 
 	Config  *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
-	Version bool    `long:"version" short:"v" description:"Display version of the binary"`
+	Version bool    `long:"version" description:"Display version of the binary"`
 }
 
 type processor struct {
