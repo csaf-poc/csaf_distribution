@@ -12,12 +12,15 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var LastTagHash = "0.0"
+var LastTag = "0.0"
+var CurrentHash = "0.0"
 
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {
@@ -148,37 +151,12 @@ func mkUniq(prefix string, create func(string) error) (string, error) {
 // b) if the current commit differs from the commit of the last tag it returns
 // the short commit hash of the actual commit appended to the "dev" and date of commit.
 func GetVersion() (string, error) {
-	var err error
-	versionCmd := exec.Command("git", "describe", "--tag", "--abbrev=0")
-	versionStr := new(strings.Builder)
-	versionCmd.Stdout = versionStr
-	err = versionCmd.Run()
-	if err != nil {
-		return "", nil
-	}
 
-	version := strings.TrimRight(versionStr.String(), "\n")
-	lastTagHashbCmd := exec.Command("git", "rev-list", "-n", "1", version)
-	lasTagHashStr := new(strings.Builder)
-	lastTagHashbCmd.Stdout = lasTagHashStr
-	err = lastTagHashbCmd.Run()
-	if err != nil {
-		return "", nil
-	}
+	date := strings.Split(CurrentHash, "-")[1]
+	currentcCommitHash := strings.Split(CurrentHash, "-")[0]
 
-	currentCommitCmd := exec.Command("git", "log", "-1", "--format=format:%H%cd", "--date=format:-%Y%m%d")
-	currenCommitStr := new(strings.Builder)
-	currentCommitCmd.Stdout = currenCommitStr
-	err = currentCommitCmd.Run()
-	if err != nil {
-		return "", nil
-	}
-
-	date := strings.Split(currenCommitStr.String(), "-")[1]
-	currentcCommitHash := strings.Split(currenCommitStr.String(), "-")[0]
-
-	if currentcCommitHash == strings.TrimRight(lasTagHashStr.String(), "\n") {
-		return version, nil
+	if currentcCommitHash == LastTagHash {
+		return LastTag, nil
 	}
 	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
 
