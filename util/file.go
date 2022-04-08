@@ -18,9 +18,13 @@ import (
 	"time"
 )
 
-// Variables for determining the version of the binary to by displayed.
+// LastTagHash represents the commit hash of the last tag.
 var LastTagHash = "0.0"
+
+// LastTag represents the last tag.
 var LastTag = "0.0"
+
+// CurrentHash represents the hast of the current commit.
 var CurrentHash = "0.0"
 
 // NWriter is an io.Writer counting the bytes copied through it.
