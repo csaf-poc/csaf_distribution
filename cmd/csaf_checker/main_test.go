@@ -17,5 +17,8 @@ func TestMain(t *testing.T) {
 		}
 	}
 
+	if endOfTestParams == 0 {
+		t.Skip("skipping integration test, no `--` parameter found")
+	}
 	realMain(os.Args[endOfTestParams+1:])
 }
