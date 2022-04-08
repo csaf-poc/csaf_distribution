@@ -54,5 +54,5 @@ certtool --load-ca-certificate rootca-cert.pem --load-certificate testclient2.cr
 
 
 SSL_CLIENT_CERTIFICATE=$(
-echo "        ssl_client_certificate $PWD/rootca-cert.pem;"
+echo "$PWD/rootca-cert.pem;"
 )
