@@ -11,14 +11,16 @@ which is suitable for testing in development setups.
 
 ## create root CA
 
-```bash
-mkdir devca1
-cd devca1
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createRootCAForITest.sh&lines=13-50) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createRootCAForITest.sh -->
+```sh
+mkdir -p ~/${FOLDERNAME}
+cd ~/${FOLDERNAME}
 
 certtool --generate-privkey --outfile rootca-key.pem
 
 echo '
-organization = "CSAF Tools Development (internal)"
+organization = "'${ORGANAME}'"
 country = DE
 cn = "Tester"
 
@@ -30,19 +32,21 @@ serial = 001
 expiration_days = 100
 ' >gnutls-certtool.rootca.template
 
-certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template
+certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template --stdout | head -1
 ```
-
+<!-- MARKDOWN-AUTO-DOCS:END -->
 
 ## create webserver cert
 
-```bash
-#being in devca1/
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForITest.sh&lines=11-55) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForITest.sh -->
+```sh
+cd ~/${FOLDERNAME}
 
 certtool --generate-privkey --outfile testserver-key.pem
 
 echo '
-organization = "CSAF Tools Development (internal)"
+organization = "'${ORGANAME}'"
 country = DE
 cn = "Service Testing"
 
@@ -58,14 +62,20 @@ serial = 010
 expiration_days = 50
 ' > gnutls-certtool.testserver.template
 
-certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template
+certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template --stdout | head -1
 
 cat testserver.crt rootca-cert.pem >bundle.crt
-echo Full path config options for nginx:
-echo "    ssl_certificate \"$PWD/bundle.crt\";"
-echo "    ssl_certificate_key \"$PWD/testserver-key.pem\";"
-```
 
+SSL_CERTIFICATE=$(
+echo "$PWD/bundle.crt;"
+)
+SSL_CERTIFICATE_KEY=$(
+echo "$PWD/testserver-key.pem;"
+)
+```
+<!-- MARKDOWN-AUTO-DOCS:END -->
+
+Replace `{FOLDERNAME}` with the folder name you want to save the keys into it and `{ORGANAME}` with the organisation name that should be used by creating the Certificate.
 
 ## Considerations and References
 

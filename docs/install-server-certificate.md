@@ -44,25 +44,21 @@ We recommend to
 ### Example configuration
 
 Assuming the relevant server block is in `/etc/nginx/sites-enabled/default`,
-change the `listen` configuration and add options so nginx
+change the `listen` configuration in the `server {}` block and add options so nginx
 finds your your private key and the certificate chain.
 
-```nginx
-server {
-    listen 443 ssl http2 default_server;  # ipv4
-    listen       [::]:443 ssl http2 default_server;  # ipv6
-    server_name www.example.com
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSConfigsForITest.sh&lines=31-37) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/TLSConfigsForITest.sh -->
+```sh
+        listen 443 ssl default_server; # ipv4
+        listen [::]:443 ssl http2 default_server;  # ipv6
 
-    ssl_certificate /etc/ssl/{domainName}.pem; # or bundle.crt
-    ssl_certificate_key /etc/ssl/{domainName}.key";
+        ssl_certificate  '${SSL_CERTIFICATE}' # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+        ssl_certificate_key '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-    # Other Config
-    # ...
-}
+        ssl_protocols TLSv1.2 TLSv1.3;
 ```
-
-Replace `{domainName}` with the name for your certificate in the example.
+<!-- MARKDOWN-AUTO-DOCS:END -->
 
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
