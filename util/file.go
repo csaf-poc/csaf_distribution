@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// Variables for determining the version of the binary to by displayed.
 var LastTagHash = "0.0"
 var LastTag = "0.0"
 var CurrentHash = "0.0"
