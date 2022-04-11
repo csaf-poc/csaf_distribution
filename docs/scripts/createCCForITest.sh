@@ -53,5 +53,5 @@ certtool --generate-certificate --load-privkey testclient2-key.pem --outfile tes
 certtool --load-ca-certificate rootca-cert.pem --load-certificate testclient2.crt --load-privkey testclient2-key.pem --to-p12 --p12-name "Test Client 2" --null-password --outder --outfile testclient2.p12
 
 SSL_CLIENT_CERTIFICATE=$(
-echo "$PWD/rootca-cert.pem;"
+echo "$PWD/rootca-cert.pem"
 )

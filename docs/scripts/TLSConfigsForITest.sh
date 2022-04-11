@@ -31,8 +31,8 @@ echo '
         listen 443 ssl default_server; # ipv4
         listen [::]:443 ssl http2 default_server;  # ipv6
 
-        ssl_certificate  '${SSL_CERTIFICATE}' # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
-        ssl_certificate_key '${SSL_CERTIFICATE_KEY}' # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
+        ssl_certificate  '${SSL_CERTIFICATE}'; # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+        ssl_certificate_key '${SSL_CERTIFICATE_KEY}'; # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
 ' > TLSConfigs.txt

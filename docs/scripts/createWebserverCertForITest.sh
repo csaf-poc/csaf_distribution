@@ -34,8 +34,8 @@ certtool --generate-certificate --load-privkey testserver-key.pem --outfile test
 cat testserver.crt rootca-cert.pem >bundle.crt
 
 SSL_CERTIFICATE=$(
-echo "$PWD/bundle.crt;"
+echo "$PWD/bundle.crt"
 )
 SSL_CERTIFICATE_KEY=$(
-echo "$PWD/testserver-key.pem;"
+echo "$PWD/testserver-key.pem"
 )
