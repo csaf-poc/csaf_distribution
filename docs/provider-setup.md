@@ -24,7 +24,9 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=24-52) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
+```sh
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
 # fcgiwrap
 location /cgi-bin/ {
@@ -55,7 +57,7 @@ location /cgi-bin/ {
   fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
 ```
-
+<!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
 
 ```
@@ -89,28 +91,32 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-```
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=82-87) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
+```sh
 # upload_signature = true
 # key = "/usr/lib/csaf/public.asc"
 key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
-canonical_url_prefix = "http://192.168.56.102"
+canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
 ```
-with suitable replacements
-(This configurations-example assumes that the private/public keys are available under `/usr/lib/csaf/`).
+<!-- MARKDOWN-AUTO-DOCS:END -->
+with suitable [replacements](#provider-options)
+(This configuration examples assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
-
-with suitable [replacements](#provider-options).
 
 Create the folders:
 ```(shell)
-curl http://192.168.56.102/cgi-bin/csaf_provider.go/create
+curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
 ```
+Replace {clientCertificate} with the client certificate file.
 Or using the uploader:
 ```(shell)
-./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go
+./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}
 ```
+Replace {password} with the password used for the authentication with csaf_provider.
+This needs to set the `password` option in `config.toml`.
 
 ## Provider options
 Provider has many config options described as following:
@@ -119,9 +125,9 @@ Provider has many config options described as following:
  - key: The private OpenPGP key.
  - folder: Specify the root folder. Default: `/var/www/`.
  - web: Specify the web folder. Default: `/var/www/html`.
- - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").             
-   The "csaf" selection lets the provider takes the value from the CSAF document.         
-   These affects the list items in the web interface.      
+ - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").
+   The "csaf" selection lets the provider takes the value from the CSAF document.
+   These affects the list items in the web interface.
    Default: `["csaf", "white", "amber", "green", "red"]`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.

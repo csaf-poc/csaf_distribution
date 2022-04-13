@@ -9,14 +9,30 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http/cgi"
+
+	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/jessevdk/go-flags"
 )
+
+type options struct {
+	Version bool `long:"version" description:"Display version of the binary"`
+}
 
 func main() {
 	cfg, err := loadConfig()
 	if err != nil {
 		log.Fatalf("error: %v\n", err)
+	}
+
+	var opts options
+	parser := flags.NewParser(&opts, flags.Default)
+	parser.Parse()
+	if opts.Version {
+		fmt.Println(util.SemVersion)
+		return
 	}
 
 	c, err := newController(cfg)

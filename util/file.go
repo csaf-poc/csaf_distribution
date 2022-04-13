@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 package util
 
@@ -16,6 +16,10 @@ import (
 	"strconv"
 	"time"
 )
+
+// SemVersion the version in semver.org format, MUST be overwritten during
+// the linking stage of the build process
+var SemVersion = "0.0.0"
 
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {
