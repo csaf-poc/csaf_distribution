@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// Version of binary
+// SemVersion represents the semantic Version of binary
 var SemVersion = "0.0"
 
 // NWriter is an io.Writer counting the bytes copied through it.
