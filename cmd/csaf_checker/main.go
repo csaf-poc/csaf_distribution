@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 package main
 
@@ -12,11 +12,13 @@ import (
 	"bufio"
 	_ "embed" // Used for embedding.
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"os"
 
+	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -24,9 +26,12 @@ import (
 var reportHTML string
 
 type options struct {
-	Output   string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
-	Format   string `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
-	Insecure bool   `long:"insecure" description:"Do not check TSL certificates from provider"`
+	Output     string  `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
+	Format     string  `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
+	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
+	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
+	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
+	Version    bool    `long:"version" description:"Display version of the binary"`
 }
 
 func errCheck(err error) {
@@ -130,8 +135,18 @@ func main() {
 	domains, err := flags.Parse(opts)
 	errCheck(err)
 
+	if opts.Version {
+		fmt.Println(util.SemVersion)
+		return
+	}
+
 	if len(domains) == 0 {
 		log.Println("No domains given.")
+		return
+	}
+
+	if (opts.ClientCert != nil && opts.ClientKey == nil) || (opts.ClientCert == nil && opts.ClientKey != nil) {
+		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}
 

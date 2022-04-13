@@ -23,6 +23,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -40,13 +41,16 @@ type options struct {
 	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
 	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
 	Passphrase *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
+	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE.crt"`
+	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem"`
 
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interacive" description:"Enter passphrase interactively" no-ini:"true"`
 
-	Insecure bool `long:"insecure" description:"Do not check TSL certificates from provider"`
+	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider"`
 
-	Config *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
+	Config  *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
+	Version bool    `long:"version" description:"Display version of the binary"`
 }
 
 type processor struct {
@@ -111,17 +115,29 @@ func newProcessor(opts *options) (*processor, error) {
 	return &p, nil
 }
 
-// httpClient initializes the http client according
-// to the "Insecure" flag option and returns it.
+// httpClient initializes the http.Client according to the "Insecure" flag
+// and the TLS client files for authentication and returns it.
 func (p *processor) httpClient() *http.Client {
 	var client http.Client
+	var tlsConfig tls.Config
+
 	if p.opts.Insecure {
-		client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
-		}
+		tlsConfig.InsecureSkipVerify = true
 	}
+
+	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
+		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	client.Transport = &http.Transport{
+		TLSClientConfig: &tlsConfig,
+	}
+
 	return &client
 }
 
@@ -257,7 +273,7 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	return req, nil
 }
 
-// process attemps to upload a file filename to the server.
+// process attemps to upload a file to the server.
 // It prints the response messages.
 func (p *processor) process(filename string) error {
 
@@ -345,6 +361,11 @@ func main() {
 	args, err := parser.Parse()
 	check(err)
 
+	if opts.Version {
+		fmt.Println(util.SemVersion)
+		return
+	}
+
 	if opts.Config != nil {
 		iniParser := flags.NewIniParser(parser)
 		iniParser.ParseAsDefaults = true
@@ -363,6 +384,11 @@ func main() {
 
 	if opts.PassphraseInteractive {
 		check(readInteractive("Enter OpenPGP passphrase: ", &opts.Passphrase))
+	}
+
+	if (opts.ClientCert != nil && opts.ClientKey == nil) || (opts.ClientCert == nil && opts.ClientKey != nil) {
+		log.Println("Both client-key and client-cert options must be set for the authentication.")
+		return
 	}
 
 	p, err := newProcessor(&opts)

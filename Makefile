@@ -37,6 +37,22 @@ tag_checked_out:
 	git checkout -q tags/${BUILDTAG}
 	@echo Don\'t forget that we are in checked out tag $(BUILDTAG) now.
 
+# use bash shell arithmetic and sed to turn a `git describe` version
+# into a semver version. For this we increase the PATCH number, so that
+# any commit after a tag is considered newer than the semver from the tag
+# without an optional 'v'
+GITDESC := $(shell git describe)
+GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
+SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
+# Hint: The regexp in the next line only matches if there is a hyphen (`-`)
+#       and we can assume that git describe has added a string after the tag
+SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)(-.*)/\1$(SEMVERPATCH)\3/' )
+testsemver:
+	@echo from \'$(GITDESC)\' transformed to \'$(SEMVER)\'
+
+
+# Set -ldflags parameter to pass the semversion.
+LDFLAGS = -ldflags "-X github.com/csaf-poc/csaf_distribution/util.SemVersion=$(SEMVER)"
 
 # Build binaries and place them under bin-$(GOOS)-$(GOARCH)
 # Using 'Target-specific Variable Values' to specify the build target system
@@ -48,7 +64,7 @@ build_win: GOOS = windows
 build_linux build_win:
 	$(eval BINDIR = bin-$(GOOS)-$(GOARCH)/ )
 	$(MKDIR) $(BINDIR)
-	env GOARCH=$(GOARCH) GOOS=$(GOOS) $(BUILD) -o $(BINDIR) -v ./cmd/...
+	env GOARCH=$(GOARCH) GOOS=$(GOOS) $(BUILD) -o $(BINDIR) $(LDFLAGS) -v ./cmd/...
 
 
 # Remove bin-*-* directories

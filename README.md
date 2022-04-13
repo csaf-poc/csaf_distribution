@@ -22,6 +22,7 @@ Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-wi
 - [Install](https://nginx.org/en/docs/install.html)  **nginx**
 - To install server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
+- To configure nginx for client certificate authentication see [docs/client-certificate-setup.md](docs/client-certificate-setup.md)
 
 ## csaf_uploader
 
@@ -40,7 +41,9 @@ Following options are supported:
 | -i, --password-interactive                 | Enter password interactively                                                               |
 | -I, --passphrase-interacive                | Enter passphrase interactively                                                             |
 | -c, --config=INI-FILE                      | Path to config ini file                                                                    |
-| --insecure                                 | Do not check TSL certificates from provider                                                |
+| --insecure                                 | Do not check TLS certificates from provider                                                |
+| --client-cert                              | TLS client certificate file (PEM encoded data)                                             |
+| --client-key                               | TLS client private key file (PEM encoded data)                                             |
 | -h, --help                                 | Show help                                                                                  |
 
 E.g. creating the initial directiories and files
