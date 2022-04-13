@@ -353,12 +353,12 @@ func check(err error) {
 	}
 }
 
-func main() {
+func realMain(args []string) {
 	var opts options
 
 	parser := flags.NewParser(&opts, flags.Default)
 
-	args, err := parser.Parse()
+	args, err := parser.ParseArgs(args)
 	check(err)
 
 	if opts.Version {
@@ -406,4 +406,8 @@ func main() {
 	for _, arg := range args {
 		check(p.process(arg))
 	}
+}
+
+func main() {
+	realMain(os.Args[1:])
 }
