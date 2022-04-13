@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"net/http/cgi"
+	"os"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
@@ -21,7 +22,7 @@ type options struct {
 	Version bool `long:"version" description:"Display version of the binary"`
 }
 
-func main() {
+func realMain(args []string) {
 	cfg, err := loadConfig()
 	if err != nil {
 		log.Fatalf("error: %v\n", err)
@@ -29,7 +30,7 @@ func main() {
 
 	var opts options
 	parser := flags.NewParser(&opts, flags.Default)
-	parser.Parse()
+	parser.ParseArgs(args)
 	if opts.Version {
 		fmt.Println(util.SemVersion)
 		return
@@ -45,4 +46,8 @@ func main() {
 	if err := cgi.Serve(pim); err != nil {
 		log.Fatalf("error: %v\n", err)
 	}
+}
+
+func main() {
+	realMain(os.Args[1:])
 }

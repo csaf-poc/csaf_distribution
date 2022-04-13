@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-// as main() does not process os.Args, we can call it directly as -test.*
-// parameters will be ignored.
+// call realMain() with Args that skip over params used by "go test"
 //
 // use like
 //   go test -c -vet=off -covermode=atomic -o csaf_provider.debug
@@ -38,5 +37,5 @@ func TestMain(t *testing.T) {
 	if endOfTestParams == 0 {
 		t.Skip("skipping integration test, no `--` parameter found")
 	}
-	main()
+	realMain(os.Args[endOfTestParams+1:])
 }
