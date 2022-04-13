@@ -37,8 +37,15 @@ differently, you could use several location blocks
 each which a single `if` that matches the `$ssl_client_i_dn` variable
 to CAs that you would want to allow for that location.
 
-If you want to restrict the writing permission and the accessing to the web-interface of the `csaf_provider` to only some TLS client certificates, the CA issuer of these certificates should be assigned to the `issuer` config option in the `/user/lib/csaf/config.toml` file e.g. `issuer = "C=DE,O=CSAF Tools Development (internal),CN=Tester" `.
-To inspect the accepted format for this field you can check the value of the `ca:` in the nginx log file `/var/log/nginx/error.log`.
+If you want to restrict the writing permission and access to the web-interface
+of the `csaf_provider` to only some TLS client certificates,
+the CA issuer of these certificates should be assigned to the `issuer`
+config option in the `/user/lib/csaf/config.toml` file
+e.g. `issuer = "C=DE,O=CSAF Tools Development (internal),CN=Tester" `.
+The value will be checked against the `$ssl_client_i_dn` variable
+within the `csaf_provider`.
+To inspect the precise string of certain certificate, try it and
+check the logged value in the nginx log file, e.g. `/var/log/nginx/error.log`.
 
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
