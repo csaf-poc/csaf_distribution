@@ -49,11 +49,8 @@ testsemver:
 	@echo from \'$(GITDESC)\' transformed to \'$(SEMVER)\'
 
 
-# Set -ldflags parameter to assign values to the version variables at compile time.
-VERSION = $$(git describe --tags --abbrev=0)
-CURRENTHASH= $$(git log -1 --format=format:%H%cd --date=format:-%Y%m%d)
-LASTTAGHASH= $$(git rev-list -n 1 $(VERSION))
-LDFLAGS = -ldflags "-X github.com/csaf-poc/csaf_distribution/util.LastTag=$(VERSION) -X github.com/csaf-poc/csaf_distribution/util.CurrentHash=$(CURRENTHASH) -X github.com/csaf-poc/csaf_distribution/util.LastTagHash=$(LASTTAGHASH)"
+# Set -ldflags parameter to pass the semversion.
+LDFLAGS = -ldflags "-X github.com/csaf-poc/csaf_distribution/util.SemVersion=$(SEMVER)"
 
 # Build binaries and place them under bin-$(GOOS)-$(GOARCH)
 # Using 'Target-specific Variable Values' to specify the build target system

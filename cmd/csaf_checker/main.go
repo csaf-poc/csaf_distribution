@@ -140,12 +140,7 @@ func main() {
 		return
 	}
 	if opts.Version {
-		version, err := util.GetVersion()
-		if err != nil {
-			log.Printf("Command finished with error: %v", err)
-			return
-		}
-		fmt.Println(version)
+		fmt.Println(util.SemVersion)
 		return
 	}
 

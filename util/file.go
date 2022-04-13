@@ -14,18 +14,11 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 )
 
-// LastTagHash represents the commit hash of the last tag.
-var LastTagHash = "0.0"
-
-// LastTag represents the last tag.
-var LastTag = "0.0"
-
-// CurrentHash represents the hast of the current commit.
-var CurrentHash = "0.0"
+// Version of binary
+var SemVersion = "0.0"
 
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {
@@ -149,20 +142,4 @@ func mkUniq(prefix string, create func(string) error) (string, error) {
 	}
 
 	return "", err
-}
-
-// GetVersion returns the version of the binary file. It distinguishes between two cases:
-// a) if the current commit is the same commit of the last tag it returns the tag's name.
-// b) if the current commit differs from the commit of the last tag it returns
-// the short commit hash of the actual commit appended to the "dev" and date of commit.
-func GetVersion() (string, error) {
-
-	date := strings.Split(CurrentHash, "-")[1]
-	currentcCommitHash := strings.Split(CurrentHash, "-")[0]
-
-	if currentcCommitHash == LastTagHash {
-		return LastTag, nil
-	}
-	return "dev-" + date + "-" + currentcCommitHash[0:7], nil
-
 }
