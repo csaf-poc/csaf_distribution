@@ -17,10 +17,6 @@ import (
 	"time"
 )
 
-// SemVersion the version in semver.org format, MUST be overwritten during
-// the linking stage of the build process
-var SemVersion = "0.0.0"
-
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {
 	io.Writer
