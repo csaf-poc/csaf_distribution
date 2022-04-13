@@ -23,6 +23,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -48,7 +49,8 @@ type options struct {
 
 	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider"`
 
-	Config *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
+	Config  *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
+	Version bool    `long:"version" description:"Display version of the binary"`
 }
 
 type processor struct {
@@ -358,6 +360,11 @@ func main() {
 
 	args, err := parser.Parse()
 	check(err)
+
+	if opts.Version {
+		fmt.Println(util.SemVersion)
+		return
+	}
 
 	if opts.Config != nil {
 		iniParser := flags.NewIniParser(parser)
