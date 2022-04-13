@@ -24,6 +24,8 @@ jobs:
         project_path: ./cmd/csaf_checker
         binary_name: csaf_checker
         extra_files: README.md
+        sha256sum: true
+        md5sum: false
     - uses: wangyoucao577/go-release-action@v1.25
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,6 +36,8 @@ jobs:
         project_path: ./cmd/csaf_provider
         binary_name: csaf_provider
         extra_files: README.md
+        sha256sum: true
+        md5sum: false
     - uses: wangyoucao577/go-release-action@v1.25
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -44,3 +48,5 @@ jobs:
         project_path: ./cmd/csaf_uploader
         binary_name: csaf_uploader
         extra_files: README.md
+        sha256sum: true
+        md5sum: false
