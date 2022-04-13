@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 package main
 
@@ -135,12 +135,13 @@ func main() {
 	domains, err := flags.Parse(opts)
 	errCheck(err)
 
-	if len(domains) == 0 && !opts.Version {
-		log.Println("No domains given.")
-		return
-	}
 	if opts.Version {
 		fmt.Println(util.SemVersion)
+		return
+	}
+
+	if len(domains) == 0 {
+		log.Println("No domains given.")
 		return
 	}
 
