@@ -37,6 +37,17 @@ tag_checked_out:
 	git checkout -q tags/${BUILDTAG}
 	@echo Don\'t forget that we are in checked out tag $(BUILDTAG) now.
 
+# use bash shell arithmetic and sed to turn a `git describe` version
+# into a semver version. For this we increase the PATCH number, so that
+# any commit after a tag is considered newer than the semver from the tag
+# without an optional 'v'
+GITDESC := $(shell git describe)
+GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+].*/\1/')
+SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
+SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)([-+].*)/\1$(SEMVERPATCH)\3/' )
+testsemver:
+	@echo from \'$(GITDESC)\' transformed to \'$(SEMVER)\'
+
 
 # Set -ldflags parameter to assign values to the version variables at compile time.
 VERSION = $$(git describe --tags --abbrev=0)
