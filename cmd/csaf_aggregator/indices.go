@@ -104,7 +104,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	for i := range summaries {
 		s := &summaries[i]
 
-		csafURL := w.cfg.Domain + "./well-known/csaf-aggregator/" +
+		csafURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
 			w.provider.Name + "/" + label + "/" +
 			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" +
 			s.filename
