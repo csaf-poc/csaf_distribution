@@ -40,7 +40,7 @@ func ensureFolders(c *config) error {
 		return err
 	}
 
-	return createSecurity(c, wellknown)
+	return setupSecurity(c, wellknown)
 }
 
 // createWellknown creates ".well-known" directory if not exist and returns nil.
@@ -86,9 +86,12 @@ func createFeedFolders(c *config, wellknown string) error {
 	return nil
 }
 
-// createSecurity creates the "security.txt" file if does not exist
-// and writes the CSAF field inside the file.
-func createSecurity(c *config, wellknown string) error {
+// setupSecurity creates the "security.txt" file if does not exist
+// and writes the CSAF field inside the file. If the file exists
+// it checks ig the CSAF entry with the provider-metadata.json
+// path is already in. If its not it is added in front of all lines.
+// Otherwise the file is left untouched.
+func setupSecurity(c *config, wellknown string) error {
 	security := filepath.Join(wellknown, "security.txt")
 
 	path := fmt.Sprintf(
