@@ -857,6 +857,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 			for _, msg := range errors {
 				p.badProviderMetadata(strings.ReplaceAll(msg, `%`, `%%`))
 			}
+			p.badProviderMetadata("STOPPING here - cannot perfom other checks.")
 			return errStop
 		}
 		p.pmdURL = url
@@ -869,6 +870,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 	if p.pmdURL == "" {
 		p.badProviderMetadata("No provider-metadata.json found.")
+		p.badProviderMetadata("STOPPING here - cannot perfom other checks.")
 		return errStop
 	}
 	return nil
