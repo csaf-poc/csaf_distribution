@@ -83,7 +83,7 @@ func createFeedFolders(c *config, wellknown string) error {
 	return nil
 }
 
-// createSecurity creats the "security.txt" file if does not exist
+// createSecurity creates the "security.txt" file if does not exist
 // and writes the CSAF field inside the file.
 func createSecurity(c *config, wellknown string) error {
 	security := filepath.Join(wellknown, "security.txt")

@@ -826,9 +826,10 @@ func extractProviderURL(r io.Reader) (string, error) {
 	return "", nil
 }
 
-// checkProviderMetadata checks the provider-metatdata if exists, decodes,
-// and validates against the JSON schema. According to the result the respective
-// error messages are passed to the badProviderMetadatas method in case of errors.
+// checkProviderMetadata checks provider-metadata.json. If it exists,
+// decodes, and validates against the JSON schema.
+// According to the result, the respective error messages are passed
+// to the badProviderMetadatas method.
 // It returns nil if all checks are passed.
 func (p *processor) checkProviderMetadata(domain string) error {
 

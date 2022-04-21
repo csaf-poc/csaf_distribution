@@ -89,7 +89,7 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req.Messages = keys
 }
 
-// report tests if an provider-metatdata.json are available and sets the
+// report tests if an provider-metadata.json are available and sets the
 // "message" field value of the "Requirement" struct as a result of that.
 func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
