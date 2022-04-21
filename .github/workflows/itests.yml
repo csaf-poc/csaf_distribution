@@ -15,7 +15,7 @@ jobs:
       - name: Execute the scripts
         run: |
           cd docs/scripts/
-          sudo apt install -y make git nginx fcgiwrap gnutls-bin
+          sudo apt install -y make nginx fcgiwrap gnutls-bin
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
