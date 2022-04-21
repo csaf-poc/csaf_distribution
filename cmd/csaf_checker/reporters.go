@@ -93,30 +93,30 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 // "message" field value of the "Requirement" struct as a result of that.
 func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badProviderMetadatas) {
+	if !p.badProviderMetadata.used() {
 		req.message("No provider-metadata.json checked.")
 		return
 	}
-	if len(p.badProviderMetadatas) == 0 {
+	if len(p.badProviderMetadata) == 0 {
 		req.message("Found good provider metadata.")
 		return
 	}
-	req.Messages = p.badProviderMetadatas
+	req.Messages = p.badProviderMetadata
 }
 
 // report tests the "security.txt" file and sets the "message" field value
 // of the "Requirement" struct as a result of that.
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badSecurities) {
+	if !p.badSecurity.used() {
 		req.message("No security.txt checked.")
 		return
 	}
-	if len(p.badSecurities) == 0 {
+	if len(p.badSecurity) == 0 {
 		req.message("Found good security.txt.")
 		return
 	}
-	req.Messages = p.badSecurities
+	req.Messages = p.badSecurity
 }
 
 func (r *wellknownMetadataReporter) report(_ *processor, domain *Domain) {
@@ -133,7 +133,7 @@ func (r *dnsPathReporter) report(_ *processor, domain *Domain) {
 
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badFolders) {
+	if !p.badFolders.used() {
 		req.message("No checks if files are in right folders were performed.")
 		return
 	}
@@ -146,7 +146,7 @@ func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 
 func (r *indexReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badIndices) {
+	if !p.badIndices.used() {
 		req.message("No index.txt checked.")
 		return
 	}
@@ -159,7 +159,7 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 
 func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badChanges) {
+	if !p.badChanges.used() {
 		req.message("No changes.csv checked.")
 		return
 	}
@@ -178,7 +178,7 @@ func (r *directoryListingsReporter) report(_ *processor, domain *Domain) {
 
 func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badIntegrities) {
+	if !p.badIntegrities.used() {
 		req.message("No checksums checked.")
 		return
 	}
@@ -191,7 +191,7 @@ func (r *integrityReporter) report(p *processor, domain *Domain) {
 
 func (r *signaturesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badSignatures) {
+	if !p.badSignatures.used() {
 		req.message("No signatures checked.")
 		return
 	}
@@ -203,7 +203,7 @@ func (r *signaturesReporter) report(p *processor, domain *Domain) {
 
 func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !used(p.badPGPs) {
+	if !p.badPGPs.used() {
 		req.message("No public OpenPGP keys loaded.")
 		return
 	}
