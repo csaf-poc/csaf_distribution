@@ -144,7 +144,7 @@ func setupSecurity(c *config, wellknown string) error {
 	// Insert our CSAF line at the beginning
 	// to get higher priority over possible existing CSAF lines.
 	csafLine := fmt.Sprintf("CSAF: %s", path)
-	lines = append([]string{csafLine}, lines...)
+	lines = append([]string{csafLine, ""}, lines...)
 
 	// Write back to second file and switch over afterwards.
 	newSecurity, nf, err := util.MakeUniqFile(security + ".tmp")
