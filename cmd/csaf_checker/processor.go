@@ -123,7 +123,7 @@ func (m *topicMessages) use() {
 // reset resets the messages to this topic.
 func (m *topicMessages) reset() { *m = nil }
 
-// used return true if we used this topic.
+// used returns true if we have used this topic.
 func (m *topicMessages) used() bool { return *m != nil }
 
 // newProcessor returns a processor structure after assigning the given options to the opts attribute
