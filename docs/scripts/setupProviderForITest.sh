@@ -18,9 +18,9 @@ chmod -R g+w  /var/www
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
-cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
+sudo cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
-echo '
+sudo echo '
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
 # fcgiwrap
 location /cgi-bin/ {
@@ -52,7 +52,7 @@ location /cgi-bin/ {
 }
 ' > /etc/nginx/fcgiwrap.conf
 
-sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
 
 echo "
         # For atomic directory switches
@@ -61,9 +61,9 @@ echo "
         # directory listings
         autoindex on;
 " > locationConfig.txt
-sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
+sudo sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
 
-systemctl reload nginx
+sudo systemctl reload nginx
 
 # assuming that we are in a checked out version in the docs/scripts directory
 # and we want to build the version that is currently checked out
@@ -72,11 +72,11 @@ pushd ../..
 export PATH=$PATH:/usr/local/go/bin
 make build_linux
 # Place the binary under the corresponding path.
-mkdir -p /usr/lib/cgi-bin/
-cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
+sudo mkdir -p /usr/lib/cgi-bin/
+sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
-mkdir -p /usr/lib/csaf/
-cp docs/test-keys/*.asc /usr/lib/csaf/
+sudo mkdir -p /usr/lib/csaf/
+sudo cp docs/test-keys/*.asc /usr/lib/csaf/
 # Configuration file
 echo '
 # upload_signature = true
