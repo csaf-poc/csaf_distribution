@@ -17,7 +17,6 @@ jobs:
           cd ~
           git clone https://github.com/csaf-poc/csaf_distribution.git
           cd csaf_distribution/docs/scripts/
-          git checkout dev-action-for-itests
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
