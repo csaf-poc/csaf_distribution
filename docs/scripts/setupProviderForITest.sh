@@ -20,7 +20,7 @@ NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
 sudo cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
-sudo echo '
+echo '
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
 # fcgiwrap
 location /cgi-bin/ {
@@ -50,7 +50,7 @@ location /cgi-bin/ {
   fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
   fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
-' > /etc/nginx/fcgiwrap.conf
+' | sudo tee /etc/nginx/fcgiwrap.conf
 
 sudo sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
 
