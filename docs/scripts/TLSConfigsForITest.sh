@@ -45,8 +45,7 @@ echo '
 ' > TLS8443Configs.txt
 
 sudo cp $NGINX_CONFIG_PATH $NGINX_CONFIG_PATH.org
-sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLSConfigs.txt" $NGINX_CONFIG_PATH
-sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLS8443Configs.txt" $NGINX_CONFIG_PATH
-sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
-systemctl reload nginx
-
+sudo sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLSConfigs.txt" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLS8443Configs.txt" $NGINX_CONFIG_PATH
+sudo sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
+sudo systemctl reload nginx
