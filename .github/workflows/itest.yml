@@ -16,9 +16,8 @@ jobs:
           sudo apt install -y make nginx fcgiwrap gnutls-bin
           cd ~
           git clone https://github.com/csaf-poc/csaf_distribution.git
-          echo "pwd" $PWD
-          echo "home" $HOME
           cd csaf_distribution/docs/scripts/
+          git checkout dev-action-for-itests
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
