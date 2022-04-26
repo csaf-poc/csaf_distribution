@@ -85,7 +85,7 @@ key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
-' > /usr/lib/csaf/config.toml
+' | sudo tee /usr/lib/csaf/config.toml
 
 # Create the Folders
 curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
