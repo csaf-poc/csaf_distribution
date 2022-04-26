@@ -13,8 +13,8 @@
 
 set -e
 
-chgrp -R www-data  /var/www
-chmod -R g+w  /var/www
+sudo chgrp -R www-data  /var/www
+sudo chmod -R g+w  /var/www
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
