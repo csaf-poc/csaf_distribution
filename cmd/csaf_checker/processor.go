@@ -929,7 +929,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 	p.badPGPs.use()
 
-	src, err := p.expr.Eval("$.pgp_keys", p.pmd)
+	src, err := p.expr.Eval("$.public_openpgp_keys", p.pmd)
 	if err != nil {
 		p.badPGPs.add("No public OpenPGP keys found: %v.", err)
 		return errContinue
