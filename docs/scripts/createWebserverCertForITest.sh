@@ -8,7 +8,7 @@
 
 set -e
 
-cd ~/${FOLDERNAME}
+pushd ~/${FOLDERNAME}
 
 certtool --generate-privkey --outfile testserver-key.pem
 
@@ -33,9 +33,11 @@ certtool --generate-certificate --load-privkey testserver-key.pem --outfile test
 
 cat testserver.crt rootca-cert.pem >bundle.crt
 
-SSL_CERTIFICATE=$(
+export SSL_CERTIFICATE=$(
 echo "$PWD/bundle.crt"
 )
-SSL_CERTIFICATE_KEY=$(
+export SSL_CERTIFICATE_KEY=$(
 echo "$PWD/testserver-key.pem"
 )
+
+popd

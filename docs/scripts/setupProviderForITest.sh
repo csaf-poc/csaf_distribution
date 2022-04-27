@@ -63,6 +63,27 @@ echo "
 " > locationConfig.txt
 sudo sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
 
+echo "
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+
+        ssl_certificate  '${SSL_CERTIFICATE}'; # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+        ssl_certificate_key '${SSL_CERTIFICATE_KEY}'; # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
+
+        root /var/www/html;
+
+        server_name csaf.data.security.domain.tld;
+
+        location / {
+                try_files /.well-known/csaf/provider-metadata.json =404;
+        }
+
+        access_log /var/log/nginx/dns-domain_access.log;
+        error_log /var/log/nginx/dns-domain_error.log;
+}
+" | sudo tee -a $NGINX_CONFIG_PATH
+
 sudo systemctl reload nginx
 
 # assuming that we are in a checked out version in the docs/scripts directory
