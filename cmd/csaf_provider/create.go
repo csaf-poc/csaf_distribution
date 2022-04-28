@@ -9,10 +9,13 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -37,7 +40,7 @@ func ensureFolders(c *config) error {
 		return err
 	}
 
-	return createSecurity(c, wellknown)
+	return setupSecurity(c, wellknown)
 }
 
 // createWellknown creates ".well-known" directory if not exist and returns nil.
@@ -83,24 +86,92 @@ func createFeedFolders(c *config, wellknown string) error {
 	return nil
 }
 
-// createSecurity creates the "security.txt" file if does not exist
-// and writes the CSAF field inside the file.
-func createSecurity(c *config, wellknown string) error {
+// setupSecurity creates the "security.txt" file if does not exist
+// and writes the CSAF field inside the file. If the file exists
+// it checks ig the CSAF entry with the provider-metadata.json
+// path is already in. If its not it is added in front of all lines.
+// Otherwise the file is left untouched.
+func setupSecurity(c *config, wellknown string) error {
 	security := filepath.Join(wellknown, "security.txt")
-	if _, err := os.Stat(security); err != nil {
+
+	path := fmt.Sprintf(
+		"%s/.well-known/csaf/provider-metadata.json",
+		c.CanonicalURLPrefix)
+
+	st, err := os.Stat(security)
+	if err != nil {
 		if os.IsNotExist(err) {
 			f, err := os.Create(security)
 			if err != nil {
 				return err
 			}
-			fmt.Fprintf(
-				f, "CSAF: %s/.well-known/csaf/provider-metadata.json\n",
-				c.CanonicalURLPrefix)
+			fmt.Fprintf(f, "CSAF: %s\n", path)
 			return f.Close()
 		}
 		return err
 	}
-	return nil
+
+	// Load it line wise
+	found, lines, err := func() (bool, []string, error) {
+		f, err := os.Open(security)
+		if err != nil {
+			return false, nil, err
+		}
+		defer f.Close()
+		var lines []string
+		sc := bufio.NewScanner(f)
+		for sc.Scan() {
+			line := sc.Text()
+			if s := strings.TrimLeftFunc(line, unicode.IsSpace); strings.HasPrefix(s, "CSAF:") {
+				// Check if we are already in.
+				if strings.TrimSpace(s[len("CSAF:"):]) == path {
+					return true, nil, nil
+				}
+			}
+			lines = append(lines, line)
+		}
+		return false, lines, sc.Err()
+	}()
+	if err != nil {
+		return err
+	}
+
+	// we are already in the file.
+	if found {
+		return nil
+	}
+
+	// Insert our CSAF line at the beginning
+	// to get higher priority over possible existing CSAF lines.
+	csafLine := fmt.Sprintf("CSAF: %s", path)
+	lines = append([]string{csafLine, ""}, lines...)
+
+	// Write back to second file and switch over afterwards.
+	newSecurity, nf, err := util.MakeUniqFile(security + ".tmp")
+	if err != nil {
+		return err
+	}
+
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(nf, line); err != nil {
+			nf.Close()
+			os.RemoveAll(newSecurity)
+			return err
+		}
+	}
+	if err := nf.Close(); err != nil {
+		os.RemoveAll(newSecurity)
+		return err
+	}
+
+	// Swap atomically.
+	if err := os.Rename(newSecurity, security); err != nil {
+		os.RemoveAll(newSecurity)
+		return err
+	}
+
+	// Re-establish old permissions.
+	return os.Chmod(security, st.Mode().Perm())
 }
 
 // createProviderMetadata creates the provider-metadata.json file if does not exist.
