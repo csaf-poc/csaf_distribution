@@ -118,7 +118,9 @@ Or using the uploader:
 Replace {password} with the password used for the authentication with csaf_provider.
 This needs to set the `password` option in `config.toml`.
 
-To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) add the following server block:
+To let nginx resolve the DNS record `csaf.data.security.domain.tld`
+to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path)
+add the following server block:
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=67-84) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
