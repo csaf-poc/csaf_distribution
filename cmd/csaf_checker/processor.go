@@ -773,12 +773,12 @@ func (p *processor) extractProviderURL(r io.Reader) (string, error) {
 	}
 
 	if len(urls) > 1 {
-		use(&p.badSecurities)
-		p.badSecurity("Found %d CSAF entries in security.txt", len(urls))
+		p.badSecurity.use()
+		p.badSecurity.add("Found %d CSAF entries in security.txt", len(urls))
 	}
 	if !strings.HasPrefix(urls[0], "https://") {
-		use(&p.badSecurities)
-		p.badSecurity("CSAF URL does not start with https://: %s", urls[0])
+		p.badSecurity.use()
+		p.badSecurity.add("CSAF URL does not start with https://: %s", urls[0])
 	}
 	return urls[0], nil
 }
