@@ -40,6 +40,6 @@ echo '
        }
 '> clientCertificateConfigs.txt
 
-sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH
 
-systemctl reload nginx
+sudo systemctl reload nginx

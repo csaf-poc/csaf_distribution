@@ -13,12 +13,12 @@
 
 set -e
 
-chgrp -R www-data  /var/www
-chmod -R g+w  /var/www
+sudo chgrp -R www-data  /var/www
+sudo chmod -R g+w  /var/www
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 
-cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
+sudo cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
 echo '
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -50,9 +50,9 @@ location /cgi-bin/ {
   fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
   fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
 }
-' > /etc/nginx/fcgiwrap.conf
+' | sudo tee /etc/nginx/fcgiwrap.conf
 
-sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
 
 echo "
         # For atomic directory switches
@@ -61,9 +61,9 @@ echo "
         # directory listings
         autoindex on;
 " > locationConfig.txt
-sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
+sudo sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
 
-systemctl reload nginx
+sudo systemctl reload nginx
 
 # assuming that we are in a checked out version in the docs/scripts directory
 # and we want to build the version that is currently checked out
@@ -72,11 +72,11 @@ pushd ../..
 export PATH=$PATH:/usr/local/go/bin
 make build_linux
 # Place the binary under the corresponding path.
-mkdir -p /usr/lib/cgi-bin/
-cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
+sudo mkdir -p /usr/lib/cgi-bin/
+sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
-mkdir -p /usr/lib/csaf/
-cp docs/test-keys/*.asc /usr/lib/csaf/
+sudo mkdir -p /usr/lib/csaf/
+sudo cp docs/test-keys/*.asc /usr/lib/csaf/
 # Configuration file
 echo '
 # upload_signature = true
@@ -85,7 +85,7 @@ key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
-' > /usr/lib/csaf/config.toml
+' | sudo tee /usr/lib/csaf/config.toml
 
 # Create the Folders
 curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure

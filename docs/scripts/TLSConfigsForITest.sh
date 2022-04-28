@@ -44,9 +44,9 @@ echo '
         listen [::]:8443 ssl http2 default_server;  # ipv6
 ' > TLS8443Configs.txt
 
-cp $NGINX_CONFIG_PATH $NGINX_CONFIG_PATH.org
-sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLSConfigs.txt" $NGINX_CONFIG_PATH
-sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLS8443Configs.txt" $NGINX_CONFIG_PATH
-sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
-systemctl reload nginx
-
+sudo cp $NGINX_CONFIG_PATH $NGINX_CONFIG_PATH.org
+sudo sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLSConfigs.txt" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/r ${HOME}/${FOLDERNAME}/TLS8443Configs.txt" $NGINX_CONFIG_PATH
+sudo sed -i "/^\s*listen.*80/d" $NGINX_CONFIG_PATH # Remove configs for listinig on port 80
+sudo systemctl start nginx
+sudo systemctl reload nginx
