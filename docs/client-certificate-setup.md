@@ -47,6 +47,11 @@ within the `csaf_provider`.
 To inspect the precise string of certain certificate, try it and
 check the logged value in the nginx log file, e.g. `/var/log/nginx/error.log`.
 
+The *used personal client certificate will be logged by default*,
+when accessing the csaf_provider uploading interface.
+It is written to the nginx error log together with the connection information.
+This is for auditing who did uploads.
+
 Reload or restart nginx to apply the changes (e.g. `systemctl reload nginx`
 on Debian or Ubuntu.)
 
