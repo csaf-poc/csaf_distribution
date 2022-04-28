@@ -784,23 +784,7 @@ func (p *processor) locateProviderMetadata(
 
 	loc, err := func() (string, error) {
 		defer res.Body.Close()
-		urls, err := csaf.ExtractProviderURL(res.Body, true)
-		if err != nil {
-			return "", err
-		}
-		if len(urls) == 0 {
-			return "", errors.New("No provider-metadata.json found")
-		}
-
-		if len(urls) > 1 {
-			use(&p.badSecurities)
-			p.badSecurity("Found %d CSAF entries in security.txt", len(urls))
-		}
-		if strings.HasPrefix(urls[0], "https://") {
-			use(&p.badSecurities)
-			p.badSecurity("CSAF URL does not start with https://: %s", urls[0])
-		}
-		return urls[0], nil
+		return p.extractProviderURL(res.Body)
 	}()
 
 	if err != nil {
@@ -815,6 +799,26 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	return err
+}
+
+func (p *processor) extractProviderURL(r io.Reader) (string, error) {
+	urls, err := csaf.ExtractProviderURL(r, true)
+	if err != nil {
+		return "", err
+	}
+	if len(urls) == 0 {
+		return "", errors.New("No provider-metadata.json found")
+	}
+
+	if len(urls) > 1 {
+		use(&p.badSecurities)
+		p.badSecurity("Found %d CSAF entries in security.txt", len(urls))
+	}
+	if !strings.HasPrefix(urls[0], "https://") {
+		use(&p.badSecurities)
+		p.badSecurity("CSAF URL does not start with https://: %s", urls[0])
+	}
+	return urls[0], nil
 }
 
 // checkProviderMetadata checks the provider-metatdata if exists, decodes,
