@@ -1,3 +1,23 @@
 name: Integration tests
 on: workflow_dispatch
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Execute the scripts
+        run: |
+          sudo apt install -y make nginx fcgiwrap gnutls-bin
+          cd ~
+          git clone https://github.com/csaf-poc/csaf_distribution.git
+          cd csaf_distribution/docs/scripts/
+          env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
+          env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
+          ./setupProviderForITest.sh
+        shell: bash
