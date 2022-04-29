@@ -185,7 +185,7 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 		return err
 	}
 	pm := csaf.NewProviderMetadataDomain(c.CanonicalURLPrefix, c.modelTLPs())
-	pm.Publisher = c.Publisher
+	c.ProviderMetaData.apply(pm)
 
 	// Set OpenPGP key.
 	key, err := c.loadCryptoKey()
