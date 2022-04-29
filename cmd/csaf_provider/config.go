@@ -30,23 +30,44 @@ const (
 	defaultUploadLimit = 50 * 1024 * 1024                                                   // Default limit size of the uploaded file.
 )
 
+type providerMetadataConfig struct {
+	ListOnCSAFAggregators   *bool           `toml:"list_on_CSAF_aggregators"`
+	MirrorOnCSAFAggregators *bool           `toml:"mirror_on_CSAF_aggregators"`
+	Publisher               *csaf.Publisher `toml:"publisher"`
+}
+
 // configs contains the config values for the provider.
 type config struct {
-	Password                *string         `toml:"password"`
-	Key                     string          `toml:"key"`
-	Folder                  string          `toml:"folder"`
-	Web                     string          `toml:"web"`
-	TLPs                    []tlp           `toml:"tlps"`
-	UploadSignature         bool            `toml:"upload_signature"`
-	OpenPGPURL              string          `toml:"openpgp_url"`
-	CanonicalURLPrefix      string          `toml:"canonical_url_prefix"`
-	NoPassphrase            bool            `toml:"no_passphrase"`
-	NoValidation            bool            `toml:"no_validation"`
-	NoWebUI                 bool            `toml:"no_web_ui"`
-	DynamicProviderMetaData bool            `toml:"dynamic_provider_metadata"`
-	Publisher               *csaf.Publisher `toml:"publisher"`
-	UploadLimit             *int64          `toml:"upload_limit"`
-	Issuer                  *string         `toml:"issuer"`
+	Password                *string                 `toml:"password"`
+	Key                     string                  `toml:"key"`
+	Folder                  string                  `toml:"folder"`
+	Web                     string                  `toml:"web"`
+	TLPs                    []tlp                   `toml:"tlps"`
+	UploadSignature         bool                    `toml:"upload_signature"`
+	OpenPGPURL              string                  `toml:"openpgp_url"`
+	CanonicalURLPrefix      string                  `toml:"canonical_url_prefix"`
+	NoPassphrase            bool                    `toml:"no_passphrase"`
+	NoValidation            bool                    `toml:"no_validation"`
+	NoWebUI                 bool                    `toml:"no_web_ui"`
+	DynamicProviderMetaData bool                    `toml:"dynamic_provider_metadata"`
+	ProviderMetaData        *providerMetadataConfig `toml:"provider_metadata"`
+	UploadLimit             *int64                  `toml:"upload_limit"`
+	Issuer                  *string                 `toml:"issuer"`
+}
+
+func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {
+	if pmdc == nil {
+		return
+	}
+	if pmdc.ListOnCSAFAggregators != nil {
+		pmd.ListOnCSAFAggregators = pmdc.ListOnCSAFAggregators
+	}
+	if pmdc.MirrorOnCSAFAggregators != nil {
+		pmd.MirrorOnCSAFAggregators = pmdc.MirrorOnCSAFAggregators
+	}
+	if pmdc.Publisher != nil {
+		pmd.Publisher = pmdc.Publisher
+	}
 }
 
 type tlp string
@@ -161,8 +182,12 @@ func loadConfig() (*config, error) {
 		cfg.OpenPGPURL = defaultOpenPGPURL
 	}
 
-	if cfg.Publisher == nil {
-		cfg.Publisher = &csaf.Publisher{
+	if cfg.ProviderMetaData == nil {
+		cfg.ProviderMetaData = &providerMetadataConfig{}
+	}
+
+	if cfg.ProviderMetaData.Publisher == nil {
+		cfg.ProviderMetaData.Publisher = &csaf.Publisher{
 			Category:  func(c csaf.Category) *csaf.Category { return &c }(csaf.CSAFCategoryVendor),
 			Name:      func(s string) *string { return &s }("ACME"),
 			Namespace: func(s string) *string { return &s }("https://example.com"),
