@@ -136,6 +136,9 @@ Provider has many config options described as following:
  - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
- - publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
+ - provider_metadata: Configure the provider metadata.
+ - provider_metadata.list_on_CSAF_aggregators: List on aggregators
+ - provider_metadata.mirror_on_CSAF_aggregators: Mirror on aggregators
+ - provider_metadata.publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
  - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
  - issuer: The issuer of the CA, which if set, restricts the writing permission and the accessing to the web-interface to only the client certificates signed with this CA.
