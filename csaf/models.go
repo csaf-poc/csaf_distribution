@@ -157,7 +157,7 @@ type ProviderMetadata struct {
 	ListOnCSAFAggregators   *bool            `json:"list_on_CSAF_aggregators"`
 	MetadataVersion         *MetadataVersion `json:"metadata_version"`           // required
 	MirrorOnCSAFAggregators *bool            `json:"mirror_on_CSAF_aggregators"` // required
-	PGPKeys                 []PGPKey         `json:"pgp_keys,omitempty"`
+	PGPKeys                 []PGPKey         `json:"public_openpgp_keys,omitempty"`
 	Publisher               *Publisher       `json:"publisher,omitempty"` // required
 	Role                    *MetadataRole    `json:"role"`                // required
 }
