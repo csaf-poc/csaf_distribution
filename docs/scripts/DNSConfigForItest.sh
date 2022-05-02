@@ -8,8 +8,8 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-# This script sets up the csaf_provider and writes the required nginx configurations.
-# It creates the initial folders and uploads some example files to the csaf_provider with the help of `uploadToProvider.sh`
+# This script adds a new server block with the given DNS-Record and ajdust the "/etc/hosts" to
+# set the DNS-Record for the localhost for testing.
 
 sudo touch /etc/nginx/sites-available/DNSConfig
 echo "
