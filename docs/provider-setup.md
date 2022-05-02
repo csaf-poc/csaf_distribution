@@ -24,7 +24,7 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=24-52) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -91,7 +91,7 @@ Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_pr
 
 Create configuration file under `/usr/lib/csaf/config.toml`:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=103-108) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=83-88) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # upload_signature = true
@@ -118,12 +118,15 @@ Or using the uploader:
 Replace {password} with the password used for the authentication with csaf_provider.
 This needs to set the `password` option in `config.toml`.
 
-To let nginx resolve the DNS record `csaf.data.security.domain.tld`
-to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path)
-add the following server block:
-
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=67-84) -->
+To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=5-22) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
+
+Then create a symbolic link to enable the new server block:
+```shell
+ln -s /etc/nginx/sites-available/{DNSNAME} /etc/nginx/sites-enabled/
+```
+Replace {DNSNAME} with a server block file name.
 
 ## Provider options
 Provider has many config options described as following:
