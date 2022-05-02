@@ -1,4 +1,15 @@
 #!/usr/bin/env bash
+#
+# This file is Free Software under the MIT License
+# without warranty, see README.md and LICENSES/MIT.txt for details.
+#
+# SPDX-License-Identifier: MIT
+#
+# SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+# Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
+
+# This script sets up the csaf_provider and writes the required nginx configurations.
+# It creates the initial folders and uploads some example files to the csaf_provider with the help of `uploadToProvider.sh`
 
 sudo touch /etc/nginx/sites-available/DNSConfig
 echo "
