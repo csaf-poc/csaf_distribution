@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -107,12 +108,12 @@ func (w *worker) mirrorAllowed() bool {
 	return true
 }
 
-func (w *worker) mirror() error {
+func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 
 	// Check if we are allowed to mirror this domain.
 	//if false && !w.mirrorAllowed() {
 	if !w.mirrorAllowed() {
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"no mirroring of '%s' allowed", w.provider.Name)
 	}
 
@@ -124,7 +125,7 @@ func (w *worker) mirror() error {
 		"$.distributions[*].rolie.feeds", w.metadataProvider)
 	if err != nil {
 		log.Printf("rolie check failed: %v\n", err)
-		return err
+		return nil, err
 	}
 
 	fs, hasRolie := rolie.([]interface{})
@@ -132,7 +133,7 @@ func (w *worker) mirror() error {
 
 	if hasRolie {
 		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		// No rolie feeds
@@ -140,10 +141,41 @@ func (w *worker) mirror() error {
 	}
 
 	if err := w.writeIndices(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return w.doMirrorTransaction()
+	if err := w.doMirrorTransaction(); err != nil {
+		return nil, err
+	}
+
+	const (
+		lastUpdatedExpr = `$.last_updated`
+	)
+
+	pe := util.NewPathEval()
+	x, err := pe.Eval(lastUpdatedExpr, w.metadataProvider)
+	if err != nil {
+		return nil, err
+	}
+	s, ok := x.(string)
+	if !ok {
+		return nil, errors.New("last_updated is not a string")
+	}
+	var lastUpdated csaf.TimeStamp
+	if err := lastUpdated.UnmarshalText([]byte(s)); err != nil {
+		return nil, err
+	}
+
+	acsafp := &csaf.AggregatorCSAFProvider{
+		Metadata: &csaf.AggregatorCSAFProviderMetadata{
+			LastUpdated: &lastUpdated,
+			Publisher:   nil, // TODO
+			Role:        nil, // TODO
+			URL:         nil, // TODO
+		},
+		Mirrors: []csaf.ProviderURL{csaf.ProviderURL(w.loc)},
+	}
+	return acsafp, nil
 }
 
 // doMirrorTransaction performs an atomic directory swap.

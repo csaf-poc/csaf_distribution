@@ -224,6 +224,7 @@ type Aggregator struct {
 	Version       *AggregatorVersion        `json:"aggregator_version,omitempty"` // required
 	CanonicalURL  *AggregatorURL            `json:"canonical_url,omitempty"`      // required
 	CSAFProviders []*AggregatorCSAFProvider `json:"csaf_providers,omitempty"`     // required
+	LastUpdated   *TimeStamp                `json:"last_updated,omitempty"`       // required
 }
 
 // Validate validates the current state of the AggregatorCategory.
@@ -310,6 +311,9 @@ func (a *Aggregator) Validate() error {
 		if err := provider.Validate(); err != nil {
 			return err
 		}
+	}
+	if a.LastUpdated == nil {
+		return errors.New("Aggregator.LastUpdate == nil")
 	}
 	return nil
 }

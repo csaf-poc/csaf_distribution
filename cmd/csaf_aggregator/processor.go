@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -118,14 +119,15 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 		log.Printf("provider-metadata: %s\n", w.loc)
 
 		if mirror {
-			if j.err = w.mirror(); j.err != nil && w.dir != "" {
+			if j.result, j.err = w.mirror(); j.err != nil && w.dir != "" {
 				// If something goes wrong remove the debris.
 				if err := os.RemoveAll(w.dir); err != nil {
 					log.Printf("error: %v\n", err)
 				}
 			}
 		} else {
-			// TODO: Lister
+			// TODO: saving results for Lister
+			// j.result, j.err = w...
 		}
 	}
 }
@@ -331,15 +333,22 @@ func (p *processor) process() error {
 		csafProviders = append(csafProviders, j.result)
 	}
 
+	if len(csafProviders) == 0 {
+		return errors.New("all jobs failed, stopping")
+	}
+
 	version := csaf.AggregatorVersion20
 	canonicalURL := csaf.AggregatorURL(
 		p.cfg.Domain + "/.well-known/csaf-aggregator/aggregator.json")
+
+	lastUpdated := csaf.TimeStamp(time.Now())
 
 	agg := csaf.Aggregator{
 		Aggregator:    &p.cfg.Aggregator,
 		Version:       &version,
 		CanonicalURL:  &canonicalURL,
 		CSAFProviders: csafProviders,
+		LastUpdated:   &lastUpdated,
 	}
 
 	dstName := filepath.Join(web, "aggregator.json")
@@ -351,6 +360,7 @@ func (p *processor) process() error {
 
 	if _, err := agg.WriteTo(file); err != nil {
 		file.Close()
+		os.RemoveAll(fname)
 		return err
 	}
 
