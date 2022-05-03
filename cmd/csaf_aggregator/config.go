@@ -32,17 +32,20 @@ const (
 )
 
 type provider struct {
-	Name     string   `toml:"name"`
-	Domain   string   `toml:"domain"`
+	Name   string `toml:"name"`
+	Domain string `toml:"domain"`
+	// Rate gives the provider specific rate limiting (see overall Rate).
 	Rate     *float64 `toml:"rate"`
 	Insecure *bool    `toml:"insecure"`
 }
 
 type config struct {
-	Workers             int                 `toml:"workers"`
-	Folder              string              `toml:"folder"`
-	Web                 string              `toml:"web"`
-	Domain              string              `toml:"domain"`
+	// Workers is the number of concurrently executed workers for downloading.
+	Workers int    `toml:"workers"`
+	Folder  string `toml:"folder"`
+	Web     string `toml:"web"`
+	Domain  string `toml:"domain"`
+	// Rate gives the average upper limit of https operations per second.
 	Rate                *float64            `toml:"rate"`
 	Insecure            *bool               `toml:"insecure"`
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
