@@ -9,14 +9,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 )
 
 type options struct {
-	Config string `short:"c" long:"config" description:"File name of the configuration file" value-name:"CFG-FILE" default:"aggregator.toml"`
+	Config  string `short:"c" long:"config" description:"File name of the configuration file" value-name:"CFG-FILE" default:"aggregator.toml"`
+	Version bool   `long:"version" description:"Display version of the binary"`
 }
 
 func errCheck(err error) {
@@ -33,6 +36,12 @@ func main() {
 
 	_, err := flags.Parse(opts)
 	errCheck(err)
+
+	if opts.Version {
+		fmt.Println(util.SemVersion)
+		return
+	}
+
 	cfg, err := loadConfig(opts.Config)
 	errCheck(err)
 
