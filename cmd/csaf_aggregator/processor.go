@@ -92,7 +92,7 @@ func (w *worker) doMirror(j *job) {
 }
 
 func (w *worker) doLister(j *job) {
-	j.err = errors.New("not implemented,yet!")
+	j.err = errors.New("not implemented")
 }
 
 func (w *worker) work(
