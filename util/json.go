@@ -67,7 +67,7 @@ type PathEvalMatcher struct {
 	Action func(interface{}) error
 }
 
-// ReMarshalMatcher is an action to re-marshal the reslut to another type.
+// ReMarshalMatcher is an action to re-marshal the result to another type.
 func ReMarshalMatcher(dst interface{}) func(interface{}) error {
 	return func(src interface{}) error {
 		return ReMarshalJSON(dst, src)
