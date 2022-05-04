@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
@@ -55,4 +56,62 @@ func (pe *PathEval) Eval(expr string, doc interface{}) (interface{}, error) {
 		pe.exprs[expr] = eval
 	}
 	return eval(context.Background(), doc)
+}
+
+// PathEvalMatcher is a pair of an expression and an action
+// when doing extractions via PathEval.Match.
+type PathEvalMatcher struct {
+	// Expr is the expression to evaluate
+	Expr string
+	// Action is executed with the result of the match.
+	Action func(interface{}) error
+}
+
+// ReMarshalMatcher is an action to re-marshal the result to another type.
+func ReMarshalMatcher(dst interface{}) func(interface{}) error {
+	return func(src interface{}) error {
+		return ReMarshalJSON(dst, src)
+	}
+}
+
+// StringMatcher stores the matched result in a string.
+func StringMatcher(dst *string) func(interface{}) error {
+	return func(x interface{}) error {
+		s, ok := x.(string)
+		if !ok {
+			return errors.New("not a string")
+		}
+		*dst = s
+		return nil
+	}
+}
+
+// TimeMatcher stores a time with a given format.
+func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
+	return func(x interface{}) error {
+		s, ok := x.(string)
+		if !ok {
+			return errors.New("not a string")
+		}
+		t, err := time.Parse(format, s)
+		if err != nil {
+			return nil
+		}
+		*dst = t
+		return nil
+	}
+}
+
+// Match matches a list of PathEvalMatcher pairs against a document.
+func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
+	for _, m := range matcher {
+		x, err := pe.Eval(m.Expr, doc)
+		if err != nil {
+			return err
+		}
+		if err := m.Action(x); err != nil {
+			return err
+		}
+	}
+	return nil
 }
