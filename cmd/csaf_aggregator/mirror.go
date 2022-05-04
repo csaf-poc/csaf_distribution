@@ -13,7 +13,6 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -161,55 +161,29 @@ func (w *worker) createAggrgatorProvider() (*csaf.AggregatorCSAFProvider, error)
 		urlExpr         = `$.canonical_url`
 	)
 
-	pe := util.NewPathEval()
+	var (
+		lastUpdatedT time.Time
+		pub          csaf.Publisher
+		roleS        string
+		urlS         string
+	)
 
-	// Extract last_updated
-	lu, err := pe.Eval(lastUpdatedExpr, w.metadataProvider)
-	if err != nil {
-		return nil, err
-	}
-	s, ok := lu.(string)
-	if !ok {
-		return nil, errors.New("last_updated is not a string")
-	}
-	var lastUpdated csaf.TimeStamp
-	if err := lastUpdated.UnmarshalText([]byte(s)); err != nil {
-		return nil, err
-	}
-
-	// Extract publisher
-	p, err := pe.Eval(publisherExpr, w.metadataProvider)
-	if err != nil {
-		return nil, err
-	}
-	var pub csaf.Publisher
-	if err := util.ReMarshalJSON(&pub, p); err != nil {
+	if err := util.NewPathEval().Match([]util.PathEvalMatcher{
+		{lastUpdatedExpr, util.TimeMatcher(&lastUpdatedT, time.RFC3339)},
+		{publisherExpr, util.ReMarshalMatcher(&pub)},
+		{roleExpr, util.StringMatcher(&roleS)},
+		{urlExpr, util.StringMatcher(&urlS)},
+	}, w.metadataProvider); err != nil {
 		return nil, err
 	}
 
-	// Extract role
-	r, err := pe.Eval(roleExpr, w.metadataProvider)
-	if err != nil {
-		return nil, err
-	}
-	rs, ok := r.(string)
-	if !ok {
-		return nil, errors.New("role is not a string")
-	}
-	role := csaf.MetadataRole(rs)
+	var (
+		lastUpdated = csaf.TimeStamp(lastUpdatedT)
+		role        = csaf.MetadataRole(roleS)
+		url         = csaf.ProviderURL(urlS)
+	)
 
-	// Extract URL
-	u, err := pe.Eval(urlExpr, w.metadataProvider)
-	if err != nil {
-		return nil, err
-	}
-	us, ok := u.(string)
-	if !ok {
-		return nil, errors.New("canonical_url is not a string")
-	}
-	url := csaf.ProviderURL(us)
-
-	acsafp := &csaf.AggregatorCSAFProvider{
+	return &csaf.AggregatorCSAFProvider{
 		Metadata: &csaf.AggregatorCSAFProviderMetadata{
 			LastUpdated: &lastUpdated,
 			Publisher:   &pub,
@@ -217,8 +191,7 @@ func (w *worker) createAggrgatorProvider() (*csaf.AggregatorCSAFProvider, error)
 			URL:         &url,
 		},
 		Mirrors: []csaf.ProviderURL{csaf.ProviderURL(w.loc)},
-	}
-	return acsafp, nil
+	}, nil
 }
 
 // doMirrorTransaction performs an atomic directory swap.
