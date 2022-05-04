@@ -97,15 +97,10 @@ func (w *worker) handleROLIE(
 
 // mirrorAllowed checks if mirroring is allowed.
 func (w *worker) mirrorAllowed() bool {
-	if a, err := w.expr.Eval(
-		"$.mirror_on_CSAF_aggregators",
-		w.metadataProvider,
-	); err == nil {
-		if ma, ok := a.(bool); ok {
-			return ma
-		}
-	}
-	return true
+	var b bool
+	return w.expr.Extract(
+		`$.mirror_on_CSAF_aggregators`,
+		util.BoolMatcher(&b), w.metadataProvider) == nil && b
 }
 
 func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
@@ -122,7 +117,6 @@ func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 
 	// Check if we are allowed to mirror this domain.
-	//if false && !w.mirrorAllowed() {
 	if !w.mirrorAllowed() {
 		return nil, fmt.Errorf(
 			"no mirroring of '%s' allowed", w.provider.Name)

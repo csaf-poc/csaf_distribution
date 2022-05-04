@@ -74,6 +74,18 @@ func ReMarshalMatcher(dst interface{}) func(interface{}) error {
 	}
 }
 
+// BoolMatcher stores the matched result in a bool.
+func BoolMatcher(dst *bool) func(interface{}) error {
+	return func(x interface{}) error {
+		b, ok := x.(bool)
+		if !ok {
+			return errors.New("not a bool")
+		}
+		*dst = b
+		return nil
+	}
+}
+
 // StringMatcher stores the matched result in a string.
 func StringMatcher(dst *string) func(interface{}) error {
 	return func(x interface{}) error {
@@ -102,14 +114,23 @@ func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
 	}
 }
 
+// Extract matches a expr/action pair against a document.
+func (pe *PathEval) Extract(
+	expr string,
+	action func(interface{}) error,
+	doc interface{},
+) error {
+	x, err := pe.Eval(expr, doc)
+	if err != nil {
+		return err
+	}
+	return action(x)
+}
+
 // Match matches a list of PathEvalMatcher pairs against a document.
 func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
 	for _, m := range matcher {
-		x, err := pe.Eval(m.Expr, doc)
-		if err != nil {
-			return err
-		}
-		if err := m.Action(x); err != nil {
+		if err := pe.Extract(m.Expr, m.Action, doc); err != nil {
 			return err
 		}
 	}

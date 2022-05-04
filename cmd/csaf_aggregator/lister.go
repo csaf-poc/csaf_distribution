@@ -9,12 +9,26 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// mirrorAllowed checks if mirroring is allowed.
+func (w *worker) listAllowed() bool {
+	var b bool
+	return w.expr.Extract(
+		`$.list_on_CSAF_aggregators`,
+		util.BoolMatcher(&b), w.metadataProvider) == nil && b
+}
+
 func (w *worker) lister() (*csaf.AggregatorCSAFProvider, error) {
-	// TODO: Implement lister
-	return nil, errors.New("not implemented, yet!")
+	// Check if we are allowed to mirror this domain.
+	if !w.listAllowed() {
+		return nil, fmt.Errorf(
+			"no listing of '%s' allowed", w.provider.Name)
+	}
+
+	return w.createAggregatorProvider()
 }
