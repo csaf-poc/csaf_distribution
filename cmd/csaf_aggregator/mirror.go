@@ -148,12 +148,12 @@ func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
-	return w.createAggrgatorProvider()
+	return w.createAggregatorProvider()
 }
 
-// createAggrgatorProvider the "metadata" section in the "csaf_providers" of
+// createAggregatorProvider the "metadata" section in the "csaf_providers" of
 // the aggregator document.
-func (w *worker) createAggrgatorProvider() (*csaf.AggregatorCSAFProvider, error) {
+func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error) {
 	const (
 		lastUpdatedExpr = `$.last_updated`
 		publisherExpr   = `$.publisher`
