@@ -67,7 +67,17 @@ build_linux build_win:
 	env GOARCH=$(GOARCH) GOOS=$(GOOS) $(BUILD) -o $(BINDIR) $(LDFLAGS) -v ./cmd/...
 
 
-# Remove bin-*-* directories
+DISTDIR := csaf_distribution-$(SEMVER)
+dist: build_linux build_win
+	mkdir -p dist
+	mkdir dist/$(DISTDIR)-windows-amd64
+	cp -r README.md docs bin-windows-amd64 dist/$(DISTDIR)-windows-amd64
+	mkdir dist/$(DISTDIR)-gnulinux-amd64
+	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
+	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
+	cd dist/ ; tar -cvmlzf $(DISTDIR)-gnulinux-amd64.tar.gz $(DISTDIR)-gnulinux-amd64/
+
+# Remove bin-*-* and dist directories
 mostlyclean:
-	rm -rf ./bin-*-*
+	rm -rf ./bin-*-* dist/
 	@echo Files in \`go env GOCACHE\` remain.

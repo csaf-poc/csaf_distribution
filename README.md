@@ -2,6 +2,8 @@
 
 **WIP**: A proof of concept for a CSAF trusted provider, checker and aggregator.
 
+Status: Alpha (about 90% functionality is there)
+
 ## Setup
 
 - A recent version of **Go** (1.17+) should be installed. [Go installation](https://go.dev/doc/install)
