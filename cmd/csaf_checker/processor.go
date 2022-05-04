@@ -49,14 +49,16 @@ type processor struct {
 	pmd            interface{}
 	keys           []*crypto.KeyRing
 
-	badIntegrities      topicMessages
-	badPGPs             topicMessages
-	badSignatures       topicMessages
-	badProviderMetadata topicMessages
-	badSecurity         topicMessages
-	badIndices          topicMessages
-	badChanges          topicMessages
-	badFolders          topicMessages
+	badIntegrities               topicMessages
+	badPGPs                      topicMessages
+	badSignatures                topicMessages
+	badProviderMetadata          topicMessages
+	badSecurity                  topicMessages
+	badIndices                   topicMessages
+	badChanges                   topicMessages
+	badFolders                   topicMessages
+	badWellknownMetadataReporter topicMessages
+	badDNSPathReporter           topicMessages
 
 	expr *util.PathEval
 }
@@ -191,6 +193,8 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkSecurity,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
+		(*processor).checkWellknownMetadataReporter,
+		(*processor).checkDNSPathReporter,
 	} {
 		if err := check(p, domain); err != nil && err != errContinue {
 			if err == errStop {
@@ -1002,4 +1006,67 @@ func (p *processor) checkPGPKeys(domain string) error {
 		p.badPGPs.add("No OpenPGP keys loaded.")
 	}
 	return nil
+}
+
+// checkWellknownMetadataReporter checks if the provider-metadata.json file is
+// avaialable under the /.well-known/csaf/ directory.
+func (p *processor) checkWellknownMetadataReporter(domain string) error {
+
+	client := p.httpClient()
+
+	p.badWellknownMetadataReporter.use()
+
+	path := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	res, err := client.Get(path)
+	if err != nil {
+		p.badWellknownMetadataReporter.add("Fetiching %s failed: %v", path, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badWellknownMetadataReporter.add("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+		return errContinue
+	}
+
+	return nil
+}
+
+func (p *processor) checkDNSPathReporter(domain string) error {
+
+	client := p.httpClient()
+
+	p.badDNSPathReporter.use()
+
+	path := "https://csaf.data.security.domain.tld"
+	res, err := client.Get(path)
+	if err != nil {
+		p.badDNSPathReporter.add("Fetiching %s failed: %v", path, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badDNSPathReporter.add("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+		return errContinue
+	}
+	hash := sha256.New()
+	defer res.Body.Close()
+	//tee := io.TeeReader(res.Body, hash)
+	content, err := io.ReadAll(res.Body)
+	if err != nil {
+		p.badDNSPathReporter.add("Error while reading the response form %s", path)
+		return errContinue
+	}
+	hash.Write(content)
+	/* 	if err := json.NewDecoder(tee).Decode(&p.pmd); err != nil {
+		p.badDNSPathReporter.add("%s: Decoding JSON failed: %v", path, err)
+		return errContinue
+	} */
+	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
+		p.badDNSPathReporter.add("The csaf.data.security.domain.tld DNS record does not serve the provider-metatdata.json")
+		return errContinue
+	}
+
+	return nil
+
 }

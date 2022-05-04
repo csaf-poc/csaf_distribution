@@ -119,16 +119,30 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badSecurity
 }
 
-func (r *wellknownMetadataReporter) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	req.message("(Not checked, missing implementation.)")
+	if !p.badWellknownMetadataReporter.used() {
+		req.message("No check if provider-metadata.json is under /.well-known/csaf/ was done.")
+		return
+	}
+	if len(p.badWellknownMetadataReporter) == 0 {
+		req.message("Found /.well-known/csaf/provider-metadata.json")
+		return
+	}
+	req.Messages = p.badWellknownMetadataReporter
 }
 
-func (r *dnsPathReporter) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	req.message("(Not checked, missing implementation.)")
+	if !p.badDNSPathReporter.used() {
+		req.message("No csaf.data.security.domain.tld DNS record checked.")
+		return
+	}
+	if len(p.badDNSPathReporter) == 0 {
+		req.message("csaf.data.security.domain.tld DNS record is available and serves the provider-metadata.json.")
+		return
+	}
+	req.Messages = p.badDNSPathReporter
 }
 
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
