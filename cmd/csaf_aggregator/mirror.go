@@ -148,16 +148,27 @@ func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
+	return w.createAggrgatorProvider()
+}
+
+// createAggrgatorProvider the "metadata" section in the "csaf_providers" of
+// the aggregator document.
+func (w *worker) createAggrgatorProvider() (*csaf.AggregatorCSAFProvider, error) {
 	const (
 		lastUpdatedExpr = `$.last_updated`
+		publisherExpr   = `$.publisher`
+		roleExpr        = `$.role`
+		urlExpr         = `$.canonical_url`
 	)
 
 	pe := util.NewPathEval()
-	x, err := pe.Eval(lastUpdatedExpr, w.metadataProvider)
+
+	// Extract last_updated
+	lu, err := pe.Eval(lastUpdatedExpr, w.metadataProvider)
 	if err != nil {
 		return nil, err
 	}
-	s, ok := x.(string)
+	s, ok := lu.(string)
 	if !ok {
 		return nil, errors.New("last_updated is not a string")
 	}
@@ -166,12 +177,44 @@ func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
+	// Extract publisher
+	p, err := pe.Eval(publisherExpr, w.metadataProvider)
+	if err != nil {
+		return nil, err
+	}
+	var pub csaf.Publisher
+	if err := util.ReMarshalJSON(&pub, p); err != nil {
+		return nil, err
+	}
+
+	// Extract role
+	r, err := pe.Eval(roleExpr, w.metadataProvider)
+	if err != nil {
+		return nil, err
+	}
+	rs, ok := r.(string)
+	if !ok {
+		return nil, errors.New("role is not a string")
+	}
+	role := csaf.MetadataRole(rs)
+
+	// Extract URL
+	u, err := pe.Eval(urlExpr, w.metadataProvider)
+	if err != nil {
+		return nil, err
+	}
+	us, ok := u.(string)
+	if !ok {
+		return nil, errors.New("canonical_url is not a string")
+	}
+	url := csaf.ProviderURL(us)
+
 	acsafp := &csaf.AggregatorCSAFProvider{
 		Metadata: &csaf.AggregatorCSAFProviderMetadata{
 			LastUpdated: &lastUpdated,
-			Publisher:   nil, // TODO
-			Role:        nil, // TODO
-			URL:         nil, // TODO
+			Publisher:   &pub,
+			Role:        &role,
+			URL:         &url,
 		},
 		Mirrors: []csaf.ProviderURL{csaf.ProviderURL(w.loc)},
 	}
