@@ -122,29 +122,29 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 //report tests the availability of the "provider-metadata.json" under /.well-known/csaf/ directoy.
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badWellknownMetadataReporter.used() {
+	if !p.badWellknownMetadata.used() {
 		req.message("No check if provider-metadata.json is under /.well-known/csaf/ was done.")
 		return
 	}
-	if len(p.badWellknownMetadataReporter) == 0 {
+	if len(p.badWellknownMetadata) == 0 {
 		req.message("Found /.well-known/csaf/provider-metadata.json")
 		return
 	}
-	req.Messages = p.badWellknownMetadataReporter
+	req.Messages = p.badWellknownMetadata
 }
 
 // report tests if the "csaf.data.security.domain.tld" DNS record available and serves the "provider-metadata.json"
 func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badDNSPathReporter.used() {
+	if !p.badDNSPath.used() {
 		req.message("No csaf.data.security.domain.tld DNS record checked.")
 		return
 	}
-	if len(p.badDNSPathReporter) == 0 {
+	if len(p.badDNSPath) == 0 {
 		req.message("csaf.data.security.domain.tld DNS record is available and serves the provider-metadata.json.")
 		return
 	}
-	req.Messages = p.badDNSPathReporter
+	req.Messages = p.badDNSPath
 }
 
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {

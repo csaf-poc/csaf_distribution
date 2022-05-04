@@ -49,16 +49,16 @@ type processor struct {
 	pmd            interface{}
 	keys           []*crypto.KeyRing
 
-	badIntegrities               topicMessages
-	badPGPs                      topicMessages
-	badSignatures                topicMessages
-	badProviderMetadata          topicMessages
-	badSecurity                  topicMessages
-	badIndices                   topicMessages
-	badChanges                   topicMessages
-	badFolders                   topicMessages
-	badWellknownMetadataReporter topicMessages
-	badDNSPathReporter           topicMessages
+	badIntegrities       topicMessages
+	badPGPs              topicMessages
+	badSignatures        topicMessages
+	badProviderMetadata  topicMessages
+	badSecurity          topicMessages
+	badIndices           topicMessages
+	badChanges           topicMessages
+	badFolders           topicMessages
+	badWellknownMetadata topicMessages
+	badDNSPath           topicMessages
 
 	expr *util.PathEval
 }
@@ -1015,17 +1015,17 @@ func (p *processor) checkWellknownMetadataReporter(domain string) error {
 
 	client := p.httpClient()
 
-	p.badWellknownMetadataReporter.use()
+	p.badWellknownMetadata.use()
 
 	path := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 
 	res, err := client.Get(path)
 	if err != nil {
-		p.badWellknownMetadataReporter.add("Fetiching %s failed: %v", path, err)
+		p.badWellknownMetadata.add("Fetiching %s failed: %v", path, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badWellknownMetadataReporter.add("Fetching %s failed. Status code %d (%s)",
+		p.badWellknownMetadata.add("Fetching %s failed. Status code %d (%s)",
 			path, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -1040,16 +1040,16 @@ func (p *processor) checkDNSPathReporter(domain string) error {
 
 	client := p.httpClient()
 
-	p.badDNSPathReporter.use()
+	p.badDNSPath.use()
 
 	path := "https://csaf.data.security.domain.tld"
 	res, err := client.Get(path)
 	if err != nil {
-		p.badDNSPathReporter.add("Fetiching %s failed: %v", path, err)
+		p.badDNSPath.add("Fetiching %s failed: %v", path, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badDNSPathReporter.add("Fetching %s failed. Status code %d (%s)",
+		p.badDNSPath.add("Fetching %s failed. Status code %d (%s)",
 			path, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -1057,12 +1057,12 @@ func (p *processor) checkDNSPathReporter(domain string) error {
 	defer res.Body.Close()
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		p.badDNSPathReporter.add("Error while reading the response form %s", path)
+		p.badDNSPath.add("Error while reading the response form %s", path)
 		return errContinue
 	}
 	hash.Write(content)
 	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
-		p.badDNSPathReporter.add("The csaf.data.security.domain.tld DNS record does not serve the provider-metatdata.json")
+		p.badDNSPath.add("The csaf.data.security.domain.tld DNS record does not serve the provider-metatdata.json")
 		return errContinue
 	}
 
