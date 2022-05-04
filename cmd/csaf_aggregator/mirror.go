@@ -169,10 +169,10 @@ func (w *worker) createAggrgatorProvider() (*csaf.AggregatorCSAFProvider, error)
 	)
 
 	if err := util.NewPathEval().Match([]util.PathEvalMatcher{
-		{lastUpdatedExpr, util.TimeMatcher(&lastUpdatedT, time.RFC3339)},
-		{publisherExpr, util.ReMarshalMatcher(&pub)},
-		{roleExpr, util.StringMatcher(&roleS)},
-		{urlExpr, util.StringMatcher(&urlS)},
+		{Expr: lastUpdatedExpr, Action: util.TimeMatcher(&lastUpdatedT, time.RFC3339)},
+		{Expr: publisherExpr, Action: util.ReMarshalMatcher(&pub)},
+		{Expr: roleExpr, Action: util.StringMatcher(&roleS)},
+		{Expr: urlExpr, Action: util.StringMatcher(&urlS)},
 	}, w.metadataProvider); err != nil {
 		return nil, err
 	}

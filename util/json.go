@@ -58,6 +58,8 @@ func (pe *PathEval) Eval(expr string, doc interface{}) (interface{}, error) {
 	return eval(context.Background(), doc)
 }
 
+// PathEvalMatcher is a pair of an expression and an action
+// when doing extractions via PathEval.Match.
 type PathEvalMatcher struct {
 	// Expr is the expression to evaluate
 	Expr string
