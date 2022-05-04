@@ -47,13 +47,13 @@ func NewAdvisorySummary(
 	}
 
 	if err := pe.Match([]util.PathEvalMatcher{
-		{idExpr, util.StringMatcher(&e.ID)},
-		{titleExpr, util.StringMatcher(&e.Title)},
-		{currentReleaseDateExpr, util.TimeMatcher(&e.CurrentReleaseDate, time.RFC3339)},
-		{initialReleaseDateExpr, util.TimeMatcher(&e.InitialReleaseDate, time.RFC3339)},
-		{summaryExpr, util.StringMatcher(&e.Summary)},
-		{tlpLabelExpr, util.StringMatcher(&e.TLPLabel)},
-		{publisherExpr, util.ReMarshalMatcher(e.Publisher)},
+		{Expr: idExpr, Action: util.StringMatcher(&e.ID)},
+		{Expr: titleExpr, Action: util.StringMatcher(&e.Title)},
+		{Expr: currentReleaseDateExpr, Action: util.TimeMatcher(&e.CurrentReleaseDate, time.RFC3339)},
+		{Expr: initialReleaseDateExpr, Action: util.TimeMatcher(&e.InitialReleaseDate, time.RFC3339)},
+		{Expr: summaryExpr, Action: util.StringMatcher(&e.Summary)},
+		{Expr: tlpLabelExpr, Action: util.StringMatcher(&e.TLPLabel)},
+		{Expr: publisherExpr, Action: util.ReMarshalMatcher(e.Publisher)},
 	}, doc); err != nil {
 		return nil, err
 	}
