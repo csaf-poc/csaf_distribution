@@ -109,6 +109,17 @@ func (w *worker) mirrorAllowed() bool {
 }
 
 func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
+	result, err := w.mirrorInternal()
+	if err != nil && w.dir != "" {
+		// If something goes wrong remove the debris.
+		if err := os.RemoveAll(w.dir); err != nil {
+			log.Printf("error: %v\n", err)
+		}
+	}
+	return result, err
+}
+
+func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 
 	// Check if we are allowed to mirror this domain.
 	//if false && !w.mirrorAllowed() {

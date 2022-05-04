@@ -59,6 +59,12 @@ type config struct {
 	keyErr error
 }
 
+// runAsMirror determines if the aggregator should run in mirror mode.
+func (c *config) runAsMirror() bool {
+	return c.Aggregator.Category != nil &&
+		*c.Aggregator.Category == csaf.AggregatorAggregator
+}
+
 func (c *config) cryptoKey() (*crypto.Key, error) {
 	if c.Key == "" {
 		return nil, nil

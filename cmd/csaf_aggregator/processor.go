@@ -82,11 +82,25 @@ func (w *worker) createDir() (string, error) {
 	return dir, err
 }
 
-func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
-	defer wg.Done()
+func (w *worker) doMirror(j *job) {
+	if j.result, j.err = w.mirror(); j.err != nil && w.dir != "" {
+		// If something goes wrong remove the debris.
+		if err := os.RemoveAll(w.dir); err != nil {
+			log.Printf("error: %v\n", err)
+		}
+	}
+}
 
-	mirror := w.cfg.Aggregator.Category != nil &&
-		*w.cfg.Aggregator.Category == csaf.AggregatorAggregator
+func (w *worker) doLister(j *job) {
+	j.err = errors.New("not implemented,yet!")
+}
+
+func (w *worker) work(
+	wg *sync.WaitGroup,
+	doWork func(*worker) (*csaf.AggregatorCSAFProvider, error),
+	jobs <-chan *job,
+) {
+	defer wg.Done()
 
 	for j := range jobs {
 		log.Printf("worker #%d: %s (%s)\n",
@@ -118,17 +132,7 @@ func (w *worker) work(wg *sync.WaitGroup, jobs <-chan *job) {
 
 		log.Printf("provider-metadata: %s\n", w.loc)
 
-		if mirror {
-			if j.result, j.err = w.mirror(); j.err != nil && w.dir != "" {
-				// If something goes wrong remove the debris.
-				if err := os.RemoveAll(w.dir); err != nil {
-					log.Printf("error: %v\n", err)
-				}
-			}
-		} else {
-			// TODO: saving results for Lister
-			// j.result, j.err = w...
-		}
+		j.result, j.err = doWork(w)
 	}
 }
 
@@ -298,11 +302,23 @@ func (p *processor) process() error {
 
 	queue := make(chan *job)
 
+	var doWork func(*worker) (*csaf.AggregatorCSAFProvider, error)
+
+	mirror := p.cfg.runAsMirror()
+
+	if mirror {
+		doWork = (*worker).mirror
+		log.Println("Running in aggregator mode")
+	} else {
+		doWork = (*worker).lister
+		log.Println("Running in lister mode")
+	}
+
 	log.Printf("Starting %d workers.\n", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
 		w := newWorker(i, p.cfg)
-		go w.work(&wg, queue)
+		go w.work(&wg, doWork, queue)
 	}
 
 	jobs := make([]job, len(p.cfg.Providers))
@@ -353,7 +369,7 @@ func (p *processor) process() error {
 
 	dstName := filepath.Join(web, "aggregator.json")
 
-	fname, file, err := util.MakeUniqFile(dstName)
+	fname, file, err := util.MakeUniqFile(dstName + ".tmp")
 	if err != nil {
 		return err
 	}
