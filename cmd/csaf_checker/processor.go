@@ -1010,6 +1010,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 
 // checkWellknownMetadataReporter checks if the provider-metadata.json file is
 // avaialable under the /.well-known/csaf/ directory.
+// It returns nil if all checks are passed, otherwise error.
 func (p *processor) checkWellknownMetadataReporter(domain string) error {
 
 	client := p.httpClient()
@@ -1032,6 +1033,9 @@ func (p *processor) checkWellknownMetadataReporter(domain string) error {
 	return nil
 }
 
+// checkDNSPathReporter checks if the "csaf.data.security.domain.tld" DNS record is available
+// and serves the "provider-metadata.json".
+// It returns nil if all checks are passed, otherwise error.
 func (p *processor) checkDNSPathReporter(domain string) error {
 
 	client := p.httpClient()
@@ -1051,22 +1055,16 @@ func (p *processor) checkDNSPathReporter(domain string) error {
 	}
 	hash := sha256.New()
 	defer res.Body.Close()
-	//tee := io.TeeReader(res.Body, hash)
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
 		p.badDNSPathReporter.add("Error while reading the response form %s", path)
 		return errContinue
 	}
 	hash.Write(content)
-	/* 	if err := json.NewDecoder(tee).Decode(&p.pmd); err != nil {
-		p.badDNSPathReporter.add("%s: Decoding JSON failed: %v", path, err)
-		return errContinue
-	} */
 	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
 		p.badDNSPathReporter.add("The csaf.data.security.domain.tld DNS record does not serve the provider-metatdata.json")
 		return errContinue
 	}
 
 	return nil
-
 }

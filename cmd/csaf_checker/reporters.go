@@ -119,6 +119,7 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badSecurity
 }
 
+//report tests the availability of the "provider-metadata.json" under /.well-known/csaf/ directoy.
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWellknownMetadataReporter.used() {
@@ -132,6 +133,7 @@ func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badWellknownMetadataReporter
 }
 
+// report tests if the "csaf.data.security.domain.tld" DNS record available and serves the "provider-metadata.json"
 func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDNSPathReporter.used() {
