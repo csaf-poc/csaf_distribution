@@ -179,7 +179,7 @@ func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error
 		urlS         string
 	)
 
-	if err := util.NewPathEval().Match([]util.PathEvalMatcher{
+	if err := w.expr.Match([]util.PathEvalMatcher{
 		{Expr: lastUpdatedExpr, Action: util.TimeMatcher(&lastUpdatedT, time.RFC3339)},
 		{Expr: publisherExpr, Action: util.ReMarshalMatcher(&pub)},
 		{Expr: roleExpr, Action: util.StringMatcher(&roleS)},
