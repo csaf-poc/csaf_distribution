@@ -54,6 +54,9 @@ type config struct {
 	Passphrase          *string             `toml:"passphrase"`
 	AllowSingleProvider bool                `toml:"allow_single_provider"`
 
+	// LockFile tries to lock to a given file.
+	LockFile *string `toml:"lock_file"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error

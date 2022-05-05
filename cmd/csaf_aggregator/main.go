@@ -14,6 +14,7 @@ import (
 	"os"
 
 	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/gofrs/flock"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -31,6 +32,24 @@ func errCheck(err error) {
 	}
 }
 
+func lock(lockFile *string, fn func() error) error {
+	if lockFile == nil {
+		// No locking configured.
+		return fn()
+	}
+	fl := flock.New(*lockFile)
+	locked, err := fl.TryLock()
+	if err != nil {
+		return fmt.Errorf("file locking failed: %v", err)
+	}
+
+	if !locked {
+		return fmt.Errorf("cannot lock to file %s", *lockFile)
+	}
+	defer fl.Unlock()
+	return fn()
+}
+
 func main() {
 	opts := new(options)
 
@@ -46,5 +65,5 @@ func main() {
 	errCheck(err)
 
 	p := processor{cfg: cfg}
-	errCheck(p.process())
+	errCheck(lock(cfg.LockFile, p.process))
 }
