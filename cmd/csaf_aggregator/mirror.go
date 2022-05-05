@@ -210,7 +210,6 @@ func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error
 			Role:        &role,
 			URL:         &url,
 		},
-		Mirrors: []csaf.ProviderURL{csaf.ProviderURL(w.loc)},
 	}, nil
 }
 
