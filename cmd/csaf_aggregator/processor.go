@@ -82,19 +82,37 @@ func (w *worker) createDir() (string, error) {
 	return dir, err
 }
 
-func (w *worker) doMirror(j *job) {
-	if j.result, j.err = w.mirror(); j.err != nil && w.dir != "" {
-		// If something goes wrong remove the debris.
-		if err := os.RemoveAll(w.dir); err != nil {
-			log.Printf("error: %v\n", err)
-		}
+// setup fetches the provider-metadate.json for a specific provider.
+func (w *worker) setupProvider(provider *provider) error {
+	log.Printf("worker #%d: %s (%s)\n",
+		w.num, provider.Name, provider.Domain)
+
+	w.dir = ""
+	w.provider = provider
+
+	// Each job needs a separate client.
+	w.client = w.cfg.httpClient(provider)
+
+	// We need the provider metadata in all cases.
+	if err := w.locateProviderMetadata(provider.Domain); err != nil {
+		return err
 	}
+
+	// Validate the provider metadata.
+	errors, err := csaf.ValidateProviderMetadata(w.metadataProvider)
+	if err != nil {
+		return err
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf(
+			"provider-metadata.json has %d validation issues", len(errors))
+	}
+
+	log.Printf("provider-metadata: %s\n", w.loc)
+	return nil
 }
 
-func (w *worker) doLister(j *job) {
-	j.err = errors.New("not implemented")
-}
-
+// work handles the treatment of providers concurrently.
 func (w *worker) work(
 	wg *sync.WaitGroup,
 	doWork func(*worker) (*csaf.AggregatorCSAFProvider, error),
@@ -103,35 +121,10 @@ func (w *worker) work(
 	defer wg.Done()
 
 	for j := range jobs {
-		log.Printf("worker #%d: %s (%s)\n",
-			w.num, j.provider.Name, j.provider.Domain)
-
-		w.dir = ""
-		w.provider = j.provider
-
-		// Each job needs a separate client.
-		w.client = w.cfg.httpClient(j.provider)
-
-		// We need the provider metadata in all cases.
-		if err := w.locateProviderMetadata(j.provider.Domain); err != nil {
+		if err := w.setupProvider(j.provider); err != nil {
 			j.err = err
 			continue
 		}
-
-		// Validate the provider metadata.
-		errors, err := csaf.ValidateProviderMetadata(w.metadataProvider)
-		if err != nil {
-			j.err = err
-			continue
-		}
-		if len(errors) > 0 {
-			j.err = fmt.Errorf(
-				"provider-metadata.json has %d validation issues", len(errors))
-			continue
-		}
-
-		log.Printf("provider-metadata: %s\n", w.loc)
-
 		j.result, j.err = doWork(w)
 	}
 }
@@ -188,7 +181,7 @@ func (w *worker) locateProviderMetadata(domain string) error {
 			return err
 		}
 		if len(urls) == 0 {
-			return errors.New("No provider-metadata.json found in secturity.txt")
+			return errors.New("no provider-metadata.json found in secturity.txt")
 		}
 		w.loc = urls[0]
 		return nil
@@ -285,6 +278,7 @@ func (p *processor) removeOrphans() error {
 	return nil
 }
 
+// process is the main driver of the jobs handled by work.
 func (p *processor) process() error {
 	if err := ensureDir(p.cfg.Folder); err != nil {
 		return err
