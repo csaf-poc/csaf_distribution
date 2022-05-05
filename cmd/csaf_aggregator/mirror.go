@@ -32,7 +32,7 @@ import (
 
 func (w *worker) handleROLIE(
 	rolie interface{},
-	process func(*csaf.Feed, []string) error,
+	process func(*csaf.TLPLabel, []string) error,
 ) error {
 	base, err := url.Parse(w.loc)
 	if err != nil {
@@ -88,7 +88,7 @@ func (w *worker) handleROLIE(
 				continue
 			}
 			files := resolveURLs(rfeed.Files(), feedBaseURL)
-			if err := process(feed, files); err != nil {
+			if err := process(feed.TLPLabel, files); err != nil {
 				return err
 			}
 		}
@@ -142,9 +142,22 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 			return nil, err
 		}
 	} else {
-		// No rolie feeds
-		// TODO: Implement me!
-	}
+		// No rolie feeds -> try to load files from index.txt
+		baseURL, err := util.BaseURL(w.loc)
+		if err != nil {
+			return nil, err
+		}
+		files, err := w.loadIndex(baseURL)
+		if err != nil {
+			return nil, err
+		}
+		_ = files
+		// XXX: Is treating as white okay? better look into the advisories?
+		white := csaf.TLPLabel(csaf.TLPLabelWhite)
+		if err := w.mirrorFiles(&white, files); err != nil {
+			return nil, err
+		}
+	} // TODO: else scan directories?
 
 	if err := w.writeIndices(); err != nil {
 		return nil, err
@@ -375,10 +388,10 @@ func (w *worker) sign(data []byte) (string, error) {
 	return sig.GetArmored()
 }
 
-func (w *worker) mirrorFiles(feed *csaf.Feed, files []string) error {
+func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 	label := "unknown"
-	if feed.TLPLabel != nil {
-		label = strings.ToLower(string(*feed.TLPLabel))
+	if tlpLabel != nil {
+		label = strings.ToLower(string(*tlpLabel))
 	}
 
 	summaries := w.summaries[label]
