@@ -31,7 +31,8 @@ type processor struct {
 
 type job struct {
 	provider *provider
-	result   *csaf.AggregatorCSAFProvider
+	metadata *csaf.AggregatorCSAFProvider
+	mirrors  []csaf.ProviderURL
 	err      error
 }
 
@@ -112,10 +113,13 @@ func (w *worker) setupProvider(provider *provider) error {
 	return nil
 }
 
+// workFunc implements the actual work (mirror/list).
+type workFunc func(*worker) (*csaf.AggregatorCSAFProvider, []csaf.ProviderURL, error)
+
 // work handles the treatment of providers concurrently.
 func (w *worker) work(
 	wg *sync.WaitGroup,
-	doWork func(*worker) (*csaf.AggregatorCSAFProvider, error),
+	doWork workFunc,
 	jobs <-chan *job,
 ) {
 	defer wg.Done()
@@ -125,7 +129,7 @@ func (w *worker) work(
 			j.err = err
 			continue
 		}
-		j.result, j.err = doWork(w)
+		j.metadata, j.mirrors, j.err = doWork(w)
 	}
 }
 
@@ -296,7 +300,7 @@ func (p *processor) process() error {
 
 	queue := make(chan *job)
 
-	var doWork func(*worker) (*csaf.AggregatorCSAFProvider, error)
+	var doWork workFunc
 
 	mirror := p.cfg.runAsMirror()
 
@@ -335,12 +339,12 @@ func (p *processor) process() error {
 			log.Printf("error: '%s' failed: %v\n", j.provider.Name, j.err)
 			continue
 		}
-		if j.result == nil {
+		if j.metadata == nil {
 			log.Printf(
 				"error: '%s' does not produce any result.\n", j.provider.Name)
 			continue
 		}
-		csafProviders = append(csafProviders, j.result)
+		csafProviders = append(csafProviders, j.metadata)
 	}
 
 	if len(csafProviders) == 0 {

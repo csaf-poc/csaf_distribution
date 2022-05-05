@@ -103,22 +103,30 @@ func (w *worker) mirrorAllowed() bool {
 		util.BoolMatcher(&b), w.metadataProvider) == nil && b
 }
 
-func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
-	result, err := w.mirrorInternal()
+func (w *worker) mirror() (
+	*csaf.AggregatorCSAFProvider,
+	[]csaf.ProviderURL,
+	error,
+) {
+	result, mirr, err := w.mirrorInternal()
 	if err != nil && w.dir != "" {
 		// If something goes wrong remove the debris.
 		if err := os.RemoveAll(w.dir); err != nil {
 			log.Printf("error: %v\n", err)
 		}
 	}
-	return result, err
+	return result, mirr, err
 }
 
-func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
+func (w *worker) mirrorInternal() (
+	*csaf.AggregatorCSAFProvider,
+	[]csaf.ProviderURL,
+	error,
+) {
 
 	// Check if we are allowed to mirror this domain.
 	if !w.mirrorAllowed() {
-		return nil, fmt.Errorf(
+		return nil, nil, fmt.Errorf(
 			"no mirroring of '%s' allowed", w.provider.Name)
 	}
 
@@ -130,7 +138,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		"$.distributions[*].rolie.feeds", w.metadataProvider)
 	if err != nil {
 		log.Printf("rolie check failed: %v\n", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	fs, hasRolie := rolie.([]interface{})
@@ -138,7 +146,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 
 	if hasRolie {
 		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	} else {
 		// No rolie feeds
@@ -146,17 +154,21 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	}
 
 	if err := w.writeIndices(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := w.doMirrorTransaction(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return w.createAggregatorProvider()
+	acp, err := w.createAggregatorProvider()
+
+	// TODO: generate mirror list
+
+	return acp, nil, err
 }
 
-// createAggregatorProvider the "metadata" section in the "csaf_providers" of
+// createAggregatorProvinil, der the "metadata" section in the "csaf_providers" of
 // the aggregator document.
 func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error) {
 	const (

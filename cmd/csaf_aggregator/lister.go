@@ -23,12 +23,18 @@ func (w *worker) listAllowed() bool {
 		util.BoolMatcher(&b), w.metadataProvider) == nil && b
 }
 
-func (w *worker) lister() (*csaf.AggregatorCSAFProvider, error) {
+func (w *worker) lister() (
+	*csaf.AggregatorCSAFProvider,
+	[]csaf.ProviderURL,
+	error,
+) {
 	// Check if we are allowed to mirror this domain.
 	if !w.listAllowed() {
-		return nil, fmt.Errorf(
+		return nil, nil, fmt.Errorf(
 			"no listing of '%s' allowed", w.provider.Name)
 	}
 
-	return w.createAggregatorProvider()
+	acp, err := w.createAggregatorProvider()
+	// No mirroring in lister mode
+	return acp, nil, err
 }
