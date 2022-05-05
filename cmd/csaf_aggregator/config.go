@@ -57,6 +57,9 @@ type config struct {
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
 
+	// Interim performs an interim scan.
+	Interim bool `toml:"interim"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error

@@ -21,6 +21,7 @@ import (
 type options struct {
 	Config  string `short:"c" long:"config" description:"File name of the configuration file" value-name:"CFG-FILE" default:"aggregator.toml"`
 	Version bool   `long:"version" description:"Display version of the binary"`
+	Interim bool   `short:"i" long:"interim" description:"Perform an interim scan"`
 }
 
 func errCheck(err error) {
@@ -61,8 +62,14 @@ func main() {
 		return
 	}
 
+	interim := opts.Interim
+
 	cfg, err := loadConfig(opts.Config)
 	errCheck(err)
+
+	if interim {
+		cfg.Interim = true
+	}
 
 	p := processor{cfg: cfg}
 	errCheck(lock(cfg.LockFile, p.process))
