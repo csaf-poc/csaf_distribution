@@ -30,10 +30,9 @@ type processor struct {
 }
 
 type job struct {
-	provider *provider
-	metadata *csaf.AggregatorCSAFProvider
-	mirrors  []csaf.ProviderURL
-	err      error
+	provider           *provider
+	aggregatorProvider *csaf.AggregatorCSAFProvider
+	err                error
 }
 
 type summary struct {
@@ -114,7 +113,7 @@ func (w *worker) setupProvider(provider *provider) error {
 }
 
 // workFunc implements the actual work (mirror/list).
-type workFunc func(*worker) (*csaf.AggregatorCSAFProvider, []csaf.ProviderURL, error)
+type workFunc func(*worker) (*csaf.AggregatorCSAFProvider, error)
 
 // work handles the treatment of providers concurrently.
 func (w *worker) work(
@@ -129,7 +128,7 @@ func (w *worker) work(
 			j.err = err
 			continue
 		}
-		j.metadata, j.mirrors, j.err = doWork(w)
+		j.aggregatorProvider, j.err = doWork(w)
 	}
 }
 
@@ -339,12 +338,12 @@ func (p *processor) process() error {
 			log.Printf("error: '%s' failed: %v\n", j.provider.Name, j.err)
 			continue
 		}
-		if j.metadata == nil {
+		if j.aggregatorProvider == nil {
 			log.Printf(
 				"error: '%s' does not produce any result.\n", j.provider.Name)
 			continue
 		}
-		csafProviders = append(csafProviders, j.metadata)
+		csafProviders = append(csafProviders, j.aggregatorProvider)
 	}
 
 	if len(csafProviders) == 0 {
