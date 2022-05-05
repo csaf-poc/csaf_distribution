@@ -281,20 +281,13 @@ func (p *processor) removeOrphans() error {
 	return nil
 }
 
-// process is the main driver of the jobs handled by work.
-func (p *processor) process() error {
-	if err := ensureDir(p.cfg.Folder); err != nil {
-		return err
-	}
-	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
-	if err := ensureDir(web); err != nil {
-		return err
-	}
+// interim performs the short interim check/update.
+func (p *processor) interim() error {
+	return errors.New("not implemented, yet")
+}
 
-	if err := p.removeOrphans(); err != nil {
-		return err
-	}
-
+// full performs the complete lister/download
+func (p *processor) full() error {
 	var wg sync.WaitGroup
 
 	queue := make(chan *job)
@@ -364,6 +357,8 @@ func (p *processor) process() error {
 		LastUpdated:   &lastUpdated,
 	}
 
+	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
+
 	dstName := filepath.Join(web, "aggregator.json")
 
 	fname, file, err := util.MakeUniqFile(dstName + ".tmp")
@@ -382,4 +377,25 @@ func (p *processor) process() error {
 	}
 
 	return os.Rename(fname, dstName)
+}
+
+// process is the main driver of the jobs handled by work.
+func (p *processor) process() error {
+	if err := ensureDir(p.cfg.Folder); err != nil {
+		return err
+	}
+	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
+	if err := ensureDir(web); err != nil {
+		return err
+	}
+
+	if err := p.removeOrphans(); err != nil {
+		return err
+	}
+
+	if p.cfg.Interim {
+		return p.interim()
+	}
+
+	return p.full()
 }
