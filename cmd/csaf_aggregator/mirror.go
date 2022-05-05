@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -153,6 +154,10 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
+	if err := w.writeProviderMetadata(); err != nil {
+		return nil, err
+	}
+
 	acp, err := w.createAggregatorProvider()
 
 	if err != nil {
@@ -171,7 +176,55 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	return acp, err
 }
 
-// createAggregatorProvinil, der the "metadata" section in the "csaf_providers" of
+func (w *worker) labelsFromSummaries() []csaf.TLPLabel {
+	labels := make([]csaf.TLPLabel, 0, len(w.summaries))
+	for label := range w.summaries {
+		labels = append(labels, csaf.TLPLabel(label))
+	}
+	sort.Slice(labels, func(i, j int) bool { return labels[i] < labels[j] })
+	return labels
+}
+
+// writeProviderMetadata writes a local provider metadata for a mirror.
+func (w *worker) writeProviderMetadata() error {
+
+	fname := filepath.Join(w.dir, "provider-metadata.json")
+
+	pm := csaf.NewProviderMetadataDomain(
+		w.cfg.Domain,
+		w.labelsFromSummaries())
+
+	// Figure out the role
+	var role csaf.MetadataRole
+
+	if strings.HasPrefix(w.provider.Domain, "https://") {
+		role = csaf.MetadataRolePublisher
+	} else {
+		role = csaf.MetadataRoleProvider
+	}
+
+	pm.Role = &role
+
+	pm.Publisher = new(csaf.Publisher)
+
+	var lastUpdate time.Time
+
+	if err := w.expr.Match([]util.PathEvalMatcher{
+		{Expr: `$.publisher`, Action: util.ReMarshalMatcher(pm.Publisher)},
+		{Expr: `$.last_update`, Action: util.TimeMatcher(&lastUpdate, time.RFC3339)},
+		{Expr: `$.public_openpgp_keys`, Action: util.ReMarshalMatcher(&pm.PGPKeys)},
+	}, w.metadataProvider); err != nil {
+		// only log the errors
+		log.Printf("extracting data from orignal provider failed: %v\n", err)
+	}
+
+	la := csaf.TimeStamp(lastUpdate)
+	pm.LastUpdated = &la
+
+	return util.WriteToFile(fname, pm)
+}
+
+// createAggregatorProvider, der the "metadata" section in the "csaf_providers" of
 // the aggregator document.
 func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error) {
 	const (
