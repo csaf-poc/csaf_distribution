@@ -44,8 +44,16 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 			j.err = err
 			continue
 		}
+
+		// If we don't have interim files, we have nothing to do.
 		if len(files) == 0 {
 			j.err = errNothingToDo
+			continue
+		}
+
+		if err := w.locateProviderMetadata(j.provider.Domain); err != nil {
+			j.err = err
+			continue
 		}
 
 		// TODO: Implement me!
