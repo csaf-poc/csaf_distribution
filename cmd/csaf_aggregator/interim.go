@@ -16,14 +16,85 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+type interimJob struct {
+	provider *provider
+	err      error
+}
+
+var errNothingToDo = errors.New("nothing to do")
+
+func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
+	defer wg.Done()
+	for j := range jobs {
+		// TODO: Implement me!
+		j.err = errors.New("not implemented, yet")
+	}
+}
+
+// joinErrors creates an aggregated error of the messages
+// of the given errors.
+func joinErrors(errs []error) error {
+	if len(errs) == 0 {
+		return nil
+	}
+	var b strings.Builder
+	for i, err := range errs {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(err.Error())
+	}
+	return errors.New(b.String())
+}
+
 // interim performs the short interim check/update.
 func (p *processor) interim() error {
-	return errors.New("not implemented, yet")
+
+	if !p.cfg.runAsMirror() {
+		return errors.New("iterim in lister mode does not work")
+	}
+
+	queue := make(chan *interimJob)
+	var wg sync.WaitGroup
+
+	log.Printf("Starting %d workers.\n", p.cfg.Workers)
+	for i := 1; i <= p.cfg.Workers; i++ {
+		wg.Add(1)
+		w := newWorker(i, p.cfg)
+		go w.interimWork(&wg, queue)
+	}
+
+	jobs := make([]interimJob, len(p.cfg.Providers))
+
+	for i, p := range p.cfg.Providers {
+		jobs[i] = interimJob{provider: p}
+		queue <- &jobs[i]
+	}
+	close(queue)
+
+	wg.Wait()
+
+	var errs []error
+
+	for i := range jobs {
+		if err := jobs[i].err; err != nil {
+			if err != errNothingToDo {
+				errs = append(errs, err)
+				continue
+			}
+			log.Printf("Nothing to do for provider %s\n",
+				jobs[i].provider.Name)
+		}
+	}
+
+	return joinErrors(errs)
 }
 
 // loadChangesFromReader scans a changes.csv file for matching
