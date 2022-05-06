@@ -30,6 +30,7 @@ type processor struct {
 type summary struct {
 	filename string
 	summary  *csaf.AdvisorySummary
+	url      string
 }
 
 type worker struct {

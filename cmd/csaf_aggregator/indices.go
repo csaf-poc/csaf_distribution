@@ -24,6 +24,56 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+func (w *worker) writeInterims(label string, summaries []summary) error {
+
+	// Filter out the interims.
+	var ss []summary
+	for _, s := range summaries {
+		if s.summary.Status == "interim" {
+			ss = append(ss, s)
+		}
+	}
+
+	// No interims -> nothing to write
+	if len(ss) == 0 {
+		return nil
+	}
+
+	sort.SliceStable(ss, func(i, j int) bool {
+		return ss[i].summary.CurrentReleaseDate.After(
+			ss[j].summary.CurrentReleaseDate)
+	})
+
+	fname := filepath.Join(w.dir, label, "interim.csv")
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	out := csv.NewWriter(f)
+
+	record := make([]string, 3)
+
+	for i := range ss {
+		s := &ss[i]
+		record[0] =
+			s.summary.CurrentReleaseDate.Format(time.RFC3339)
+		record[1] =
+			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" + s.filename
+		record[2] = s.url
+		if err := out.Write(record); err != nil {
+			f.Close()
+			return err
+		}
+	}
+	out.Flush()
+	err1 := out.Error()
+	err2 := f.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
 func (w *worker) writeCSV(label string, summaries []summary) error {
 
 	// Do not sort in-place.
@@ -159,6 +209,9 @@ func (w *worker) writeIndices() error {
 
 	for label, summaries := range w.summaries {
 		log.Printf("%s: %d\n", label, len(summaries))
+		if err := w.writeInterims(label, summaries); err != nil {
+			return err
+		}
 		if err := w.writeCSV(label, summaries); err != nil {
 			return err
 		}

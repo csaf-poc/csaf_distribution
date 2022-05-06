@@ -449,6 +449,7 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 		summaries = append(summaries, summary{
 			filename: filename,
 			summary:  sum,
+			url:      file,
 		})
 
 		year := sum.InitialReleaseDate.Year()

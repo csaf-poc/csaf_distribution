@@ -10,7 +10,6 @@ package main
 
 import (
 	"encoding/csv"
-	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -19,8 +18,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 type interimJob struct {
@@ -120,44 +117,10 @@ func (p *processor) interim() error {
 	return joinErrors(errs)
 }
 
-// loadChangesFromReader scans a changes.csv file for matching
-// iterim advisories. changes.txt are sorted with youngest
+// scanForInterimFiles scans a interims.csv file for matching
+// iterim advisories. Its sorted with youngest
 // first, so we can stop scanning if entries get too old.
-func loadChangesFromReader(
-	r io.Reader,
-	accept func(time.Time, string) (bool, bool),
-) ([]string, error) {
-
-	changes := csv.NewReader(r)
-	changes.FieldsPerRecord = 2
-
-	var files []string
-
-	for {
-		record, err := changes.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		t, err := time.Parse(time.RFC3339, record[0])
-		if err != nil {
-			return nil, err
-		}
-		take, cont := accept(t, record[1])
-		if take {
-			files = append(files, record[1])
-		}
-		if !cont {
-			break
-		}
-	}
-
-	return files, nil
-}
-
-func scanForInterimFiles(base string, years int) ([]string, error) {
+func scanForInterimFiles(base string, years int) ([][2]string, error) {
 
 	var tooOld func(time.Time) bool
 
@@ -168,40 +131,38 @@ func scanForInterimFiles(base string, years int) ([]string, error) {
 		tooOld = func(t time.Time) bool { return t.Before(from) }
 	}
 
-	pe := util.NewPathEval()
-
-	accept := func(t time.Time, fname string) (bool, bool) {
-		if tooOld(t) {
-			return false, false
-		}
-
-		fn := filepath.Join(base, fname)
-		f, err := os.Open(fn)
-		if err != nil {
-			log.Printf("error: %v\n", err)
-			return false, true
-		}
-		defer f.Close()
-
-		var doc interface{}
-		if err := json.NewDecoder(f).Decode(&doc); err != nil {
-			log.Printf("error: %v\n", err)
-			return false, true
-		}
-
-		const interimExpr = `$.document.status"`
-
-		var status string
-		matches := pe.Extract(interimExpr, util.StringMatcher(&status), doc) == nil &&
-			status == "interim"
-		return matches, true
-	}
-
-	changesF, err := os.Open(filepath.Join(base, "changes.csv"))
+	interimsF, err := os.Open(filepath.Join(base, "interims.csv"))
 	if err != nil {
+		// None existing file -> no interims.
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
-	defer changesF.Close()
+	defer interimsF.Close()
 
-	return loadChangesFromReader(changesF, accept)
+	c := csv.NewReader(interimsF)
+	c.FieldsPerRecord = 3
+
+	var files [][2]string
+
+	for {
+		record, err := c.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		t, err := time.Parse(time.RFC3339, record[0])
+		if err != nil {
+			return nil, err
+		}
+		if tooOld(t) {
+			break
+		}
+		files = append(files, [2]string{record[1], record[2]})
+	}
+
+	return files, nil
 }
