@@ -33,27 +33,37 @@ type interimJob struct {
 	err      error
 }
 
-func (w *worker) checkInterims(labelPath string, interims [][2]string) error {
+func (w *worker) checkInterims(
+	tx *lazyTransaction,
+	label string,
+	interims [][2]string,
+) ([]string, error) {
 
 	var data bytes.Buffer
 
+	labelPath := filepath.Join(tx.Src(), label)
+
+	// advisories which are not interim any longer.
+	var finalized []string
+
 	for _, interim := range interims {
 
-		local, url := interim[0], interim[1]
+		local := filepath.Join(labelPath, interim[0])
+		url := interim[1]
 
 		// Load local SHA256 of the advisory
 		localHash, err := util.HashFromFile(local + ".sha256")
 		if err != nil {
-			return nil
+			return nil, nil
 		}
 
 		res, err := w.client.Get(url)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if res.StatusCode != http.StatusOK {
-			return fmt.Errorf("Fetching %s failed: Status code %d (%s)",
-				url, res.Status)
+			return nil, fmt.Errorf("fetching %s failed: Status code %d (%s)",
+				url, res.StatusCode, res.Status)
 		}
 
 		s256 := sha256.New()
@@ -66,7 +76,7 @@ func (w *worker) checkInterims(labelPath string, interims [][2]string) error {
 			tee := io.TeeReader(res.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
-			return err
+			return nil, err
 		}
 
 		remoteHash := s256.Sum(nil)
@@ -78,7 +88,7 @@ func (w *worker) checkInterims(labelPath string, interims [][2]string) error {
 
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
-			return fmt.Errorf("failed to validate %s: %v", url, err)
+			return nil, fmt.Errorf("failed to validate %s: %v", url, err)
 		}
 
 		// XXX: Should we return an error here?
@@ -88,10 +98,18 @@ func (w *worker) checkInterims(labelPath string, interims [][2]string) error {
 
 		// We need to write the changed content.
 
+		// This will start the transcation if not already started.
+		dst, err := tx.Dst()
+		if err != nil {
+			return nil, nil
+		}
+
 		// TODO: Implement me!
+
+		_ = dst
 	}
 
-	return nil
+	return finalized, nil
 }
 
 // setupProviderInterim prepares the worker for a specific provider.
@@ -110,31 +128,58 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
 	path := filepath.Join(w.cfg.Web, ".well-known", "csaf-aggregator")
 
-nextJob:
 	for j := range jobs {
 		w.setupProviderInterim(j.provider)
 
 		providerPath := filepath.Join(path, j.provider.Name)
 
-		// Try all the labels
-		for _, label := range []string{
-			csaf.TLPLabelUnlabeled,
-			csaf.TLPLabelWhite,
-			csaf.TLPLabelGreen,
-			csaf.TLPLabelAmber,
-			csaf.TLPLabelRed,
-		} {
-			label = strings.ToLower(label)
-			labelPath := filepath.Join(providerPath, label)
-			interims, err := scanForInterimFiles(labelPath, w.cfg.InterimYears)
-			if err != nil {
-				j.err = err
-				continue nextJob
+		j.err = func() error {
+			tx := newLazyTransaction(providerPath, w.cfg.Folder)
+			defer tx.rollback()
+
+			// Try all the labels
+			for _, label := range []string{
+				csaf.TLPLabelUnlabeled,
+				csaf.TLPLabelWhite,
+				csaf.TLPLabelGreen,
+				csaf.TLPLabelAmber,
+				csaf.TLPLabelRed,
+			} {
+				label = strings.ToLower(label)
+				labelPath := filepath.Join(providerPath, label)
+
+				interimsCSV := filepath.Join(labelPath, "interims.csv")
+				interims, err := readInterims(
+					interimsCSV, w.cfg.InterimYears)
+				if err != nil {
+					return err
+				}
+
+				// no interims found -> next label.
+				if len(interims) == 0 {
+					continue
+				}
+
+				// Compare locals against remotes.
+				finalized, err := w.checkInterims(tx, label, interims)
+				if err != nil {
+					return err
+				}
+
+				if len(finalized) > 0 {
+					// We want to write in the transaction folder.
+					dst, err := tx.Dst()
+					if err != nil {
+						return err
+					}
+					interimsCSV := filepath.Join(dst, label, "interims.csv")
+					if err := writeInterims(interimsCSV, finalized); err != nil {
+						return err
+					}
+				}
 			}
-			if len(interims) == 0 {
-				continue
-			}
-		}
+			return tx.commit()
+		}()
 	}
 }
 
@@ -192,10 +237,74 @@ func (p *processor) interim() error {
 	return joinErrors(errs)
 }
 
-// scanForInterimFiles scans a interims.csv file for matching
+func writeInterims(interimsCSV string, finalized []string) error {
+
+	// In case this is a longer list (unlikely).
+	removed := make(map[string]bool, len(finalized))
+	for _, f := range finalized {
+		removed[f] = true
+	}
+
+	lines, err := func() ([][]string, error) {
+		interimsF, err := os.Open(interimsCSV)
+		if err != nil {
+			return nil, err
+		}
+		defer interimsF.Close()
+		c := csv.NewReader(interimsF)
+		c.FieldsPerRecord = 3
+
+		var lines [][]string
+		for {
+			record, err := c.Read()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+			// If not finalized it survives
+			if !removed[record[1]] {
+				lines = append(lines, record)
+			}
+		}
+		return lines, nil
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	// All interims are finalized now -> remove file.
+	if len(lines) == 0 {
+		return os.RemoveAll(interimsCSV)
+	}
+
+	// Overwrite old. It's save because we are in a transaction.
+
+	f, err := os.Create(interimsCSV)
+	if err != nil {
+		return err
+	}
+	c := csv.NewWriter(f)
+
+	if err := c.WriteAll(lines); err != nil {
+		return f.Close()
+	}
+
+	c.Flush()
+	err1 := c.Error()
+	err2 := f.Close()
+	if err1 != nil {
+		return err1
+	}
+	return err2
+}
+
+// readInterims scans a interims.csv file for matching
 // iterim advisories. Its sorted with youngest
 // first, so we can stop scanning if entries get too old.
-func scanForInterimFiles(base string, years int) ([][2]string, error) {
+func readInterims(interimsCSV string, years int) ([][2]string, error) {
 
 	var tooOld func(time.Time) bool
 
@@ -206,7 +315,7 @@ func scanForInterimFiles(base string, years int) ([][2]string, error) {
 		tooOld = func(t time.Time) bool { return t.Before(from) }
 	}
 
-	interimsF, err := os.Open(filepath.Join(base, "interims.csv"))
+	interimsF, err := os.Open(interimsCSV)
 	if err != nil {
 		// None existing file -> no interims.
 		if os.IsNotExist(err) {
