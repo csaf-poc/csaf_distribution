@@ -11,15 +11,12 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -28,12 +25,6 @@ import (
 
 type processor struct {
 	cfg *config
-}
-
-type job struct {
-	provider           *provider
-	aggregatorProvider *csaf.AggregatorCSAFProvider
-	err                error
 }
 
 type summary struct {
@@ -83,54 +74,12 @@ func (w *worker) createDir() (string, error) {
 	return dir, err
 }
 
-// setup fetches the provider-metadate.json for a specific provider.
-func (w *worker) setupProvider(provider *provider) error {
-	log.Printf("worker #%d: %s (%s)\n",
-		w.num, provider.Name, provider.Domain)
-
-	w.dir = ""
-	w.provider = provider
-
-	// Each job needs a separate client.
-	w.client = w.cfg.httpClient(provider)
-
-	// We need the provider metadata in all cases.
-	if err := w.locateProviderMetadata(provider.Domain); err != nil {
-		return err
+// httpsDomain prefixes a domain with 'https://'.
+func httpsDomain(domain string) string {
+	if strings.HasPrefix(domain, "https://") {
+		return domain
 	}
-
-	// Validate the provider metadata.
-	errors, err := csaf.ValidateProviderMetadata(w.metadataProvider)
-	if err != nil {
-		return err
-	}
-	if len(errors) > 0 {
-		return fmt.Errorf(
-			"provider-metadata.json has %d validation issues", len(errors))
-	}
-
-	log.Printf("provider-metadata: %s\n", w.loc)
-	return nil
-}
-
-// workFunc implements the actual work (mirror/list).
-type workFunc func(*worker) (*csaf.AggregatorCSAFProvider, error)
-
-// work handles the treatment of providers concurrently.
-func (w *worker) work(
-	wg *sync.WaitGroup,
-	doWork workFunc,
-	jobs <-chan *job,
-) {
-	defer wg.Done()
-
-	for j := range jobs {
-		if err := w.setupProvider(j.provider); err != nil {
-			j.err = err
-			continue
-		}
-		j.aggregatorProvider, j.err = doWork(w)
-	}
+	return "https://" + domain
 }
 
 var providerMetadataLocations = [...]string{
@@ -138,14 +87,6 @@ var providerMetadataLocations = [...]string{
 	"security/data/csaf",
 	"advisories/csaf",
 	"security/csaf",
-}
-
-// httpsDomain prefixes a domain with 'https://'.
-func httpsDomain(domain string) string {
-	if strings.HasPrefix(domain, "https://") {
-		return domain
-	}
-	return "https://" + domain
 }
 
 func (w *worker) locateProviderMetadata(domain string) error {
@@ -288,104 +229,6 @@ func (p *processor) removeOrphans() error {
 	}
 
 	return nil
-}
-
-// interim performs the short interim check/update.
-func (p *processor) interim() error {
-	return errors.New("not implemented, yet")
-}
-
-// full performs the complete lister/download
-func (p *processor) full() error {
-	var wg sync.WaitGroup
-
-	queue := make(chan *job)
-
-	var doWork workFunc
-
-	mirror := p.cfg.runAsMirror()
-
-	if mirror {
-		doWork = (*worker).mirror
-		log.Println("Running in aggregator mode")
-	} else {
-		doWork = (*worker).lister
-		log.Println("Running in lister mode")
-	}
-
-	log.Printf("Starting %d workers.\n", p.cfg.Workers)
-	for i := 1; i <= p.cfg.Workers; i++ {
-		wg.Add(1)
-		w := newWorker(i, p.cfg)
-		go w.work(&wg, doWork, queue)
-	}
-
-	jobs := make([]job, len(p.cfg.Providers))
-
-	for i, p := range p.cfg.Providers {
-		jobs[i] = job{provider: p}
-		queue <- &jobs[i]
-	}
-	close(queue)
-
-	wg.Wait()
-
-	// Assemble aggregator data structure.
-
-	csafProviders := make([]*csaf.AggregatorCSAFProvider, 0, len(jobs))
-
-	for i := range jobs {
-		j := &jobs[i]
-		if j.err != nil {
-			log.Printf("error: '%s' failed: %v\n", j.provider.Name, j.err)
-			continue
-		}
-		if j.aggregatorProvider == nil {
-			log.Printf(
-				"error: '%s' does not produce any result.\n", j.provider.Name)
-			continue
-		}
-		csafProviders = append(csafProviders, j.aggregatorProvider)
-	}
-
-	if len(csafProviders) == 0 {
-		return errors.New("all jobs failed, stopping")
-	}
-
-	version := csaf.AggregatorVersion20
-	canonicalURL := csaf.AggregatorURL(
-		p.cfg.Domain + "/.well-known/csaf-aggregator/aggregator.json")
-
-	lastUpdated := csaf.TimeStamp(time.Now())
-
-	agg := csaf.Aggregator{
-		Aggregator:    &p.cfg.Aggregator,
-		Version:       &version,
-		CanonicalURL:  &canonicalURL,
-		CSAFProviders: csafProviders,
-		LastUpdated:   &lastUpdated,
-	}
-
-	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
-
-	dstName := filepath.Join(web, "aggregator.json")
-
-	fname, file, err := util.MakeUniqFile(dstName + ".tmp")
-	if err != nil {
-		return err
-	}
-
-	if _, err := agg.WriteTo(file); err != nil {
-		file.Close()
-		os.RemoveAll(fname)
-		return err
-	}
-
-	if err := file.Close(); err != nil {
-		return err
-	}
-
-	return os.Rename(fname, dstName)
 }
 
 // process is the main driver of the jobs handled by work.

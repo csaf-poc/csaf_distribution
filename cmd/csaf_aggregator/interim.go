@@ -11,6 +11,7 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -19,6 +20,11 @@ import (
 
 	"github.com/csaf-poc/csaf_distribution/util"
 )
+
+// interim performs the short interim check/update.
+func (p *processor) interim() error {
+	return errors.New("not implemented, yet")
+}
 
 // loadChangesFromReader scans a changes.csv file for matching
 // iterim advisories. changes.txt are sorted with youngest
