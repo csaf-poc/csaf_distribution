@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -139,6 +140,14 @@ var providerMetadataLocations = [...]string{
 	"security/csaf",
 }
 
+// httpsDomain prefixes a domain with 'https://'.
+func httpsDomain(domain string) string {
+	if strings.HasPrefix(domain, "https://") {
+		return domain
+	}
+	return "https://" + domain
+}
+
 func (w *worker) locateProviderMetadata(domain string) error {
 
 	w.metadataProvider = nil
@@ -152,7 +161,7 @@ func (w *worker) locateProviderMetadata(domain string) error {
 	}
 
 	for _, loc := range providerMetadataLocations {
-		url := "https://" + domain + "/" + loc
+		url := httpsDomain(domain) + "/" + loc
 		if err := downloadJSON(w.client, url, download); err != nil {
 			if err == errNotFound {
 				continue
@@ -167,7 +176,7 @@ func (w *worker) locateProviderMetadata(domain string) error {
 
 	// Read from security.txt
 
-	path := "https://" + domain + "/.well-known/security.txt"
+	path := httpsDomain(domain) + "/.well-known/security.txt"
 	res, err := w.client.Get(path)
 	if err != nil {
 		return err
