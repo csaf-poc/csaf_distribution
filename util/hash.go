@@ -11,6 +11,8 @@ package util
 import (
 	"bufio"
 	"encoding/hex"
+	"fmt"
+	"hash"
 	"io"
 	"os"
 	"regexp"
@@ -37,4 +39,28 @@ func HashFromFile(fname string) ([]byte, error) {
 	}
 	defer f.Close()
 	return HashFromReader(f)
+}
+
+// WriteHashToFile writes a hash of data to file fname.
+func WriteHashToFile(fname, name string, h hash.Hash, data []byte) error {
+	if _, err := h.Write(data); err != nil {
+		return err
+	}
+
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(f, "%x %s\n", h.Sum(nil), name)
+	return f.Close()
+}
+
+// WriteHashSumToFile writes a hash sum to file fname.
+func WriteHashSumToFile(fname, name string, sum []byte) error {
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(f, "%x %s\n", sum, name)
+	return f.Close()
 }

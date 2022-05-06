@@ -11,6 +11,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
@@ -101,12 +102,33 @@ func (w *worker) checkInterims(
 		// This will start the transcation if not already started.
 		dst, err := tx.Dst()
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 
-		// TODO: Implement me!
+		// Overwrite in the cloned folder.
+		nlocal := filepath.Join(dst, label, interim[0])
 
-		_ = dst
+		bytes := data.Bytes()
+
+		if err := os.WriteFile(nlocal, bytes, 0644); err != nil {
+			return nil, err
+		}
+
+		name := filepath.Base(nlocal)
+
+		if err := util.WriteHashToFile(
+			nlocal+".sha512", name, sha512.New(), bytes,
+		); err != nil {
+			return nil, err
+		}
+		if err := util.WriteHashSumToFile(
+			nlocal+".sha256", name, remoteHash,
+		); err != nil {
+			return nil, err
+		}
+
+		// TODO: Implement signing
+
 	}
 
 	return finalized, nil
