@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-package main
+package util
 
 import (
 	"bufio"
@@ -17,7 +17,8 @@ import (
 
 var hexRe = regexp.MustCompile(`^([[:xdigit:]]+)`)
 
-func hashFromReader(r io.Reader) ([]byte, error) {
+// HashFromReader reads a base 16 coded hash sum from a reader.
+func HashFromReader(r io.Reader) ([]byte, error) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		if m := hexRe.FindStringSubmatch(scanner.Text()); m != nil {

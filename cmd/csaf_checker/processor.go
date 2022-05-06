@@ -376,7 +376,7 @@ func (p *processor) integrity(
 			}
 			h, err := func() ([]byte, error) {
 				defer res.Body.Close()
-				return hashFromReader(res.Body)
+				return util.HashFromReader(res.Body)
 			}()
 			if err != nil {
 				p.badIntegrities.add("Reading %s failed: %v.", hashFile, err)
