@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"encoding/hex"
 	"io"
+	"os"
 	"regexp"
 )
 
@@ -26,4 +27,14 @@ func HashFromReader(r io.Reader) ([]byte, error) {
 		}
 	}
 	return nil, scanner.Err()
+}
+
+// HashFromFile reads a base 16 coded hash sum from a file.
+func HashFromFile(fname string) ([]byte, error) {
+	f, err := os.Open(fname)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return HashFromReader(f)
 }

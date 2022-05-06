@@ -27,8 +27,8 @@ type fullJob struct {
 	err                error
 }
 
-// setup fetches the provider-metadate.json for a specific provider.
-func (w *worker) setupProvider(provider *provider) error {
+// setupProviderFull fetches the provider-metadate.json for a specific provider.
+func (w *worker) setupProviderFull(provider *provider) error {
 	log.Printf("worker #%d: %s (%s)\n",
 		w.num, provider.Name, provider.Domain)
 
@@ -69,7 +69,7 @@ func (w *worker) fullWork(
 	defer wg.Done()
 
 	for j := range jobs {
-		if err := w.setupProvider(j.provider); err != nil {
+		if err := w.setupProviderFull(j.provider); err != nil {
 			j.err = err
 			continue
 		}

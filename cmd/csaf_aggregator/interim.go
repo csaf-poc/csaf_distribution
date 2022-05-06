@@ -9,15 +9,23 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
 type interimJob struct {
@@ -25,36 +33,108 @@ type interimJob struct {
 	err      error
 }
 
-var errNothingToDo = errors.New("nothing to do")
+func (w *worker) checkInterims(labelPath string, interims [][2]string) error {
+
+	var data bytes.Buffer
+
+	for _, interim := range interims {
+
+		local, url := interim[0], interim[1]
+
+		// Load local SHA256 of the advisory
+		localHash, err := util.HashFromFile(local + ".sha256")
+		if err != nil {
+			return nil
+		}
+
+		res, err := w.client.Get(url)
+		if err != nil {
+			return err
+		}
+		if res.StatusCode != http.StatusOK {
+			return fmt.Errorf("Fetching %s failed: Status code %d (%s)",
+				url, res.Status)
+		}
+
+		s256 := sha256.New()
+		data.Reset()
+		hasher := io.MultiWriter(s256, &data)
+
+		var doc interface{}
+		if err := func() error {
+			defer res.Body.Close()
+			tee := io.TeeReader(res.Body, hasher)
+			return json.NewDecoder(tee).Decode(&doc)
+		}(); err != nil {
+			return err
+		}
+
+		remoteHash := s256.Sum(nil)
+
+		// If the hashes are equal then we can ignore this advisory.
+		if bytes.Equal(localHash, remoteHash) {
+			continue
+		}
+
+		errors, err := csaf.ValidateCSAF(doc)
+		if err != nil {
+			return fmt.Errorf("failed to validate %s: %v", url, err)
+		}
+
+		// XXX: Should we return an error here?
+		for _, e := range errors {
+			log.Printf("validation error: %s: %v\n", url, e)
+		}
+
+		// We need to write the changed content.
+
+		// TODO: Implement me!
+	}
+
+	return nil
+}
+
+// setupProviderInterim prepares the worker for a specific provider.
+func (w *worker) setupProviderInterim(provider *provider) {
+	log.Printf("worker #%d: %s (%s)\n",
+		w.num, provider.Name, provider.Domain)
+
+	w.dir = ""
+	w.provider = provider
+
+	// Each job needs a separate client.
+	w.client = w.cfg.httpClient(provider)
+}
 
 func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
 	path := filepath.Join(w.cfg.Web, ".well-known", "csaf-aggregator")
 
+nextJob:
 	for j := range jobs {
+		w.setupProviderInterim(j.provider)
 
 		providerPath := filepath.Join(path, j.provider.Name)
 
-		files, err := scanForInterimFiles(
-			providerPath, w.cfg.InterimYears)
-		if err != nil {
-			j.err = err
-			continue
+		// Try all the labels
+		for _, label := range []string{
+			csaf.TLPLabelUnlabeled,
+			csaf.TLPLabelWhite,
+			csaf.TLPLabelGreen,
+			csaf.TLPLabelAmber,
+			csaf.TLPLabelRed,
+		} {
+			label = strings.ToLower(label)
+			labelPath := filepath.Join(providerPath, label)
+			interims, err := scanForInterimFiles(labelPath, w.cfg.InterimYears)
+			if err != nil {
+				j.err = err
+				continue nextJob
+			}
+			if len(interims) == 0 {
+				continue
+			}
 		}
-
-		// If we don't have interim files, we have nothing to do.
-		if len(files) == 0 {
-			j.err = errNothingToDo
-			continue
-		}
-
-		if err := w.locateProviderMetadata(j.provider.Domain); err != nil {
-			j.err = err
-			continue
-		}
-
-		// TODO: Implement me!
-		j.err = errors.New("not implemented, yet")
 	}
 }
 
@@ -105,12 +185,7 @@ func (p *processor) interim() error {
 
 	for i := range jobs {
 		if err := jobs[i].err; err != nil {
-			if err != errNothingToDo {
-				errs = append(errs, err)
-				continue
-			}
-			log.Printf("Nothing to do for provider %s\n",
-				jobs[i].provider.Name)
+			errs = append(errs, err)
 		}
 	}
 
