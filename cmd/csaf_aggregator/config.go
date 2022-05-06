@@ -60,6 +60,10 @@ type config struct {
 	// Interim performs an interim scan.
 	Interim bool `toml:"interim"`
 
+	// InterimYears is numbers numbers of years to look back
+	// for interim advisories. Less/equal zero means forever.
+	InterimYears int `toml:"interim_years"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error

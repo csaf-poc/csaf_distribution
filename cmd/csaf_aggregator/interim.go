@@ -32,7 +32,22 @@ var errNothingToDo = errors.New("nothing to do")
 
 func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
+	path := filepath.Join(w.cfg.Web, ".well-known", "csaf-aggregator")
+
 	for j := range jobs {
+
+		providerPath := filepath.Join(path, j.provider.Name)
+
+		files, err := scanForInterimFiles(
+			providerPath, w.cfg.InterimYears)
+		if err != nil {
+			j.err = err
+			continue
+		}
+		if len(files) == 0 {
+			j.err = errNothingToDo
+		}
+
 		// TODO: Implement me!
 		j.err = errors.New("not implemented, yet")
 	}
@@ -136,16 +151,19 @@ func loadChangesFromReader(
 
 func scanForInterimFiles(base string, years int) ([]string, error) {
 
-	if years == 0 {
-		years = 10_000
-	}
+	var tooOld func(time.Time) bool
 
-	from := time.Now().AddDate(-years, 0, 0)
+	if years <= 0 {
+		tooOld = func(time.Time) bool { return false }
+	} else {
+		from := time.Now().AddDate(-years, 0, 0)
+		tooOld = func(t time.Time) bool { return t.Before(from) }
+	}
 
 	pe := util.NewPathEval()
 
 	accept := func(t time.Time, fname string) (bool, bool) {
-		if t.Before(from) {
+		if tooOld(t) {
 			return false, false
 		}
 
