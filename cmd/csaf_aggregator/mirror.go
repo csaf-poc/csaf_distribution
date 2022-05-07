@@ -476,25 +476,33 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 
 		// Try to fetch signature file.
 		sigURL := file + ".asc"
-		sig, err := w.downloadSignature(sigURL)
-
-		if err != nil {
-			if err != errNotFound {
-				log.Printf("error: %s: %v\n", sigURL, err)
-			}
-			// Sign it our self.
-			if sig, err = w.sign(data); err != nil {
-				return err
-			}
-		}
-
-		if sig != "" {
-			if err := os.WriteFile(fname+".asc", []byte(sig), 0644); err != nil {
-				return err
-			}
+		ascFile := fname + ".asc"
+		if err := w.downloadSignatureOrSign(sigURL, ascFile, data); err != nil {
+			return err
 		}
 	}
 	w.summaries[label] = summaries
 
 	return nil
+}
+
+// downloadSignatureOrSign first tries to download a signature.
+// If this fails it creates a signature itself with the configured key.
+func (w *worker) downloadSignatureOrSign(url, fname string, data []byte) error {
+	sig, err := w.downloadSignature(url)
+
+	if err != nil {
+		if err != errNotFound {
+			log.Printf("error: %s: %v\n", url, err)
+		}
+		// Sign it our self.
+		if sig, err = w.sign(data); err != nil {
+			return err
+		}
+	}
+
+	if sig != "" {
+		err = os.WriteFile(fname, []byte(sig), 0644)
+	}
+	return err
 }

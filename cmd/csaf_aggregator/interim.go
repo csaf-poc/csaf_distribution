@@ -127,8 +127,14 @@ func (w *worker) checkInterims(
 			return nil, err
 		}
 
-		// TODO: Implement signing
+		// Download the signature
+		sigURL := url + ".asc"
+		ascFile := nlocal + ".asc"
 
+		// Download the signature or sign it our self.
+		if err := w.downloadSignatureOrSign(sigURL, ascFile, bytes); err != nil {
+			return nil, err
+		}
 	}
 
 	return finalized, nil
