@@ -231,6 +231,14 @@ func (w *worker) writeProviderMetadata() error {
 		log.Printf("extracting data from orignal provider failed: %v\n", err)
 	}
 
+	key, err := w.cfg.cryptoKey()
+	if err != nil {
+		log.Printf("error: %v\n", err)
+	}
+	if key != nil {
+		pm.SetPGP(key.GetFingerprint(), w.cfg.GetOpenPGPURL(key))
+	}
+
 	la := csaf.TimeStamp(lastUpdate)
 	pm.LastUpdated = &la
 

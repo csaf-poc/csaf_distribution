@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 
 	"github.com/BurntSushi/toml"
@@ -29,6 +30,7 @@ const (
 	defaultFolder     = "/var/www"
 	defaultWeb        = "/var/www/html"
 	defaultDomain     = "https://example.com"
+	defaultOpenPGPURL = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}" // Default OpenPGP URL.
 )
 
 type provider struct {
@@ -51,6 +53,7 @@ type config struct {
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
 	Providers           []*provider         `toml:"providers"`
 	Key                 string              `toml:"key"`
+	OpenPGPURL          string              `toml:"openpgp_url"`
 	Passphrase          *string             `toml:"passphrase"`
 	AllowSingleProvider bool                `toml:"allow_single_provider"`
 
@@ -73,6 +76,15 @@ type config struct {
 func (c *config) runAsMirror() bool {
 	return c.Aggregator.Category != nil &&
 		*c.Aggregator.Category == csaf.AggregatorAggregator
+}
+
+func (c *config) GetOpenPGPURL(key *crypto.Key) string {
+	if key == nil {
+		return c.OpenPGPURL
+	}
+	return strings.NewReplacer(
+		"${FINGERPRINT}", "0x"+key.GetFingerprint(),
+		"${KEY_ID}", "0x"+key.GetHexKeyID()).Replace(c.OpenPGPURL)
 }
 
 func (c *config) cryptoKey() (*crypto.Key, error) {
@@ -154,6 +166,10 @@ func (c *config) setDefaults() {
 
 	if c.Domain == "" {
 		c.Domain = defaultDomain
+	}
+
+	if c.OpenPGPURL == "" {
+		c.OpenPGPURL = defaultOpenPGPURL
 	}
 
 	if c.Workers <= 0 {
