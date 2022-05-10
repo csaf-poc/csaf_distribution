@@ -22,7 +22,7 @@ const (
 	currentReleaseDateExpr = `$.document.tracking.current_release_date`
 	tlpLabelExpr           = `$.document.distribution.tlp.label`
 	summaryExpr            = `$.document.notes[? @.category=="summary" || @.type=="summary"].text`
-	statusExpr             = `$.document.status`
+	statusExpr             = `$.document.tracking.status`
 )
 
 // AdvisorySummary is a summary of some essentials of an CSAF advisory.
