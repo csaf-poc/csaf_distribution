@@ -124,17 +124,17 @@ func (pe *PathEval) Extract(
 	optional bool,
 	doc interface{},
 ) error {
-	x, err := pe.Eval(expr, doc)
-	if err != nil {
-		if optional {
+	optErr := func(err error) error {
+		if err == nil || optional {
 			return nil
 		}
 		return fmt.Errorf("extract failed '%s': %v", expr, err)
 	}
-	if err = action(x); err != nil {
-		err = fmt.Errorf("extract failed '%s': %v", expr, err)
+	x, err := pe.Eval(expr, doc)
+	if err != nil {
+		return optErr(err)
 	}
-	return err
+	return optErr(action(x))
 }
 
 // Match matches a list of PathEvalMatcher pairs against a document.
