@@ -123,7 +123,8 @@ func (pe *PathEval) Extract(
 ) error {
 	x, err := pe.Eval(expr, doc)
 	if err != nil {
-		return err
+		// XXX: This is hacky.
+		return nil
 	}
 	if err = action(x); err != nil {
 		err = fmt.Errorf("extract failed: %s: %v", expr, err)
