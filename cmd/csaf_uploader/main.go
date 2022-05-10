@@ -290,9 +290,8 @@ func (p *processor) process(filename string) error {
 
 	var uploadErr error
 	if resp.StatusCode != http.StatusOK {
-		s := fmt.Sprintf("upload failed: %s", resp.Status)
-		fmt.Printf("HTTPS %s\n", s)
-		uploadErr = errors.New(s)
+		uploadErr := fmt.Errorf("upload failed: %s", resp.Status)
+		fmt.Printf("HTTPS %s\n", uploadErr)
 	}
 
 	var result struct {
