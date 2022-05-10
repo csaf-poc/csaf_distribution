@@ -266,11 +266,14 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				Type: "application/json",
 				Src:  csafURL,
 			}
-			if ex.Summary != "" {
-				e.Summary = &csaf.Summary{Content: ex.Summary}
-			} else {
-				e.Summary = nil
-			}
+			e.Summary = nil
+			/*
+				if ex.Summary != "" {
+					e.Summary = &csaf.Summary{Content: ex.Summary}
+				} else {
+					e.Summary = nil
+				}
+			*/
 
 			// Sort by descending updated order.
 			rolie.SortEntriesByUpdated()
