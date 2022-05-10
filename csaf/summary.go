@@ -51,8 +51,8 @@ func NewAdvisorySummary(
 		{Expr: titleExpr, Action: util.StringMatcher(&e.Title)},
 		{Expr: currentReleaseDateExpr, Action: util.TimeMatcher(&e.CurrentReleaseDate, time.RFC3339)},
 		{Expr: initialReleaseDateExpr, Action: util.TimeMatcher(&e.InitialReleaseDate, time.RFC3339)},
-		{Expr: summaryExpr, Action: util.StringMatcher(&e.Summary)},
-		{Expr: tlpLabelExpr, Action: util.StringMatcher(&e.TLPLabel)},
+		{Expr: summaryExpr, Action: util.StringMatcher(&e.Summary), Optional: true},
+		{Expr: tlpLabelExpr, Action: util.StringMatcher(&e.TLPLabel), Optional: true},
 		{Expr: publisherExpr, Action: util.ReMarshalMatcher(e.Publisher)},
 	}, doc); err != nil {
 		return nil, err
