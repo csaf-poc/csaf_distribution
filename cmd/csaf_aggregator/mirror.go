@@ -101,7 +101,7 @@ func (w *worker) mirrorAllowed() bool {
 	var b bool
 	return w.expr.Extract(
 		`$.mirror_on_CSAF_aggregators`,
-		util.BoolMatcher(&b), w.metadataProvider) == nil && b
+		util.BoolMatcher(&b), false, w.metadataProvider) == nil && b
 }
 
 func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {

@@ -66,6 +66,8 @@ type PathEvalMatcher struct {
 	Expr string
 	// Action is executed with the result of the match.
 	Action func(interface{}) error
+	// Optional expresses if the expression is optional.
+	Optional bool
 }
 
 // ReMarshalMatcher is an action to re-marshal the result to another type.
@@ -115,19 +117,22 @@ func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
 	}
 }
 
-// Extract matches a expr/action pair against a document.
+// Extract extracts a value from a given document with a given expression/action.
 func (pe *PathEval) Extract(
 	expr string,
 	action func(interface{}) error,
+	optional bool,
 	doc interface{},
 ) error {
 	x, err := pe.Eval(expr, doc)
 	if err != nil {
-		// XXX: This is hacky.
-		return nil
+		if optional {
+			return nil
+		}
+		return fmt.Errorf("extract failed '%s': %v", expr, err)
 	}
 	if err = action(x); err != nil {
-		err = fmt.Errorf("extract failed: %s: %v", expr, err)
+		err = fmt.Errorf("extract failed '%s': %v", expr, err)
 	}
 	return err
 }
@@ -135,7 +140,7 @@ func (pe *PathEval) Extract(
 // Match matches a list of PathEvalMatcher pairs against a document.
 func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
 	for _, m := range matcher {
-		if err := pe.Extract(m.Expr, m.Action, doc); err != nil {
+		if err := pe.Extract(m.Expr, m.Action, m.Optional, doc); err != nil {
 			return err
 		}
 	}

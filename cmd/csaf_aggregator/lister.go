@@ -20,7 +20,7 @@ func (w *worker) listAllowed() bool {
 	var b bool
 	return w.expr.Extract(
 		`$.list_on_CSAF_aggregators`,
-		util.BoolMatcher(&b), w.metadataProvider) == nil && b
+		util.BoolMatcher(&b), false, w.metadataProvider) == nil && b
 }
 
 func (w *worker) lister() (*csaf.AggregatorCSAFProvider, error) {
