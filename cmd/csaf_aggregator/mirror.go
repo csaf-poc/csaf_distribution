@@ -224,7 +224,7 @@ func (w *worker) writeProviderMetadata() error {
 
 	if err := w.expr.Match([]util.PathEvalMatcher{
 		{Expr: `$.publisher`, Action: util.ReMarshalMatcher(pm.Publisher)},
-		{Expr: `$.last_update`, Action: util.TimeMatcher(&lastUpdate, time.RFC3339)},
+		{Expr: `$.last_updated`, Action: util.TimeMatcher(&lastUpdate, time.RFC3339)},
 		{Expr: `$.public_openpgp_keys`, Action: util.ReMarshalMatcher(&pm.PGPKeys)},
 	}, w.metadataProvider); err != nil {
 		// only log the errors
