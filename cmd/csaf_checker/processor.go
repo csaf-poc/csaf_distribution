@@ -376,7 +376,7 @@ func (p *processor) integrity(
 			}
 			h, err := func() ([]byte, error) {
 				defer res.Body.Close()
-				return hashFromReader(res.Body)
+				return util.HashFromReader(res.Body)
 			}()
 			if err != nil {
 				p.badIntegrities.add("Reading %s failed: %v.", hashFile, err)
@@ -461,7 +461,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		p.badProviderMetadata.add("Loading ROLIE feed failed: %v.", err)
 		return errContinue
 	}
-	base, err := basePath(feed)
+	base, err := util.BaseURL(feed)
 	if err != nil {
 		p.badProviderMetadata.add("Bad base path: %v", err)
 		return errContinue
@@ -639,7 +639,7 @@ func (p *processor) checkCSAFs(domain string) error {
 	}
 
 	// No rolie feeds
-	base, err := basePath(p.pmdURL)
+	base, err := util.BaseURL(p.pmdURL)
 	if err != nil {
 		return err
 	}
@@ -745,12 +745,12 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return err
+		return nil
 	}
 
 	loc, err := func() (string, error) {
 		defer res.Body.Close()
-		return extractProviderURL(res.Body)
+		return p.extractProviderURL(res.Body)
 	}()
 
 	if err != nil {
@@ -767,24 +767,24 @@ func (p *processor) locateProviderMetadata(
 	return err
 }
 
-func extractProviderURL(r io.Reader) (string, error) {
-	sc := bufio.NewScanner(r)
-	const csaf = "CSAF:"
-
-	for sc.Scan() {
-		line := sc.Text()
-		if strings.HasPrefix(line, csaf) {
-			line = strings.TrimSpace(line[len(csaf):])
-			if !strings.HasPrefix(line, "https://") {
-				return "", errors.New("CSAF: found in security.txt, but does not start with https://")
-			}
-			return line, nil
-		}
-	}
-	if err := sc.Err(); err != nil {
+func (p *processor) extractProviderURL(r io.Reader) (string, error) {
+	urls, err := csaf.ExtractProviderURL(r, true)
+	if err != nil {
 		return "", err
 	}
-	return "", nil
+	if len(urls) == 0 {
+		return "", errors.New("No provider-metadata.json found")
+	}
+
+	if len(urls) > 1 {
+		p.badSecurity.use()
+		p.badSecurity.add("Found %d CSAF entries in security.txt", len(urls))
+	}
+	if !strings.HasPrefix(urls[0], "https://") {
+		p.badSecurity.use()
+		p.badSecurity.add("CSAF URL does not start with https://: %s", urls[0])
+	}
+	return urls[0], nil
 }
 
 // checkProviderMetadata checks provider-metadata.json. If it exists,

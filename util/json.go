@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/PaesslerAG/gval"
@@ -76,6 +77,18 @@ func ReMarshalMatcher(dst interface{}) func(interface{}) error {
 	}
 }
 
+// BoolMatcher stores the matched result in a bool.
+func BoolMatcher(dst *bool) func(interface{}) error {
+	return func(x interface{}) error {
+		b, ok := x.(bool)
+		if !ok {
+			return errors.New("not a bool")
+		}
+		*dst = b
+		return nil
+	}
+}
+
 // StringMatcher stores the matched result in a string.
 func StringMatcher(dst *string) func(interface{}) error {
 	return func(x interface{}) error {
@@ -111,14 +124,17 @@ func (pe *PathEval) Extract(
 	optional bool,
 	doc interface{},
 ) error {
-	x, err := pe.Eval(expr, doc)
-	if err != nil {
-		if optional {
+	optErr := func(err error) error {
+		if err == nil || optional {
 			return nil
 		}
-		return err
+		return fmt.Errorf("extract failed '%s': %v", expr, err)
 	}
-	return action(x)
+	x, err := pe.Eval(expr, doc)
+	if err != nil {
+		return optErr(err)
+	}
+	return optErr(action(x))
 }
 
 // Match matches a list of PathEvalMatcher pairs against a document.

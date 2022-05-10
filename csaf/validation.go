@@ -33,9 +33,13 @@ var cvss31 []byte
 //go:embed schema/provider_json_schema.json
 var providerSchema []byte
 
+//go:embed schema/aggregator_json_schema.json
+var aggregatorSchema []byte
+
 var (
-	compiledCSAFSchema     compiledSchema
-	compiledProviderSchema compiledSchema
+	compiledCSAFSchema       compiledSchema
+	compiledProviderSchema   compiledSchema
+	compiledAggregatorSchema compiledSchema
 )
 
 func init() {
@@ -46,6 +50,11 @@ func init() {
 		{"https://www.first.org/cvss/cvss-v3.1.json", cvss31},
 	})
 	compiledProviderSchema.compiler([]schemaData{
+		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
+		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
+	})
+	compiledAggregatorSchema.compiler([]schemaData{
+		{"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json", aggregatorSchema},
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
 	})
@@ -145,4 +154,10 @@ func ValidateCSAF(doc interface{}) ([]string, error) {
 // of provider metadata.
 func ValidateProviderMetadata(doc interface{}) ([]string, error) {
 	return compiledProviderSchema.validate(doc)
+}
+
+// ValidateAggregator validates the document doc against the JSON schema
+// of aggregator.
+func ValidateAggregator(doc interface{}) ([]string, error) {
+	return compiledAggregatorSchema.validate(doc)
 }

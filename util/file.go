@@ -13,9 +13,34 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
+
+var (
+	twoOrMoreDots = regexp.MustCompile(`\.{2,}`)
+	stripSlashes  = strings.NewReplacer(`/`, ``, `\`, ``)
+)
+
+// CleanFileName removes the "/" "\" charachters and replace the two or more
+// occurences of "." with only one from the passed string.
+func CleanFileName(s string) string {
+	return twoOrMoreDots.ReplaceAllString(stripSlashes.Replace(s), `.`)
+}
+
+// PathExists returns true if path exits.
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		err = nil
+	}
+	return false, err
+}
 
 // NWriter is an io.Writer counting the bytes copied through it.
 type NWriter struct {

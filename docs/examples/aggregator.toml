@@ -1,0 +1,33 @@
+workers = 2
+folder = "/var/csaf-aggregator"
+web = "/var/csaf-aggregator/html"
+domain = "https://localhost:9443"
+rate = 10.0
+insecure = true
+[aggregator]
+  category = "aggregator"
+  name = "Example Development CSAF Aggregator"
+  contact_details = "some @ somewhere"
+  issuing_authority = "This service is provided as it is. It is gratis for everybody."
+  namespace = "Testnamespace"
+
+[[providers]]
+  name = "local-dev-provider"
+  domain = "localhost"
+#  rate = 1.5
+#  insecure = true
+
+[[providers]]
+  name = "local-dev-provider2"
+  domain = "localhost"
+#  rate = 1.2
+#  insecure = true
+
+#key =
+#passphrase =
+
+# for testing, the specifiation requires at least two
+# allow_single_provider = true
+
+
+

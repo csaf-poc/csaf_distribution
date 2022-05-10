@@ -22,6 +22,7 @@ const (
 	currentReleaseDateExpr = `$.document.tracking.current_release_date`
 	tlpLabelExpr           = `$.document.distribution.tlp.label`
 	summaryExpr            = `$.document.notes[? @.category=="summary" || @.type=="summary"].text`
+	statusExpr             = `$.document.tracking.status`
 )
 
 // AdvisorySummary is a summary of some essentials of an CSAF advisory.
@@ -33,6 +34,7 @@ type AdvisorySummary struct {
 	CurrentReleaseDate time.Time
 	Summary            string
 	TLPLabel           string
+	Status             string
 }
 
 // NewAdvisorySummary creates a summary from an advisory doc
@@ -54,6 +56,7 @@ func NewAdvisorySummary(
 		{Expr: summaryExpr, Action: util.StringMatcher(&e.Summary), Optional: true},
 		{Expr: tlpLabelExpr, Action: util.StringMatcher(&e.TLPLabel), Optional: true},
 		{Expr: publisherExpr, Action: util.ReMarshalMatcher(e.Publisher)},
+		{Expr: statusExpr, Action: util.StringMatcher(&e.Status)},
 	}, doc); err != nil {
 		return nil, err
 	}
