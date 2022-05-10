@@ -13,11 +13,16 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          path: ../..
 
       - name: Execute the scripts
         run: |
+          pwd
+          ls -al
           sudo apt install -y make nginx fcgiwrap gnutls-bin
           cd ~
+          ls -al
           cd csaf_distribution/docs/scripts/
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
