@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/PaesslerAG/gval"
@@ -124,7 +125,10 @@ func (pe *PathEval) Extract(
 	if err != nil {
 		return err
 	}
-	return action(x)
+	if err = action(x); err != nil {
+		err = fmt.Errorf("extract failed: %s: %v", expr, err)
+	}
+	return err
 }
 
 // Match matches a list of PathEvalMatcher pairs against a document.
