@@ -31,8 +31,8 @@ type AdvisorySummary struct {
 	Publisher          *Publisher
 	InitialReleaseDate time.Time
 	CurrentReleaseDate time.Time
-	// Summary            string
 	TLPLabel           string
+	// Summary            string
 }
 
 // NewAdvisorySummary creates a summary from an advisory doc
