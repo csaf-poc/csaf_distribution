@@ -1,8 +1,10 @@
 # csaf_distribution
 
-**WIP**: A proof of concept for a CSAF trusted provider, checker and aggregator.
+A proof of concept implementation of
+an CSAF 2.0 trusted provider, checker and aggregator.
+Includes an uploader command line tool for the trusted provider.
 
-Status: Alpha (about 90% functionality is there)
+Status: Alpha (all planned functionality, but known defects, see issues.)
 
 ## Setup
 
