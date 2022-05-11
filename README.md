@@ -1,26 +1,24 @@
 # csaf_distribution
 
-**WIP**: A proof of concept for a CSAF trusted provider, checker and aggregator.
+A proof of concept implementation of an [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker and aggregator. Includes an uploader command line tool for the trusted provider.
 
-Status: Beta
+Status: Alpha (all planned functionality, but known defects, see issues.)
 
-## [csaf_provider](docs/csaf_components/csaf_provider.md)
-Provider is an implementation of the role CSAF Provider of the
-[CSAF 2.0 specification](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html).
+## [csaf_provider](docs/csaf_provider.md)
+is an implementation of the role CSAF Provider of the CSAF 2.0 specification.
 
-## [csaf_aggregator](docs/csaf_components/csaf_aggregator.md)
-Aggeragator is an implementation of the role CSAF Aggregator of the
-[CSAF 2.0 specification](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html).
+## [csaf_uploader](docs/csaf_uploader.md)
+ is a command line tool that uploads CSAF documents to the csaf_provider.
 
-## [csaf_checker](docs/csaf_components/csaf_checker.md)
+
+## [csaf_aggregator](docs/csaf_aggregator.md)
+ is an implementation of the role CSAF Aggregator of the CSAF 2.0 specification.
+
+## [csaf_checker](docs/csaf_checker.md)
 Provider checker is a tool for testing a CSAF trusted provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
 
-## [csaf_uploader](docs/csaf_components/csaf_uploader.md)
-Uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
-Following options are supported:
 
-
-## Setup
+## Setup from sources
 
 - A recent version of **Go** (1.17+) should be installed. [Go installation](https://go.dev/doc/install)
 
