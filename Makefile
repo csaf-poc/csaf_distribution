@@ -41,7 +41,9 @@ tag_checked_out:
 # into a semver version. For this we increase the PATCH number, so that
 # any commit after a tag is considered newer than the semver from the tag
 # without an optional 'v'
-GITDESC := $(shell git describe)
+# Note we need `--tags` because github release only creates lightweight tags
+#   (see feature request https://github.com/github/feedback/discussions/4924)
+GITDESC := $(shell git describe --tags)
 GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
 SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
 # Hint: The regexp in the next line only matches if there is a hyphen (`-`)
