@@ -45,8 +45,9 @@ GITDESC := $(shell git describe)
 GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
 SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
 # Hint: The regexp in the next line only matches if there is a hyphen (`-`)
-#       and we can assume that git describe has added a string after the tag
-SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)(-.*)/\1$(SEMVERPATCH)\3/' )
+#       followed by a number, by which we assume that git describe
+#       has added a string after the tag
+SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)(-[1-9].*)/\1$(SEMVERPATCH)\3/' )
 testsemver:
 	@echo from \'$(GITDESC)\' transformed to \'$(SEMVER)\'
 
