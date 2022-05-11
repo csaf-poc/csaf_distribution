@@ -16,7 +16,7 @@ Aggeragator is an implementation of the role CSAF Aggregator of the
 Provider checker is a tool for testing a CSAF trusted provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
 
 ## [csaf_uploader](docs/csaf_components/csaf_uploader.md)
-csaf_uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
+Uploader is a command line tool that uploads CSAF documents to the trusted provider (CSAF_Provider).
 Following options are supported:
 
 
