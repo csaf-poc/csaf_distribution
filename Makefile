@@ -41,12 +41,15 @@ tag_checked_out:
 # into a semver version. For this we increase the PATCH number, so that
 # any commit after a tag is considered newer than the semver from the tag
 # without an optional 'v'
-GITDESC := $(shell git describe)
+# Note we need `--tags` because github release only creates lightweight tags
+#   (see feature request https://github.com/github/feedback/discussions/4924)
+GITDESC := $(shell git describe --tags)
 GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
 SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
 # Hint: The regexp in the next line only matches if there is a hyphen (`-`)
-#       and we can assume that git describe has added a string after the tag
-SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)(-.*)/\1$(SEMVERPATCH)\3/' )
+#       followed by a number, by which we assume that git describe
+#       has added a string after the tag
+SEMVER := $(shell echo '$(GITDESC)' | sed -E 's/v?([0-9]+\.[0-9]+\.)([0-9]+)(-[1-9].*)/\1$(SEMVERPATCH)\3/' )
 testsemver:
 	@echo from \'$(GITDESC)\' transformed to \'$(SEMVER)\'
 
@@ -70,8 +73,11 @@ build_linux build_win:
 DISTDIR := csaf_distribution-$(SEMVER)
 dist: build_linux build_win
 	mkdir -p dist
-	mkdir dist/$(DISTDIR)-windows-amd64
-	cp -r README.md docs bin-windows-amd64 dist/$(DISTDIR)-windows-amd64
+	mkdir -p dist/$(DISTDIR)-windows-amd64/bin-windows-amd64
+	cp README.md dist/$(DISTDIR)-windows-amd64
+	cp bin-windows-amd64/csaf_uploader.exe bin-windows-amd64/csaf_checker.exe dist/$(DISTDIR)-windows-amd64/bin-windows-amd64/
+	mkdir -p dist/$(DISTDIR)-windows-amd64/docs
+	#cp docs/csaf_uploader.md docs/csaf_checker.md dist/$(DISTDIR)-windows-amd64/docs
 	mkdir dist/$(DISTDIR)-gnulinux-amd64
 	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
 	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
