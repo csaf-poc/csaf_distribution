@@ -23,4 +23,5 @@ jobs:
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
           env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
+          ./testAggregator.sh
         shell: bash
