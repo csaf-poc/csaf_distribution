@@ -9,4 +9,4 @@
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 cd ~/csaf_distribution/
-./bin-linux-amd64/csaf_aggregator -c docs/examples/aggregator.toml
+sudo ./bin-linux-amd64/csaf_aggregator -c docs/examples/aggregator.toml
