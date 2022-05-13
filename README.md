@@ -5,17 +5,18 @@ A proof of concept implementation of a [CSAF 2.0](https://docs.oasis-open.org/cs
 Status: Alpha (all planned functionality, but known defects, see issues.)
 
 ## [csaf_provider](docs/csaf_provider.md)
-is an implementation of the role CSAF Provider of the CSAF 2.0 specification.
+is an implementation of the role CSAF Trusted Provider, also offering
+a simple HTTPS based management service.
 
 ## [csaf_uploader](docs/csaf_uploader.md)
- is a command line tool that uploads CSAF documents to the csaf_provider.
+is a command line tool that uploads CSAF documents to the `csaf_provider`.
 
 
 ## [csaf_aggregator](docs/csaf_aggregator.md)
- is an implementation of the role CSAF Aggregator of the CSAF 2.0 specification.
+is an implementation of the role CSAF Aggregator.
 
 ## [csaf_checker](docs/csaf_checker.md)
-Provider checker is a tool for testing a CSAF trusted provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
+is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
 
 
 ## Setup from sources
