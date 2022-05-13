@@ -9,7 +9,7 @@ insecure = true
   name = "Example Development CSAF Aggregator"
   contact_details = "some @ somewhere"
   issuing_authority = "This service is provided as it is. It is gratis for everybody."
-  namespace = "Testnamespace"
+  namespace = "https://testnamespace.example.org"
 
 [[providers]]
   name = "local-dev-provider"
