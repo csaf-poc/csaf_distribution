@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/http/cgi"
 
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -22,17 +23,20 @@ type options struct {
 }
 
 func main() {
-	cfg, err := loadConfig()
-	if err != nil {
-		log.Fatalf("error: %v\n", err)
-	}
-
 	var opts options
 	parser := flags.NewParser(&opts, flags.Default)
 	parser.Parse()
 	if opts.Version {
 		fmt.Println(util.SemVersion)
 		return
+	}
+
+	cfg, err := loadConfig()
+	if err != nil {
+		cgi.Serve(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			http.Error(rw, fmt.Sprintf("Config error: %v\n", err), http.StatusInternalServerError)
+		}))
+		log.Fatalf("error: %v\n", err)
 	}
 
 	c, err := newController(cfg)
