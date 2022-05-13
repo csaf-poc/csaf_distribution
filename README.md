@@ -12,7 +12,6 @@ a simple HTTPS based management service.
 ## [csaf_uploader](docs/csaf_uploader.md)
 is a command line tool that uploads CSAF documents to the `csaf_provider`.
 
-
 ## [csaf_aggregator](docs/csaf_aggregator.md)
 is an implementation of the role CSAF Aggregator.
 
@@ -21,7 +20,7 @@ is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSA
 
 ## Setup
 Note that the server side is only tested
-and the available for GNU/Linux-Systems, e.g. Ubuntu LTS.
+and the binaries available for GNU/Linux-Systems, e.g. Ubuntu LTS.
 It is likely to run on similar systems when build from sources.
 
 The windows binaries only include `csaf_uploader` and `csaf_checker`.
