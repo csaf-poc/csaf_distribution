@@ -4,6 +4,7 @@ A proof of concept implementation of a [CSAF 2.0](https://docs.oasis-open.org/cs
 
 Status: Alpha (all planned functionality, but known defects, see issues.)
 
+
 ## [csaf_provider](docs/csaf_provider.md)
 is an implementation of the role CSAF Trusted Provider, also offering
 a simple HTTPS based management service.
@@ -18,8 +19,19 @@ is an implementation of the role CSAF Aggregator.
 ## [csaf_checker](docs/csaf_checker.md)
 is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
 
+## Setup
+Note that the server side is only tested
+and the available for GNU/Linux-Systems, e.g. Ubuntu LTS.
+It is likely to run on similar systems when build from sources.
 
-## Setup from sources
+The windows binaries only include `csaf_uploader` and `csaf_checker`.
+
+### Prebuild binaries
+
+Download the binaries (from the most recent release assets on Github).
+
+
+### Build from sources
 
 - A recent version of **Go** (1.17+) should be installed. [Go installation](https://go.dev/doc/install)
 
@@ -36,13 +48,13 @@ is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSA
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
 
+
+### Setup (Trusted Provider)
+
 - [Install](https://nginx.org/en/docs/install.html)  **nginx**
 - To install server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 - To configure nginx for client certificate authentication see [docs/client-certificate-setup.md](docs/client-certificate-setup.md)
-
-
-which asks to enter password interactively.
 
 
 ## License
