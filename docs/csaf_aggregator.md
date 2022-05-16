@@ -82,4 +82,40 @@ insecure
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
+<!-- The below code snippet is automatically added from ../docs/examples/aggregator.toml -->
+```toml
+workers = 2
+folder = "/var/csaf_aggregator"
+lock_file = "/var/csaf_aggregator/run.lock"
+web = "/var/csaf_aggregator/html"
+domain = "https://localhost:9443"
+rate = 10.0
+insecure = true
+
+[aggregator]
+  category = "aggregator"
+  name = "Example Development CSAF Aggregator"
+  contact_details = "some @ somewhere"
+  issuing_authority = "This service is provided as it is. It is gratis for everybody."
+  namespace = "https://testnamespace.example.org"
+
+[[providers]]
+  name = "local-dev-provider"
+  domain = "localhost"
+#  rate = 1.5
+#  insecure = true
+
+[[providers]]
+  name = "local-dev-provider2"
+  domain = "localhost"
+#  rate = 1.2
+#  insecure = true
+
+#key =
+#passphrase =
+
+# specification requires at least two providers (default),
+# to override for testing, enable:
+# allow_single_provider = true
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
