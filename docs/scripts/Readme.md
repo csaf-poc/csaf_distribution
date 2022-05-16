@@ -21,6 +21,7 @@ Calling example (as root):
 
     export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
     source ./TLSConfigsForITest.sh
+    set +e  # for an interactive shell, reverse set -e done by previous line
     ./TLSClientConfigsForITest.sh
     ./setupProviderForITest.sh
     ./testAggregator.sh
