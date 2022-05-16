@@ -11,6 +11,8 @@
 # This script adds a new server block with the given DNS-Record and ajdust the "/etc/hosts" to
 # set the DNS-Record for the localhost for testing.
 
+set -e
+
 sudo touch /etc/nginx/sites-available/DNSConfig
 echo "
     server {
