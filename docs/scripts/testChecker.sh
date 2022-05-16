@@ -14,6 +14,6 @@ cd ~/csaf_distribution
 
 ./bin-linux-amd64/csaf_checker -o show.html --insecure \
 --client-cert ~/devca1/testclient1.crt --client-key \
-~/devca1/testclient1-key.pem testcsaf.de -f html \
+~/devca1/testclient1-key.pem localhost -f html \
 
 cat show.html
