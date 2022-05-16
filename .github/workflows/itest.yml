@@ -22,7 +22,7 @@ jobs:
           cd csaf_distribution/docs/scripts/
           # keep in sync with docs/scripts/Readme.md
           export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
-          ./TLSConfigsForITest.sh
+          source ./TLSConfigsForITest.sh
           ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
           ./testAggregator.sh

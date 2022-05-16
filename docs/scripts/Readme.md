@@ -20,7 +20,7 @@ Calling example (as root):
     pushd csaf_distribution/docs/scripts/
 
     export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
-    ./TLSConfigsForITest.sh
+    source ./TLSConfigsForITest.sh
     ./TLSClientConfigsForITest.sh
     ./setupProviderForITest.sh
     ./testAggregator.sh
