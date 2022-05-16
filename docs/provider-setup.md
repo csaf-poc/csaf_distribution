@@ -119,7 +119,7 @@ Replace {password} with the password used for the authentication with csaf_provi
 This needs to set the `password` option in `config.toml`.
 
 To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=16-33) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=18-35) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 Then create a symbolic link to enable the new server block:
