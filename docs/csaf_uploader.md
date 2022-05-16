@@ -19,7 +19,7 @@ Application Options:
       --client-cert=CERT-FILE.crt           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE.pem             TLS client private key file (PEM encoded data)
   -i, --password-interactive                Enter password interactively
-  -I, --passphrase-interacive               Enter passphrase interactively
+  -I, --passphrase-interactive               Enter passphrase interactively
       --insecure                            Do not check TLS certificates from provider
   -c, --config=INI-FILE                     Path to config ini file
       --version                             Display version of the binary

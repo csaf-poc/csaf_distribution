@@ -1,5 +1,11 @@
+`csaf_provider` implements the CGI interface for webservers
+and reads its configuration from a TOML file.
+See the [../README.md#setup-trusted-provider] section on how to
+set this up with a webserver and the place for the config file.
+
 ## Provider options
-Following options are supported:
+
+Following options are supported in the config file:
 
  - password: Authentication password for accessing the CSAF provider.
  - key: The private OpenPGP key.
