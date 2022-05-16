@@ -8,6 +8,8 @@
 # SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 # Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
+set -e  # to exit if a command in the script fails
+
 # The same directory name used in the config-example file.
 sudo chgrp -R www-data  /var/csaf_aggregator
 sudo chmod -R g+w  /var/csaf_aggregator
