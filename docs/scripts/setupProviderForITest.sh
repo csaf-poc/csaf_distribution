@@ -94,3 +94,5 @@ popd
 
 # Upload files
 ./uploadToProvider.sh
+
+./testChecker.sh
