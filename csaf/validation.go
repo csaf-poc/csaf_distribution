@@ -169,6 +169,8 @@ func ValidateAggregator(doc interface{}) ([]string, error) {
 	return compiledAggregatorSchema.validate(doc)
 }
 
+// ValidateROLIE validates the ROLIE feed against the JSON schema
+// of ROLIE
 func ValidateROLIE(doc interface{}) ([]string, error) {
 	return compiledRolieSchema.validate(doc)
 }
