@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+#
 # This file is Free Software under the MIT License
 # without warranty, see README.md and LICENSES/MIT.txt for details.
 #
@@ -16,7 +16,8 @@ set -e
 sudo chgrp -R www-data  /var/www
 sudo chmod -R g+w  /var/www
 
-NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
+export NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
+export DNS_NAME=csaf.data.security.domain.localhost
 
 sudo cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
@@ -62,7 +63,7 @@ echo "
         autoindex on;
 " > locationConfig.txt
 sudo sed -i "/^\s*location \/ {/r locationConfig.txt" $NGINX_CONFIG_PATH # Insert config inside location{}
-
+./DNSConfigForItest.sh
 sudo systemctl reload nginx
 
 # assuming that we are in a checked out version in the docs/scripts directory
@@ -94,3 +95,6 @@ popd
 
 # Upload files
 ./uploadToProvider.sh
+
+# Test resolving DNS record
+curl https://$DNS_NAME --insecure

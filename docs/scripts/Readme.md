@@ -19,7 +19,10 @@ Calling example (as root):
     git clone https://github.com/csaf-poc/csaf_distribution.git
     pushd csaf_distribution/docs/scripts/
 
-    env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
-    env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
+    export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
+    source ./TLSConfigsForITest.sh
+    set +e  # for an interactive shell, reverse set -e done by previous line
+    ./TLSClientConfigsForITest.sh
     ./setupProviderForITest.sh
+    ./testAggregator.sh
 ```
