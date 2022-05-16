@@ -19,3 +19,5 @@
 | golang.org/x/term                                  | BSD-3-Clause |
 | golang.org/x/text                                  | BSD-3-Clause |
 | github.com/gofrs/flock                             | BSD-3-Clause |
+| github.com/PuerkitoBio/goquery                     | BSD-3-Clause |
+| github.com/andybalholm/cascadia                    | BSD-2-Clause |
