@@ -59,6 +59,7 @@ type processor struct {
 	badFolders           topicMessages
 	badWellknownMetadata topicMessages
 	badDNSPath           topicMessages
+	badDirListings       topicMessages
 
 	expr *util.PathEval
 }
@@ -85,6 +86,8 @@ const (
 	rolieChangesMask
 	indexMask
 	changesMask
+	listingMask
+	rolieListingMask
 )
 
 func (wt whereType) String() string {
@@ -99,6 +102,10 @@ func (wt whereType) String() string {
 		return "index.txt"
 	case changesMask:
 		return "changes.csv"
+	case listingMask:
+		return "directory listing"
+	case rolieListingMask:
+		return "directory listing [ROLIE]"
 	default:
 		var mixed []string
 		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
@@ -157,6 +164,10 @@ func (p *processor) clean() {
 	p.badSecurity.reset()
 	p.badIndices.reset()
 	p.badChanges.reset()
+	p.badFolders.reset()
+	p.badWellknownMetadata.reset()
+	p.badDNSPath.reset()
+	p.badDirListings.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -483,6 +494,10 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return err
 	}
 
+	if err := p.checkListing(base, rolieListingMask); err != nil && err != errContinue {
+		return err
+	}
+
 	return nil
 }
 
@@ -652,6 +667,21 @@ func (p *processor) checkCSAFs(domain string) error {
 		return err
 	}
 
+	if err := p.checkListing(base, listingMask); err != nil && err != errContinue {
+		return err
+	}
+
+	return nil
+}
+
+func (p *processor) checkListing(base string, mask whereType) error {
+	links, err := p.linksOnPageURL(base)
+	if err != nil {
+		return err
+	}
+	for _, link := range links {
+		p.markChecked(link, mask)
+	}
 	return nil
 }
 
@@ -673,7 +703,7 @@ func (p *processor) checkMissing(string) error {
 	for _, f := range files {
 		v := p.alreadyChecked[f]
 		var where []string
-		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
+		for mask := rolieMask; mask <= rolieListingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
 				if v&mask == mask {

@@ -23,7 +23,10 @@ const page0 = `<html>
 
 func TestLinksOnPage(t *testing.T) {
 
-	links, err := linksOnPage(strings.NewReader(page0))
+	links, err := linksOnPage(
+		strings.NewReader(page0),
+		func(s string) (string, error) { return s, nil },
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

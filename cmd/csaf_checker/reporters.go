@@ -186,10 +186,17 @@ func (r *changesReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badChanges
 }
 
-func (r *directoryListingsReporter) report(_ *processor, domain *Domain) {
-	// TODO: Implement me!
+func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	_ = req
+	if !p.badDirListings.used() {
+		req.message("No directory listings checked.")
+		return
+	}
+	if len(p.badDirListings) == 0 {
+		req.message("All directory listings are valid.")
+		return
+	}
+	req.Messages = p.badDirListings
 }
 
 func (r *integrityReporter) report(p *processor, domain *Domain) {
