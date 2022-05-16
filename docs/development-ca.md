@@ -41,7 +41,7 @@ certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-c
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/createWebserverCertForITest.sh&lines=11-55) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/createWebserverCertForITest.sh -->
 ```sh
-cd ~/${FOLDERNAME}
+pushd ~/${FOLDERNAME}
 
 certtool --generate-privkey --outfile testserver-key.pem
 
@@ -66,12 +66,14 @@ certtool --generate-certificate --load-privkey testserver-key.pem --outfile test
 
 cat testserver.crt rootca-cert.pem >bundle.crt
 
-SSL_CERTIFICATE=$(
+export SSL_CERTIFICATE=$(
 echo "$PWD/bundle.crt"
 )
-SSL_CERTIFICATE_KEY=$(
+export SSL_CERTIFICATE_KEY=$(
 echo "$PWD/testserver-key.pem"
 )
+
+popd
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 

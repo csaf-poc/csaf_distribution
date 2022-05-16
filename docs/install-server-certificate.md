@@ -50,13 +50,11 @@ finds your your private key and the certificate chain.
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/TLSConfigsForITest.sh&lines=31-37) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/TLSConfigsForITest.sh -->
 ```sh
-        listen 443 ssl default_server; # ipv4
-        listen [::]:443 ssl http2 default_server;  # ipv6
-
         ssl_certificate  '${SSL_CERTIFICATE}'; # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
         ssl_certificate_key '${SSL_CERTIFICATE_KEY}'; # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
 
         ssl_protocols TLSv1.2 TLSv1.3;
+' > ~/${FOLDERNAME}/TLSConfigs.txt
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 

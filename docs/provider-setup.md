@@ -120,6 +120,27 @@ This needs to set the `password` option in `config.toml`.
 
 To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=18-35) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/DNSConfigForItest.sh -->
+```sh
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+
+        ssl_certificate  '${SSL_CERTIFICATE}'; # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+        ssl_certificate_key '${SSL_CERTIFICATE_KEY}'; # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
+
+        root /var/www/html;
+
+        server_name ${DNS_NAME}; # e.g. server_name csaf.data.security.domain.tld;
+
+        location / {
+                try_files /.well-known/csaf/provider-metadata.json =404;
+        }
+
+        access_log /var/log/nginx/dns-domain_access.log;
+        error_log /var/log/nginx/dns-domain_error.log;
+}
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 Then create a symbolic link to enable the new server block:
