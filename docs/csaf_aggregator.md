@@ -1,12 +1,20 @@
 ## csaf_aggregator
 
-Following options are supported:
+### Usage
 
-| Options               | Description                                                    |
-| --------------------- | -------------------------------------------------------------- |
-| -c, --config=CFG-FILE | File name of the configuration file (default: aggregator.toml) |
-| -i, --interim         | Perform an interim scan                                        |
-| --version             | Display version of the binary                                  |
+```
+  csaf_aggregator [OPTIONS]
+
+Application Options:
+  -c, --config=CFG-FILE    File name of the configuration file (default:
+                           aggregator.toml)
+      --version            Display version of the binary
+  -i, --interim            Perform an interim scan
+
+Help Options:
+  -h, --help               Show this help message
+```
+
 
 Usage example:
 ``` ./csaf_aggregator -c docs/examples/aggregator.toml ```
