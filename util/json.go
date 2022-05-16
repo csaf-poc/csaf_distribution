@@ -12,6 +12,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/PaesslerAG/gval"
 	"github.com/PaesslerAG/jsonpath"
@@ -55,4 +57,92 @@ func (pe *PathEval) Eval(expr string, doc interface{}) (interface{}, error) {
 		pe.exprs[expr] = eval
 	}
 	return eval(context.Background(), doc)
+}
+
+// PathEvalMatcher is a pair of an expression and an action
+// when doing extractions via PathEval.Match.
+type PathEvalMatcher struct {
+	// Expr is the expression to evaluate
+	Expr string
+	// Action is executed with the result of the match.
+	Action func(interface{}) error
+	// Optional expresses if the expression is optional.
+	Optional bool
+}
+
+// ReMarshalMatcher is an action to re-marshal the result to another type.
+func ReMarshalMatcher(dst interface{}) func(interface{}) error {
+	return func(src interface{}) error {
+		return ReMarshalJSON(dst, src)
+	}
+}
+
+// BoolMatcher stores the matched result in a bool.
+func BoolMatcher(dst *bool) func(interface{}) error {
+	return func(x interface{}) error {
+		b, ok := x.(bool)
+		if !ok {
+			return errors.New("not a bool")
+		}
+		*dst = b
+		return nil
+	}
+}
+
+// StringMatcher stores the matched result in a string.
+func StringMatcher(dst *string) func(interface{}) error {
+	return func(x interface{}) error {
+		s, ok := x.(string)
+		if !ok {
+			return errors.New("not a string")
+		}
+		*dst = s
+		return nil
+	}
+}
+
+// TimeMatcher stores a time with a given format.
+func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
+	return func(x interface{}) error {
+		s, ok := x.(string)
+		if !ok {
+			return errors.New("not a string")
+		}
+		t, err := time.Parse(format, s)
+		if err != nil {
+			return nil
+		}
+		*dst = t
+		return nil
+	}
+}
+
+// Extract extracts a value from a given document with a given expression/action.
+func (pe *PathEval) Extract(
+	expr string,
+	action func(interface{}) error,
+	optional bool,
+	doc interface{},
+) error {
+	optErr := func(err error) error {
+		if err == nil || optional {
+			return nil
+		}
+		return fmt.Errorf("extract failed '%s': %v", expr, err)
+	}
+	x, err := pe.Eval(expr, doc)
+	if err != nil {
+		return optErr(err)
+	}
+	return optErr(action(x))
+}
+
+// Match matches a list of PathEvalMatcher pairs against a document.
+func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
+	for _, m := range matcher {
+		if err := pe.Extract(m.Expr, m.Action, m.Optional, doc); err != nil {
+			return err
+		}
+	}
+	return nil
 }

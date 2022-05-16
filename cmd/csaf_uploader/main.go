@@ -288,8 +288,10 @@ func (p *processor) process(filename string) error {
 	}
 	defer resp.Body.Close()
 
+	var uploadErr error
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Upload failed: %s\n", resp.Status)
+		uploadErr = fmt.Errorf("upload failed: %s", resp.Status)
+		fmt.Printf("HTTPS %s\n", uploadErr)
 	}
 
 	var result struct {
@@ -313,7 +315,7 @@ func (p *processor) process(filename string) error {
 	writeStrings("Warnings:", result.Warnings)
 	writeStrings("Errors:", result.Errors)
 
-	return nil
+	return uploadErr
 }
 
 // findIniFile looks for a file in the pre-defined paths in "iniPaths".

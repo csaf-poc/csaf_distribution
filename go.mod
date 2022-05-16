@@ -7,10 +7,12 @@ require (
 	github.com/PaesslerAG/gval v1.1.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ProtonMail/gopenpgp/v2 v2.3.0
+	github.com/gofrs/flock v0.8.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
+	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8
 )
 
 require (
