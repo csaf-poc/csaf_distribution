@@ -17,7 +17,7 @@ sudo chgrp -R www-data  /var/www
 sudo chmod -R g+w  /var/www
 
 export NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
-export DNS_NAME=csaf.data.security.domain.localhost
+export DNS_NAME=csaf.data.security.localhost
 
 sudo cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 
