@@ -59,6 +59,7 @@ type processor struct {
 	badFolders           topicMessages
 	badWellknownMetadata topicMessages
 	badDNSPath           topicMessages
+	badDirListings       topicMessages
 
 	expr *util.PathEval
 }
@@ -85,6 +86,8 @@ const (
 	rolieChangesMask
 	indexMask
 	changesMask
+	listingMask
+	rolieListingMask
 )
 
 func (wt whereType) String() string {
@@ -99,6 +102,10 @@ func (wt whereType) String() string {
 		return "index.txt"
 	case changesMask:
 		return "changes.csv"
+	case listingMask:
+		return "directory listing"
+	case rolieListingMask:
+		return "directory listing [ROLIE]"
 	default:
 		var mixed []string
 		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
@@ -157,6 +164,10 @@ func (p *processor) clean() {
 	p.badSecurity.reset()
 	p.badIndices.reset()
 	p.badChanges.reset()
+	p.badFolders.reset()
+	p.badWellknownMetadata.reset()
+	p.badDNSPath.reset()
+	p.badDirListings.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -193,6 +204,7 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkSecurity,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
+		(*processor).checkListing,
 		(*processor).checkWellknownMetadataReporter,
 		(*processor).checkDNSPathReporter,
 	} {
@@ -241,7 +253,7 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	p.redirects[url] = path.String()
 
 	if len(via) > 10 {
-		return errors.New("Too many redirections")
+		return errors.New("too many redirections")
 	}
 	return nil
 }
@@ -696,7 +708,7 @@ func (p *processor) checkMissing(string) error {
 	for _, f := range files {
 		v := p.alreadyChecked[f]
 		var where []string
-		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
+		for mask := rolieMask; mask <= rolieListingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
 				if v&mask == mask {
@@ -709,6 +721,35 @@ func (p *processor) checkMissing(string) error {
 		}
 		p.badIntegrities.add("%s %s", f, strings.Join(where, ", "))
 	}
+	return nil
+}
+
+// checkListing wents over all found adivisories URLs and checks,
+// if their parent directory is listable.
+func (p *processor) checkListing(string) error {
+
+	p.badDirListings.use()
+
+	pgs := pages{}
+
+	var unlisted []string
+
+	for f := range p.alreadyChecked {
+		found, err := pgs.listed(f, p)
+		if err != nil && err != errContinue {
+			return err
+		}
+		if !found {
+			unlisted = append(unlisted, f)
+		}
+	}
+
+	if len(unlisted) > 0 {
+		sort.Strings(unlisted)
+		p.badDirListings.add("Not listed advisories: %s",
+			strings.Join(unlisted, ", "))
+	}
+
 	return nil
 }
 
@@ -803,7 +844,7 @@ func (p *processor) extractProviderURL(r io.Reader) (string, error) {
 		return "", err
 	}
 	if len(urls) == 0 {
-		return "", errors.New("No provider-metadata.json found")
+		return "", errors.New("no provider-metadata.json found")
 	}
 
 	if len(urls) > 1 {
