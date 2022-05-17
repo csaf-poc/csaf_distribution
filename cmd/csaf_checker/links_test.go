@@ -8,7 +8,7 @@ import (
 
 const page0 = `<html>
 <body>
-	<a href="no-a-json">Not a JSON</a>
+	<a href="not-a-json">Not a JSON</a>
 	<a href="link0.json">link0</a>
 	<ol>
 		<li><a href="link1.json">link1</a></li>
