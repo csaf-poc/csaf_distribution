@@ -8,14 +8,15 @@ import (
 
 const page0 = `<html>
 <body>
-	<a href="link0">link0</a>
+	<a href="no-a-json">Not a JSON</a>
+	<a href="link0.json">link0</a>
 	<ol>
-		<li><a href="link1">link1</a></li>
-		<li><a href="link2">link2</a></li>
+		<li><a href="link1.json">link1</a></li>
+		<li><a href="link2.json">link1</a></li>
 	</ol>
 	<p>
 	<div>
-		<li><a href="link3">link3</a></li>
+		<li><a href="link3.json">link1</a></li>
 	</div>
 	<p>
 </body>
@@ -36,7 +37,7 @@ func TestLinksOnPage(t *testing.T) {
 	}
 
 	for i, link := range links {
-		href := fmt.Sprintf("link%d", i)
+		href := fmt.Sprintf("link%d.json", i)
 		if href != link {
 			t.Fatalf("Expected link '%s', got '%s'\n", href, link)
 		}

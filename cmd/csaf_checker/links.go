@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -66,6 +67,10 @@ func linksOnPage(r io.Reader, resolve func(string) (string, error)) ([]string, e
 			return
 		}
 		if link, ok := s.Attr("href"); ok {
+			// Only care for JSON files here.
+			if !strings.HasSuffix(link, ".json") {
+				return
+			}
 			if link, err = resolve(link); err == nil {
 				links = append(links, link)
 			}
