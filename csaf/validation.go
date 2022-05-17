@@ -36,10 +36,14 @@ var providerSchema []byte
 //go:embed schema/aggregator_json_schema.json
 var aggregatorSchema []byte
 
+//go:embed schema/ROLIE_feed_json_schema.json
+var rolieSchema []byte
+
 var (
 	compiledCSAFSchema       compiledSchema
 	compiledProviderSchema   compiledSchema
 	compiledAggregatorSchema compiledSchema
+	compiledRolieSchema      compiledSchema
 )
 
 func init() {
@@ -57,6 +61,9 @@ func init() {
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json", aggregatorSchema},
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
 		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
+	})
+	compiledRolieSchema.compiler([]schemaData{
+		{"https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json", rolieSchema},
 	})
 }
 
@@ -160,4 +167,10 @@ func ValidateProviderMetadata(doc interface{}) ([]string, error) {
 // of aggregator.
 func ValidateAggregator(doc interface{}) ([]string, error) {
 	return compiledAggregatorSchema.validate(doc)
+}
+
+// ValidateROLIE validates the ROLIE feed against the JSON schema
+// of ROLIE
+func ValidateROLIE(doc interface{}) ([]string, error) {
+	return compiledRolieSchema.validate(doc)
 }
