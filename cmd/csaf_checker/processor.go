@@ -464,14 +464,37 @@ func (p *processor) processROLIEFeed(feed string) error {
 			feed, res.StatusCode, res.Status)
 		return errContinue
 	}
-	rfeed, err := func() (*csaf.ROLIEFeed, error) {
+
+	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, interface{}, error) {
 		defer res.Body.Close()
-		return csaf.LoadROLIEFeed(res.Body)
+		all, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, nil, err
+		}
+		feed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
+		if err != nil {
+			return nil, nil, err
+		}
+		var rolieDoc interface{}
+		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
+		return feed, rolieDoc, err
+
 	}()
 	if err != nil {
 		p.badProviderMetadata.add("Loading ROLIE feed failed: %v.", err)
 		return errContinue
 	}
+	errors, err := csaf.ValidateROLIE(rolieDoc)
+	if err != nil {
+		return err
+	}
+	if len(errors) > 0 {
+		p.badProviderMetadata.add("%s: Validating against JSON schema failed:", feed)
+		for _, msg := range errors {
+			p.badProviderMetadata.add(strings.ReplaceAll(msg, `%`, `%%`))
+		}
+	}
+
 	base, err := util.BaseURL(feed)
 	if err != nil {
 		p.badProviderMetadata.add("Bad base path: %v", err)
@@ -753,7 +776,7 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	for _, loc := range providerMetadataLocations {
-		url := "https://" + domain + "/" + loc
+		url := "https://" + domain + "/" + loc + "/provider-metadata.json"
 		ok, err := tryURL(url)
 		if err != nil {
 			if err == errContinue {
