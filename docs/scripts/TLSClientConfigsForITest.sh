@@ -38,7 +38,7 @@ echo '
                 return 404;
             }
        }
-'> clientCertificateConfigs.txt
+'> ~/${FOLDERNAME}/clientCertificateConfigs.txt
 
 sudo sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH
 
