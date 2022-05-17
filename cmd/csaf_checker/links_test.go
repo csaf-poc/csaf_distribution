@@ -24,9 +24,16 @@ const page0 = `<html>
 
 func TestLinksOnPage(t *testing.T) {
 
-	links, err := linksOnPage(
+	var links []string
+
+	err := linksOnPage(
 		strings.NewReader(page0),
-		func(s string) (string, error) { return s, nil },
+		func(s string) error {
+			if strings.HasSuffix(s, ".json") {
+				links = append(links, s)
+			}
+			return nil
+		},
 	)
 	if err != nil {
 		t.Fatal(err)

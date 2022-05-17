@@ -12,10 +12,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
+
+var yearFolder = regexp.MustCompile(`.*/?\d{4}/?$`)
 
 func (p *processor) linksOnPageURL(baseDir string) ([]string, error) {
 
@@ -40,42 +43,87 @@ func (p *processor) linksOnPageURL(baseDir string) ([]string, error) {
 		return nil, errContinue
 	}
 
-	defer res.Body.Close()
-
-	// Links may be relative
-	return linksOnPage(res.Body, func(link string) (string, error) {
-		u, err := url.Parse(link)
-		if err != nil {
-			return "", err
-		}
-		return base.ResolveReference(u).String(), nil
-	})
-
-}
-
-func linksOnPage(r io.Reader, resolve func(string) (string, error)) ([]string, error) {
-
-	doc, err := goquery.NewDocumentFromReader(r)
-	if err != nil {
+	var (
+		subDirs []string
+		files   []string
+	)
+	if err := func() error {
+		defer res.Body.Close()
+		return linksOnPage(res.Body, func(link string) error {
+			u, err := url.Parse(link)
+			if err != nil {
+				return err
+			}
+			// Links may be relative
+			abs := base.ResolveReference(u).String()
+			switch {
+			case yearFolder.MatchString(link):
+				subDirs = append(subDirs, abs)
+			case strings.HasSuffix(link, ".json"):
+				files = append(files, abs)
+			}
+			return nil
+		})
+	}(); err != nil {
 		return nil, err
 	}
 
-	var links []string
+	// If we do not have sub folders, return links from this level.
+	if len(subDirs) == 0 {
+		return files, nil
+	}
+
+	// Descent into folders
+	for _, sub := range subDirs {
+		p.checkTLS(sub)
+		res, err := client.Get(sub)
+		if err != nil {
+			p.badDirListings.add("Fetching %s failed: %v", sub, err)
+			return nil, errContinue
+		}
+		if res.StatusCode != http.StatusOK {
+			p.badDirListings.add("Fetching %s failed. Status code %d (%s)",
+				base, res.StatusCode, res.Status)
+			return nil, errContinue
+		}
+		if err := func() error {
+			defer res.Body.Close()
+			return linksOnPage(res.Body, func(link string) error {
+				u, err := url.Parse(link)
+				if err != nil {
+					return err
+				}
+				// Links may be relative
+				abs := base.ResolveReference(u).String()
+				// Only collect json files in this sub folder
+				if strings.HasSuffix(link, ".json") {
+					files = append(files, abs)
+				}
+				return nil
+			})
+		}(); err != nil {
+			return nil, err
+		}
+	}
+
+	return files, nil
+}
+
+func linksOnPage(r io.Reader, visit func(string) error) error {
+
+	doc, err := goquery.NewDocumentFromReader(r)
+	if err != nil {
+		return err
+	}
 
 	doc.Find("a").Each(func(_ int, s *goquery.Selection) {
 		if err != nil {
 			return
 		}
 		if link, ok := s.Attr("href"); ok {
-			// Only care for JSON files here.
-			if !strings.HasSuffix(link, ".json") {
-				return
-			}
-			if link, err = resolve(link); err == nil {
-				links = append(links, link)
-			}
+			err = visit(link)
 		}
 	})
 
-	return links, err
+	return err
 }

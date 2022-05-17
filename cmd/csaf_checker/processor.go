@@ -252,7 +252,7 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	p.redirects[url] = path.String()
 
 	if len(via) > 10 {
-		return errors.New("Too many redirections")
+		return errors.New("too many redirections")
 	}
 	return nil
 }
@@ -826,7 +826,7 @@ func (p *processor) extractProviderURL(r io.Reader) (string, error) {
 		return "", err
 	}
 	if len(urls) == 0 {
-		return "", errors.New("No provider-metadata.json found")
+		return "", errors.New("no provider-metadata.json found")
 	}
 
 	if len(urls) > 1 {
