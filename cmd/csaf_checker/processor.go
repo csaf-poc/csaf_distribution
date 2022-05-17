@@ -746,7 +746,7 @@ func (p *processor) locateProviderMetadata(
 	}
 
 	for _, loc := range providerMetadataLocations {
-		url := "https://" + domain + "/" + loc
+		url := "https://" + domain + "/" + loc + "/provider-metadata.json"
 		ok, err := tryURL(url)
 		if err != nil {
 			if err == errContinue {
