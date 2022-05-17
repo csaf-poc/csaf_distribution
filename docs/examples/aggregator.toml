@@ -1,9 +1,11 @@
 workers = 2
-folder = "/var/csaf-aggregator"
-web = "/var/csaf-aggregator/html"
+folder = "/var/csaf_aggregator"
+lock_file = "/var/csaf_aggregator/run.lock"
+web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
 insecure = true
+
 [aggregator]
   category = "aggregator"
   name = "Example Development CSAF Aggregator"
@@ -26,8 +28,7 @@ insecure = true
 #key =
 #passphrase =
 
-# for testing, the specifiation requires at least two
+# specification requires at least two providers (default),
+# to override for testing, enable:
 # allow_single_provider = true
-
-
 

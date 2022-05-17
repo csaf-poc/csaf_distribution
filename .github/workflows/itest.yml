@@ -20,8 +20,10 @@ jobs:
           cp -r $GITHUB_WORKSPACE ~
           cd ~
           cd csaf_distribution/docs/scripts/
-          env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSConfigsForITest.sh
-          env FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)" ./TLSClientConfigsForITest.sh
+          # keep in sync with docs/scripts/Readme.md
+          export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
+          source ./TLSConfigsForITest.sh
+          ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
           ./testAggregator.sh
         shell: bash
