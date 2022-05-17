@@ -137,11 +137,11 @@ func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDNSPath.used() {
-		req.message("No csaf.data.security.domain.tld DNS record checked.")
+		req.message("No download from https://csaf.data.security.DOMAIN attempted.")
 		return
 	}
 	if len(p.badDNSPath) == 0 {
-		req.message("csaf.data.security.domain.tld DNS record is available and serves the provider-metadata.json.")
+		req.message("https://csaf.data.security.DOMAIN is available and serves the provider-metadata.json.")
 		return
 	}
 	req.Messages = p.badDNSPath

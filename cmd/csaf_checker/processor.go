@@ -729,6 +729,7 @@ func (p *processor) locateProviderMetadata(
 	client := p.httpClient()
 
 	tryURL := func(url string) (bool, error) {
+		log.Printf("Trying: %v\n", url)
 		res, err := client.Get(url)
 		if err != nil || res.StatusCode != http.StatusOK ||
 			res.Header.Get("Content-Type") != "application/json" {
@@ -762,32 +763,38 @@ func (p *processor) locateProviderMetadata(
 	// Read from security.txt
 
 	path := "https://" + domain + "/.well-known/security.txt"
+	log.Printf("Searching in: %v\n", path)
 	res, err := client.Get(path)
-	if err != nil {
-		return err
-	}
+	if err == nil && res.StatusCode == http.StatusOK {
+		loc, err := func() (string, error) {
+			defer res.Body.Close()
+			return p.extractProviderURL(res.Body)
+		}()
 
-	if res.StatusCode != http.StatusOK {
-		return nil
-	}
+		if err != nil {
+			log.Printf("did not find provider URL in /.well-known/security.txt, error: %v\n", err)
+		}
 
-	loc, err := func() (string, error) {
-		defer res.Body.Close()
-		return p.extractProviderURL(res.Body)
-	}()
-
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return nil
-	}
-
-	if loc != "" {
-		if _, err = tryURL(loc); err == errContinue {
-			err = nil
+		if loc != "" {
+			if _, err = tryURL(loc); err == errContinue {
+				err = nil
+			}
+			return err
 		}
 	}
 
-	return err
+	// Read from DNS path
+
+	path = "https://csaf.data.security." + domain
+	ok, err := tryURL(path)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+
+	return errStop
 }
 
 func (p *processor) extractProviderURL(r io.Reader) (string, error) {
@@ -1032,7 +1039,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 }
 
 // checkWellknownMetadataReporter checks if the provider-metadata.json file is
-// avaialable under the /.well-known/csaf/ directory.
+// available under the /.well-known/csaf/ directory.
 // It returns nil if all checks are passed, otherwise error.
 func (p *processor) checkWellknownMetadataReporter(domain string) error {
 
@@ -1044,7 +1051,7 @@ func (p *processor) checkWellknownMetadataReporter(domain string) error {
 
 	res, err := client.Get(path)
 	if err != nil {
-		p.badWellknownMetadata.add("Fetiching %s failed: %v", path, err)
+		p.badWellknownMetadata.add("Fetching %s failed: %v", path, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
@@ -1065,10 +1072,10 @@ func (p *processor) checkDNSPathReporter(domain string) error {
 
 	p.badDNSPath.use()
 
-	path := "https://csaf.data.security.domain.tld"
+	path := "https://csaf.data.security." + domain
 	res, err := client.Get(path)
 	if err != nil {
-		p.badDNSPath.add("Fetiching %s failed: %v", path, err)
+		p.badDNSPath.add("Fetching %s failed: %v", path, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
@@ -1080,12 +1087,12 @@ func (p *processor) checkDNSPathReporter(domain string) error {
 	defer res.Body.Close()
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		p.badDNSPath.add("Error while reading the response form %s", path)
+		p.badDNSPath.add("Error while reading the response from %s", path)
 		return errContinue
 	}
 	hash.Write(content)
 	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
-		p.badDNSPath.add("The csaf.data.security.domain.tld DNS record does not serve the provider-metatdata.json")
+		p.badDNSPath.add("%s does not serve the same provider-metadata.json as previously found", path)
 		return errContinue
 	}
 
