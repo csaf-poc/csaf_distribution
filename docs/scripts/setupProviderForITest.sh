@@ -98,3 +98,5 @@ popd
 
 # Test resolving DNS record
 curl https://$DNS_NAME --insecure
+
+./testChecker.sh
