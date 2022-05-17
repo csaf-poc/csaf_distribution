@@ -12,41 +12,64 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
-	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-var yearFolder = regexp.MustCompile(`.*/?\d{4}/?$`)
+type (
+	pageContent struct {
+		err   error
+		links map[string]struct{}
+	}
+	pages map[string]*pageContent
+)
 
-func (p *processor) linksOnPageURL(baseDir string) ([]string, error) {
-
-	base, err := url.Parse(baseDir)
+func (pgs pages) listed(path string, pro *processor) (bool, error) {
+	base, err := util.BaseURL(path)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	client := p.httpClient()
-	p.checkTLS(baseDir)
-	res, err := client.Get(baseDir)
+	content := pgs[base]
+	if content != nil { // already loaded
+		if content.err != nil {
+			return false, nil
+		}
+		_, ok := content.links[path]
+		return ok, nil
+	}
 
-	p.badDirListings.use()
+	baseURL, err := url.Parse(base)
+	if err != nil {
+		return false, err
+	}
+
+	// load page
+	client := pro.httpClient()
+	pro.checkTLS(base)
+	res, err := client.Get(base)
+
+	pro.badDirListings.use()
 
 	if err != nil {
-		p.badDirListings.add("Fetching %s failed: %v", base, err)
-		return nil, errContinue
+		pro.badDirListings.add("Fetching %s failed: %v", base, err)
+		return false, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badDirListings.add("Fetching %s failed. Status code %d (%s)",
+		pro.badDirListings.add("Fetching %s failed. Status code %d (%s)",
 			base, res.StatusCode, res.Status)
-		return nil, errContinue
+		return false, errContinue
 	}
 
-	var (
-		subDirs []string
-		files   []string
-	)
+	content = &pageContent{
+		links: map[string]struct{}{},
+	}
+
+	pgs[base] = content
+
+	// Build link index for this page.
+
 	if err := func() error {
 		defer res.Body.Close()
 		return linksOnPage(res.Body, func(link string) error {
@@ -55,58 +78,16 @@ func (p *processor) linksOnPageURL(baseDir string) ([]string, error) {
 				return err
 			}
 			// Links may be relative
-			abs := base.ResolveReference(u).String()
-			switch {
-			case yearFolder.MatchString(link):
-				subDirs = append(subDirs, abs)
-			case strings.HasSuffix(link, ".json"):
-				files = append(files, abs)
-			}
+			abs := baseURL.ResolveReference(u).String()
+			content.links[abs] = struct{}{}
 			return nil
 		})
 	}(); err != nil {
-		return nil, err
+		return false, errContinue
 	}
 
-	// If we do not have sub folders, return links from this level.
-	if len(subDirs) == 0 {
-		return files, nil
-	}
-
-	// Descent into folders
-	for _, sub := range subDirs {
-		p.checkTLS(sub)
-		res, err := client.Get(sub)
-		if err != nil {
-			p.badDirListings.add("Fetching %s failed: %v", sub, err)
-			return nil, errContinue
-		}
-		if res.StatusCode != http.StatusOK {
-			p.badDirListings.add("Fetching %s failed. Status code %d (%s)",
-				base, res.StatusCode, res.Status)
-			return nil, errContinue
-		}
-		if err := func() error {
-			defer res.Body.Close()
-			return linksOnPage(res.Body, func(link string) error {
-				u, err := url.Parse(link)
-				if err != nil {
-					return err
-				}
-				// Links may be relative
-				abs := base.ResolveReference(u).String()
-				// Only collect json files in this sub folder
-				if strings.HasSuffix(link, ".json") {
-					files = append(files, abs)
-				}
-				return nil
-			})
-		}(); err != nil {
-			return nil, err
-		}
-	}
-
-	return files, nil
+	_, ok := content.links[path]
+	return ok, nil
 }
 
 func linksOnPage(r io.Reader, visit func(string) error) error {

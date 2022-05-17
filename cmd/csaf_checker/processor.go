@@ -204,6 +204,7 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkSecurity,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
+		(*processor).checkListing,
 		(*processor).checkWellknownMetadataReporter,
 		(*processor).checkDNSPathReporter,
 	} {
@@ -517,10 +518,6 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return err
 	}
 
-	if err := p.checkListing(base, rolieListingMask); err != nil && err != errContinue {
-		return err
-	}
-
 	return nil
 }
 
@@ -690,21 +687,6 @@ func (p *processor) checkCSAFs(domain string) error {
 		return err
 	}
 
-	if err := p.checkListing(base, listingMask); err != nil && err != errContinue {
-		return err
-	}
-
-	return nil
-}
-
-func (p *processor) checkListing(base string, mask whereType) error {
-	links, err := p.linksOnPageURL(base)
-	if err != nil {
-		return err
-	}
-	for _, link := range links {
-		p.markChecked(link, mask)
-	}
 	return nil
 }
 
@@ -739,6 +721,35 @@ func (p *processor) checkMissing(string) error {
 		}
 		p.badIntegrities.add("%s %s", f, strings.Join(where, ", "))
 	}
+	return nil
+}
+
+// checkListing wents over all found adivisories URLs and checks,
+// if their parent directory is listable.
+func (p *processor) checkListing(string) error {
+
+	p.badDirListings.use()
+
+	pgs := pages{}
+
+	var unlisted []string
+
+	for f := range p.alreadyChecked {
+		found, err := pgs.listed(f, p)
+		if err != nil && err != errContinue {
+			return err
+		}
+		if !found {
+			unlisted = append(unlisted, f)
+		}
+	}
+
+	if len(unlisted) > 0 {
+		sort.Strings(unlisted)
+		p.badDirListings.add("Not listed advisories: %s",
+			strings.Join(unlisted, ", "))
+	}
+
 	return nil
 }
 
