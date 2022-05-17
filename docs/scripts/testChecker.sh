@@ -10,10 +10,11 @@
 
 set -e  # to exit if a command in the script fails
 
+echo ==== run checker
 cd ~/csaf_distribution
 
-./bin-linux-amd64/csaf_checker -o show.html --insecure \
+./bin-linux-amd64/csaf_checker -o ../checker-results.html --insecure \
 --client-cert ~/devca1/testclient1.crt --client-key \
-~/devca1/testclient1-key.pem localhost -f html \
+~/devca1/testclient1-key.pem localhost -f html
 
-cat show.html
+cat ../checker-results.html

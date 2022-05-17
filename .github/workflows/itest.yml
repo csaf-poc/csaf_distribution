@@ -27,3 +27,10 @@ jobs:
           ./setupProviderForITest.sh
           ./testAggregator.sh
         shell: bash
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+            name: checker-results
+            path: ~/checker-results.html
+            if-no-files-found: error
