@@ -1,8 +1,8 @@
 # csaf_distribution
 
-A proof of concept implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker and aggregator. Includes an uploader command line tool for the trusted provider.
+An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker and aggregator. Includes an uploader command line tool for the trusted provider.
 
-Status: Alpha (all planned functionality, but known defects, see issues.)
+Status: Beta (ready for more testing, but known short comings, see issues)
 
 
 ## [csaf_provider](docs/csaf_provider.md)
