@@ -729,6 +729,7 @@ func (p *processor) locateProviderMetadata(
 	client := p.httpClient()
 
 	tryURL := func(url string) (bool, error) {
+		log.Printf("Trying: %v\n", url)
 		res, err := client.Get(url)
 		if err != nil || res.StatusCode != http.StatusOK ||
 			res.Header.Get("Content-Type") != "application/json" {
@@ -762,32 +763,38 @@ func (p *processor) locateProviderMetadata(
 	// Read from security.txt
 
 	path := "https://" + domain + "/.well-known/security.txt"
+	log.Printf("Searching in: %v\n", path)
 	res, err := client.Get(path)
-	if err != nil {
-		return err
-	}
+	if err == nil && res.StatusCode == http.StatusOK {
+		loc, err := func() (string, error) {
+			defer res.Body.Close()
+			return p.extractProviderURL(res.Body)
+		}()
 
-	if res.StatusCode != http.StatusOK {
-		return nil
-	}
+		if err != nil {
+			log.Printf("did not find provider URL in /.well-known/security.txt, error: %v\n", err)
+		}
 
-	loc, err := func() (string, error) {
-		defer res.Body.Close()
-		return p.extractProviderURL(res.Body)
-	}()
-
-	if err != nil {
-		log.Printf("error: %v\n", err)
-		return nil
-	}
-
-	if loc != "" {
-		if _, err = tryURL(loc); err == errContinue {
-			err = nil
+		if loc != "" {
+			if _, err = tryURL(loc); err == errContinue {
+				err = nil
+			}
+			return err
 		}
 	}
 
-	return err
+	// Read from DNS path
+
+	path = "https://csaf.data.security." + domain
+	ok, err := tryURL(path)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+
+	return errStop
 }
 
 func (p *processor) extractProviderURL(r io.Reader) (string, error) {
