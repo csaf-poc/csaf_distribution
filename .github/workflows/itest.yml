@@ -31,4 +31,5 @@ jobs:
       - name: Upload test results
         uses: actions/upload-artifact@v3
         with:
-            path: checker-result.html
+            path: ~/checker-result.html
+            if-no-files-found: error
