@@ -608,8 +608,10 @@ func NewProviderMetadata(canonicalURL string) *ProviderMetadata {
 // and tlps feeds.
 func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata {
 
+	prefix := "/.well-known/csaf"
+
 	pm := NewProviderMetadata(
-		domain + "/.well-known/csaf/provider-metadata.json")
+		domain + prefix + "/provider-metadata.json")
 
 	if len(tlps) == 0 {
 		return pm
@@ -622,7 +624,7 @@ func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata
 	for i, t := range tlps {
 		lt := strings.ToLower(string(t))
 		feed := "csaf-feed-tlp-" + lt + ".json"
-		url := JSONURL(domain + "/.well-known/csaf/" + lt + "/" + feed)
+		url := JSONURL(prefix + "/" + lt + "/" + feed)
 
 		t := t
 		feeds[i] = Feed{
