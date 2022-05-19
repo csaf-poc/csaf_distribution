@@ -139,10 +139,12 @@ func (w *worker) writeIndex(label string, summaries []summary) error {
 
 func (w *worker) writeROLIE(label string, summaries []summary) error {
 
-	fname := "csaf-feed-tlp-" + strings.ToLower(label) + ".json"
+	labelFolder := strings.ToLower(label)
+
+	fname := "csaf-feed-tlp-" + labelFolder + ".json"
 
 	feedURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
-		w.provider.Name + "/" + fname
+		w.provider.Name + "/" + labelFolder + "/" + fname
 
 	entries := make([]*csaf.Entry, len(summaries))
 
@@ -197,7 +199,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	// Sort by descending updated order.
 	rolie.SortEntriesByUpdated()
 
-	path := filepath.Join(w.dir, fname)
+	path := filepath.Join(w.dir, labelFolder, fname)
 	return util.WriteToFile(path, rolie)
 }
 
