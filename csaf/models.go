@@ -607,11 +607,15 @@ func NewProviderMetadata(canonicalURL string) *ProviderMetadata {
 // NewProviderMetadataDomain creates a new provider with the given URL
 // and tlps feeds.
 func NewProviderMetadataDomain(domain string, tlps []TLPLabel) *ProviderMetadata {
+	return NewProviderMetadataPrefix(domain+"/.well-known/csaf", tlps)
+}
 
-	prefix := "/.well-known/csaf"
+// NewProviderMetadataPrefix creates a new provider with a given prefix
+// and tlps feeds.
+func NewProviderMetadataPrefix(prefix string, tlps []TLPLabel) *ProviderMetadata {
 
 	pm := NewProviderMetadata(
-		domain + prefix + "/provider-metadata.json")
+		prefix + "/provider-metadata.json")
 
 	if len(tlps) == 0 {
 		return pm

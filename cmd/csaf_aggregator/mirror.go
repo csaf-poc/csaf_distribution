@@ -203,8 +203,8 @@ func (w *worker) writeProviderMetadata() error {
 
 	fname := filepath.Join(w.dir, "provider-metadata.json")
 
-	pm := csaf.NewProviderMetadataDomain(
-		w.cfg.Domain,
+	pm := csaf.NewProviderMetadataPrefix(
+		w.cfg.Domain+"/.well-known/csaf-aggreator/"+w.provider.Name,
 		w.labelsFromSummaries())
 
 	// Figure out the role
