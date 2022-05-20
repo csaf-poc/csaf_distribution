@@ -419,7 +419,13 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 			log.Printf("error: %s\n", err)
 			continue
 		}
-		filename := util.CleanFileName(filepath.Base(u.Path))
+
+		// Ignore not confirming filenames.
+		filename := filepath.Base(u.Path)
+		if !util.ConfirmingFileName(filename) {
+			log.Printf("Not confirming filename %q. Ignoring.\n", filename)
+			continue
+		}
 
 		var advisory interface{}
 
