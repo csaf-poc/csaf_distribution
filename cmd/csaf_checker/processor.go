@@ -807,7 +807,11 @@ func (p *processor) locateProviderMetadata(
 	log.Printf("Searching in: %v\n", path)
 	res, err := client.Get(path)
 	if err == nil {
-		if res.StatusCode == http.StatusOK {
+		switch res.StatusCode {
+		case http.StatusNotFound:
+			log.Println("did not find security.txt")
+
+		case http.StatusOK:
 			loc, err := func() (string, error) {
 				defer res.Body.Close()
 				return p.extractProviderURL(res.Body)
@@ -823,9 +827,6 @@ func (p *processor) locateProviderMetadata(
 				}
 				return err
 			}
-		}
-		if res.StatusCode == http.StatusNotFound {
-			log.Printf("did not find security.txt \n")
 		}
 	}
 
