@@ -19,15 +19,19 @@ import (
 	"time"
 )
 
-var (
-	twoOrMoreDots = regexp.MustCompile(`\.{2,}`)
-	stripSlashes  = strings.NewReplacer(`/`, ``, `\`, ``)
-)
+var invalidRune = regexp.MustCompile(`([^a-z0-9\+_-])`)
 
-// CleanFileName removes the "/" "\" charachters and replace the two or more
-// occurences of "." with only one from the passed string.
+// CleanFileName replaces invalid runes with an underscore.
+// If the filename does not end with '.json' it will be appended.
+// The filename is converted to lower case.
+// https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#51-filename
+// specifies valid runes as 'a' to 'z', '0' to '9' and '+', '-', '_'.
 func CleanFileName(s string) string {
-	return twoOrMoreDots.ReplaceAllString(stripSlashes.Replace(s), `.`)
+	s = strings.ToLower(s)
+	if strings.HasSuffix(s, ".json") {
+		s = s[:len(s)-len(".json")]
+	}
+	return invalidRune.ReplaceAllString(s, "_") + ".json"
 }
 
 // PathExists returns true if path exits.

@@ -5,6 +5,22 @@ import (
 	"testing"
 )
 
+func TestCleanFileName(t *testing.T) {
+	for _, x := range [][2]string{
+		{`HELLO`, `hello.json`},
+		{`hello`, `hello.json`},
+		{`cisco-sa-20190513-secureboot.json`, `cisco-sa-20190513-secureboot.json`},
+		{``, `.json`},
+		{`..`, `__.json`},
+		{`../..`, `_____.json`},
+		{`foo+BAR`, `foo+bar.json`},
+	} {
+		if got := CleanFileName(x[0]); got != x[1] {
+			t.Errorf("Expected %q but got %q.", x[1], got)
+		}
+	}
+}
+
 func TestNWriter(t *testing.T) {
 
 	msg := []byte("Gruß!\n")
