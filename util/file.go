@@ -19,10 +19,10 @@ import (
 	"time"
 )
 
-var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]+`)
+var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]+`) // invalid runes + `_`
 
-// CleanFileName replaces invalid runes with an underscore.
-// Multiple underscores are collapsed to one.
+// CleanFileName replaces invalid runes with an underscore and
+// afterwards collapses multiple underscores into one.
 // If the filename does not end with '.json' it will be appended.
 // The filename is converted to lower case.
 // https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html#51-filename
