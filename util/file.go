@@ -19,12 +19,12 @@ import (
 	"time"
 )
 
-var invalidRune = regexp.MustCompile(`([^a-z0-9\+_-])`)
+var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]`)
 
 // CleanFileName replaces invalid runes with an underscore.
 // If the filename does not end with '.json' it will be appended.
 // The filename is converted to lower case.
-// https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#51-filename
+// https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html#51-filename
 // specifies valid runes as 'a' to 'z', '0' to '9' and '+', '-', '_'.
 func CleanFileName(s string) string {
 	s = strings.ToLower(s)
