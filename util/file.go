@@ -38,6 +38,11 @@ func CleanFileName(s string) string {
 	return collapseUnderscored.ReplaceAllString(invalidRune.ReplaceAllString(s, "_"), "_") + ".json"
 }
 
+// ConfirmingFileName checks if the given filename is confirming the standard.
+func ConfirmingFileName(fname string) bool {
+	return fname == CleanFileName(fname)
+}
+
 // PathExists returns true if path exits.
 func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
