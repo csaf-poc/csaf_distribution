@@ -806,21 +806,26 @@ func (p *processor) locateProviderMetadata(
 	path := "https://" + domain + "/.well-known/security.txt"
 	log.Printf("Searching in: %v\n", path)
 	res, err := client.Get(path)
-	if err == nil && res.StatusCode == http.StatusOK {
-		loc, err := func() (string, error) {
-			defer res.Body.Close()
-			return p.extractProviderURL(res.Body)
-		}()
+	if err == nil {
+		if res.StatusCode == http.StatusOK {
+			loc, err := func() (string, error) {
+				defer res.Body.Close()
+				return p.extractProviderURL(res.Body)
+			}()
 
-		if err != nil {
-			log.Printf("did not find provider URL in /.well-known/security.txt, error: %v\n", err)
-		}
-
-		if loc != "" {
-			if _, err = tryURL(loc); err == errContinue {
-				err = nil
+			if err != nil {
+				log.Printf("did not find provider URL in /.well-known/security.txt, error: %v\n", err)
 			}
-			return err
+
+			if loc != "" {
+				if _, err = tryURL(loc); err == errContinue {
+					err = nil
+				}
+				return err
+			}
+		}
+		if res.StatusCode == http.StatusNotFound {
+			log.Printf("did not find security.txt \n")
 		}
 	}
 
@@ -835,7 +840,7 @@ func (p *processor) locateProviderMetadata(
 		return nil
 	}
 
-	return errStop
+	return err
 }
 
 func (p *processor) extractProviderURL(r io.Reader) (string, error) {
@@ -896,11 +901,9 @@ func (p *processor) checkProviderMetadata(domain string) error {
 		return nil
 	}
 
-	if err := p.locateProviderMetadata(domain, found); err != nil {
-		return err
-	}
+	locateErr := p.locateProviderMetadata(domain, found)
 
-	if p.pmdURL == "" {
+	if p.pmdURL == "" || locateErr != nil {
 		p.badProviderMetadata.add("No provider-metadata.json found.")
 		p.badProviderMetadata.add("STOPPING here - cannot perform other checks.")
 		return errStop
