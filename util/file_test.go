@@ -33,6 +33,7 @@ func TestConfirmingFileName(t *testing.T) {
 		{`cisco-sa-20190513-secureboot.json`, true},
 		{`example_company_-_2019-yh3234.json`, true},
 		{`rhba-2019_0024.json`, true},
+		{`2022__01-a.json`, false},
 		{``, false},
 		{`..`, false},
 		{`../..`, false},
