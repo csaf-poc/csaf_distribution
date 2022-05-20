@@ -19,10 +19,7 @@ import (
 	"time"
 )
 
-var (
-	invalidRune         = regexp.MustCompile(`[^+\-a-z0-9]`)
-	collapseUnderscored = regexp.MustCompile(`_{2,}`)
-)
+var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]+`)
 
 // CleanFileName replaces invalid runes with an underscore.
 // Multiple underscores are collapsed to one.
@@ -35,7 +32,7 @@ func CleanFileName(s string) string {
 	if strings.HasSuffix(s, ".json") {
 		s = s[:len(s)-len(".json")]
 	}
-	return collapseUnderscored.ReplaceAllString(invalidRune.ReplaceAllString(s, "_"), "_") + ".json"
+	return invalidRune.ReplaceAllString(s, "_") + ".json"
 }
 
 // ConfirmingFileName checks if the given filename is confirming the standard.
