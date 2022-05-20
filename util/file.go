@@ -19,9 +19,13 @@ import (
 	"time"
 )
 
-var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]`)
+var (
+	invalidRune         = regexp.MustCompile(`[^+\-a-z0-9]`)
+	collapseUnderscored = regexp.MustCompile(`_{2,}`)
+)
 
 // CleanFileName replaces invalid runes with an underscore.
+// Multiple underscores are collapsed to one.
 // If the filename does not end with '.json' it will be appended.
 // The filename is converted to lower case.
 // https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html#51-filename
@@ -31,7 +35,7 @@ func CleanFileName(s string) string {
 	if strings.HasSuffix(s, ".json") {
 		s = s[:len(s)-len(".json")]
 	}
-	return invalidRune.ReplaceAllString(s, "_") + ".json"
+	return collapseUnderscored.ReplaceAllString(invalidRune.ReplaceAllString(s, "_"), "_") + ".json"
 }
 
 // PathExists returns true if path exits.

@@ -11,9 +11,10 @@ func TestCleanFileName(t *testing.T) {
 		{`hello`, `hello.json`},
 		{`cisco-sa-20190513-secureboot.json`, `cisco-sa-20190513-secureboot.json`},
 		{``, `.json`},
-		{`..`, `__.json`},
-		{`../..`, `_____.json`},
-		{`abc.html`, `________.json`},
+		{`..`, `_.json`},
+		{`../..`, `_.json`},
+		{`abc.html`, `abc_html.json`},
+		{`abc_.htm__l`, `abc_htm_l.json`},
 		{`foo+BAR`, `foo+bar.json`},
 	} {
 		if got := CleanFileName(x[0]); got != x[1] {
