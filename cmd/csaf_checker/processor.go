@@ -22,6 +22,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -204,6 +205,7 @@ func (p *processor) checkDomain(domain string) error {
 		(*processor).checkSecurity,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
+		(*processor).checkInvalid,
 		(*processor).checkListing,
 		(*processor).checkWellknownMetadataReporter,
 		(*processor).checkDNSPathReporter,
@@ -724,7 +726,29 @@ func (p *processor) checkMissing(string) error {
 	return nil
 }
 
-// checkListing wents over all found adivisories URLs and checks,
+// checkInvalid wents over all found adivisories URLs and checks
+// if file name confirms to standard.
+func (p *processor) checkInvalid(string) error {
+
+	p.badDirListings.use()
+	var invalids []string
+
+	for f := range p.alreadyChecked {
+		if !util.ConfirmingFileName(filepath.Base(f)) {
+			invalids = append(invalids, f)
+		}
+	}
+
+	if len(invalids) > 0 {
+		sort.Strings(invalids)
+		p.badDirListings.add("advisories with invalid file names: %s",
+			strings.Join(invalids, ", "))
+	}
+
+	return nil
+}
+
+// checkListing wents over all found adivisories URLs and checks
 // if their parent directory is listable.
 func (p *processor) checkListing(string) error {
 
