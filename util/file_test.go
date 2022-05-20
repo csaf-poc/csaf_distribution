@@ -5,6 +5,48 @@ import (
 	"testing"
 )
 
+func TestCleanFileName(t *testing.T) {
+	for _, x := range [][2]string{
+		{`HELLO`, `hello.json`},
+		{`hello`, `hello.json`},
+		{`cisco-sa-20190513-secureboot.json`, `cisco-sa-20190513-secureboot.json`},
+		{``, `.json`},
+		{`..`, `_.json`},
+		{`../..`, `_.json`},
+		{`abc.html`, `abc_html.json`},
+		{`abc_.htm__l`, `abc_htm_l.json`},
+		{`foo+BAR`, `foo+bar.json`},
+	} {
+		if got := CleanFileName(x[0]); got != x[1] {
+			t.Errorf("%q: Expected %q but got %q.", x[0], x[1], got)
+		}
+	}
+}
+
+func TestConfirmingFileName(t *testing.T) {
+	for _, x := range []struct {
+		s string
+		b bool
+	}{
+		{`HELLO`, false},
+		{`hello`, false},
+		{`cisco-sa-20190513-secureboot.json`, true},
+		{`example_company_-_2019-yh3234.json`, true},
+		{`rhba-2019_0024.json`, true},
+		{`2022__01-a.json`, false},
+		{``, false},
+		{`..`, false},
+		{`../..`, false},
+		{`abc.html`, false},
+		{`abc_.htm__l`, false},
+		{`foo+BAR`, false},
+	} {
+		if got := ConfirmingFileName(x.s); got != x.b {
+			t.Errorf("%q: Expected %t but got %t.", x.s, x.b, got)
+		}
+	}
+}
+
 func TestNWriter(t *testing.T) {
 
 	msg := []byte("Gruß!\n")

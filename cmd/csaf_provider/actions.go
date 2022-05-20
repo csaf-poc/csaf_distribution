@@ -39,6 +39,10 @@ func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 	}
 	defer file.Close()
 
+	if !util.ConfirmingFileName(handler.Filename) {
+		return "", nil, errors.New("given csaf filename is not confirming")
+	}
+
 	var buf bytes.Buffer
 	if _, err := io.Copy(&buf, c.cfg.uploadLimiter(file)); err != nil {
 		return "", nil, err
