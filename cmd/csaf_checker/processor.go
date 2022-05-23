@@ -189,6 +189,9 @@ func (p *processor) run(reporters []reporter, domains []string) (*Report, error)
 		for _, r := range reporters {
 			r.report(p, domain)
 		}
+		report.Version = util.SemVersion
+		now := time.Now()
+		report.Date = now.Format("2006-01-02-15:04:05")
 		report.Domains = append(report.Domains, domain)
 		p.clean()
 	}

@@ -7,8 +7,13 @@
   </head>
   <body>
    <h1>CSAF-Checker - Report</h1>
+
+<div>Date of run: {{.Date}}</div>
+<div>csaf_checker version: {{.Version}}</div>
+
 {{- range .Domains }}
    <h2>{{ .Name }}</h2>
+
    <dl>
 {{ range .Requirements }}
    <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
