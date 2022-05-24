@@ -8,8 +8,6 @@
   <body>
    <h1>CSAF-Checker - Report</h1>
 
-<div>Date of run: {{.Date}}</div>
-<div>csaf_checker version: {{.Version}}</div>
 
 {{- range .Domains }}
    <h2>{{ .Name }}</h2>
@@ -23,5 +21,11 @@
 {{ end }}
    </dl>
 {{ end }}
+
+    <footer>
+      Date of run: <time datetime="{{.Date}}">{{.Date}}</time>
+      csaf_checker <div class=version>v{{.Version}}</div>
+    </footer>
+
   </body>
 </html>
