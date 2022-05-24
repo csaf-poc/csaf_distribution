@@ -24,6 +24,8 @@ type Domain struct {
 // Report is the overall report.
 type Report struct {
 	Domains []*Domain `json:"domains,omitempty"`
+	Version string    `json:"version,omitempty"`
+	Date    string    `json:"date,omitempty"`
 }
 
 func (r *Requirement) message(msg ...string) {

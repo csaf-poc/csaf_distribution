@@ -6,17 +6,23 @@
     <title>CSAF-Checker - Report</title>
   </head>
   <body>
-   <h1>CSAF-Checker - Report</h1>
+    <h1>CSAF-Checker - Report</h1>
 {{- range .Domains }}
-   <h2>{{ .Name }}</h2>
-   <dl>
+    <h2>{{ .Name }}</h2>
+
+    <dl>
 {{ range .Requirements }}
-   <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
+    <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
 {{ range .Messages }}
       <dd>- {{ . }}</dd>
 {{ end }}
 {{ end }}
-   </dl>
+    </dl>
 {{ end }}
+
+    <footer>
+      Date of run: <time datetime="{{.Date}}">{{.Date}}</time>
+      csaf_checker <span class=version>{{.Version}}</span>
+    </footer>
   </body>
 </html>
