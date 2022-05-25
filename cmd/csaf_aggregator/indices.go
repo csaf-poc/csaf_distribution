@@ -188,7 +188,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 			ID:    "csaf-feed-tlp-" + strings.ToLower(label),
 			Title: "CSAF feed (TLP:" + strings.ToUpper(label) + ")",
 			Link: []csaf.Link{{
-				Rel:  "rel",
+				Rel:  "self",
 				HRef: feedURL,
 			}},
 			Category: []csaf.ROLIECategory{{
