@@ -224,7 +224,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 						ID:    "csaf-feed-tlp-" + ts,
 						Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
 						Link: []csaf.Link{{
-							Rel:  "rel",
+							Rel:  "self",
 							HRef: string(feedURL),
 						}},
 						Category: []csaf.ROLIECategory{{
