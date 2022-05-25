@@ -191,6 +191,10 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 				Rel:  "rel",
 				HRef: feedURL,
 			}},
+			Category: []csaf.ROLIECategory{{
+				Scheme: "urn:ietf:params:rolie:category:information-type",
+				Term:   "csaf",
+			}},
 			Updated: csaf.TimeStamp(time.Now()),
 			Entry:   entries,
 		},

@@ -227,6 +227,10 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 							Rel:  "rel",
 							HRef: string(feedURL),
 						}},
+						Category: []csaf.ROLIECategory{{
+							Scheme: "urn:ietf:params:rolie:category:information-type",
+							Term:   "csaf",
+						}},
 					},
 				}
 			}
