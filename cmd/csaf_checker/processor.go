@@ -11,7 +11,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/tls"
@@ -40,22 +39,9 @@ import (
 // topicMessages stores the collected topicMessages for a specific topic.
 type topicMessages []string
 
-type client interface {
-	Get(url string) (*http.Response, error)
-}
-type limitingClient struct {
-	client
-	limiter *rate.Limiter
-}
-
-func (lc *limitingClient) Get(url string) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.Get(url)
-}
-
 type processor struct {
 	opts   *options
-	client client
+	client util.Client
 
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
@@ -278,18 +264,21 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	return nil
 }
 
-func (p *processor) httpClient() client {
+func (p *processor) httpClient() util.Client {
 
 	if p.client != nil {
 		return p.client
 	}
 
 	client := http.Client{}
+
 	client.CheckRedirect = p.checkRedirect
+
 	var tlsConfig tls.Config
 	if p.opts.Insecure {
 		tlsConfig.InsecureSkipVerify = true
 	}
+
 	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
 		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
 		if err != nil {
@@ -297,26 +286,22 @@ func (p *processor) httpClient() client {
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
+
 	client.Transport = &http.Transport{
 		TLSClientConfig: &tlsConfig,
 	}
-	p.client = &client
 
 	if p.opts.Rate == nil {
+		p.client = &client
 		return &client
 	}
 
-	var r float64
-	if p.opts.Rate != nil {
-		r = *p.opts.Rate
+	p.client = &util.LimitingClient{
+		Client:  &client,
+		Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
+	}
 
-	}
-	p.client = &limitingClient{
-		client:  &client,
-		limiter: rate.NewLimiter(rate.Limit(r), 1),
-	}
 	return p.client
-
 }
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
