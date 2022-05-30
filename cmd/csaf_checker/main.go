@@ -26,12 +26,13 @@ import (
 var reportHTML string
 
 type options struct {
-	Output     string  `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
-	Format     string  `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
-	Insecure   bool    `long:"insecure" description:"Do not check TLS certificates from provider"`
-	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
-	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
-	Version    bool    `long:"version" description:"Display version of the binary"`
+	Output     string   `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE"`
+	Format     string   `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json"`
+	Insecure   bool     `long:"insecure" description:"Do not check TLS certificates from provider"`
+	ClientCert *string  `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE"`
+	ClientKey  *string  `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE"`
+	Version    bool     `long:"version" description:"Display version of the binary"`
+	Rate       *float64 `long:"rate" short:"t"`
 }
 
 func errCheck(err error) {

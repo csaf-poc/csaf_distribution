@@ -11,6 +11,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/tls"
@@ -30,6 +31,7 @@ import (
 	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"golang.org/x/time/rate"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -38,9 +40,22 @@ import (
 // topicMessages stores the collected topicMessages for a specific topic.
 type topicMessages []string
 
+type client interface {
+	Get(url string) (*http.Response, error)
+}
+type limitingClient struct {
+	client
+	limiter *rate.Limiter
+}
+
+func (lc *limitingClient) Get(url string) (*http.Response, error) {
+	lc.limiter.Wait(context.Background())
+	return lc.client.Get(url)
+}
+
 type processor struct {
 	opts   *options
-	client *http.Client
+	client client
 
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
@@ -263,15 +278,14 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	return nil
 }
 
-func (p *processor) httpClient() *http.Client {
+func (p *processor) httpClient() client {
 
 	if p.client != nil {
 		return p.client
 	}
 
-	p.client = &http.Client{
-		CheckRedirect: p.checkRedirect,
-	}
+	client := http.Client{}
+	client.CheckRedirect = p.checkRedirect
 	var tlsConfig tls.Config
 	if p.opts.Insecure {
 		tlsConfig.InsecureSkipVerify = true
@@ -283,10 +297,26 @@ func (p *processor) httpClient() *http.Client {
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
-	p.client.Transport = &http.Transport{
+	client.Transport = &http.Transport{
 		TLSClientConfig: &tlsConfig,
 	}
+	p.client = &client
+
+	if p.opts.Rate == nil {
+		return &client
+	}
+
+	var r float64
+	if p.opts.Rate != nil {
+		r = *p.opts.Rate
+
+	}
+	p.client = &limitingClient{
+		client:  &client,
+		limiter: rate.NewLimiter(rate.Limit(r), 1),
+	}
 	return p.client
+
 }
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
@@ -458,7 +488,6 @@ func (p *processor) integrity(
 }
 
 func (p *processor) processROLIEFeed(feed string) error {
-
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	if err != nil {
@@ -531,6 +560,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 // It returns error if fetching/reading the file(s) fails, otherwise nil.
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
+
 	index := base + "/index.txt"
 	p.checkTLS(index)
 
@@ -795,10 +825,10 @@ func (p *processor) locateProviderMetadata(
 ) error {
 
 	client := p.httpClient()
-
 	tryURL := func(url string) (bool, error) {
 		log.Printf("Trying: %v\n", url)
 		res, err := client.Get(url)
+
 		if err != nil || res.StatusCode != http.StatusOK ||
 			res.Header.Get("Content-Type") != "application/json" {
 			// ignore this as it is expected.
@@ -943,7 +973,6 @@ func (p *processor) checkProviderMetadata(domain string) error {
 func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
-
 	p.badSecurity.use()
 
 	path := "https://" + domain + "/.well-known/security.txt"
