@@ -21,6 +21,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 	"golang.org/x/time/rate"
 )
 
@@ -105,7 +106,7 @@ func (c *config) cryptoKey() (*crypto.Key, error) {
 	return c.key, c.keyErr
 }
 
-func (c *config) httpClient(p *provider) client {
+func (c *config) httpClient(p *provider) util.Client {
 
 	client := http.Client{}
 	if p.Insecure != nil && *p.Insecure || c.Insecure != nil && *c.Insecure {
@@ -126,9 +127,9 @@ func (c *config) httpClient(p *provider) client {
 	if p.Rate != nil {
 		r = *p.Rate
 	}
-	return &limitingClient{
-		client:  &client,
-		limiter: rate.NewLimiter(rate.Limit(r), 1),
+	return &util.LimitingClient{
+		Client:  &client,
+		Limiter: rate.NewLimiter(rate.Limit(r), 1),
 	}
 }
 

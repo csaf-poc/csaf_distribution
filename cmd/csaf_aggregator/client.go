@@ -9,56 +9,16 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 
-	"golang.org/x/time/rate"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
-
-type client interface {
-	Do(req *http.Request) (*http.Response, error)
-	Get(url string) (*http.Response, error)
-	Head(url string) (*http.Response, error)
-	Post(url, contentType string, body io.Reader) (*http.Response, error)
-	PostForm(url string, data url.Values) (*http.Response, error)
-}
-
-type limitingClient struct {
-	client
-	limiter *rate.Limiter
-}
-
-func (lc *limitingClient) Do(req *http.Request) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.Do(req)
-}
-
-func (lc *limitingClient) Get(url string) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.Get(url)
-}
-
-func (lc *limitingClient) Head(url string) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.Head(url)
-}
-
-func (lc *limitingClient) Post(url, contentType string, body io.Reader) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.Post(url, contentType, body)
-}
-
-func (lc *limitingClient) PostForm(url string, data url.Values) (*http.Response, error) {
-	lc.limiter.Wait(context.Background())
-	return lc.client.PostForm(url, data)
-}
 
 var errNotFound = errors.New("not found")
 
-func downloadJSON(c client, url string, found func(io.Reader) error) error {
+func downloadJSON(c util.Client, url string, found func(io.Reader) error) error {
 	res, err := c.Get(url)
 	if err != nil || res.StatusCode != http.StatusOK ||
 		res.Header.Get("Content-Type") != "application/json" {

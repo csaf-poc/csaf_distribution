@@ -39,7 +39,7 @@ type worker struct {
 	cfg      *config
 	signRing *crypto.KeyRing
 
-	client           client               // client per provider
+	client           util.Client          // client per provider
 	provider         *provider            // current provider
 	metadataProvider interface{}          // current metadata provider
 	loc              string               // URL of current provider-metadata.json
