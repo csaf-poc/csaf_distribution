@@ -101,6 +101,12 @@ as `csaf_provider.go` must be able to read it.
 Many systems use `www-data` as user id, so you could do something like
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=84-86) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
+```sh
+sudo touch /usr/lib/csaf/config.toml
+sudo chgrp www-data /usr/lib/csaf/config.toml
+sudo chmod g+r,o-rwx /usr/lib/csaf/config.toml
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 **This and the other settings are just examples, please adjust permissions and paths according to your webserver and security needs.**
