@@ -19,17 +19,17 @@ import (
 	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-type pmdResult struct {
-	url      string
-	pmd      interface{}
-	hash     []byte
-	messages []string
+type LoadedProviderMetadata struct {
+	URL      string
+	Document interface{}
+	Hash     []byte
+	Messages []string
 }
 
-func (p *processor) loadProviderMetadata(url string) *pmdResult {
-	client := p.httpClient()
+func LoadProviderMetadata(client util.Client, url string) *LoadedProviderMetadata {
 
 	res, err := client.Get(url)
 
@@ -45,38 +45,36 @@ func (p *processor) loadProviderMetadata(url string) *pmdResult {
 	// Calculate checksum for later comparison.
 	hash := sha256.New()
 
-	result := pmdResult{url: url}
+	result := LoadedProviderMetadata{URL: url}
 
 	tee := io.TeeReader(res.Body, hash)
 
-	if err := json.NewDecoder(tee).Decode(&result.pmd); err != nil {
-		result.messages = []string{fmt.Sprintf("%s: Decoding JSON failed: %v", url, err)}
+	if err := json.NewDecoder(tee).Decode(&result.Document); err != nil {
+		result.Messages = []string{fmt.Sprintf("%s: Decoding JSON failed: %v", url, err)}
 		return &result
 	}
 
-	result.hash = hash.Sum(nil)
+	result.Hash = hash.Sum(nil)
 
-	errors, err := csaf.ValidateProviderMetadata(result.pmd)
+	errors, err := csaf.ValidateProviderMetadata(result.Document)
 	if err != nil {
-		result.messages = []string{
+		result.Messages = []string{
 			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
 		return &result
 	}
 
 	if len(errors) > 0 {
-		result.messages = []string{
+		result.Messages = []string{
 			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
 		for _, msg := range errors {
-			result.messages = append(result.messages, strings.ReplaceAll(msg, `%`, `%%`))
+			result.Messages = append(result.Messages, strings.ReplaceAll(msg, `%`, `%%`))
 		}
 	}
 
 	return &result
 }
 
-func (p *processor) loadProviderMetadatasFromSecurity(path string) ([]*pmdResult, error) {
-
-	client := p.httpClient()
+func LoadProviderMetadatasFromSecurity(client util.Client, path string) ([]*LoadedProviderMetadata, error) {
 
 	res, err := client.Get(path)
 
@@ -95,11 +93,11 @@ func (p *processor) loadProviderMetadatasFromSecurity(path string) ([]*pmdResult
 		return nil, err
 	}
 
-	var results []*pmdResult
+	var results []*LoadedProviderMetadata
 
 	// Load the URLs
 	for _, url := range urls {
-		if result := p.loadProviderMetadata(url); result != nil {
+		if result := LoadProviderMetadata(client, url); result != nil {
 			results = append(results, result)
 		}
 	}
@@ -107,24 +105,32 @@ func (p *processor) loadProviderMetadatasFromSecurity(path string) ([]*pmdResult
 	return results, nil
 }
 
-func (p *processor) findProviderMetadata(domain string) *pmdResult {
+func (p *processor) LoadProviderMetadataForDomain(
+	client util.Client,
+	domain string,
+	logging func(format string, args ...interface{}),
+) *LoadedProviderMetadata {
 
-	p.badProviderMetadata.use()
+	if logging == nil {
+		logging = func(format string, args ...interface{}) {
+			log.Printf("FindProviderMetadata: "+format+"\n", args...)
+		}
+	}
 
 	// Valid provider metadata under well-known.
-	var wellknownGood *pmdResult
+	var wellknownGood *LoadedProviderMetadata
 
 	// First try well-know path
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 	log.Printf("Trying: %s\n", wellknownURL)
-	wellknownResult := p.loadProviderMetadata(wellknownURL)
+	wellknownResult := LoadProviderMetadata(client, wellknownURL)
 
 	if wellknownResult == nil {
-		p.badProviderMetadata.add("%s not found.", wellknownURL)
-	} else if len(wellknownResult.messages) > 0 {
+		logging("%s not found.", wellknownURL)
+	} else if len(wellknownResult.Messages) > 0 {
 		// There are issues
-		for _, msg := range wellknownResult.messages {
-			p.badProviderMetadata.add(msg)
+		for _, msg := range wellknownResult.Messages {
+			logging(msg)
 		}
 	} else {
 		// We have a candidate.
@@ -134,18 +140,18 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 	// Next load the PMDs from security.txt
 	secURL := "https://" + domain + "/.well-known/security.txt"
 	log.Printf("Trying: %s\n", secURL)
-	secResults, err := p.loadProviderMetadatasFromSecurity(secURL)
+	secResults, err := LoadProviderMetadatasFromSecurity(client, secURL)
 
 	if err != nil {
-		p.badProviderMetadata.add("%s failed: %v.", secURL, err)
+		logging("%s failed: %v.", secURL, err)
 	} else {
 		// Filter out the results which are valid.
-		var secGoods []*pmdResult
+		var secGoods []*LoadedProviderMetadata
 
 		for _, result := range secResults {
-			if len(result.messages) > 0 {
-				for _, msg := range result.messages {
-					p.badProviderMetadata.add(msg)
+			if len(result.Messages) > 0 {
+				for _, msg := range result.Messages {
+					logging(msg)
 				}
 			} else {
 				secGoods = append(secGoods, result)
@@ -157,17 +163,17 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 			// we have a wellknown good take it.
 			if wellknownGood != nil {
 				// check if first of security urls is identical to wellknown.
-				if bytes.Equal(wellknownGood.hash, secGoods[0].hash) {
+				if bytes.Equal(wellknownGood.Hash, secGoods[0].Hash) {
 					// Mention extra CSAF entries
 					for _, extra := range secGoods[1:] {
-						p.badProviderMetadata.add("Ignoring extra CSAF entry in security.txt: %s", extra.url)
+						logging("Ignoring extra CSAF entry in security.txt: %s", extra.URL)
 					}
 				} else {
 					// Complaint about not matching.
-					p.badProviderMetadata.add("First entry of security.txt and well-known don't match.")
+					logging("First entry of security.txt and well-known don't match.")
 					// List all the security urls.
 					for _, sec := range secGoods {
-						p.badProviderMetadata.add("Ignoring CSAF entry in security.txt: %s", sec.url)
+						logging("Ignoring CSAF entry in security.txt: %s", sec.URL)
 					}
 				}
 				// Take the good well-known.
@@ -177,7 +183,7 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 			// Don't have well-known. Take first good from security.txt.
 			// Mention extra CSAF entries
 			for _, extra := range secGoods[1:] {
-				p.badProviderMetadata.add("Ignoring extra CSAF entry in security.txt: %s", extra.url)
+				logging("Ignoring extra CSAF entry in security.txt: %s", extra.URL)
 			}
 
 			return secGoods[0]
@@ -193,13 +199,13 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 
 	dnsURL := "https://csaf.data.security." + domain
 	log.Printf("Trying: %s\n", dnsURL)
-	dnsResult := p.loadProviderMetadata(dnsURL)
+	dnsResult := LoadProviderMetadata(client, dnsURL)
 
 	if dnsResult == nil {
-		p.badProviderMetadata.add("%s not found.", dnsURL)
-	} else if len(dnsResult.messages) > 0 {
-		for _, msg := range dnsResult.messages {
-			p.badProviderMetadata.add(msg)
+		logging("%s not found.", dnsURL)
+	} else if len(dnsResult.Messages) > 0 {
+		for _, msg := range dnsResult.Messages {
+			logging(msg)
 		}
 	} else {
 		// DNS seems to be okay.
