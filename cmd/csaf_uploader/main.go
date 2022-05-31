@@ -27,7 +27,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // The supported flag options of the uploader command line
@@ -341,7 +341,7 @@ func findIniFile() string {
 // readInteractive prints a message to command line and retrieves the password from it.
 func readInteractive(prompt string, pw **string) error {
 	fmt.Print(prompt)
-	p, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	p, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return err
 	}
