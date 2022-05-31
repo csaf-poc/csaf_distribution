@@ -34,9 +34,11 @@ func (p *processor) loadProviderMetadata(url string) *pmdResult {
 	res, err := client.Get(url)
 
 	if err != nil || res.StatusCode != http.StatusOK {
-		// ignore this as t is expected.
+		// Treat as not found.
 		return nil
 	}
+
+	// TODO: Check for application/json and log it.
 
 	defer res.Body.Close()
 
@@ -79,7 +81,7 @@ func (p *processor) loadProviderMetadatasFromSecurity(path string) ([]*pmdResult
 	res, err := client.Get(path)
 
 	if err != nil || res.StatusCode != http.StatusOK {
-		// ignore as it is expected.
+		// Treat as not found.
 		return nil, nil
 	}
 
@@ -158,14 +160,14 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 				if bytes.Equal(wellknownGood.hash, secGoods[0].hash) {
 					// Mention extra CSAF entries
 					for _, extra := range secGoods[1:] {
-						p.badProviderMetadata.add("extra CSAF entry in secturity.txt: %s", extra.url)
+						p.badProviderMetadata.add("Ignoring extra CSAF entry in security.txt: %s", extra.url)
 					}
 				} else {
 					// Complaint about not matching.
 					p.badProviderMetadata.add("First entry of security.txt and well-known don't match.")
 					// List all the security urls.
 					for _, sec := range secGoods {
-						p.badProviderMetadata.add("CSAF entry in security.txt: %s", sec.url)
+						p.badProviderMetadata.add("Ignoring CSAF entry in security.txt: %s", sec.url)
 					}
 				}
 				// Take the good well-known.
@@ -175,14 +177,14 @@ func (p *processor) findProviderMetadata(domain string) *pmdResult {
 			// Don't have well-known. Take first good from security.txt.
 			// Mention extra CSAF entries
 			for _, extra := range secGoods[1:] {
-				p.badProviderMetadata.add("extra CSAF entry in secturity.txt: %s", extra.url)
+				p.badProviderMetadata.add("Ignoring extra CSAF entry in security.txt: %s", extra.url)
 			}
 
 			return secGoods[0]
 		}
 	}
 
-	// If we have a goog well-known take it.
+	// If we have a good well-known take it.
 	if wellknownGood != nil {
 		return wellknownGood
 	}
