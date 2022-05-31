@@ -73,7 +73,7 @@ pushd ../..
 export PATH=$PATH:/usr/local/go/bin
 make build_linux
 # Place the binary under the corresponding path.
-sudo mkdir /usr/lib/cgi-bin/
+sudo mkdir -p /usr/lib/cgi-bin/
 sudo chgrp www-data /usr/lib/cgi-bin/
 sudo chmod o-rwx /usr/lib/cgi-bin/
 sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
