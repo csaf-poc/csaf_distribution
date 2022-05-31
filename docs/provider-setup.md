@@ -11,7 +11,7 @@ adjust the examples to your needs.
 apt-get install nginx fcgiwrap
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 ```
-Check if the CGI server and the fcgiwrap Socket active (running):
+Check if the CGI server and the fcgiwrap Socket are active (running):
 ```bash
 systemctl status fcgiwrap.service
 systemctl status fcgiwrap.socket
@@ -87,17 +87,18 @@ server {
 ```
 Reload nginx to apply the changes (e.g. ```systemctl reload nginx``` on Debian or Ubuntu).
 
-Create `cgi-bin` folder if not exists `mkdir -p /usr/lib/cgi-bin/`.
+Create `cgi-bin` folder if it not exists: `mkdir -p /usr/lib/cgi-bin/`.
 
 Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_provider.go`.
 
 
 Create configuration file under `/usr/lib/csaf/config.toml`
-and make sure is has good restrictive permissions.
-It must be readable by the user id, which the webserver fastcgi interface
-uses to start the CGI-binary, as `csaf_provider.go` must be able to read it.
+and make sure is has good, restrictive permissions.
+It must be readable by the user(id), which the webserver's fastcgi interface
+uses to start the CGI-binary with,
+as `csaf_provider.go` must be able to read it.
 
-Many setups use `www-data` as user id, so you could do something like
+Many systems use `www-data` as user id, so you could do something like
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=84-86) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
@@ -126,15 +127,18 @@ on a GNU/Linux operating system.
 
 Create the folders:
 ```(shell)
-curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
+curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificat.p12}
 ```
-Replace {clientCertificate} with the client certificate file.
+Replace {clientCertificate.p12} with the client certificate file
+in pkcs12 format which includes the corresponding key as well.
+
 Or using the uploader:
 ```(shell)
-./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}
+./csaf_uploader --action create --url https://192.168.56.102/cgi-bin/csaf_provider.go --client-cert {clientCert.crt} --client-key {clientKey.pem}
 ```
-Replace {password} with the password used for the authentication with csaf_provider.
-This needs to set the `password` option in `config.toml`.
+
+Again replacing `{clientCert.crt}` and `{clientKey.pem}` accordingly.
+
 
 To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=18-35) -->
@@ -202,12 +206,12 @@ Provider has many config options described as following:
 * Uploading should be done with the uploader and secured by TLS
   client certificates which are individual per person allowed to upload.
   This way it can be traced in the log, who did which uploads.
-* For TLS client and setups with normal security requirement,
+* For TLS client setups with normal security requirements,
   it should be okay to run a small internal
   certificate authority like the example
   in [development-client-certs.md](development-client-certs.md),
-  and import the root certificate on the systems that are allowed to
-  upload.
+  and import the root certificate on the systems that have users which
+  want to upload.
 * The single `password` is only for very simple settings, testing or
   (planned feature) as
   additional method in the special situation that TLS client certificates
