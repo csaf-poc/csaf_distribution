@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"golang.org/x/time/rate"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -40,7 +41,7 @@ type topicMessages []string
 
 type processor struct {
 	opts   *options
-	client *http.Client
+	client util.Client
 
 	redirects      map[string]string
 	noneTLS        map[string]struct{}
@@ -263,19 +264,21 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	return nil
 }
 
-func (p *processor) httpClient() *http.Client {
+func (p *processor) httpClient() util.Client {
 
 	if p.client != nil {
 		return p.client
 	}
 
-	p.client = &http.Client{
-		CheckRedirect: p.checkRedirect,
-	}
+	client := http.Client{}
+
+	client.CheckRedirect = p.checkRedirect
+
 	var tlsConfig tls.Config
 	if p.opts.Insecure {
 		tlsConfig.InsecureSkipVerify = true
 	}
+
 	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
 		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
 		if err != nil {
@@ -283,9 +286,21 @@ func (p *processor) httpClient() *http.Client {
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
-	p.client.Transport = &http.Transport{
+
+	client.Transport = &http.Transport{
 		TLSClientConfig: &tlsConfig,
 	}
+
+	if p.opts.Rate == nil {
+		p.client = &client
+		return &client
+	}
+
+	p.client = &util.LimitingClient{
+		Client:  &client,
+		Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
+	}
+
 	return p.client
 }
 
@@ -458,7 +473,6 @@ func (p *processor) integrity(
 }
 
 func (p *processor) processROLIEFeed(feed string) error {
-
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	if err != nil {
@@ -531,6 +545,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 // It returns error if fetching/reading the file(s) fails, otherwise nil.
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
+
 	index := base + "/index.txt"
 	p.checkTLS(index)
 
@@ -795,10 +810,10 @@ func (p *processor) locateProviderMetadata(
 ) error {
 
 	client := p.httpClient()
-
 	tryURL := func(url string) (bool, error) {
 		log.Printf("Trying: %v\n", url)
 		res, err := client.Get(url)
+
 		if err != nil || res.StatusCode != http.StatusOK ||
 			res.Header.Get("Content-Type") != "application/json" {
 			// ignore this as it is expected.
@@ -943,7 +958,6 @@ func (p *processor) checkProviderMetadata(domain string) error {
 func (p *processor) checkSecurity(domain string) error {
 
 	client := p.httpClient()
-
 	p.badSecurity.use()
 
 	path := "https://" + domain + "/.well-known/security.txt"
