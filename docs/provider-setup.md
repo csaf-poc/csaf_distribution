@@ -2,13 +2,16 @@
 
 The provider is meant to run as an CGI program in an nginx enviroment.
 
-The following instructions are for an Debian 11 server setup.
+The following instructions are for a Debian 11 server setup
+and explain how it works in principle. For a production setup
+adjust the examples to your needs.
+
 
 ```(shell)
 apt-get install nginx fcgiwrap
 cp /usr/share/doc/fcgiwrap/examples/nginx.conf /etc/nginx/fcgiwrap.conf
 ```
-Check if the CGI server and the fcgiwrap Socket active (running):
+Check if the CGI server and the fcgiwrap Socket are active (running):
 ```bash
 systemctl status fcgiwrap.service
 systemctl status fcgiwrap.socket
@@ -84,14 +87,25 @@ server {
 ```
 Reload nginx to apply the changes (e.g. ```systemctl reload nginx``` on Debian or Ubuntu).
 
-Create `cgi-bin` folder if not exists `mkdir -p /usr/lib/cgi-bin/`.
+Create `cgi-bin` folder if it not exists: `mkdir -p /usr/lib/cgi-bin/`.
 
 Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_provider.go`.
 
 
-Create configuration file under `/usr/lib/csaf/config.toml`:
+Create configuration file under `/usr/lib/csaf/config.toml`
+and make sure is has good, restrictive permissions.
+It must be readable by the user(id), which the webserver's fastcgi interface
+uses to start the CGI-binary with,
+as `csaf_provider.go` must be able to read it.
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=83-88) -->
+Many systems use `www-data` as user id, so you could do something like
+
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=84-86) -->
+<!-- MARKDOWN-AUTO-DOCS:END -->
+
+**This and the other settings are just examples, please adjust permissions and paths according to your webserver and security needs.**
+
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-99) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # upload_signature = true
@@ -103,20 +117,28 @@ canonical_url_prefix = "https://localhost:8443"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 with suitable [replacements](#provider-options)
-(This configuration examples assumes that the private/public keys are available under `/usr/lib/csaf/`).
 
+**Attention:** You need to properly protect the private keys
+for the OpenPGP and TLS crypto setup. A few variants are possible
+from the software side, but selecting the proper one depends
+on your requirements for secure operations and authentication.
+Consult an admin with experience for securily operating a web based service
+on a GNU/Linux operating system.
 
 Create the folders:
 ```(shell)
-curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificatfile}
+curl https://192.168.56.102/cgi-bin/csaf_provider.go/create --cert-type p12 --cert {clientCertificat.p12}
 ```
-Replace {clientCertificate} with the client certificate file.
+Replace {clientCertificate.p12} with the client certificate file
+in pkcs12 format which includes the corresponding key as well.
+
 Or using the uploader:
 ```(shell)
-./csaf_uploader -a create -u http://192.168.56.102/cgi-bin/csaf_provider.go -p {password}
+./csaf_uploader --action create --url https://192.168.56.102/cgi-bin/csaf_provider.go --client-cert {clientCert.crt} --client-key {clientKey.pem}
 ```
-Replace {password} with the password used for the authentication with csaf_provider.
-This needs to set the `password` option in `config.toml`.
+
+Again replacing `{clientCert.crt}` and `{clientKey.pem}` accordingly.
+
 
 To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=18-35) -->
@@ -152,7 +174,8 @@ Replace {DNSNAME} with a server block file name.
 ## Provider options
 Provider has many config options described as following:
 
- - password: Authentication password for accessing the CSAF provider.
+ - password: Authentication password for accessing the CSAF provider. This is
+ a simple authentication method useful for testing or as additional shareable password in combination with TLS client certificates.
  - key: The private OpenPGP key.
  - folder: Specify the root folder. Default: `/var/www/`.
  - web: Specify the web folder. Default: `/var/www/html`.
@@ -163,7 +186,7 @@ Provider has many config options described as following:
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.
  - canonical_url_prefix: start of the URL where contents shall be accessible from the internet. Default: `https://$SERVER_NAME`.
- - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
+ - no_passphrase: Let user send the passphrase for the OpenPGP key with the request, if set to true the input-field in the web interface will not appear. Default: `false`.
  - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
@@ -173,3 +196,23 @@ Provider has many config options described as following:
  - provider_metadata.publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
  - upload_limit: Set the upload limit  size of the file. Default: `50 MiB`.
  - issuer: The issuer of the CA, which if set, restricts the writing permission and the accessing to the web-interface to only the client certificates signed with this CA.
+
+
+### Security considerations
+
+* A good setup variant is to install the provider in a server machine which is
+  dedicated to the service, so there are only trustable admin users allowed
+  to login. For example a virtual machine can be used.
+* Uploading should be done with the uploader and secured by TLS
+  client certificates which are individual per person allowed to upload.
+  This way it can be traced in the log, who did which uploads.
+* For TLS client setups with normal security requirements,
+  it should be okay to run a small internal
+  certificate authority like the example
+  in [development-client-certs.md](development-client-certs.md),
+  and import the root certificate on the systems that have users which
+  want to upload.
+* The single `password` is only for very simple settings, testing or
+  (planned feature) as
+  additional method in the special situation that TLS client certificates
+  are already necessary to access the network system where the uploader is.

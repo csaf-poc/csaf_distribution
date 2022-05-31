@@ -50,8 +50,8 @@ Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-wi
 
 ### Setup (Trusted Provider)
 
-- [Install](https://nginx.org/en/docs/install.html)  **nginx**
-- To install server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
+- [Install](https://nginx.org/en/docs/install.html) **nginx**
+- To install a TLS server certificate on nginx see [docs/install-server-certificate.md](docs/install-server-certificate.md)
 - To configure nginx see [docs/provider-setup.md](docs/provider-setup.md)
 - To configure nginx for client certificate authentication see [docs/client-certificate-setup.md](docs/client-certificate-setup.md)
 

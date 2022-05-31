@@ -14,7 +14,7 @@
 set -e
 
 sudo chgrp -R www-data  /var/www
-sudo chmod -R g+w  /var/www
+sudo chmod -R g+ws  /var/www
 
 export NGINX_CONFIG_PATH=/etc/nginx/sites-available/default
 export DNS_NAME=csaf.data.security.localhost
@@ -74,10 +74,21 @@ export PATH=$PATH:/usr/local/go/bin
 make build_linux
 # Place the binary under the corresponding path.
 sudo mkdir -p /usr/lib/cgi-bin/
+sudo chgrp www-data /usr/lib/cgi-bin/
+sudo chmod o-rwx /usr/lib/cgi-bin/
 sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
-sudo mkdir -p /usr/lib/csaf/
+sudo mkdir /usr/lib/csaf/
+sudo chgrp www-data /usr/lib/csaf/
+sudo chmod g+s,o-rwx /usr/lib/csaf/
+sudo touch /usr/lib/csaf/config.toml
+sudo chgrp www-data /usr/lib/csaf/config.toml
+sudo chmod g+r,o-rwx /usr/lib/csaf/config.toml
+
 sudo cp docs/test-keys/*.asc /usr/lib/csaf/
+sudo chgrp www-data /usr/lib/csaf/private.asc
+sudo chmod o-rwx  /usr/lib/csaf/private.asc
+
 # Configuration file
 echo '
 # upload_signature = true
@@ -86,7 +97,7 @@ key = "/usr/lib/csaf/private.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
-' | sudo tee /usr/lib/csaf/config.toml
+' | sudo tee --append /usr/lib/csaf/config.toml
 
 # Create the Folders
 curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure

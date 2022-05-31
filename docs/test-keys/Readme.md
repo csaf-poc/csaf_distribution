@@ -1,4 +1,8 @@
-OpenPGP key-pair for testing.
+OpenPGP key-pair for testing only.
+
+Note: as this keypair is fully public, **do not use it for production**.
+Create your own keypair with the security properties and operational
+measures you need.
 
 This has been created with:
 * gpg (GnuPG) 2.2.19
