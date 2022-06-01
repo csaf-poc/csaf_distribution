@@ -42,8 +42,9 @@ tag_checked_out:
 # any commit after a tag is considered newer than the semver from the tag
 # without an optional 'v'
 # Note we need `--tags` because github release only creates lightweight tags
-#   (see feature request https://github.com/github/feedback/discussions/4924)
-GITDESC := $(shell git describe --tags)
+#   (see feature request https://github.com/github/feedback/discussions/4924).
+#   We use `--always` in case of being run as github action with shallow clone.
+GITDESC := $(shell git describe --tags --always)
 GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
 SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
 # Hint: The regexp in the next line only matches if there is a hyphen (`-`)
