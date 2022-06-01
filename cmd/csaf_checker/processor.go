@@ -551,6 +551,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 
 	p.badIndices.use()
 
+	log.Printf("Trying: %s\n", index)
 	res, err := client.Get(index)
 	if err != nil {
 		p.badIndices.add("Fetching %s failed: %v", index, err)
@@ -590,6 +591,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
 	changes := base + "/changes.csv"
 	p.checkTLS(changes)
+	log.Printf("Trying: %s\n", changes)
 	res, err := client.Get(changes)
 
 	p.badChanges.use()
