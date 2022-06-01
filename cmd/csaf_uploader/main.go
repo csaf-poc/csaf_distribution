@@ -392,7 +392,7 @@ func main() {
 		check(readInteractive("Enter OpenPGP passphrase: ", &opts.Passphrase))
 	}
 
-	if (opts.ClientCert != nil && opts.ClientKey == nil) || (opts.ClientCert == nil && opts.ClientKey != nil) {
+	if opts.ClientCert != nil && opts.ClientKey == nil || opts.ClientCert == nil && opts.ClientKey != nil {
 		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}

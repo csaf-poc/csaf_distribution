@@ -795,111 +795,6 @@ func (p *processor) checkListing(string) error {
 	return nil
 }
 
-var providerMetadataLocations = [...]string{
-	".well-known/csaf",
-	"security/data/csaf",
-	"advisories/csaf",
-	"security/csaf",
-}
-
-// locateProviderMetadata searches for provider-metadata.json at various
-// locations mentioned in "7.1.7 Requirement 7: provider-metadata.json".
-func (p *processor) locateProviderMetadata(
-	domain string,
-	found func(string, io.Reader) error,
-) error {
-
-	client := p.httpClient()
-	tryURL := func(url string) (bool, error) {
-		log.Printf("Trying: %v\n", url)
-		res, err := client.Get(url)
-
-		if err != nil || res.StatusCode != http.StatusOK ||
-			res.Header.Get("Content-Type") != "application/json" {
-			// ignore this as it is expected.
-			return false, nil
-		}
-
-		if err := func() error {
-			defer res.Body.Close()
-			return found(url, res.Body)
-		}(); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-
-	for _, loc := range providerMetadataLocations {
-		url := "https://" + domain + "/" + loc + "/provider-metadata.json"
-		ok, err := tryURL(url)
-		if err != nil {
-			if err == errContinue {
-				continue
-			}
-			return err
-		}
-		if ok {
-			return nil
-		}
-	}
-
-	// Read from security.txt
-
-	path := "https://" + domain + "/.well-known/security.txt"
-	log.Printf("Searching in: %v\n", path)
-	res, err := client.Get(path)
-	if err == nil && res.StatusCode == http.StatusOK {
-		loc, err := func() (string, error) {
-			defer res.Body.Close()
-			return p.extractProviderURL(res.Body)
-		}()
-
-		if err != nil {
-			log.Printf("did not find provider URL in /.well-known/security.txt, error: %v\n", err)
-		}
-
-		if loc != "" {
-			if _, err = tryURL(loc); err == errContinue {
-				err = nil
-			}
-			return err
-		}
-	}
-
-	// Read from DNS path
-
-	path = "https://csaf.data.security." + domain
-	ok, err := tryURL(path)
-	if err != nil {
-		return err
-	}
-	if ok {
-		return nil
-	}
-
-	return errStop
-}
-
-func (p *processor) extractProviderURL(r io.Reader) (string, error) {
-	urls, err := csaf.ExtractProviderURL(r, true)
-	if err != nil {
-		return "", err
-	}
-	if len(urls) == 0 {
-		return "", errors.New("no provider-metadata.json found")
-	}
-
-	if len(urls) > 1 {
-		p.badSecurity.use()
-		p.badSecurity.add("Found %d CSAF entries in security.txt", len(urls))
-	}
-	if !strings.HasPrefix(urls[0], "https://") {
-		p.badSecurity.use()
-		p.badSecurity.add("CSAF URL does not start with https://: %s", urls[0])
-	}
-	return urls[0], nil
-}
-
 // checkProviderMetadata checks provider-metadata.json. If it exists,
 // decodes, and validates against the JSON schema.
 // According to the result, the respective error messages added to
@@ -909,44 +804,20 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 	p.badProviderMetadata.use()
 
-	found := func(url string, content io.Reader) error {
+	client := p.httpClient()
 
-		// Calculate checksum for later comparison.
-		hash := sha256.New()
+	lpmd := csaf.LoadProviderMetadataForDomain(client, domain, p.badProviderMetadata.add)
 
-		tee := io.TeeReader(content, hash)
-		if err := json.NewDecoder(tee).Decode(&p.pmd); err != nil {
-			p.badProviderMetadata.add("%s: Decoding JSON failed: %v", url, err)
-			return errContinue
-		}
-
-		p.pmd256 = hash.Sum(nil)
-
-		errors, err := csaf.ValidateProviderMetadata(p.pmd)
-		if err != nil {
-			return err
-		}
-		if len(errors) > 0 {
-			p.badProviderMetadata.add("%s: Validating against JSON schema failed:", url)
-			for _, msg := range errors {
-				p.badProviderMetadata.add(strings.ReplaceAll(msg, `%`, `%%`))
-			}
-			p.badProviderMetadata.add("STOPPING here - cannot perform other checks.")
-			return errStop
-		}
-		p.pmdURL = url
-		return nil
-	}
-
-	if err := p.locateProviderMetadata(domain, found); err != nil {
-		return err
-	}
-
-	if p.pmdURL == "" {
-		p.badProviderMetadata.add("No provider-metadata.json found.")
+	if lpmd == nil {
+		p.badProviderMetadata.add("No valid provider-metadata.json found.")
 		p.badProviderMetadata.add("STOPPING here - cannot perform other checks.")
 		return errStop
 	}
+
+	p.pmdURL = lpmd.URL
+	p.pmd256 = lpmd.Hash
+	p.pmd = lpmd.Document
+
 	return nil
 }
 

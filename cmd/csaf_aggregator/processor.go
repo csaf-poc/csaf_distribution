@@ -9,14 +9,10 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
+	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -75,76 +71,22 @@ func (w *worker) createDir() (string, error) {
 	return dir, err
 }
 
-// httpsDomain prefixes a domain with 'https://'.
-func httpsDomain(domain string) string {
-	if strings.HasPrefix(domain, "https://") {
-		return domain
-	}
-	return "https://" + domain
-}
-
-var providerMetadataLocations = [...]string{
-	".well-known/csaf",
-	"security/data/csaf",
-	"advisories/csaf",
-	"security/csaf",
-}
-
 func (w *worker) locateProviderMetadata(domain string) error {
 
-	w.metadataProvider = nil
+	lpmd := csaf.LoadProviderMetadataForDomain(
+		w.client, domain, func(format string, args ...interface{}) {
+			log.Printf(
+				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
+		})
 
-	download := func(r io.Reader) error {
-		if err := json.NewDecoder(r).Decode(&w.metadataProvider); err != nil {
-			log.Printf("error: %s\n", err)
-			return errNotFound
-		}
-		return nil
+	if lpmd == nil {
+		return fmt.Errorf("no provider-metadata.json found for '%s'", domain)
 	}
 
-	hd := httpsDomain(domain)
-	for _, loc := range providerMetadataLocations {
-		url := hd + "/" + loc
-		if err := downloadJSON(w.client, url, download); err != nil {
-			if err == errNotFound {
-				continue
-			}
-			return err
-		}
-		if w.metadataProvider != nil {
-			w.loc = loc
-			return nil
-		}
-	}
+	w.metadataProvider = lpmd.Document
+	w.loc = lpmd.URL
 
-	// Read from security.txt
-
-	path := hd + "/.well-known/security.txt"
-	res, err := w.client.Get(path)
-	if err != nil {
-		return err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return errNotFound
-	}
-
-	if err := func() error {
-		defer res.Body.Close()
-		urls, err := csaf.ExtractProviderURL(res.Body, false)
-		if err != nil {
-			return err
-		}
-		if len(urls) == 0 {
-			return errors.New("no provider-metadata.json found in secturity.txt")
-		}
-		w.loc = urls[0]
-		return nil
-	}(); err != nil {
-		return err
-	}
-
-	return downloadJSON(w.client, w.loc, download)
+	return nil
 }
 
 // removeOrphans removes the directories that are not in the providers list.
