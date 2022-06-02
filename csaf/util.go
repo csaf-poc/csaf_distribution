@@ -136,7 +136,6 @@ func LoadProviderMetadataForDomain(
 
 	// First try well-know path
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	log.Printf("Trying: %s\n", wellknownURL)
 	wellknownResult := LoadProviderMetadataFromURL(client, wellknownURL)
 
 	if wellknownResult == nil {
@@ -153,7 +152,6 @@ func LoadProviderMetadataForDomain(
 
 	// Next load the PMDs from security.txt
 	secURL := "https://" + domain + "/.well-known/security.txt"
-	log.Printf("Trying: %s\n", secURL)
 	secResults := LoadProviderMetadatasFromSecurity(client, secURL)
 
 	if secResults == nil {
@@ -212,7 +210,6 @@ func LoadProviderMetadataForDomain(
 	// Last resort fall back to DNS.
 
 	dnsURL := "https://csaf.data.security." + domain
-	log.Printf("Trying: %s\n", dnsURL)
 	dnsResult := LoadProviderMetadataFromURL(client, dnsURL)
 
 	if dnsResult == nil {
