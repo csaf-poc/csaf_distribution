@@ -270,9 +270,9 @@ func (p *processor) httpClient() util.Client {
 		return p.client
 	}
 
-	client := http.Client{}
+	hClient := http.Client{}
 
-	client.CheckRedirect = p.checkRedirect
+	hClient.CheckRedirect = p.checkRedirect
 
 	var tlsConfig tls.Config
 	if p.opts.Insecure {
@@ -287,17 +287,25 @@ func (p *processor) httpClient() util.Client {
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
-	client.Transport = &http.Transport{
+	hClient.Transport = &http.Transport{
 		TLSClientConfig: &tlsConfig,
 	}
 
+	var client util.Client
+
+	if p.opts.Verbose {
+		client = &util.LoggingClient{Client: &hClient}
+	} else {
+		client = &hClient
+	}
+
 	if p.opts.Rate == nil {
-		p.client = &client
-		return &client
+		p.client = client
+		return client
 	}
 
 	p.client = &util.LimitingClient{
-		Client:  &client,
+		Client:  client,
 		Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
 	}
 

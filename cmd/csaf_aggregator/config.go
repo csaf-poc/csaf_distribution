@@ -43,6 +43,7 @@ type provider struct {
 }
 
 type config struct {
+	Verbose bool `toml:"verbose"`
 	// Workers is the number of concurrently executed workers for downloading.
 	Workers int    `toml:"workers"`
 	Folder  string `toml:"folder"`
@@ -108,16 +109,25 @@ func (c *config) cryptoKey() (*crypto.Key, error) {
 
 func (c *config) httpClient(p *provider) util.Client {
 
-	client := http.Client{}
+	hClient := http.Client{}
 	if p.Insecure != nil && *p.Insecure || c.Insecure != nil && *c.Insecure {
-		client.Transport = &http.Transport{
+		hClient.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
 		}
 	}
+
+	var client util.Client
+
+	if c.Verbose {
+		client = &util.LoggingClient{Client: &hClient}
+	} else {
+		client = &hClient
+	}
+
 	if p.Rate == nil && c.Rate == nil {
-		return &client
+		return client
 	}
 
 	var r float64
@@ -128,7 +138,7 @@ func (c *config) httpClient(p *provider) util.Client {
 		r = *p.Rate
 	}
 	return &util.LimitingClient{
-		Client:  &client,
+		Client:  client,
 		Limiter: rate.NewLimiter(rate.Limit(r), 1),
 	}
 }
