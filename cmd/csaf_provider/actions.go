@@ -317,7 +317,11 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				warn("Publishers in provider metadata and CSAF do not match.")
 			}
 
-			pmd.SetPGP(key.GetFingerprint(), c.cfg.GetOpenPGPURL(key))
+			fingerprint := key.GetFingerprint()
+			openPGPPath := fmt.Sprintf(
+				"%s/.well-known/csaf/openpgp/%s.asc",
+				c.cfg.CanonicalURLPrefix, fingerprint)
+			pmd.SetPGP(fingerprint, openPGPPath)
 
 			return nil
 		},
