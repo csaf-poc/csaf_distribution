@@ -103,9 +103,9 @@ func createOpenPGPFolder(c *config, wellknown string) error {
 		}
 	}
 
-	keyData, err := os.ReadFile(c.Key)
+	keyData, err := os.ReadFile(c.OpenPGPPublicKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot load public OpenPGP key: %v", err)
 	}
 
 	key, err := crypto.NewKeyFromArmoredReader(bytes.NewReader(keyData))
@@ -228,18 +228,13 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	pm := csaf.NewProviderMetadataDomain(c.CanonicalURLPrefix, c.modelTLPs())
 	c.ProviderMetaData.apply(pm)
 
-	// Set OpenPGP key.
-	key, err := c.loadCryptoKey()
+	key, err := loadCryptoKeyFromFile(c.OpenPGPPublicKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot load public key: %v", err)
 	}
 
 	fingerprint := key.GetFingerprint()
-	openPGPPath := fmt.Sprintf(
-		"%s/.well-known/csaf/openpgp/%s.asc",
-		c.CanonicalURLPrefix, fingerprint)
-
-	pm.SetPGP(fingerprint, openPGPPath)
+	pm.SetPGP(fingerprint, c.openPGPPublicURL(fingerprint))
 
 	return util.WriteToFile(path, pm)
 }

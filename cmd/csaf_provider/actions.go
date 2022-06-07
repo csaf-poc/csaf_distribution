@@ -55,12 +55,6 @@ func (c *controller) handleSignature(
 	data []byte,
 ) (string, *crypto.Key, error) {
 
-	// Either way ... we need the key.
-	key, err := c.cfg.loadCryptoKey()
-	if err != nil {
-		return "", nil, err
-	}
-
 	// Was the signature given via request?
 	if c.cfg.UploadSignature {
 		sigText := r.FormValue("signature")
@@ -73,7 +67,12 @@ func (c *controller) handleSignature(
 			return "", nil, err
 		}
 
-		// Use as public key
+		// Use the public key
+		key, err := loadCryptoKeyFromFile(c.cfg.OpenPGPPublicKey)
+		if err != nil {
+			return "", nil, err
+		}
+
 		signRing, err := crypto.NewKeyRing(key)
 		if err != nil {
 			return "", nil, err
@@ -91,13 +90,18 @@ func (c *controller) handleSignature(
 
 	// Sign ourself
 
+	// Use the private key
+	key, err := loadCryptoKeyFromFile(c.cfg.OpenPGPPrivateKey)
+	if err != nil {
+		return "", nil, err
+	}
+
 	if passwd := r.FormValue("passphrase"); !c.cfg.NoPassphrase && passwd != "" {
 		if key, err = key.Unlock([]byte(passwd)); err != nil {
 			return "", nil, err
 		}
 	}
 
-	// Use as private key
 	signRing, err := crypto.NewKeyRing(key)
 	if err != nil {
 		return "", nil, err
@@ -318,10 +322,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			}
 
 			fingerprint := key.GetFingerprint()
-			openPGPPath := fmt.Sprintf(
-				"%s/.well-known/csaf/openpgp/%s.asc",
-				c.cfg.CanonicalURLPrefix, fingerprint)
-			pmd.SetPGP(fingerprint, openPGPPath)
+			pmd.SetPGP(fingerprint, c.cfg.openPGPPublicURL(fingerprint))
 
 			return nil
 		},
