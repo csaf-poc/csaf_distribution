@@ -92,8 +92,8 @@ sudo chmod o-rwx  /usr/lib/csaf/private.asc
 # Configuration file
 echo '
 # upload_signature = true
-# key = "/usr/lib/csaf/public.asc"
-key = "/usr/lib/csaf/private.asc"
+openpgp_private_key = "/usr/lib/csaf/private.asc"
+openpgp_public_key = "/usr/lib/csaf/public.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
