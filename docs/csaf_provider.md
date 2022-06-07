@@ -8,7 +8,8 @@ explain how to wire this up with nginx and where the config file lives.
 Following options are supported in the config file:
 
  - password: Authentication password for accessing the CSAF provider.
- - key: The private OpenPGP key.
+ - openpgp_public_key: The public OpenPGP key. Default: `/ust/lib/csaf/openpgp_public.asc`
+ - openpgp_private_key: The private OpenPGP key. Default: `/ust/lib/csaf/openpgp_private.asc`
  - folder: Specify the root folder. Default: `/var/www/`.
  - web: Specify the web folder. Default: `/var/www/html`.
  - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").
@@ -16,7 +17,6 @@ Following options are supported in the config file:
    These affects the list items in the web interface.
    Default: `["csaf", "white", "amber", "green", "red"]`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
- - openpgp_url: URL to OpenPGP key-server. Default: `https://openpgp.circl.lu`.
  - canonical_url_prefix: start of the URL where contents shall be accessible from the internet. Default: `https://$SERVER_NAME`.
  - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
  - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
