@@ -8,6 +8,8 @@
 
 package main
 
+import "fmt"
+
 // MessageKind ist the kind of the message.
 type MessageKind int
 
@@ -54,6 +56,20 @@ func (r *Requirement) HasErrors() bool {
 		}
 	}
 	return false
+}
+
+// String implements fmt.Stringer interface.
+func (mk MessageKind) String() string {
+	switch mk {
+	case InfoKind:
+		return "INFO"
+	case WarnKind:
+		return "WARN"
+	case ErrorKind:
+		return "ERROR"
+	default:
+		return fmt.Sprintf("MessageKind (%d)", int(mk))
+	}
 }
 
 func (r *Requirement) message(kind MessageKind, texts ...string) {
