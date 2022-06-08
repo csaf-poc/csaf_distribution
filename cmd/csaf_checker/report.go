@@ -12,8 +12,11 @@ package main
 type MessageKind int
 
 const (
+	// InfoKind represents an info message.
 	InfoKind MessageKind = iota
+	// WarnKind represents a warning message.
 	WarnKind
+	// ErrorKind represents an error message.
 	ErrorKind
 )
 
