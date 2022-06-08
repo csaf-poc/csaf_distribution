@@ -10,21 +10,21 @@ package main
 
 import "fmt"
 
-// MessageKind is the kind of the message.
-type MessageKind int
+// MessageType is the kind of the message.
+type MessageType int
 
 const (
-	// InfoKind represents an info message.
-	InfoKind MessageKind = iota
-	// WarnKind represents a warning message.
-	WarnKind
-	// ErrorKind represents an error message.
-	ErrorKind
+	// InfoType represents an info message.
+	InfoType MessageType = iota
+	// WarnType represents a warning message.
+	WarnType
+	// ErrorType represents an error message.
+	ErrorType
 )
 
 // Message is a tagged text message.
 type Message struct {
-	Kind MessageKind `json:"kind"`
+	Type MessageType `json:"type"`
 	Text string      `json:"text"`
 }
 
@@ -50,8 +50,8 @@ type Report struct {
 
 // HasErrors tells if this requirement has errors.
 func (r *Requirement) HasErrors() bool {
-	for _, m := range r.Messages {
-		if m.Kind == ErrorKind {
+	for i := range r.Messages {
+		if r.Messages[i].Type == ErrorType {
 			return true
 		}
 	}
@@ -59,21 +59,21 @@ func (r *Requirement) HasErrors() bool {
 }
 
 // String implements fmt.Stringer interface.
-func (mk MessageKind) String() string {
-	switch mk {
-	case InfoKind:
+func (mt MessageType) String() string {
+	switch mt {
+	case InfoType:
 		return "INFO"
-	case WarnKind:
+	case WarnType:
 		return "WARN"
-	case ErrorKind:
+	case ErrorType:
 		return "ERROR"
 	default:
-		return fmt.Sprintf("MessageKind (%d)", int(mk))
+		return fmt.Sprintf("MessageType (%d)", int(mt))
 	}
 }
 
-func (r *Requirement) message(kind MessageKind, texts ...string) {
+func (r *Requirement) message(typ MessageType, texts ...string) {
 	for _, text := range texts {
-		r.Messages = append(r.Messages, Message{Kind: kind, Text: text})
+		r.Messages = append(r.Messages, Message{Type: typ, Text: text})
 	}
 }

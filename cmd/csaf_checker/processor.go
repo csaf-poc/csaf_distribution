@@ -120,23 +120,23 @@ func (wt whereType) String() string {
 }
 
 // add adds a message to this topic.
-func (m *topicMessages) add(kind MessageKind, format string, args ...interface{}) {
-	*m = append(*m, Message{Kind: kind, Text: fmt.Sprintf(format, args...)})
+func (m *topicMessages) add(typ MessageType, format string, args ...interface{}) {
+	*m = append(*m, Message{Type: typ, Text: fmt.Sprintf(format, args...)})
 }
 
 // error adds an error message to this topic.
 func (m *topicMessages) error(format string, args ...interface{}) {
-	m.add(ErrorKind, format, args...)
+	m.add(ErrorType, format, args...)
 }
 
 // warn adds a warning message to this topic.
 func (m *topicMessages) warn(format string, args ...interface{}) {
-	m.add(WarnKind, format, args...)
+	m.add(WarnType, format, args...)
 }
 
 // info adds an info message to this topic.
 func (m *topicMessages) info(format string, args ...interface{}) {
-	m.add(InfoKind, format, args...)
+	m.add(InfoType, format, args...)
 }
 
 // use signals that we going to use this topic.
@@ -333,7 +333,7 @@ func (p *processor) integrity(
 	files []string,
 	base string,
 	mask whereType,
-	lg func(MessageKind, string, ...interface{}),
+	lg func(MessageType, string, ...interface{}),
 ) error {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -346,7 +346,7 @@ func (p *processor) integrity(
 	for _, f := range files {
 		fp, err := url.Parse(f)
 		if err != nil {
-			lg(ErrorKind, "Bad URL %s: %v", f, err)
+			lg(ErrorType, "Bad URL %s: %v", f, err)
 			continue
 		}
 		u := b.ResolveReference(fp).String()
@@ -356,11 +356,11 @@ func (p *processor) integrity(
 		p.checkTLS(u)
 		res, err := client.Get(u)
 		if err != nil {
-			lg(ErrorKind, "Fetching %s failed: %v.", u, err)
+			lg(ErrorType, "Fetching %s failed: %v.", u, err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			lg(ErrorKind, "Fetching %s failed: Status code %d (%s)",
+			lg(ErrorType, "Fetching %s failed: Status code %d (%s)",
 				u, res.StatusCode, res.Status)
 			continue
 		}
@@ -377,17 +377,17 @@ func (p *processor) integrity(
 			tee := io.TeeReader(res.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
-			lg(ErrorKind, "Reading %s failed: %v", u, err)
+			lg(ErrorType, "Reading %s failed: %v", u, err)
 			continue
 		}
 
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
-			lg(ErrorKind, "Failed to validate %s: %v", u, err)
+			lg(ErrorType, "Failed to validate %s: %v", u, err)
 			continue
 		}
 		if len(errors) > 0 {
-			lg(ErrorKind, "CSAF file %s has %d validation errors.", u, len(errors))
+			lg(ErrorType, "CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
 		// Check if file is in the right folder.

@@ -14,7 +14,7 @@
 {{ range .Requirements }}
     <dt><strong>Requirement {{ .Num }}: {{ .Description }}{{ if .HasErrors }} (failed){{ end }}</strong></dt>
 {{ range .Messages }}
-    <dd>- {{ .Kind }}: {{ .Text }}</dd>
+    <dd>- {{ .Type }}: {{ .Text }}</dd>
 {{ end }}
 {{ end }}
     </dl>

@@ -48,11 +48,11 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 func (r *tlsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if p.noneTLS == nil {
-		req.message(InfoKind, "No TLS checks performed.")
+		req.message(InfoType, "No TLS checks performed.")
 		return
 	}
 	if len(p.noneTLS) == 0 {
-		req.message(InfoKind, "All tested URLs were HTTPS.")
+		req.message(InfoType, "All tested URLs were HTTPS.")
 		return
 	}
 
@@ -63,8 +63,8 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 		i++
 	}
 	sort.Strings(urls)
-	req.message(ErrorKind, "Following non-HTTPS URLs were used:")
-	req.message(ErrorKind, urls...)
+	req.message(ErrorType, "Following non-HTTPS URLs were used:")
+	req.message(ErrorType, urls...)
 }
 
 // report tests if redirects are used and sets the "message" field value
@@ -72,7 +72,7 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if len(p.redirects) == 0 {
-		req.message(InfoKind, "No redirections found.")
+		req.message(InfoType, "No redirections found.")
 		return
 	}
 
@@ -86,7 +86,7 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	for i, k := range keys {
 		keys[i] = fmt.Sprintf("Redirect %s: %s", k, p.redirects[k])
 	}
-	req.message(WarnKind, keys...)
+	req.message(WarnType, keys...)
 }
 
 // report tests if an provider-metadata.json are available and sets the
@@ -94,11 +94,11 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badProviderMetadata.used() {
-		req.message(InfoKind, "No provider-metadata.json checked.")
+		req.message(InfoType, "No provider-metadata.json checked.")
 		return
 	}
 	if len(p.badProviderMetadata) == 0 {
-		req.message(InfoKind, "Found good provider metadata.")
+		req.message(InfoType, "Found good provider metadata.")
 		return
 	}
 	req.Messages = p.badProviderMetadata
@@ -109,11 +109,11 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badSecurity.used() {
-		req.message(InfoKind, "No security.txt checked.")
+		req.message(InfoType, "No security.txt checked.")
 		return
 	}
 	if len(p.badSecurity) == 0 {
-		req.message(InfoKind, "Found good security.txt.")
+		req.message(InfoType, "Found good security.txt.")
 		return
 	}
 	req.Messages = p.badSecurity
@@ -123,11 +123,11 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWellknownMetadata.used() {
-		req.message(InfoKind, "No check if provider-metadata.json is under /.well-known/csaf/ was done.")
+		req.message(InfoType, "No check if provider-metadata.json is under /.well-known/csaf/ was done.")
 		return
 	}
 	if len(p.badWellknownMetadata) == 0 {
-		req.message(InfoKind, "Found /.well-known/csaf/provider-metadata.json")
+		req.message(InfoType, "Found /.well-known/csaf/provider-metadata.json")
 		return
 	}
 	req.Messages = p.badWellknownMetadata
@@ -137,11 +137,11 @@ func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDNSPath.used() {
-		req.message(InfoKind, "No download from https://csaf.data.security.DOMAIN attempted.")
+		req.message(InfoType, "No download from https://csaf.data.security.DOMAIN attempted.")
 		return
 	}
 	if len(p.badDNSPath) == 0 {
-		req.message(InfoKind, "https://csaf.data.security.DOMAIN is available and serves the provider-metadata.json.")
+		req.message(InfoType, "https://csaf.data.security.DOMAIN is available and serves the provider-metadata.json.")
 		return
 	}
 	req.Messages = p.badDNSPath
@@ -150,11 +150,11 @@ func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badFolders.used() {
-		req.message(InfoKind, "No checks if files are in right folders were performed.")
+		req.message(InfoType, "No checks if files are in right folders were performed.")
 		return
 	}
 	if len(p.badFolders) == 0 {
-		req.message(InfoKind, "All CSAF files are in the right folders.")
+		req.message(InfoType, "All CSAF files are in the right folders.")
 		return
 	}
 	req.Messages = p.badFolders
@@ -163,11 +163,11 @@ func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 func (r *indexReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badIndices.used() {
-		req.message(InfoKind, "No index.txt checked.")
+		req.message(InfoType, "No index.txt checked.")
 		return
 	}
 	if len(p.badIndices) == 0 {
-		req.message(InfoKind, "Found good index.txt.")
+		req.message(InfoType, "Found good index.txt.")
 		return
 	}
 	req.Messages = p.badIndices
@@ -176,11 +176,11 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badChanges.used() {
-		req.message(InfoKind, "No changes.csv checked.")
+		req.message(InfoType, "No changes.csv checked.")
 		return
 	}
 	if len(p.badChanges) == 0 {
-		req.message(InfoKind, "Found good changes.csv.")
+		req.message(InfoType, "Found good changes.csv.")
 		return
 	}
 	req.Messages = p.badChanges
@@ -189,11 +189,11 @@ func (r *changesReporter) report(p *processor, domain *Domain) {
 func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDirListings.used() {
-		req.message(InfoKind, "No directory listings checked.")
+		req.message(InfoType, "No directory listings checked.")
 		return
 	}
 	if len(p.badDirListings) == 0 {
-		req.message(InfoKind, "All directory listings are valid.")
+		req.message(InfoType, "All directory listings are valid.")
 		return
 	}
 	req.Messages = p.badDirListings
@@ -202,11 +202,11 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badIntegrities.used() {
-		req.message(InfoKind, "No checksums checked.")
+		req.message(InfoType, "No checksums checked.")
 		return
 	}
 	if len(p.badIntegrities) == 0 {
-		req.message(InfoKind, "All checksums match.")
+		req.message(InfoType, "All checksums match.")
 		return
 	}
 	req.Messages = p.badIntegrities
@@ -215,23 +215,23 @@ func (r *integrityReporter) report(p *processor, domain *Domain) {
 func (r *signaturesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badSignatures.used() {
-		req.message(InfoKind, "No signatures checked.")
+		req.message(InfoType, "No signatures checked.")
 		return
 	}
 	req.Messages = p.badSignatures
 	if len(p.badSignatures) == 0 {
-		req.message(InfoKind, "All signatures verified.")
+		req.message(InfoType, "All signatures verified.")
 	}
 }
 
 func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badPGPs.used() {
-		req.message(InfoKind, "No public OpenPGP keys loaded.")
+		req.message(InfoType, "No public OpenPGP keys loaded.")
 		return
 	}
 	req.Messages = p.badPGPs
 	if len(p.keys) > 0 {
-		req.message(InfoKind, fmt.Sprintf("%d public OpenPGP key(s) loaded.", len(p.keys)))
+		req.message(InfoType, fmt.Sprintf("%d public OpenPGP key(s) loaded.", len(p.keys)))
 	}
 }
