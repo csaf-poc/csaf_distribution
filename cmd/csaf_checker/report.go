@@ -58,6 +58,16 @@ func (r *Requirement) HasErrors() bool {
 	return false
 }
 
+// HasErrors tells if this domain has errors.
+func (d *Domain) HasErrors() bool {
+	for _, r := range d.Requirements {
+		if r.HasErrors() {
+			return true
+		}
+	}
+	return false
+}
+
 // String implements fmt.Stringer interface.
 func (mt MessageType) String() string {
 	switch mt {
@@ -72,6 +82,7 @@ func (mt MessageType) String() string {
 	}
 }
 
+// message appends typed messages to a requirement.
 func (r *Requirement) message(typ MessageType, texts ...string) {
 	for _, text := range texts {
 		r.Messages = append(r.Messages, Message{Type: typ, Text: text})

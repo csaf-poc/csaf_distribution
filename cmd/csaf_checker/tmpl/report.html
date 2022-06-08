@@ -8,7 +8,7 @@
   <body>
     <h1>CSAF-Checker - Report</h1>
 {{- range .Domains }}
-    <h2>{{ .Name }}</h2>
+    <h2>{{ .Name }}{{ if .HasErrors }} (failed){{ end }}</h2>
 
     <dl>
 {{ range .Requirements }}
