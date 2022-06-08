@@ -95,7 +95,7 @@ func createOpenPGPFolder(c *config, wellknown string) error {
 
 	if _, err := os.Stat(openPGPFolder); err != nil {
 		if os.IsNotExist(err) {
-			if err := os.MkdirAll(wellknown, 0755); err != nil {
+			if err := os.MkdirAll(openPGPFolder, 0755); err != nil {
 				return err
 			}
 		} else {
