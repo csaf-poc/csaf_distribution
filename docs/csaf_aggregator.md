@@ -53,20 +53,20 @@ SHELL=/bin/bash
 The following options can be used in the config file in TOML format:
 
 ```
-workers  // number of parallel workers to start (default 10)
-folder   // target folder on disc for writing the downloaded documents
-web      // directory to be served by the webserver
-domain   // base url where the contents will be reachable from outside
-rate     // overall downloading limit per worker
-insecure // do not check validity of TLS certificates
-aggregator    // table with basic infos for the aggregator object
-providers     // array of tables, each entry to be mirrored or listed
-key           // OpenPGP key
-openpgp_url   // URL where the OpenPGP public key part can be found
-passphrase    // passphrase of the OpenPGP key
-lock_file     // path to lockfile, to stop other instances if one is not done
-interim_years // limiting the years for which interim documents are searched
-verbose       // print more diagnostic output, e.g. https request
+workers               // number of parallel workers to start (default 10)
+folder                // target folder on disc for writing the downloaded documents
+web                   // directory to be served by the webserver
+domain                // base url where the contents will be reachable from outside
+rate                  // overall downloading limit per worker
+insecure              // do not check validity of TLS certificates
+aggregator            // table with basic infos for the aggregator object
+providers             // array of tables, each entry to be mirrored or listed
+openpgp_private_key   // OpenPGP private key
+openpgp_public_key    // OpenPGP public key
+passphrase            // passphrase of the OpenPGP key
+lock_file             // path to lockfile, to stop other instances if one is not done
+interim_years         // limiting the years for which interim documents are searched
+verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
 ```
 
