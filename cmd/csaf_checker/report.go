@@ -22,7 +22,7 @@ const (
 	ErrorType
 )
 
-// Message is a tagged text message.
+// Message is a typed text message.
 type Message struct {
 	Type MessageType `json:"type"`
 	Text string      `json:"text"`
