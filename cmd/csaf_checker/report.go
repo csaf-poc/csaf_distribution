@@ -10,7 +10,7 @@ package main
 
 import "fmt"
 
-// MessageKind ist the kind of the message.
+// MessageKind is the kind of the message.
 type MessageKind int
 
 const (
