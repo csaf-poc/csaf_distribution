@@ -22,9 +22,13 @@ Usage example for a single run, to test if the config is good:
 
 Once the config is good, you can run the aggregator periodically
 in two modes. For instance using `cron` on Ubuntu and after placing
-the config file in `/etc/csaf_aggregator.toml`:
+the config file in `/etc/csaf_aggregator.toml` and making sure
+its permissions only allow the user `www-data` to read it:
 
 ```bash
+chown www-data /etc/csaf_aggregator.toml
+chmod go-rwx /etc/csaf_aggregator.toml
+
 mkdir /var/log/csaf_aggregator
 mkdir ~www-data/bin
 cp bin-linux-amd64/csaf_aggregator ~www-data/bin/
@@ -46,6 +50,21 @@ SHELL=/bin/bash
 # run in interim mode once per hour at 30 minutes, e.g. 00:30, 01:30, ...
 30 0-23 * * * $HOME/bin/csaf_aggregator --config /etc/csaf_aggregator.toml --interim >> /var/log/csaf_aggregator/interim.log 2>&1
 ```
+
+
+#### serve via web server
+
+Serve the paths where the aggregator writes its `html/` output
+by means of a webserver.
+In the config example below place is configured by the path given for `web`.
+
+The user running the aggregator has to be able to write there
+and the web server must be able to read the files.
+
+If you are using nginx, the setup instructions for the provider provide
+and example. You can leave out the cgi-bin part,
+potentially commend out the TLS client parts and
+adjust the `root` path accordingly.
 
 
 ### config options
