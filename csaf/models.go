@@ -431,7 +431,7 @@ func (ts TimeStamp) MarshalText() ([]byte, error) {
 // Defaults fills the correct default values into the provider metadata.
 func (pmd *ProviderMetadata) Defaults() {
 	if pmd.Role == nil {
-		role := MetadataRoleProvider
+		role := MetadataRoleTrustedProvider
 		pmd.Role = &role
 	}
 	if pmd.ListOnCSAFAggregators == nil {
