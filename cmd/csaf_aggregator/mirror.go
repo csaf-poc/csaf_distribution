@@ -280,7 +280,9 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 				*pgpKey.URL, res.Status, res.StatusCode)
 		}
 
-		localFile := filepath.Join(openPGPFolder, string(pgpKey.Fingerprint)+".asc")
+		fingerprint := strings.ToUpper(string(pgpKey.Fingerprint))
+
+		localFile := filepath.Join(openPGPFolder, fingerprint+".asc")
 
 		// Download the remote key into our new folder.
 		if err := func() error {
@@ -301,7 +303,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 		}
 
 		// replace the URL
-		url := localKeyURL(string(pgpKey.Fingerprint))
+		url := localKeyURL(fingerprint)
 		pgpKey.URL = &url
 	}
 
@@ -324,7 +326,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 		return err
 	}
 
-	fingerprint := key.GetFingerprint()
+	fingerprint := strings.ToUpper(key.GetFingerprint())
 
 	localFile := filepath.Join(openPGPFolder, fingerprint+".asc")
 

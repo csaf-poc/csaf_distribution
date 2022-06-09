@@ -113,7 +113,7 @@ func createOpenPGPFolder(c *config, wellknown string) error {
 		return err
 	}
 
-	fp := key.GetFingerprint()
+	fp := strings.ToUpper(key.GetFingerprint())
 
 	dst := filepath.Join(openPGPFolder, fp+".asc")
 
@@ -233,7 +233,7 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 		return fmt.Errorf("cannot load public key: %v", err)
 	}
 
-	fingerprint := key.GetFingerprint()
+	fingerprint := strings.ToUpper(key.GetFingerprint())
 	pm.SetPGP(fingerprint, c.openPGPPublicURL(fingerprint))
 
 	return util.WriteToFile(path, pm)
