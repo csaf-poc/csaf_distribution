@@ -193,7 +193,7 @@ func (p *processor) clean() {
 func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
 
 	report := Report{
-		Date:    ReportTime{Time: time.Now()},
+		Date:    ReportTime{Time: time.Now().UTC()},
 		Version: util.SemVersion,
 	}
 
