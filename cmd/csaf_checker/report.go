@@ -8,11 +8,31 @@
 
 package main
 
+import "fmt"
+
+// MessageType is the kind of the message.
+type MessageType int
+
+const (
+	// InfoType represents an info message.
+	InfoType MessageType = iota
+	// WarnType represents a warning message.
+	WarnType
+	// ErrorType represents an error message.
+	ErrorType
+)
+
+// Message is a typed text message.
+type Message struct {
+	Type MessageType `json:"type"`
+	Text string      `json:"text"`
+}
+
 // Requirement a single requirement report of a domain.
 type Requirement struct {
-	Num         int      `json:"num"`
-	Description string   `json:"description"`
-	Messages    []string `json:"messages,omitempty"`
+	Num         int       `json:"num"`
+	Description string    `json:"description"`
+	Messages    []Message `json:"messages,omitempty"`
 }
 
 // Domain are the results of a domain.
@@ -28,6 +48,43 @@ type Report struct {
 	Date    string    `json:"date,omitempty"`
 }
 
-func (r *Requirement) message(msg ...string) {
-	r.Messages = append(r.Messages, msg...)
+// HasErrors tells if this requirement has errors.
+func (r *Requirement) HasErrors() bool {
+	for i := range r.Messages {
+		if r.Messages[i].Type == ErrorType {
+			return true
+		}
+	}
+	return false
+}
+
+// HasErrors tells if this domain has errors.
+func (d *Domain) HasErrors() bool {
+	for _, r := range d.Requirements {
+		if r.HasErrors() {
+			return true
+		}
+	}
+	return false
+}
+
+// String implements fmt.Stringer interface.
+func (mt MessageType) String() string {
+	switch mt {
+	case InfoType:
+		return "INFO"
+	case WarnType:
+		return "WARN"
+	case ErrorType:
+		return "ERROR"
+	default:
+		return fmt.Sprintf("MessageType (%d)", int(mt))
+	}
+}
+
+// message appends typed messages to a requirement.
+func (r *Requirement) message(typ MessageType, texts ...string) {
+	for _, text := range texts {
+		r.Messages = append(r.Messages, Message{Type: typ, Text: text})
+	}
 }

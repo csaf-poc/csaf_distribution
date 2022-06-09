@@ -53,11 +53,11 @@ func (pgs pages) listed(path string, pro *processor) (bool, error) {
 	pro.badDirListings.use()
 
 	if err != nil {
-		pro.badDirListings.add("Fetching %s failed: %v", base, err)
+		pro.badDirListings.error("Fetching %s failed: %v", base, err)
 		return false, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		pro.badDirListings.add("Fetching %s failed. Status code %d (%s)",
+		pro.badDirListings.error("Fetching %s failed. Status code %d (%s)",
 			base, res.StatusCode, res.Status)
 		return false, errContinue
 	}

@@ -8,13 +8,13 @@
   <body>
     <h1>CSAF-Checker - Report</h1>
 {{- range .Domains }}
-    <h2>{{ .Name }}</h2>
+    <h2>{{ .Name }}{{ if .HasErrors }} (failed){{ end }}</h2>
 
     <dl>
 {{ range .Requirements }}
-    <dt><strong>Requirement {{ .Num }}: {{ .Description }}</strong></dt>
+    <dt><strong>Requirement {{ .Num }}: {{ .Description }}{{ if .HasErrors }} (failed){{ end }}</strong></dt>
 {{ range .Messages }}
-      <dd>- {{ . }}</dd>
+    <dd>- {{ .Type }}: {{ .Text }}</dd>
 {{ end }}
 {{ end }}
     </dl>
