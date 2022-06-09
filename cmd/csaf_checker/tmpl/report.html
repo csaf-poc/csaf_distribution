@@ -21,8 +21,8 @@
 {{ end }}
 
     <footer>
-      Date of run: <time datetime="{{.Date}}">{{.Date}}</time>
-      csaf_checker v<span class="version">{{.Version}}</span>
+      Date of run: <time datetime="{{.Date}}">{{ .Date.Format "2006-01-02T15:04:05Z07:00" }}</time>
+      csaf_checker v<span class="version">{{ .Version }}</span>
     </footer>
   </body>
 </html>

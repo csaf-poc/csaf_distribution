@@ -8,7 +8,10 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // MessageType is the kind of the message.
 type MessageType int
@@ -41,11 +44,18 @@ type Domain struct {
 	Requirements []*Requirement `json:"requirements,omitempty"`
 }
 
+type ReportTime struct{ time.Time }
+
 // Report is the overall report.
 type Report struct {
-	Domains []*Domain `json:"domains,omitempty"`
-	Version string    `json:"version,omitempty"`
-	Date    string    `json:"date,omitempty"`
+	Domains []*Domain  `json:"domains,omitempty"`
+	Version string     `json:"version,omitempty"`
+	Date    ReportTime `json:"date,omitempty"`
+}
+
+// MarshalText implements the encoding.TextMarshaller interface.
+func (rt ReportTime) MarshalText() ([]byte, error) {
+	return []byte(rt.Format(time.RFC3339)), nil
 }
 
 // HasErrors tells if this requirement has errors.
