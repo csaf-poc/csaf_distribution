@@ -581,7 +581,7 @@ func (pmd *ProviderMetadata) SetLastUpdated(t time.Time) {
 // If there is no such key it is append to the list of keys.
 func (pmd *ProviderMetadata) SetPGP(fingerprint, url string) {
 	for i := range pmd.PGPKeys {
-		if pmd.PGPKeys[i].Fingerprint == Fingerprint(fingerprint) {
+		if strings.EqualFold(string(pmd.PGPKeys[i].Fingerprint), fingerprint) {
 			pmd.PGPKeys[i].URL = &url
 			return
 		}

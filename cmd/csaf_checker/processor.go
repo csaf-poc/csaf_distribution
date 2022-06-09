@@ -996,7 +996,7 @@ func (p *processor) checkPGPKeys(domain string) error {
 			continue
 		}
 
-		if ckey.GetFingerprint() != string(key.Fingerprint) {
+		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
 			p.badPGPs.error("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
