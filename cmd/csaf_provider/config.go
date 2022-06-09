@@ -22,12 +22,14 @@ import (
 
 const (
 	// The environment name, that contains the path to the config file.
-	configEnv          = "CSAF_CONFIG"
-	defaultConfigPath  = "/usr/lib/csaf/config.toml"                                        // Default path to the config file.
-	defaultFolder      = "/var/www/"                                                        // Default folder path.
-	defaultWeb         = "/var/www/html"                                                    // Default web path.
-	defaultOpenPGPURL  = "https://openpgp.circl.lu/pks/lookup?op=get&search=${FINGERPRINT}" // Default OpenPGP URL.
-	defaultUploadLimit = 50 * 1024 * 1024                                                   // Default limit size of the uploaded file.
+	configEnv                = "CSAF_CONFIG"
+	configPrefix             = "/usr/lib/csaf"
+	defaultConfigPath        = configPrefix + "/config.toml" // Default path to the config file.
+	defaultOpenPGPPrivateKey = configPrefix + "/openpgp_private.asc"
+	defaultOpenPGPPublicKey  = configPrefix + "/openpgp_public.asc"
+	defaultFolder            = "/var/www/"      // Default folder path.
+	defaultWeb               = "/var/www/html"  // Default web path.
+	defaultUploadLimit       = 50 * 1024 * 1024 // Default limit size of the uploaded file.
 )
 
 type providerMetadataConfig struct {
@@ -39,12 +41,12 @@ type providerMetadataConfig struct {
 // configs contains the config values for the provider.
 type config struct {
 	Password                *string                 `toml:"password"`
-	Key                     string                  `toml:"key"`
+	OpenPGPPublicKey        string                  `toml:"openpgp_public_key"`
+	OpenPGPPrivateKey       string                  `toml:"openpgp_private_key"`
 	Folder                  string                  `toml:"folder"`
 	Web                     string                  `toml:"web"`
 	TLPs                    []tlp                   `toml:"tlps"`
 	UploadSignature         bool                    `toml:"upload_signature"`
-	OpenPGPURL              string                  `toml:"openpgp_url"`
 	CanonicalURLPrefix      string                  `toml:"canonical_url_prefix"`
 	NoPassphrase            bool                    `toml:"no_passphrase"`
 	NoValidation            bool                    `toml:"no_validation"`
@@ -108,15 +110,6 @@ func (cfg *config) uploadLimiter(r io.Reader) io.Reader {
 	return io.LimitReader(r, *cfg.UploadLimit)
 }
 
-func (cfg *config) GetOpenPGPURL(key *crypto.Key) string {
-	if key == nil {
-		return cfg.OpenPGPURL
-	}
-	return strings.NewReplacer(
-		"${FINGERPRINT}", "0x"+key.GetFingerprint(),
-		"${KEY_ID}", "0x"+key.GetHexKeyID()).Replace(cfg.OpenPGPURL)
-}
-
 func (cfg *config) modelTLPs() []csaf.TLPLabel {
 	tlps := make([]csaf.TLPLabel, 0, len(cfg.TLPs))
 	for _, t := range cfg.TLPs {
@@ -127,15 +120,21 @@ func (cfg *config) modelTLPs() []csaf.TLPLabel {
 	return tlps
 }
 
-// loadCryptoKey loads the armored data into the key stored in the file specified by the
-// "key" config value and return it with nil, otherwise an error.
-func (cfg *config) loadCryptoKey() (*crypto.Key, error) {
-	f, err := os.Open(cfg.Key)
+// loadCryptoKeyFromFile loads an armored key from file.
+func loadCryptoKeyFromFile(filename string) (*crypto.Key, error) {
+	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 	return crypto.NewKeyFromArmoredReader(f)
+}
+
+// openPGPPublicURL constructs the public OpenPGP key URL for a given key.
+func (cfg *config) openPGPPublicURL(fingerprint string) string {
+	return fmt.Sprintf(
+		"%s/.well-known/csaf/openpgp/%s.asc",
+		cfg.CanonicalURLPrefix, fingerprint)
 }
 
 // checkPassword compares the given hashed password with the plaintext in the "password" config value.
@@ -162,6 +161,14 @@ func loadConfig() (*config, error) {
 
 	// Preset defaults
 
+	if cfg.OpenPGPPrivateKey == "" {
+		cfg.OpenPGPPrivateKey = defaultOpenPGPPrivateKey
+	}
+
+	if cfg.OpenPGPPublicKey == "" {
+		cfg.OpenPGPPublicKey = defaultOpenPGPPublicKey
+	}
+
 	if cfg.Folder == "" {
 		cfg.Folder = defaultFolder
 	}
@@ -176,10 +183,6 @@ func loadConfig() (*config, error) {
 
 	if cfg.TLPs == nil {
 		cfg.TLPs = []tlp{tlpCSAF, tlpWhite, tlpGreen, tlpAmber, tlpRed}
-	}
-
-	if cfg.OpenPGPURL == "" {
-		cfg.OpenPGPURL = defaultOpenPGPURL
 	}
 
 	if cfg.ProviderMetaData == nil {
