@@ -58,14 +58,13 @@ Serve the paths where the aggregator writes its `html/` output
 by means of a webserver.
 In the config example below place is configured by the path given for `web`.
 
-Naturally the user running the aggregator has to be able to write there
+The user running the aggregator has to be able to write there
 and the web server must be able to read the files.
 
 If you are using nginx, the setup instructions for the provider provide
 and example. You can leave out the cgi-bin part,
 potentially commend out the TLS client parts and
 adjust the `root` path accordingly.
-
 
 
 ### config options
