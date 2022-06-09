@@ -205,7 +205,7 @@ func (w *worker) writeProviderMetadata() error {
 	fname := filepath.Join(w.dir, "provider-metadata.json")
 
 	pm := csaf.NewProviderMetadataPrefix(
-		w.cfg.Domain+"/.well-known/csaf-aggreator/"+w.provider.Name,
+		w.cfg.Domain+"/.well-known/csaf-aggregator/"+w.provider.Name,
 		w.labelsFromSummaries())
 
 	// Figure out the role
@@ -252,7 +252,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 	}
 
 	localKeyURL := func(fingerprint string) string {
-		return fmt.Sprintf("%s/.well-known/csaf-aggreator/%s/openpgp/%s.asc",
+		return fmt.Sprintf("%s/.well-known/csaf-aggregator/%s/openpgp/%s.asc",
 			w.cfg.Domain, w.provider.Name, fingerprint)
 	}
 
