@@ -12,8 +12,8 @@ set -e  # to exit if a command in the script fails
 
 # The same directory name used in the config-example file.
 sudo mkdir /var/csaf_aggregator
-sudo chgrp -R www-data /var/csaf_aggregator
-sudo chmod -R g+ws /var/csaf_aggregator
+sudo chgrp www-data /var/csaf_aggregator
+sudo chmod g+ws /var/csaf_aggregator
 
 cd ~/csaf_distribution/
 sudo ./bin-linux-amd64/csaf_aggregator -c docs/examples/aggregator.toml
