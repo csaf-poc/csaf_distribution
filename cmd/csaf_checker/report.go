@@ -44,6 +44,7 @@ type Domain struct {
 	Requirements []*Requirement `json:"requirements,omitempty"`
 }
 
+// ReportTime stores the time of the report.
 type ReportTime struct{ time.Time }
 
 // Report is the overall report.
