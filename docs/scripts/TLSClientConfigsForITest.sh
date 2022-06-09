@@ -33,8 +33,8 @@ echo '
             autoindex on;
             # in this location access is only allowed with client certs
             if  ($ssl_client_verify != SUCCESS){
-                # we use status code 404 == "Not Found", because we do not
-                # want to reveal if this location exists or not.
+                # we use status code 404 == "Not Found", because we do
+                # not want to reveal if files within this location exist or not.
                 return 404;
             }
        }
