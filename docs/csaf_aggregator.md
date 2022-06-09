@@ -22,9 +22,13 @@ Usage example for a single run, to test if the config is good:
 
 Once the config is good, you can run the aggregator periodically
 in two modes. For instance using `cron` on Ubuntu and after placing
-the config file in `/etc/csaf_aggregator.toml`:
+the config file in `/etc/csaf_aggregator.toml` and making sure
+its permissions only allow the user `www-data` to read it:
 
 ```bash
+chown www-data /etc/csaf_aggregator.toml
+chmod go-rwx /etc/csaf_aggregator.toml
+
 mkdir /var/log/csaf_aggregator
 mkdir ~www-data/bin
 cp bin-linux-amd64/csaf_aggregator ~www-data/bin/
@@ -48,25 +52,40 @@ SHELL=/bin/bash
 ```
 
 
+#### serve via web server
+
+Serve the paths where the aggregator writes its `html/` output
+by means of a webserver.
+In the config example below place is configured by the path given for `web`.
+
+The user running the aggregator has to be able to write there
+and the web server must be able to read the files.
+
+If you are using nginx, the setup instructions for the provider provide
+and example. You can leave out the cgi-bin part,
+potentially commend out the TLS client parts and
+adjust the `root` path accordingly.
+
+
 ### config options
 
 The following options can be used in the config file in TOML format:
 
 ```
-workers  // number of parallel workers to start (default 10)
-folder   // target folder on disc for writing the downloaded documents
-web      // directory to be served by the webserver
-domain   // base url where the contents will be reachable from outside
-rate     // overall downloading limit per worker
-insecure // do not check validity of TLS certificates
-aggregator    // table with basic infos for the aggregator object
-providers     // array of tables, each entry to be mirrored or listed
-key           // OpenPGP key
-openpgp_url   // URL where the OpenPGP public key part can be found
-passphrase    // passphrase of the OpenPGP key
-lock_file     // path to lockfile, to stop other instances if one is not done
-interim_years // limiting the years for which interim documents are searched
-verbose       // print more diagnostic output, e.g. https request
+workers               // number of parallel workers to start (default 10)
+folder                // target folder on disc for writing the downloaded documents
+web                   // directory to be served by the webserver
+domain                // base url where the contents will be reachable from outside
+rate                  // overall downloading limit per worker
+insecure              // do not check validity of TLS certificates
+aggregator            // table with basic infos for the aggregator object
+providers             // array of tables, each entry to be mirrored or listed
+openpgp_private_key   // OpenPGP private key
+openpgp_public_key    // OpenPGP public key
+passphrase            // passphrase of the OpenPGP key
+lock_file             // path to lockfile, to stop other instances if one is not done
+interim_years         // limiting the years for which interim documents are searched
+verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
 ```
 

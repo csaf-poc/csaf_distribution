@@ -10,6 +10,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
@@ -28,16 +30,15 @@ func ensureFolders(c *config) error {
 	wellknown := filepath.Join(c.Web, ".well-known")
 	wellknownCSAF := filepath.Join(wellknown, "csaf")
 
-	if err := createWellknown(wellknownCSAF); err != nil {
-		return err
-	}
-
-	if err := createFeedFolders(c, wellknownCSAF); err != nil {
-		return err
-	}
-
-	if err := createProviderMetadata(c, wellknownCSAF); err != nil {
-		return err
+	for _, create := range []func(*config, string) error{
+		createWellknown,
+		createFeedFolders,
+		createOpenPGPFolder,
+		createProviderMetadata,
+	} {
+		if err := create(c, wellknownCSAF); err != nil {
+			return err
+		}
 	}
 
 	return setupSecurity(c, wellknown)
@@ -45,7 +46,7 @@ func ensureFolders(c *config) error {
 
 // createWellknown creates ".well-known" directory if not exist and returns nil.
 // An error is returned if the it is not a directory.
-func createWellknown(wellknown string) error {
+func createWellknown(_ *config, wellknown string) error {
 	st, err := os.Stat(wellknown)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -84,6 +85,46 @@ func createFeedFolders(c *config, wellknown string) error {
 		}
 	}
 	return nil
+}
+
+// createOpenPGPFolder creates an openpgp folder besides
+// the provider-metadata.json in the csaf folder.
+func createOpenPGPFolder(c *config, wellknown string) error {
+
+	openPGPFolder := filepath.Join(wellknown, "openpgp")
+
+	if _, err := os.Stat(openPGPFolder); err != nil {
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(openPGPFolder, 0755); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	keyData, err := os.ReadFile(c.OpenPGPPublicKey)
+	if err != nil {
+		return fmt.Errorf("cannot load public OpenPGP key: %v", err)
+	}
+
+	key, err := crypto.NewKeyFromArmoredReader(bytes.NewReader(keyData))
+	if err != nil {
+		return err
+	}
+
+	fp := strings.ToUpper(key.GetFingerprint())
+
+	dst := filepath.Join(openPGPFolder, fp+".asc")
+
+	// If we don't have it write it.
+	if _, err = os.Stat(dst); err != nil {
+		if os.IsNotExist(err) {
+			err = os.WriteFile(dst, keyData, 0644)
+		}
+	}
+
+	return err
 }
 
 // setupSecurity creates the "security.txt" file if does not exist
@@ -187,12 +228,13 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	pm := csaf.NewProviderMetadataDomain(c.CanonicalURLPrefix, c.modelTLPs())
 	c.ProviderMetaData.apply(pm)
 
-	// Set OpenPGP key.
-	key, err := c.loadCryptoKey()
+	key, err := loadCryptoKeyFromFile(c.OpenPGPPublicKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot load public key: %v", err)
 	}
-	pm.SetPGP(key.GetFingerprint(), c.GetOpenPGPURL(key))
+
+	fingerprint := strings.ToUpper(key.GetFingerprint())
+	pm.SetPGP(fingerprint, c.openPGPPublicURL(fingerprint))
 
 	return util.WriteToFile(path, pm)
 }
