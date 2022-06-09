@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -177,7 +178,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
-	// Add us as a miiror.
+	// Add us as a mirror.
 	mirrorURL := csaf.ProviderURL(
 		fmt.Sprintf("%s/.well-known/csaf-aggregator/%s/provider-metadata.json",
 			w.cfg.Domain, w.provider.Name))
@@ -204,7 +205,7 @@ func (w *worker) writeProviderMetadata() error {
 	fname := filepath.Join(w.dir, "provider-metadata.json")
 
 	pm := csaf.NewProviderMetadataPrefix(
-		w.cfg.Domain+"/.well-known/csaf-aggreator/"+w.provider.Name,
+		w.cfg.Domain+"/.well-known/csaf-aggregator/"+w.provider.Name,
 		w.labelsFromSummaries())
 
 	// Figure out the role
@@ -231,12 +232,9 @@ func (w *worker) writeProviderMetadata() error {
 		log.Printf("extracting data from orignal provider failed: %v\n", err)
 	}
 
-	key, err := w.cfg.cryptoKey()
-	if err != nil {
-		log.Printf("error: %v\n", err)
-	}
-	if key != nil {
-		pm.SetPGP(key.GetFingerprint(), w.cfg.GetOpenPGPURL(key))
+	// We are mirroring the remote public keys, too.
+	if err := w.mirrorPGPKeys(pm); err != nil {
+		return err
 	}
 
 	la := csaf.TimeStamp(lastUpdate)
@@ -245,7 +243,106 @@ func (w *worker) writeProviderMetadata() error {
 	return util.WriteToFile(fname, pm)
 }
 
-// createAggregatorProvider, der the "metadata" section in the "csaf_providers" of
+// mirrorPGPKeys creates a local openpgp folder and downloads the referenced
+// OpenPGP keys into it. The own key is also inserted.
+func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
+	openPGPFolder := filepath.Join(w.dir, "openpgp")
+	if err := os.MkdirAll(openPGPFolder, 0755); err != nil {
+		return err
+	}
+
+	localKeyURL := func(fingerprint string) string {
+		return fmt.Sprintf("%s/.well-known/csaf-aggregator/%s/openpgp/%s.asc",
+			w.cfg.Domain, w.provider.Name, fingerprint)
+	}
+
+	for i := range pm.PGPKeys {
+		pgpKey := &pm.PGPKeys[i]
+		if pgpKey.URL == nil {
+			log.Printf("ignoring PGP key without URL: %s\n", pgpKey.Fingerprint)
+			continue
+		}
+		if _, err := hex.DecodeString(string(pgpKey.Fingerprint)); err != nil {
+			log.Printf("ignoring PGP with invalid fingerprint: %s\n", *pgpKey.URL)
+			continue
+		}
+
+		// Fetch remote key.
+		res, err := w.client.Get(*pgpKey.URL)
+		if err != nil {
+			os.RemoveAll(openPGPFolder)
+			return err
+		}
+
+		if res.StatusCode != http.StatusOK {
+			os.RemoveAll(openPGPFolder)
+			return fmt.Errorf("cannot fetch PGP key %s: %s (%d)",
+				*pgpKey.URL, res.Status, res.StatusCode)
+		}
+
+		fingerprint := strings.ToUpper(string(pgpKey.Fingerprint))
+
+		localFile := filepath.Join(openPGPFolder, fingerprint+".asc")
+
+		// Download the remote key into our new folder.
+		if err := func() error {
+			defer res.Body.Close()
+			out, err := os.Create(localFile)
+			if err != nil {
+				return err
+			}
+			_, err1 := io.Copy(out, res.Body)
+			err2 := out.Close()
+			if err1 != nil {
+				return err1
+			}
+			return err2
+		}(); err != nil {
+			os.RemoveAll(openPGPFolder)
+			return err
+		}
+
+		// replace the URL
+		url := localKeyURL(fingerprint)
+		pgpKey.URL = &url
+	}
+
+	// If we have public key configured copy it into the new folder
+
+	if w.cfg.OpenPGPPublicKey == "" {
+		return nil
+	}
+
+	// Load the key for the fingerprint.
+	data, err := os.ReadFile(w.cfg.OpenPGPPublicKey)
+	if err != nil {
+		os.RemoveAll(openPGPFolder)
+		return err
+	}
+
+	key, err := crypto.NewKeyFromArmoredReader(bytes.NewReader(data))
+	if err != nil {
+		os.RemoveAll(openPGPFolder)
+		return err
+	}
+
+	fingerprint := strings.ToUpper(key.GetFingerprint())
+
+	localFile := filepath.Join(openPGPFolder, fingerprint+".asc")
+
+	// Write copy back into new folder.
+	if err := os.WriteFile(localFile, data, 0644); err != nil {
+		os.RemoveAll(openPGPFolder)
+		return err
+	}
+
+	// Add to the URLs.
+	pm.SetPGP(fingerprint, localKeyURL(fingerprint))
+
+	return nil
+}
+
+// createAggregatorProvider fills the "metadata" section in the "csaf_providers" of
 // the aggregator document.
 func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error) {
 	const (
@@ -373,7 +470,7 @@ func (w *worker) downloadSignature(path string) (string, error) {
 // sign signs the given data with the configured key.
 func (w *worker) sign(data []byte) (string, error) {
 	if w.signRing == nil {
-		key, err := w.cfg.cryptoKey()
+		key, err := w.cfg.privateOpenPGPKey()
 		if err != nil {
 			return "", err
 		}
