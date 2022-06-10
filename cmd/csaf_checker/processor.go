@@ -581,7 +581,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	if res.StatusCode != http.StatusOK {
 		// It's optional
 		if res.StatusCode == http.StatusNotFound {
-			p.badIndices.warn("Fetching %s failed. Status code %d (%s)",
+			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
 		}
 		return errContinue
@@ -624,7 +624,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	if res.StatusCode != http.StatusOK {
 		if res.StatusCode == http.StatusNotFound {
 			// It's optional
-			p.badChanges.warn("Fetching %s failed. Status code %d (%s)",
+			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
 		}
 		return errContinue
