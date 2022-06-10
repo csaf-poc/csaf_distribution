@@ -195,7 +195,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 				Scheme: "urn:ietf:params:rolie:category:information-type",
 				Term:   "csaf",
 			}},
-			Updated: csaf.TimeStamp(time.Now()),
+			Updated: csaf.TimeStamp(time.Now().UTC()),
 			Entry:   entries,
 		},
 	}

@@ -239,7 +239,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				}
 			}
 
-			rolie.Feed.Updated = csaf.TimeStamp(time.Now())
+			rolie.Feed.Updated = csaf.TimeStamp(time.Now().UTC())
 
 			year := strconv.Itoa(ex.InitialReleaseDate.Year())
 
