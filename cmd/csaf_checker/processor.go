@@ -569,9 +569,8 @@ func (p *processor) processROLIEFeed(feed string) error {
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 
-	index := base + "/index.txt"
+	index := base + "index.txt"
 	p.checkTLS(index)
-
 	p.badIndices.use()
 
 	res, err := client.Get(index)
@@ -581,8 +580,8 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	}
 	if res.StatusCode != http.StatusOK {
 		// It's optional
-		if res.StatusCode != http.StatusNotFound {
-			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
+		if res.StatusCode == http.StatusNotFound {
+			p.badIndices.warn("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
 		}
 		return errContinue
@@ -611,7 +610,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 // "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
-	changes := base + "/changes.csv"
+	changes := base + "changes.csv"
 	p.checkTLS(changes)
 	res, err := client.Get(changes)
 
@@ -621,10 +620,11 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		p.badChanges.error("Fetching %s failed: %v", changes, err)
 		return errContinue
 	}
+
 	if res.StatusCode != http.StatusOK {
-		if res.StatusCode != http.StatusNotFound {
+		if res.StatusCode == http.StatusNotFound {
 			// It's optional
-			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
+			p.badChanges.warn("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
 		}
 		return errContinue
