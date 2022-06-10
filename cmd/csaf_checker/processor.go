@@ -503,7 +503,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badProviderMetadata.error("Fetching %s failed. Status code %d (%s)",
+		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
 		return errContinue
 	}
