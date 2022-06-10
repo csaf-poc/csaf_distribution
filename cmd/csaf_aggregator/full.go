@@ -136,7 +136,7 @@ func (p *processor) full() error {
 	canonicalURL := csaf.AggregatorURL(
 		p.cfg.Domain + "/.well-known/csaf-aggregator/aggregator.json")
 
-	lastUpdated := csaf.TimeStamp(time.Now())
+	lastUpdated := csaf.TimeStamp(time.Now().UTC())
 
 	agg := csaf.Aggregator{
 		Aggregator:    &p.cfg.Aggregator,
