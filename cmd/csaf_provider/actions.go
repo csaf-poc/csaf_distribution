@@ -257,6 +257,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			e.Updated = csaf.TimeStamp(ex.CurrentReleaseDate)
 			e.Link = []csaf.Link{
 				{Rel: "self", HRef: csafURL},
+				{Rel: "hash", HRef: csafURL + ".sha256"},
 				{Rel: "hash", HRef: csafURL + ".sha512"},
 				{Rel: "signature", HRef: csafURL + ".asc"},
 			}

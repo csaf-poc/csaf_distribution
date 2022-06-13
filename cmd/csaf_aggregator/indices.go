@@ -168,6 +168,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 			Updated:   csaf.TimeStamp(s.summary.CurrentReleaseDate),
 			Link: []csaf.Link{
 				{Rel: "self", HRef: csafURL},
+				{Rel: "hash", HRef: csafURL + ".sha256"},
 				{Rel: "hash", HRef: csafURL + ".sha512"},
 				{Rel: "signature", HRef: csafURL + ".asc"},
 			},
