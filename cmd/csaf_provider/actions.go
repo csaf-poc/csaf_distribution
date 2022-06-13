@@ -255,10 +255,11 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			e.Titel = ex.Title
 			e.Published = csaf.TimeStamp(ex.InitialReleaseDate)
 			e.Updated = csaf.TimeStamp(ex.CurrentReleaseDate)
-			e.Link = []csaf.Link{{
-				Rel:  "self",
-				HRef: csafURL,
-			}}
+			e.Link = []csaf.Link{
+				{Rel: "self", HRef: csafURL},
+				{Rel: "hash", HRef: csafURL + ".sha512"},
+				{Rel: "signature", HRef: csafURL + ".asc"},
+			}
 			e.Format = csaf.Format{
 				Schema:  "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
 				Version: "2.0",
