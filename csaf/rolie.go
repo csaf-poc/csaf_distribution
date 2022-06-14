@@ -116,6 +116,13 @@ func (rf *ROLIEFeed) Files(filter string) []string {
 	return files
 }
 
+// Entries visits the entries of this feed.
+func (rf *ROLIEFeed) Entries(fn func(*Entry)) {
+	for _, e := range rf.Feed.Entry {
+		fn(e)
+	}
+}
+
 // SortEntriesByUpdated sorts all the entries in the feed
 // by their update times.
 func (rf *ROLIEFeed) SortEntriesByUpdated() {
