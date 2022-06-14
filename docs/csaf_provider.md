@@ -27,4 +27,4 @@ Following options are supported in the config file:
  - provider_metadata: Configure the provider metadata.
  - provider_metadata.list_on_CSAF_aggregators: List on aggregators
  - provider_metadata.mirror_on_CSAF_aggregators: Mirror on aggregators
- - provider_metadata.publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example", "namespace"= "https://example.com"}`.
+ - provider_metadata.publisher: Set the publisher. Default: `{"category"= "vendor", "name"= "Example Company", "namespace"= "https://example.com"}`.
