@@ -468,7 +468,7 @@ func (p *processor) integrity(
 		} {
 			hu, err := url.Parse(x.url())
 			if err != nil {
-				lg(ErrorType, "Bad URL %s: %v", f, err)
+				lg(ErrorType, "Bad URL %s: %v", x.url(), err)
 				continue
 			}
 			hashFile := b.ResolveReference(hu).String()
@@ -503,7 +503,7 @@ func (p *processor) integrity(
 		// Check signature
 		su, err := url.Parse(f.sign())
 		if err != nil {
-			lg(ErrorType, "Bad URL %s: %v", f, err)
+			lg(ErrorType, "Bad URL %s: %v", f.sign(), err)
 			continue
 		}
 		sigFile := b.ResolveReference(su).String()
