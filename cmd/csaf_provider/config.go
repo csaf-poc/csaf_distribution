@@ -192,7 +192,7 @@ func loadConfig() (*config, error) {
 	if cfg.ProviderMetaData.Publisher == nil {
 		cfg.ProviderMetaData.Publisher = &csaf.Publisher{
 			Category:  func(c csaf.Category) *csaf.Category { return &c }(csaf.CSAFCategoryVendor),
-			Name:      func(s string) *string { return &s }("ACME"),
+			Name:      func(s string) *string { return &s }("Example Company"),
 			Namespace: func(s string) *string { return &s }("https://example.com"),
 		}
 	}
