@@ -17,6 +17,35 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// ROLIECategories is a list of ROLIE categories.
+type ROLIECategories struct {
+	Category []ROLIECategory `json:"category"`
+}
+
+// ROLIECategoryDocument is a ROLIE category document.
+type ROLIECategoryDocument struct {
+	Categories ROLIECategories `json:"categories"`
+}
+
+// LoadROLIECategoryDocument loads a ROLIE category document from a reader.
+func LoadROLIECategoryDocument(r io.Reader) (*ROLIECategoryDocument, error) {
+	dec := json.NewDecoder(r)
+	var rcd ROLIECategoryDocument
+	if err := dec.Decode(&rcd); err != nil {
+		return nil, err
+	}
+	return &rcd, nil
+}
+
+// WriteTo saves a ROLIE category document to a writer.
+func (rcd *ROLIECategoryDocument) WriteTo(w io.Writer) (int64, error) {
+	nw := util.NWriter{Writer: w, N: 0}
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(rcd)
+	return nw.N, err
+}
+
 // Link for ROLIE.
 type Link struct {
 	Rel  string `json:"rel"`
@@ -25,7 +54,7 @@ type Link struct {
 
 // ROLIECategory for ROLIE.
 type ROLIECategory struct {
-	Scheme string `json:"scheme"`
+	Scheme string `json:"scheme,omitempty"`
 	Term   string `json:"term"`
 }
 
