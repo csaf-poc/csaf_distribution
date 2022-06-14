@@ -600,22 +600,39 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 		for i := range entry.Link {
 			link := &entry.Link[i]
+			lower := strings.ToLower(link.HRef)
 			switch link.Rel {
 			case "self":
+				if !strings.HasSuffix(lower, ".json") {
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "self" has unexpected file extension.`,
+						link.HRef, feed)
+				}
 				url = link.HRef
 			case "signature":
+				if !strings.HasSuffix(lower, ".asc") {
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "signature" has unexpected file extension.`,
+						link.HRef, feed)
+				}
 				sign = link.HRef
 			case "hash":
-				switch x := strings.ToLower(link.HRef); {
-				case strings.HasSuffix(x, "sha256"):
+				switch {
+				case strings.HasSuffix(lower, "sha256"):
 					sha256 = link.HRef
-				case strings.HasSuffix(x, "sha512"):
+				case strings.HasSuffix(lower, "sha512"):
 					sha512 = link.HRef
+				default:
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "hash" has unsupported file extension.`,
+						link.HRef, feed)
 				}
 			}
 		}
 
 		if url == "" {
+			p.badProviderMetadata.warn(
+				`ROLIE feed %s contains entry link with no "self" URL.`, feed)
 			return
 		}
 
