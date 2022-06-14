@@ -353,28 +353,17 @@ func (sf stringFile) sign() string   { return string(sf) + ".asc" }
 // extending the first component.
 type hashFile [4]string
 
-func (hf hashFile) url() string { return hf[0] }
-
-func (hf hashFile) sha256() string {
-	if hf[1] == "" {
-		return hf[0] + ".sha256"
+func (hf hashFile) name(i int, ext string) string {
+	if hf[i] != "" {
+		return hf[i]
 	}
-	return hf[1]
+	return hf[0] + ext
 }
 
-func (hf hashFile) sha512() string {
-	if hf[2] == "" {
-		return hf[0] + ".sha512"
-	}
-	return hf[2]
-}
-
-func (hf hashFile) sign() string {
-	if hf[3] == "" {
-		return hf[0] + ".asc"
-	}
-	return hf[3]
-}
+func (hf hashFile) url() string    { return hf[0] }
+func (hf hashFile) sha256() string { return hf.name(1, ".sha256") }
+func (hf hashFile) sha512() string { return hf.name(2, ".sha512") }
+func (hf hashFile) sign() string   { return hf.name(3, ".asc") }
 
 func (p *processor) integrity(
 	files []checkFile,
