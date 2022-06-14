@@ -545,7 +545,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 	}
 
 	// Extract the CSAF files from feed.
-	files := rfeed.Files()
+	files := rfeed.Files("self")
 
 	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil &&
 		err != errContinue {

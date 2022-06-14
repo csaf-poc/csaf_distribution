@@ -88,7 +88,7 @@ func (w *worker) handleROLIE(
 				log.Printf("Loading ROLIE feed failed: %v.", err)
 				continue
 			}
-			files := resolveURLs(rfeed.Files(), feedBaseURL)
+			files := resolveURLs(rfeed.Files("self"), feedBaseURL)
 			if err := process(feed.TLPLabel, files); err != nil {
 				return err
 			}
