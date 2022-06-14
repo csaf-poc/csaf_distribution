@@ -338,7 +338,7 @@ type checkFile interface {
 }
 
 // stringFile is a simple implementation of checkFile.
-// The hash aund signature files are directly by exteding
+// The hash and signature files are directly constructed by extending
 // the file name.
 type stringFile string
 
