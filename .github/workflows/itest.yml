@@ -32,5 +32,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
             name: checker-results
-            path: ~/checker-results.html
+            path: |
+                ~/checker-results.html
+                ~/checker-results.json
             if-no-files-found: error
