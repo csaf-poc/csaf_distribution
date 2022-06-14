@@ -34,5 +34,5 @@ jobs:
             name: checker-results
             path: |
                 ~/checker-results.html
-                ~/checker-results.json
+                ~/checker-results-no-clientcert.json
             if-no-files-found: error

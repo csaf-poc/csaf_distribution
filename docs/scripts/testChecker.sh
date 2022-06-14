@@ -13,12 +13,12 @@ set -e  # to exit if a command in the script fails
 echo '==== run checker (twice)'
 cd ~/csaf_distribution
 
-./bin-linux-amd64/csaf_checker -o ../checker-results.html --insecure \
-    --insecure localhost -f html
+./bin-linux-amd64/csaf_checker -f html -o ../checker-results.html --insecure \
+  --client-cert ~/devca1/testclient1.crt \
+  --client-key ~/devca1/testclient1-key.pem \
+  --verbose --insecure localhost
 
 cat ../checker-results.html
 
-./bin-linux-amd64/csaf_checker -o ../checker-results.json --insecure \
---client-cert ~/devca1/testclient1.crt \
---client-key ~/devca1/testclient1-key.pem \
---verbose localhost
+./bin-linux-amd64/csaf_checker -o ../checker-results-no-clientcert.json \
+  --insecure --verbose localhost
