@@ -38,7 +38,7 @@ var (
 	validTrue         = []byte{1}
 )
 
-// remoteValidatorOptions are the configuation options
+// RemoteValidatorOptions are the configuation options
 // the remote validation service.
 type RemoteValidatorOptions struct {
 	URL     string   `json:"url" toml:"url"`
