@@ -167,6 +167,21 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		}
 	}
 
+	// Validate against remote validator
+	if c.cfg.RemoteValidator != nil {
+		validator, err := c.cfg.RemoteValidator.Open()
+		if err != nil {
+			return nil, err
+		}
+		valid, err := validator.Validate(content)
+		if err != nil {
+			return nil, err
+		}
+		if !valid {
+			return nil, errors.New("does not validate against remote validator")
+		}
+	}
+
 	ex, err := csaf.NewAdvisorySummary(util.NewPathEval(), content)
 	if err != nil {
 		return nil, err
