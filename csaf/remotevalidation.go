@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 
@@ -37,7 +38,7 @@ var (
 	validTrue         = []byte{1}
 )
 
-// RemoteValidatorOptions are the configuation options
+// remoteValidatorOptions are the configuation options
 // the remote validation service.
 type RemoteValidatorOptions struct {
 	URL     string   `json:"url" toml:"url"`
@@ -69,11 +70,43 @@ type cache interface {
 	Close() error
 }
 
-// RemoteValidator validates a advisory document remotely.
-type RemoteValidator struct {
+// RemoteValidator validates an advisory document remotely.
+type RemoteValidator interface {
+	Validate(doc interface{}) (bool, error)
+	Close() error
+}
+
+// SynchronizedRemoteValidator returns a serialized variant
+// of the given remote validator.
+func SynchronizedRemoteValidator(validator RemoteValidator) RemoteValidator {
+	return &syncedRemoteValidator{RemoteValidator: validator}
+}
+
+// remoteValidator is an implementation of an RemoteValidator.
+type remoteValidator struct {
 	url   string
 	tests []test
 	cache cache
+}
+
+// syncedRemoteValidator is a serialized variant of a remote validator.
+type syncedRemoteValidator struct {
+	sync.Mutex
+	RemoteValidator
+}
+
+// Validate implements the validation part of the RemoteValidator interface.
+func (srv *syncedRemoteValidator) Validate(doc interface{}) (bool, error) {
+	srv.Lock()
+	defer srv.Unlock()
+	return srv.RemoteValidator.Validate(doc)
+}
+
+// Validate implements the closing part of the RemoteValidator interface.
+func (srv *syncedRemoteValidator) Close() error {
+	srv.Lock()
+	defer srv.Unlock()
+	return srv.RemoteValidator.Close()
 }
 
 // prepareTests precompiles the presets for the remote check.
@@ -151,13 +184,13 @@ func (bc boltCache) set(key []byte, valid bool) error {
 	})
 }
 
-// Open opens a new RemoteValidator.
-func (rvo *RemoteValidatorOptions) Open() (*RemoteValidator, error) {
+// Open opens a new remoteValidator.
+func (rvo *RemoteValidatorOptions) Open() (RemoteValidator, error) {
 	cache, err := prepareCache(rvo.Cache)
 	if err != nil {
 		return nil, err
 	}
-	return &RemoteValidator{
+	return &remoteValidator{
 		url:   prepareURL(rvo.URL),
 		tests: prepareTests(rvo.Presets),
 		cache: cache,
@@ -165,7 +198,7 @@ func (rvo *RemoteValidatorOptions) Open() (*RemoteValidator, error) {
 }
 
 // Close closes the remote validator.
-func (v *RemoteValidator) Close() error {
+func (v *remoteValidator) Close() error {
 	if v.cache != nil {
 		return v.cache.Close()
 	}
@@ -173,7 +206,7 @@ func (v *RemoteValidator) Close() error {
 }
 
 // key calculates the key for an advisory document and presets.
-func (v *RemoteValidator) key(doc interface{}) ([]byte, error) {
+func (v *remoteValidator) key(doc interface{}) ([]byte, error) {
 	h := sha256.New()
 	if err := json.NewEncoder(h).Encode(doc); err != nil {
 		return nil, err
@@ -187,7 +220,7 @@ func (v *RemoteValidator) key(doc interface{}) ([]byte, error) {
 }
 
 // Validate executes a remote validation of an advisory.
-func (v *RemoteValidator) Validate(doc interface{}) (bool, error) {
+func (v *remoteValidator) Validate(doc interface{}) (bool, error) {
 
 	var key []byte
 
