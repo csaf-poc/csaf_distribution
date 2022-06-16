@@ -1,5 +1,5 @@
 `csaf_provider` implements the CGI interface for webservers
-and reads its configuration from a TOML file.
+and reads its configuration from a TOML file. Syntax and usage for TOML (Tom's Obvious Minimal Language) can be found under the website https://toml.io/en/.
 The [setup docs](../README.md#setup-trusted-provider)
 explain how to wire this up with nginx and where the config file lives.
 
