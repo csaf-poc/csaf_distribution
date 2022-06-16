@@ -17,8 +17,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/csaf-poc/csaf_distribution/util"
-
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -238,20 +236,8 @@ func (v *remoteValidator) Validate(doc interface{}) (bool, error) {
 		}
 	}
 
-	src, ok := doc.(map[string]interface{})
-	if !ok {
-		// Try re-marshaling
-		if err := util.ReMarshalJSON(&src, doc); err != nil {
-			return false, err
-		}
-	}
-	d, ok := src["document"]
-	if !ok {
-		return false, errors.New("no 'document' field found")
-	}
-
 	o := outDocument{
-		Document: d,
+		Document: doc,
 		Tests:    v.tests,
 	}
 
