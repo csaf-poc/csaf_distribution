@@ -26,7 +26,8 @@ Following options are supported in the config file:
  - provider_metadata.list_on_CSAF_aggregators: List on aggregators
  - provider_metadata.mirror_on_CSAF_aggregators: Mirror on aggregators
  - provider_metadata.publisher: Set the publisher. Default:  
-```toml [provider_metadata.publisher]
+```toml 
+[provider_metadata.publisher]
 category = "vendor"
 name = "Example Company"
 namespace = "https://example.com"
