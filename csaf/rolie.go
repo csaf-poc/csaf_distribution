@@ -103,19 +103,6 @@ func (rf *ROLIEFeed) EntryByID(id string) *Entry {
 	return nil
 }
 
-// Files extracts the files from the feed.
-func (rf *ROLIEFeed) Files(filter string) []string {
-	var files []string
-	for _, f := range rf.Feed.Entry {
-		for i := range f.Link {
-			if link := &f.Link[i]; link.Rel == filter {
-				files = append(files, link.HRef)
-			}
-		}
-	}
-	return files
-}
-
 // Entries visits the entries of this feed.
 func (rf *ROLIEFeed) Entries(fn func(*Entry)) {
 	for _, e := range rf.Feed.Entry {
