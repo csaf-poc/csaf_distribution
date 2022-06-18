@@ -29,81 +29,76 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/armor"
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-func (w *worker) handleROLIE(
-	feeds [][]csaf.Feed,
+func handleROLIEFeed(
+	client util.Client,
+	base *url.URL,
+	cfeed []csaf.Feed,
 	process func(*csaf.TLPLabel, []string) error,
 ) error {
-	base, err := url.Parse(w.loc)
-	if err != nil {
-		return err
-	}
-	log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
+	for i := range cfeed {
+		feed := &cfeed[i]
+		if feed.URL == nil {
+			continue
+		}
+		up, err := url.Parse(string(*feed.URL))
+		if err != nil {
+			log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
+			continue
+		}
+		feedURL := base.ResolveReference(up).String()
+		log.Printf("Feed URL: %s\n", feedURL)
 
-	for _, fs := range feeds {
-		for i := range fs {
-			feed := &fs[i]
-			if feed.URL == nil {
-				continue
-			}
-			up, err := url.Parse(string(*feed.URL))
-			if err != nil {
-				log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
-				continue
-			}
-			feedURL := base.ResolveReference(up).String()
-			log.Printf("Feed URL: %s\n", feedURL)
+		fb, err := util.BaseURL(feedURL)
+		if err != nil {
+			log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
+			continue
+		}
+		feedBaseURL, err := url.Parse(fb)
+		if err != nil {
+			log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
+			continue
+		}
 
-			fb, err := util.BaseURL(feedURL)
-			if err != nil {
-				log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
-				continue
-			}
-			feedBaseURL, err := url.Parse(fb)
-			if err != nil {
-				log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
-				continue
-			}
+		res, err := client.Get(feedURL)
+		if err != nil {
+			log.Printf("error: Cannot get feed '%s'\n", err)
+			continue
+		}
+		if res.StatusCode != http.StatusOK {
+			log.Printf("error: Fetching %s failed. Status code %d (%s)",
+				feedURL, res.StatusCode, res.Status)
+			continue
+		}
+		rfeed, err := func() (*csaf.ROLIEFeed, error) {
+			defer res.Body.Close()
+			return csaf.LoadROLIEFeed(res.Body)
+		}()
+		if err != nil {
+			log.Printf("Loading ROLIE feed failed: %v.", err)
+			continue
+		}
 
-			res, err := w.client.Get(feedURL)
+		// Extract the adivisory URLs from the feed.
+		var files []string
+		rfeed.Links(func(l *csaf.Link) {
+			if l.Rel != "self" {
+				return
+			}
+			href, err := url.Parse(l.HRef)
 			if err != nil {
-				log.Printf("error: Cannot get feed '%s'\n", err)
-				continue
+				log.Printf("error: Invalid URL: %v", l.HRef, err)
+				return
 			}
-			if res.StatusCode != http.StatusOK {
-				log.Printf("error: Fetching %s failed. Status code %d (%s)",
-					feedURL, res.StatusCode, res.Status)
-				continue
-			}
-			rfeed, err := func() (*csaf.ROLIEFeed, error) {
-				defer res.Body.Close()
-				return csaf.LoadROLIEFeed(res.Body)
-			}()
-			if err != nil {
-				log.Printf("Loading ROLIE feed failed: %v.", err)
-				continue
-			}
+			files = append(files, feedBaseURL.ResolveReference(href).String())
+		})
 
-			// Extract the adivisory URLs from the feed.
-			var files []string
-			rfeed.Links(func(l *csaf.Link) {
-				if l.Rel != "self" {
-					return
-				}
-				href, err := url.Parse(l.HRef)
-				if err != nil {
-					log.Printf("error: Invalid URL: %v", l.HRef, err)
-					return
-				}
-				files = append(files, feedBaseURL.ResolveReference(href).String())
-			})
-
-			if err := process(feed.TLPLabel, files); err != nil {
-				return err
-			}
+		if err := process(feed.TLPLabel, files); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -155,8 +150,18 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			return nil, err
 		}
-		if err := w.handleROLIE(feeds, w.mirrorFiles); err != nil {
+		log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
+
+		// URLs are potentially relative to provider meta data.
+		base, err := url.Parse(w.loc)
+		if err != nil {
 			return nil, err
+		}
+
+		for _, feed := range feeds {
+			if err := handleROLIEFeed(w.client, base, feed, w.mirrorFiles); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		// No rolie feeds -> try to load files from index.txt
