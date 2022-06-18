@@ -34,15 +34,11 @@ import (
 )
 
 func (w *worker) handleROLIE(
-	rolie interface{},
+	feeds [][]csaf.Feed,
 	process func(*csaf.TLPLabel, []string) error,
 ) error {
 	base, err := url.Parse(w.loc)
 	if err != nil {
-		return err
-	}
-	var feeds [][]csaf.Feed
-	if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 		return err
 	}
 	log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
@@ -90,7 +86,21 @@ func (w *worker) handleROLIE(
 				log.Printf("Loading ROLIE feed failed: %v.", err)
 				continue
 			}
-			files := resolveURLs(rfeed.Files("self"), feedBaseURL)
+
+			// Extract the adivisory URLs from the feed.
+			var files []string
+			rfeed.Links(func(l *csaf.Link) {
+				if l.Rel != "self" {
+					return
+				}
+				href, err := url.Parse(l.HRef)
+				if err != nil {
+					log.Printf("error: Invalid URL: %v", l.HRef, err)
+					return
+				}
+				files = append(files, feedBaseURL.ResolveReference(href).String())
+			})
+
 			if err := process(feed.TLPLabel, files); err != nil {
 				return err
 			}
@@ -141,7 +151,11 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {
-		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
+		var feeds [][]csaf.Feed
+		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
+			return nil, err
+		}
+		if err := w.handleROLIE(feeds, w.mirrorFiles); err != nil {
 			return nil, err
 		}
 	} else {
