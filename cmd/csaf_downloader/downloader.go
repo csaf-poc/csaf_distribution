@@ -10,9 +10,12 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 
+	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 	"golang.org/x/time/rate"
 )
@@ -61,6 +64,17 @@ func (d *downloader) httpClient() util.Client {
 }
 
 func (d *downloader) download(domain string) error {
+
+	lpmd := csaf.LoadProviderMetadataForDomain(
+		d.httpClient(), domain, func(format string, args ...interface{}) {
+			log.Printf(
+				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
+		})
+
+	if lpmd == nil {
+		return fmt.Errorf("no provider-metadata.json found for '%s'", domain)
+	}
+
 	// TODO: Implement me!
 	return nil
 }
