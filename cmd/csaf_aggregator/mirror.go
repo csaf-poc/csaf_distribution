@@ -91,7 +91,7 @@ func handleROLIEFeed(
 			}
 			href, err := url.Parse(l.HRef)
 			if err != nil {
-				log.Printf("error: Invalid URL: %v", l.HRef, err)
+				log.Printf("error: Invalid URL '%s': %v", l.HRef, err)
 				return
 			}
 			files = append(files, feedBaseURL.ResolveReference(href).String())
