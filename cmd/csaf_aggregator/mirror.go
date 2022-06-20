@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ProtonMail/gopenpgp/v2/armor"
+	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -490,7 +492,8 @@ func (w *worker) sign(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return sig.GetArmored()
+	return armor.ArmorWithTypeAndCustomHeaders(
+		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
 func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {

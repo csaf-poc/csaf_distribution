@@ -21,6 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/ProtonMail/gopenpgp/v2/armor"
+	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -239,7 +241,8 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 		if err != nil {
 			return nil, err
 		}
-		armored, err := sig.GetArmored()
+		armored, err := armor.ArmorWithTypeAndCustomHeaders(
+			sig.Data, constants.PGPSignatureHeader, "", "")
 		if err != nil {
 			return nil, err
 		}
