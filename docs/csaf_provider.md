@@ -1,5 +1,7 @@
-`csaf_provider` implements the CGI interface for webservers and reads its configuration from a [TOML](https://toml.io/en/) file.
-The [setup docs](../README.md#setup-trusted-provider) explain how to wire this up with nginx and where the config file lives.
+`csaf_provider` implements the CGI interface for webservers
+and reads its configuration from a [TOML](https://toml.io/en/) file.
+The [setup docs](../README.md#setup-trusted-provider)
+explain how to wire this up with nginx and where the config file lives.
 
 ## Provider options
 
@@ -33,4 +35,3 @@ name = "Example Company"
 namespace = "https://example.com"
 issuing_authority = "We at Example Company are responsible for publishing and maintaining Product Y."
 contact_details = "Example Company can be reached at contact_us@example.com, or via our website at https://www.example.com/contact."
-
