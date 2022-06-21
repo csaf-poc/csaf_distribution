@@ -143,7 +143,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 
 	fname := "csaf-feed-tlp-" + labelFolder + ".json"
 
-	feedURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
+	feedURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
 		w.provider.Name + "/" + labelFolder + "/" + fname
 
 	entries := make([]*csaf.Entry, len(summaries))
@@ -156,7 +156,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	for i := range summaries {
 		s := &summaries[i]
 
-		csafURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
+		csafURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
 			w.provider.Name + "/" + label + "/" +
 			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" +
 			s.filename

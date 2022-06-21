@@ -149,12 +149,12 @@ func (w *worker) setupProviderInterim(provider *provider) {
 	w.provider = provider
 
 	// Each job needs a separate client.
-	w.client = w.cfg.httpClient(provider)
+	w.client = w.processor.cfg.httpClient(provider)
 }
 
 func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
-	path := filepath.Join(w.cfg.Web, ".well-known", "csaf-aggregator")
+	path := filepath.Join(w.processor.cfg.Web, ".well-known", "csaf-aggregator")
 
 	for j := range jobs {
 		w.setupProviderInterim(j.provider)
@@ -162,7 +162,7 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 		providerPath := filepath.Join(path, j.provider.Name)
 
 		j.err = func() error {
-			tx := newLazyTransaction(providerPath, w.cfg.Folder)
+			tx := newLazyTransaction(providerPath, w.processor.cfg.Folder)
 			defer tx.rollback()
 
 			// Try all the labels
@@ -178,7 +178,7 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 
 				interimsCSV := filepath.Join(labelPath, "interims.csv")
 				interims, err := readInterims(
-					interimsCSV, w.cfg.InterimYears)
+					interimsCSV, w.processor.cfg.InterimYears)
 				if err != nil {
 					return err
 				}
@@ -240,7 +240,7 @@ func (p *processor) interim() error {
 	log.Printf("Starting %d workers.\n", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
-		w := newWorker(i, p.cfg)
+		w := newWorker(i, p)
 		go w.interimWork(&wg, queue)
 	}
 
