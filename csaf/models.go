@@ -313,7 +313,7 @@ func (a *Aggregator) Validate() error {
 		}
 	}
 	if a.LastUpdated == nil {
-		return errors.New("Aggregator.LastUpdate == nil")
+		return errors.New("aggregator.LastUpdate == nil")
 	}
 	return nil
 }
