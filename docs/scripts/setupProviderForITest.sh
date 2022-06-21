@@ -104,6 +104,9 @@ curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --ce
 
 popd
 
+# Setup validation service
+./setupValidationService.sh
+
 # Upload files
 ./uploadToProvider.sh
 
