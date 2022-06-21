@@ -183,7 +183,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	// Add us as a mirror.
 	mirrorURL := csaf.ProviderURL(
 		fmt.Sprintf("%s/.well-known/csaf-aggregator/%s/provider-metadata.json",
-			w.cfg.Domain, w.provider.Name))
+			w.processor.cfg.Domain, w.provider.Name))
 
 	acp.Mirrors = []csaf.ProviderURL{
 		mirrorURL,
@@ -207,7 +207,7 @@ func (w *worker) writeProviderMetadata() error {
 	fname := filepath.Join(w.dir, "provider-metadata.json")
 
 	pm := csaf.NewProviderMetadataPrefix(
-		w.cfg.Domain+"/.well-known/csaf-aggregator/"+w.provider.Name,
+		w.processor.cfg.Domain+"/.well-known/csaf-aggregator/"+w.provider.Name,
 		w.labelsFromSummaries())
 
 	// Figure out the role
@@ -255,7 +255,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 
 	localKeyURL := func(fingerprint string) string {
 		return fmt.Sprintf("%s/.well-known/csaf-aggregator/%s/openpgp/%s.asc",
-			w.cfg.Domain, w.provider.Name, fingerprint)
+			w.processor.cfg.Domain, w.provider.Name, fingerprint)
 	}
 
 	for i := range pm.PGPKeys {
@@ -311,12 +311,12 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 
 	// If we have public key configured copy it into the new folder
 
-	if w.cfg.OpenPGPPublicKey == "" {
+	if w.processor.cfg.OpenPGPPublicKey == "" {
 		return nil
 	}
 
 	// Load the key for the fingerprint.
-	data, err := os.ReadFile(w.cfg.OpenPGPPublicKey)
+	data, err := os.ReadFile(w.processor.cfg.OpenPGPPublicKey)
 	if err != nil {
 		os.RemoveAll(openPGPFolder)
 		return err
@@ -390,7 +390,7 @@ func (w *worker) createAggregatorProvider() (*csaf.AggregatorCSAFProvider, error
 func (w *worker) doMirrorTransaction() error {
 
 	webTarget := filepath.Join(
-		w.cfg.Web, ".well-known", "csaf-aggregator", w.provider.Name)
+		w.processor.cfg.Web, ".well-known", "csaf-aggregator", w.provider.Name)
 
 	var oldWeb string
 
@@ -408,7 +408,7 @@ func (w *worker) doMirrorTransaction() error {
 	}
 
 	// Check if there is a sysmlink already.
-	target := filepath.Join(w.cfg.Folder, w.provider.Name)
+	target := filepath.Join(w.processor.cfg.Folder, w.provider.Name)
 	log.Printf("target: '%s'\n", target)
 
 	exists, err := util.PathExists(target)
@@ -472,14 +472,14 @@ func (w *worker) downloadSignature(path string) (string, error) {
 // sign signs the given data with the configured key.
 func (w *worker) sign(data []byte) (string, error) {
 	if w.signRing == nil {
-		key, err := w.cfg.privateOpenPGPKey()
+		key, err := w.processor.cfg.privateOpenPGPKey()
 		if err != nil {
 			return "", err
 		}
 		if key == nil {
 			return "", nil
 		}
-		if pp := w.cfg.Passphrase; pp != nil {
+		if pp := w.processor.cfg.Passphrase; pp != nil {
 			if key, err = key.Unlock([]byte(*pp)); err != nil {
 				return "", err
 			}
@@ -544,15 +544,30 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 			continue
 		}
 
+		// Check against CSAF schema.
 		errors, err := csaf.ValidateCSAF(advisory)
 		if err != nil {
 			log.Printf("error: %s: %v", file, err)
 			continue
 		}
 		if len(errors) > 0 {
-			log.Printf("CSAF file %s has %d validation errors.",
+			log.Printf("CSAF file %s has %d validation errors.\n",
 				file, len(errors))
 			continue
+		}
+
+		// Check against remote validator.
+		if rmv := w.processor.remoteValidator; rmv != nil {
+			valid, err := rmv.Validate(advisory)
+			if err != nil {
+				log.Printf("Calling remote validator failed: %s\n", err)
+				continue
+			}
+			if !valid {
+				log.Printf(
+					"CSAF file %s does not validate remotely.\n", file)
+				continue
+			}
 		}
 
 		sum, err := csaf.NewAdvisorySummary(w.expr, advisory)

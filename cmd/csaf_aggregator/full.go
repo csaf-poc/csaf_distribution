@@ -36,7 +36,7 @@ func (w *worker) setupProviderFull(provider *provider) error {
 	w.provider = provider
 
 	// Each job needs a separate client.
-	w.client = w.cfg.httpClient(provider)
+	w.client = w.processor.cfg.httpClient(provider)
 
 	// We need the provider metadata in all cases.
 	if err := w.locateProviderMetadata(provider.Domain); err != nil {
@@ -83,6 +83,22 @@ func (p *processor) full() error {
 	var doWork fullWorkFunc
 
 	if p.cfg.runAsMirror() {
+
+		// check if we need to setup a remote validator
+		if p.cfg.RemoteValidatorOptions != nil {
+			validator, err := p.cfg.RemoteValidatorOptions.Open()
+			if err != nil {
+				return err
+			}
+
+			// Not sure if we really need it to be serialized.
+			p.remoteValidator = csaf.SynchronizedRemoteValidator(validator)
+			defer func() {
+				p.remoteValidator.Close()
+				p.remoteValidator = nil
+			}()
+		}
+
 		doWork = (*worker).mirror
 		log.Println("Running in aggregator mode")
 	} else {
@@ -96,7 +112,7 @@ func (p *processor) full() error {
 	log.Printf("Starting %d workers.\n", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
-		w := newWorker(i, p.cfg)
+		w := newWorker(i, p)
 		go w.fullWork(&wg, doWork, queue)
 	}
 

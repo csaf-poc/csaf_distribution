@@ -20,7 +20,11 @@ import (
 )
 
 type processor struct {
+	// cfg is the global configuration.
 	cfg *config
+
+	// remoteValidator is a globally configured remote validator.
+	remoteValidator csaf.RemoteValidator
 }
 
 type summary struct {
@@ -30,9 +34,10 @@ type summary struct {
 }
 
 type worker struct {
-	num      int
+	num       int
+	processor *processor
+
 	expr     *util.PathEval
-	cfg      *config
 	signRing *crypto.KeyRing
 
 	client           util.Client          // client per provider
@@ -43,11 +48,11 @@ type worker struct {
 	summaries        map[string][]summary // the summaries of the advisories.
 }
 
-func newWorker(num int, config *config) *worker {
+func newWorker(num int, processor *processor) *worker {
 	return &worker{
-		num:  num,
-		cfg:  config,
-		expr: util.NewPathEval(),
+		num:       num,
+		processor: processor,
+		expr:      util.NewPathEval(),
 	}
 }
 
@@ -64,7 +69,7 @@ func (w *worker) createDir() (string, error) {
 		return w.dir, nil
 	}
 	dir, err := util.MakeUniqDir(
-		filepath.Join(w.cfg.Folder, w.provider.Name))
+		filepath.Join(w.processor.cfg.Folder, w.provider.Name))
 	if err == nil {
 		w.dir = dir
 	}

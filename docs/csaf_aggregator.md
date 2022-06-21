@@ -87,6 +87,7 @@ lock_file             // path to lockfile, to stop other instances if one is not
 interim_years         // limiting the years for which interim documents are searched
 verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
+remote_validator      // use remote validation checker
 ```
 
 Rates are specified as floats in HTTPS operations per second.

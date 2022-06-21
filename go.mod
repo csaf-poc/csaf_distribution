@@ -12,6 +12,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
+	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20220513210258-46612604a0f9
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306
