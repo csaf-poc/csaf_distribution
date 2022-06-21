@@ -4,7 +4,6 @@ The [setup docs](../README.md#setup-trusted-provider)
 explain how to wire this up with nginx and where the config file lives.
 
 
-
 ## Provider options
 
 Following options are supported in the config file:
