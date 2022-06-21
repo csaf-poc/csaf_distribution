@@ -31,7 +31,6 @@ Following options are supported in the config file:
  - remote_validator: Use a remote validator service. Not used by default.
    `{ "url" = "http://localhost:3000", "presets" = ["mandatory"], "cache" = "/var/lib/csaf/validations.db" }`
  - provider_metadata.publisher: Set the publisher. Default:
-
 ```toml
 [provider_metadata.publisher]
 category = "vendor"
