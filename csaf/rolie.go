@@ -110,15 +110,6 @@ func (rf *ROLIEFeed) Entries(fn func(*Entry)) {
 	}
 }
 
-// Links visits the links of this feed.
-func (rf *ROLIEFeed) Links(fn func(*Link)) {
-	for _, e := range rf.Feed.Entry {
-		for i := range e.Link {
-			fn(&e.Link[i])
-		}
-	}
-}
-
 // SortEntriesByUpdated sorts all the entries in the feed
 // by their update times.
 func (rf *ROLIEFeed) SortEntriesByUpdated() {
