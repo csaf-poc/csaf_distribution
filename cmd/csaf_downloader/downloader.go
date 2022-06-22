@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 	"golang.org/x/time/rate"
@@ -31,6 +33,7 @@ type downloader struct {
 	client    util.Client
 	opts      *options
 	directory string
+	keys      []*crypto.KeyRing
 }
 
 func (d *downloader) httpClient() util.Client {
@@ -87,13 +90,96 @@ func (d *downloader) download(domain string) error {
 		return fmt.Errorf("invalid URL '%s': %v", lpmd.URL, err)
 	}
 
+	eval := util.NewPathEval()
+
+	if err := d.loadOpenPGPKeys(
+		d.httpClient(),
+		eval,
+		lpmd.Document,
+		base,
+	); err != nil {
+		return err
+	}
+
 	afp := csaf.NewAdvisoryFileProcessor(
 		d.httpClient(),
-		util.NewPathEval(),
+		eval,
 		lpmd.Document,
 		base)
 
 	return afp.Process(d.downloadFiles)
+}
+
+func (d *downloader) loadOpenPGPKeys(
+	client util.Client,
+	eval *util.PathEval,
+	doc interface{},
+	base *url.URL,
+) error {
+
+	src, err := eval.Eval("$.public_openpgp_keys", doc)
+	if err != nil {
+		// no keys.
+		return nil
+	}
+
+	var keys []csaf.PGPKey
+	if err := util.ReMarshalJSON(&keys, src); err != nil {
+		return err
+	}
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	// Try to load
+
+	for i := range keys {
+		key := &keys[i]
+		if key.URL == nil {
+			continue
+		}
+		up, err := url.Parse(*key.URL)
+		if err != nil {
+			log.Printf("Invalid URL '%s': %v", *key.URL, err)
+			continue
+		}
+
+		u := base.ResolveReference(up).String()
+
+		res, err := client.Get(u)
+		if err != nil {
+			log.Printf("Fetching public OpenPGP key %s failed: %v.", u, err)
+			continue
+		}
+		if res.StatusCode != http.StatusOK {
+			log.Printf("Fetching public OpenPGP key %s status code: %d (%s)",
+				u, res.StatusCode, res.Status)
+			continue
+		}
+
+		ckey, err := func() (*crypto.Key, error) {
+			defer res.Body.Close()
+			return crypto.NewKeyFromArmoredReader(res.Body)
+		}()
+
+		if err != nil {
+			log.Printf("Reading public OpenPGP key %s failed: %v", u, err)
+			continue
+		}
+
+		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
+			log.Printf("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
+			continue
+		}
+		keyring, err := crypto.NewKeyRing(ckey)
+		if err != nil {
+			log.Printf("Creating store for public OpenPGP key %s failed: %v.", u, err)
+			continue
+		}
+		d.keys = append(d.keys, keyring)
+	}
+	return nil
 }
 
 func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
@@ -170,7 +256,22 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			continue
 		}
 
-		// TODO: Check signature.
+		// Only check signature if we have loaded keys.
+		if len(d.keys) > 0 {
+			sign, err := loadSignature(file.SignURL(), client)
+			if err != nil {
+				if d.opts.Verbose {
+					log.Printf("downloading signature '%s' failed: %v\n",
+						file.SignURL(), err)
+				}
+			}
+			if sign != nil {
+				if !d.checkSignature(data.Bytes(), sign) {
+					log.Printf("Cannot verify signature for %s\n", file.URL())
+					continue
+				}
+			}
+		}
 
 		// Validate against CSAF schema.
 		errors, err := csaf.ValidateCSAF(doc)
@@ -187,6 +288,34 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 	}
 
 	return nil
+}
+
+func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) bool {
+	pm := crypto.NewPlainMessage(data)
+	t := crypto.GetUnixTime()
+	for _, key := range d.keys {
+		if err := key.VerifyDetached(pm, sign, t); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func loadSignature(p string, client util.Client) (*crypto.PGPSignature, error) {
+	resp, err := client.Get(p)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"fetching signature from '%s' failed: %s (%d)", p, resp.Status, resp.StatusCode)
+	}
+	defer resp.Body.Close()
+	all, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return crypto.NewPGPSignatureFromArmored(string(all))
 }
 
 func loadHash(p string, client util.Client) ([]byte, error) {
