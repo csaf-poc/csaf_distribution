@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -169,7 +171,8 @@ func (d *downloader) loadOpenPGPKeys(
 		}
 
 		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
-			log.Printf("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
+			log.Printf(
+				"Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
 		keyring, err := crypto.NewKeyRing(ckey)
@@ -188,7 +191,22 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 
 	var data bytes.Buffer
 
+	var lastDir string
+
 	for _, file := range files {
+
+		u, err := url.Parse(file.URL())
+		if err != nil {
+			log.Printf("Ignoring invalid URL: %s: %v\n", file.URL(), err)
+			continue
+		}
+
+		// Ignore not confirming filenames.
+		filename := filepath.Base(u.Path)
+		if !util.ConfirmingFileName(filename) {
+			log.Printf("Not confirming filename %q. Ignoring.\n", filename)
+			continue
+		}
 
 		resp, err := client.Get(file.URL())
 		if err != nil {
@@ -284,7 +302,21 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			continue
 		}
 
-		// TODO: copy data to file.
+		// Write advisory to file
+
+		newDir := path.Join(d.directory, string(label))
+		if newDir != lastDir {
+			if err := os.MkdirAll(newDir, 0755); err != nil {
+				return err
+			}
+			lastDir = newDir
+		}
+
+		path := filepath.Join(lastDir, filename)
+		if err := os.WriteFile(path, data.Bytes(), 0644); err != nil {
+			return err
+		}
+		log.Printf("Written advisory '%s'.\n", path)
 	}
 
 	return nil
