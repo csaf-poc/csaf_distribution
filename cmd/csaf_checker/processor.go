@@ -329,12 +329,12 @@ func (p *processor) httpClient() util.Client {
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
-// checkFile constructs the urls of a remote file.
-type checkFile interface {
-	url() string
-	sha256() string
-	sha512() string
-	sign() string
+// AdvisoryFile constructs the urls of a remote file.
+type AdvisoryFile interface {
+	URL() string
+	SHA256URL() string
+	SHA512URL() string
+	SignURL() string
 }
 
 // stringFile is a simple implementation of checkFile.
@@ -342,10 +342,10 @@ type checkFile interface {
 // the file name.
 type stringFile string
 
-func (sf stringFile) url() string    { return string(sf) }
-func (sf stringFile) sha256() string { return string(sf) + ".sha256" }
-func (sf stringFile) sha512() string { return string(sf) + ".sha512" }
-func (sf stringFile) sign() string   { return string(sf) + ".asc" }
+func (sf stringFile) URL() string       { return string(sf) }
+func (sf stringFile) SHA256URL() string { return string(sf) + ".sha256" }
+func (sf stringFile) SHA512URL() string { return string(sf) + ".sha512" }
+func (sf stringFile) SignURL() string   { return string(sf) + ".asc" }
 
 // hashFile is a more involed version of checkFile.
 // Here each component can be given explicitly.
@@ -360,13 +360,13 @@ func (hf hashFile) name(i int, ext string) string {
 	return hf[0] + ext
 }
 
-func (hf hashFile) url() string    { return hf[0] }
-func (hf hashFile) sha256() string { return hf.name(1, ".sha256") }
-func (hf hashFile) sha512() string { return hf.name(2, ".sha512") }
-func (hf hashFile) sign() string   { return hf.name(3, ".asc") }
+func (hf hashFile) URL() string       { return hf[0] }
+func (hf hashFile) SHA256URL() string { return hf.name(1, ".sha256") }
+func (hf hashFile) SHA512URL() string { return hf.name(2, ".sha512") }
+func (hf hashFile) SignURL() string   { return hf.name(3, ".asc") }
 
 func (p *processor) integrity(
-	files []checkFile,
+	files []AdvisoryFile,
 	base string,
 	mask whereType,
 	lg func(MessageType, string, ...interface{}),
@@ -380,7 +380,7 @@ func (p *processor) integrity(
 	var data bytes.Buffer
 
 	for _, f := range files {
-		fp, err := url.Parse(f.url())
+		fp, err := url.Parse(f.URL())
 		if err != nil {
 			lg(ErrorType, "Bad URL %s: %v", f, err)
 			continue
@@ -452,8 +452,8 @@ func (p *processor) integrity(
 			url  func() string
 			hash []byte
 		}{
-			{"SHA256", f.sha256, s256.Sum(nil)},
-			{"SHA512", f.sha512, s512.Sum(nil)},
+			{"SHA256", f.SHA256URL, s256.Sum(nil)},
+			{"SHA512", f.SHA512URL, s512.Sum(nil)},
 		} {
 			hu, err := url.Parse(x.url())
 			if err != nil {
@@ -490,9 +490,9 @@ func (p *processor) integrity(
 		}
 
 		// Check signature
-		su, err := url.Parse(f.sign())
+		su, err := url.Parse(f.SignURL())
 		if err != nil {
-			lg(ErrorType, "Bad URL %s: %v", f.sign(), err)
+			lg(ErrorType, "Bad URL %s: %v", f.SignURL(), err)
 			continue
 		}
 		sigFile := b.ResolveReference(su).String()
@@ -598,7 +598,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 	}
 
 	// Extract the CSAF files from feed.
-	var files []checkFile
+	var files []AdvisoryFile
 
 	rfeed.Entries(func(entry *csaf.Entry) {
 
@@ -642,7 +642,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 			return
 		}
 
-		var file checkFile
+		var file AdvisoryFile
 
 		if sha256 != "" || sha512 != "" || sign != "" {
 			file = hashFile{url, sha256, sha512, sign}
@@ -694,9 +694,9 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return errContinue
 	}
 
-	files, err := func() ([]checkFile, error) {
+	files, err := func() ([]AdvisoryFile, error) {
 		defer res.Body.Close()
-		var files []checkFile
+		var files []AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
 		for scanner.Scan() {
 			files = append(files, stringFile(scanner.Text()))
@@ -736,10 +736,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		return errContinue
 	}
 
-	times, files, err := func() ([]time.Time, []checkFile, error) {
+	times, files, err := func() ([]time.Time, []AdvisoryFile, error) {
 		defer res.Body.Close()
 		var times []time.Time
-		var files []checkFile
+		var files []AdvisoryFile
 		c := csv.NewReader(res.Body)
 		for {
 			r, err := c.Read()
