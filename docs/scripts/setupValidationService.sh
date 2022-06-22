@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-mkdir -p /var/lib/csaf
+sudo mkdir -p /var/lib/csaf
 sudo chgrp www-data /var/lib/csaf/
 sudo chmod g+s /var/lib/csaf/
 sudo touch /var/lib/csaf/validations.db
