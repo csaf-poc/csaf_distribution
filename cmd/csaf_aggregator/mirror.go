@@ -69,7 +69,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		return nil, err
 	}
 
-	afp := NewAdvisoryFileProcessor(
+	afp := csaf.NewAdvisoryFileProcessor(
 		w.client,
 		w.expr,
 		w.metadataProvider,

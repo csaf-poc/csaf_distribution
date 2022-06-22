@@ -1,4 +1,12 @@
-package main
+// This file is Free Software under the MIT License
+// without warranty, see README.md and LICENSES/MIT.txt for details.
+//
+// SPDX-License-Identifier: MIT
+//
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
+
+package csaf
 
 import (
 	"bufio"
@@ -6,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
@@ -37,7 +44,7 @@ func NewAdvisoryFileProcessor(
 
 // Process extracts the adivisory filenames and passes them with
 // the corresponding label to fn.
-func (afp *AdvisoryFileProcessor) Process(fn func(csaf.TLPLabel, []string) error) error {
+func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []string) error) error {
 
 	// Check if we have ROLIE feeds.
 	rolie, err := afp.expr.Eval(
@@ -51,7 +58,7 @@ func (afp *AdvisoryFileProcessor) Process(fn func(csaf.TLPLabel, []string) error
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {
-		var feeds [][]csaf.Feed
+		var feeds [][]Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			return err
 		}
@@ -69,7 +76,7 @@ func (afp *AdvisoryFileProcessor) Process(fn func(csaf.TLPLabel, []string) error
 			return err
 		}
 		// XXX: Is treating as white okay? better look into the advisories?
-		if err := fn(csaf.TLPLabelWhite, files); err != nil {
+		if err := fn(TLPLabelWhite, files); err != nil {
 			return err
 		}
 	} // TODO: else scan directories?
@@ -104,8 +111,8 @@ func (afp *AdvisoryFileProcessor) loadIndex() ([]string, error) {
 }
 
 func (afp *AdvisoryFileProcessor) processROLIE(
-	labeledFeeds []csaf.Feed,
-	fn func(csaf.TLPLabel, []string) error,
+	labeledFeeds []Feed,
+	fn func(TLPLabel, []string) error,
 ) error {
 	for i := range labeledFeeds {
 		feed := &labeledFeeds[i]
@@ -141,9 +148,9 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 				feedURL, res.StatusCode, res.Status)
 			continue
 		}
-		rfeed, err := func() (*csaf.ROLIEFeed, error) {
+		rfeed, err := func() (*ROLIEFeed, error) {
 			defer res.Body.Close()
-			return csaf.LoadROLIEFeed(res.Body)
+			return LoadROLIEFeed(res.Body)
 		}()
 		if err != nil {
 			log.Printf("Loading ROLIE feed failed: %v.", err)
@@ -152,7 +159,7 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 
 		// Extract the adivisory URLs from the feed.
 		var files []string
-		rfeed.Links(func(l *csaf.Link) {
+		rfeed.Links(func(l *Link) {
 			if l.Rel != "self" {
 				return
 			}
@@ -164,7 +171,7 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 			files = append(files, feedBaseURL.ResolveReference(href).String())
 		})
 
-		var label csaf.TLPLabel
+		var label TLPLabel
 		if feed.TLPLabel != nil {
 			label = *feed.TLPLabel
 		} else {
