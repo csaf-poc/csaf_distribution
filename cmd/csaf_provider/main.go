@@ -22,7 +22,7 @@ type options struct {
 	Version bool `long:"version" description:"Display version of the binary"`
 }
 
-var help_message = "The csaf_provider is a cgi binary and is designed to be served via a web server."
+var helpMessage = "The csaf_provider is a cgi binary and is designed to be served via a web server."
 
 func main() {
 	var opts options
@@ -50,7 +50,7 @@ func main() {
 
 	if err := cgi.Serve(pim); err != nil {
 		if err.Error() == "cgi: no REQUEST_METHOD in environment" {
-			fmt.Println(help_message)
+			fmt.Println(helpMessage)
 			fmt.Println("In Version: " + util.SemVersion)
 		}
 		log.Fatalf("error: %v\n", err)
