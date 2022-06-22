@@ -21,7 +21,9 @@ import (
 type options struct {
 	Version bool `long:"version" description:"Display version of the binary"`
 }
-var help_message = "The csaf_provider is a cgi binary and is designed to be served via a web server."
+
+var help_message = "The csaf_provider is a cgi binary and is designed to be served via a >
+
 
 func main() {
 	var opts options
