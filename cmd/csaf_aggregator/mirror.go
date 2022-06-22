@@ -413,7 +413,7 @@ func (w *worker) sign(data []byte) (string, error) {
 		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
-func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
+func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) error {
 	label := strings.ToLower(string(tlpLabel))
 
 	summaries := w.summaries[label]
@@ -428,7 +428,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
 	yearDirs := make(map[int]string)
 
 	for _, file := range files {
-		u, err := url.Parse(file)
+		u, err := url.Parse(file.URL())
 		if err != nil {
 			log.Printf("error: %s\n", err)
 			continue
@@ -453,7 +453,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
 			return json.NewDecoder(tee).Decode(&advisory)
 		}
 
-		if err := downloadJSON(w.client, file, download); err != nil {
+		if err := downloadJSON(w.client, file.URL(), download); err != nil {
 			log.Printf("error: %v\n", err)
 			continue
 		}
@@ -492,7 +492,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
 		summaries = append(summaries, summary{
 			filename: filename,
 			summary:  sum,
-			url:      file,
+			url:      file.URL(),
 		})
 
 		year := sum.InitialReleaseDate.Year()
@@ -518,7 +518,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
 		}
 
 		// Try to fetch signature file.
-		sigURL := file + ".asc"
+		sigURL := file.SignURL()
 		ascFile := fname + ".asc"
 		if err := w.downloadSignatureOrSign(sigURL, ascFile, data); err != nil {
 			return err

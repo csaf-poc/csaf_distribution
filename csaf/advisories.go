@@ -13,9 +13,60 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 )
+
+// AdvisoryFile constructs the urls of a remote file.
+type AdvisoryFile interface {
+	URL() string
+	SHA256URL() string
+	SHA512URL() string
+	SignURL() string
+}
+
+// PlainAdvisoryFile is a simple implementation of checkFile.
+// The hash and signature files are directly constructed by extending
+// the file name.
+type PlainAdvisoryFile string
+
+// URL returns the URL of this advisory.
+func (paf PlainAdvisoryFile) URL() string { return string(paf) }
+
+// SHA256URL returns the URL of SHA256 hash file of this advisory.
+func (paf PlainAdvisoryFile) SHA256URL() string { return string(paf) + ".sha256" }
+
+// SHA512URL returns the URL of SHA512 hash file of this advisory.
+func (paf PlainAdvisoryFile) SHA512URL() string { return string(paf) + ".sha512" }
+
+// SignURL returns the URL of signature file of this advisory.
+func (paf PlainAdvisoryFile) SignURL() string { return string(paf) + ".asc" }
+
+// HashedAdvisoryFile is a more involed version of checkFile.
+// Here each component can be given explicitly.
+// If a component is not given it is constructed by
+// extending the first component.
+type HashedAdvisoryFile [4]string
+
+func (haf HashedAdvisoryFile) name(i int, ext string) string {
+	if haf[i] != "" {
+		return haf[i]
+	}
+	return haf[0] + ext
+}
+
+// URL returns the URL of this advisory.
+func (haf HashedAdvisoryFile) URL() string { return haf[0] }
+
+// SHA256URL returns the URL of SHA256 hash file of this advisory.
+func (haf HashedAdvisoryFile) SHA256URL() string { return haf.name(1, ".sha256") }
+
+// SHA512URL returns the URL of SHA512 hash file of this advisory.
+func (haf HashedAdvisoryFile) SHA512URL() string { return haf.name(2, ".sha512") }
+
+// SignURL returns the URL of signature file of this advisory.
+func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
 
 // AdvisoryFileProcessor implements the extraction of
 // advisory file names from a given provider metadata.
@@ -44,7 +95,7 @@ func NewAdvisoryFileProcessor(
 
 // Process extracts the adivisory filenames and passes them with
 // the corresponding label to fn.
-func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []string) error) error {
+func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []AdvisoryFile) error) error {
 
 	// Check if we have ROLIE feeds.
 	rolie, err := afp.expr.Eval(
@@ -85,7 +136,7 @@ func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []string) error) err
 
 // loadIndex loads baseURL/index.txt and returns a list of files
 // prefixed by baseURL/.
-func (afp *AdvisoryFileProcessor) loadIndex() ([]string, error) {
+func (afp *AdvisoryFileProcessor) loadIndex() ([]AdvisoryFile, error) {
 	baseURL, err := util.BaseURL(afp.base)
 	if err != nil {
 		return nil, err
@@ -96,23 +147,23 @@ func (afp *AdvisoryFileProcessor) loadIndex() ([]string, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var lines []string
+	var files []AdvisoryFile
 
 	scanner := bufio.NewScanner(resp.Body)
 
 	for scanner.Scan() {
-		lines = append(lines, baseURL+"/"+scanner.Text())
+		files = append(files, PlainAdvisoryFile(baseURL+"/"+scanner.Text()))
 	}
 
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	return lines, nil
+	return files, nil
 }
 
 func (afp *AdvisoryFileProcessor) processROLIE(
 	labeledFeeds []Feed,
-	fn func(TLPLabel, []string) error,
+	fn func(TLPLabel, []AdvisoryFile) error,
 ) error {
 	for i := range labeledFeeds {
 		feed := &labeledFeeds[i]
@@ -157,18 +208,55 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 			continue
 		}
 
-		// Extract the adivisory URLs from the feed.
-		var files []string
-		rfeed.Links(func(l *Link) {
-			if l.Rel != "self" {
-				return
+		var files []AdvisoryFile
+
+		resolve := func(u string) string {
+			if u == "" {
+				return ""
 			}
-			href, err := url.Parse(l.HRef)
+			p, err := url.Parse(u)
 			if err != nil {
-				log.Printf("error: Invalid URL '%s': %v", l.HRef, err)
+				log.Printf("error: Invalid URL '%s': %v", u, err)
+				return ""
+			}
+			return feedBaseURL.ResolveReference(p).String()
+		}
+
+		rfeed.Entries(func(entry *Entry) {
+
+			var self, sha256, sha512, sign string
+
+			for i := range entry.Link {
+				link := &entry.Link[i]
+				lower := strings.ToLower(link.HRef)
+				switch link.Rel {
+				case "self":
+					self = resolve(link.HRef)
+				case "signature":
+					sign = resolve(link.HRef)
+				case "hash":
+					switch {
+					case strings.HasSuffix(lower, ".sha256"):
+						sha256 = resolve(link.HRef)
+					case strings.HasSuffix(lower, ".sha512"):
+						sha512 = resolve(link.HRef)
+					}
+				}
+			}
+
+			if self == "" {
 				return
 			}
-			files = append(files, feedBaseURL.ResolveReference(href).String())
+
+			var file AdvisoryFile
+
+			if sha256 != "" || sha512 != "" || sign != "" {
+				file = HashedAdvisoryFile{self, sha256, sha512, sign}
+			} else {
+				file = PlainAdvisoryFile(self)
+			}
+
+			files = append(files, file)
 		})
 
 		var label TLPLabel

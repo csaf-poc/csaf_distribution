@@ -329,44 +329,8 @@ func (p *processor) httpClient() util.Client {
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
-// AdvisoryFile constructs the urls of a remote file.
-type AdvisoryFile interface {
-	URL() string
-	SHA256URL() string
-	SHA512URL() string
-	SignURL() string
-}
-
-// stringFile is a simple implementation of checkFile.
-// The hash and signature files are directly constructed by extending
-// the file name.
-type stringFile string
-
-func (sf stringFile) URL() string       { return string(sf) }
-func (sf stringFile) SHA256URL() string { return string(sf) + ".sha256" }
-func (sf stringFile) SHA512URL() string { return string(sf) + ".sha512" }
-func (sf stringFile) SignURL() string   { return string(sf) + ".asc" }
-
-// hashFile is a more involed version of checkFile.
-// Here each component can be given explicitly.
-// If a component is not given it is constructed by
-// extending the first component.
-type hashFile [4]string
-
-func (hf hashFile) name(i int, ext string) string {
-	if hf[i] != "" {
-		return hf[i]
-	}
-	return hf[0] + ext
-}
-
-func (hf hashFile) URL() string       { return hf[0] }
-func (hf hashFile) SHA256URL() string { return hf.name(1, ".sha256") }
-func (hf hashFile) SHA512URL() string { return hf.name(2, ".sha512") }
-func (hf hashFile) SignURL() string   { return hf.name(3, ".asc") }
-
 func (p *processor) integrity(
-	files []AdvisoryFile,
+	files []csaf.AdvisoryFile,
 	base string,
 	mask whereType,
 	lg func(MessageType, string, ...interface{}),
@@ -598,7 +562,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 	}
 
 	// Extract the CSAF files from feed.
-	var files []AdvisoryFile
+	var files []csaf.AdvisoryFile
 
 	rfeed.Entries(func(entry *csaf.Entry) {
 
@@ -642,12 +606,12 @@ func (p *processor) processROLIEFeed(feed string) error {
 			return
 		}
 
-		var file AdvisoryFile
+		var file csaf.AdvisoryFile
 
 		if sha256 != "" || sha512 != "" || sign != "" {
-			file = hashFile{url, sha256, sha512, sign}
+			file = csaf.HashedAdvisoryFile{url, sha256, sha512, sign}
 		} else {
-			file = stringFile(url)
+			file = csaf.PlainAdvisoryFile(url)
 		}
 
 		files = append(files, file)
@@ -694,12 +658,12 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return errContinue
 	}
 
-	files, err := func() ([]AdvisoryFile, error) {
+	files, err := func() ([]csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
-		var files []AdvisoryFile
+		var files []csaf.AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
 		for scanner.Scan() {
-			files = append(files, stringFile(scanner.Text()))
+			files = append(files, csaf.PlainAdvisoryFile(scanner.Text()))
 		}
 		return files, scanner.Err()
 	}()
@@ -736,10 +700,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		return errContinue
 	}
 
-	times, files, err := func() ([]time.Time, []AdvisoryFile, error) {
+	times, files, err := func() ([]time.Time, []csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
 		var times []time.Time
-		var files []AdvisoryFile
+		var files []csaf.AdvisoryFile
 		c := csv.NewReader(res.Body)
 		for {
 			r, err := c.Read()
@@ -756,7 +720,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if err != nil {
 				return nil, nil, err
 			}
-			times, files = append(times, t), append(files, stringFile(r[1]))
+			times, files = append(times, t), append(files, csaf.PlainAdvisoryFile(r[1]))
 		}
 		return times, files, nil
 	}()
