@@ -34,76 +34,6 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-func handleROLIEFeed(
-	client util.Client,
-	base *url.URL,
-	cfeed []csaf.Feed,
-	process func(*csaf.TLPLabel, []string) error,
-) error {
-	for i := range cfeed {
-		feed := &cfeed[i]
-		if feed.URL == nil {
-			continue
-		}
-		up, err := url.Parse(string(*feed.URL))
-		if err != nil {
-			log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
-			continue
-		}
-		feedURL := base.ResolveReference(up).String()
-		log.Printf("Feed URL: %s\n", feedURL)
-
-		fb, err := util.BaseURL(feedURL)
-		if err != nil {
-			log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
-			continue
-		}
-		feedBaseURL, err := url.Parse(fb)
-		if err != nil {
-			log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
-			continue
-		}
-
-		res, err := client.Get(feedURL)
-		if err != nil {
-			log.Printf("error: Cannot get feed '%s'\n", err)
-			continue
-		}
-		if res.StatusCode != http.StatusOK {
-			log.Printf("error: Fetching %s failed. Status code %d (%s)",
-				feedURL, res.StatusCode, res.Status)
-			continue
-		}
-		rfeed, err := func() (*csaf.ROLIEFeed, error) {
-			defer res.Body.Close()
-			return csaf.LoadROLIEFeed(res.Body)
-		}()
-		if err != nil {
-			log.Printf("Loading ROLIE feed failed: %v.", err)
-			continue
-		}
-
-		// Extract the adivisory URLs from the feed.
-		var files []string
-		rfeed.Links(func(l *csaf.Link) {
-			if l.Rel != "self" {
-				return
-			}
-			href, err := url.Parse(l.HRef)
-			if err != nil {
-				log.Printf("error: Invalid URL '%s': %v", l.HRef, err)
-				return
-			}
-			files = append(files, feedBaseURL.ResolveReference(href).String())
-		})
-
-		if err := process(feed.TLPLabel, files); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // mirrorAllowed checks if mirroring is allowed.
 func (w *worker) mirrorAllowed() bool {
 	var b bool
@@ -134,52 +64,20 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	// Collecting the summaries of the advisories.
 	w.summaries = make(map[string][]summary)
 
-	// Check if we have ROLIE feeds.
-	rolie, err := w.expr.Eval(
-		"$.distributions[*].rolie.feeds", w.metadataProvider)
+	base, err := url.Parse(w.loc)
 	if err != nil {
-		log.Printf("rolie check failed: %v\n", err)
 		return nil, err
 	}
 
-	fs, hasRolie := rolie.([]interface{})
-	hasRolie = hasRolie && len(fs) > 0
+	afp := NewAdvisoryFileProcessor(
+		w.client,
+		w.expr,
+		w.metadataProvider,
+		base)
 
-	if hasRolie {
-		var feeds [][]csaf.Feed
-		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
-			return nil, err
-		}
-		log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
-
-		// URLs are potentially relative to provider meta data.
-		base, err := url.Parse(w.loc)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, feed := range feeds {
-			if err := handleROLIEFeed(w.client, base, feed, w.mirrorFiles); err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		// No rolie feeds -> try to load files from index.txt
-		baseURL, err := util.BaseURL(w.loc)
-		if err != nil {
-			return nil, err
-		}
-		files, err := w.loadIndex(baseURL)
-		if err != nil {
-			return nil, err
-		}
-		_ = files
-		// XXX: Is treating as white okay? better look into the advisories?
-		white := csaf.TLPLabel(csaf.TLPLabelWhite)
-		if err := w.mirrorFiles(&white, files); err != nil {
-			return nil, err
-		}
-	} // TODO: else scan directories?
+	if err := afp.Process(w.mirrorFiles); err != nil {
+		return nil, err
+	}
 
 	if err := w.writeIndices(); err != nil {
 		return nil, err
@@ -515,11 +413,8 @@ func (w *worker) sign(data []byte) (string, error) {
 		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
-func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
-	label := "unknown"
-	if tlpLabel != nil {
-		label = strings.ToLower(string(*tlpLabel))
-	}
+func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []string) error {
+	label := strings.ToLower(string(tlpLabel))
 
 	summaries := w.summaries[label]
 
