@@ -47,12 +47,12 @@ func main() {
 	pim := newPathInfoMux()
 	c.bind(pim)
 
-        if err := cgi.Serve(pim); err != nil {
-                if err.Error() == "cgi: no REQUEST_METHOD in environment" {
-                    fmt.Println(help_message)
-                    fmt.Println("In Version: " + util.SemVersion)
-                    }
-                log.Fatalf("error: %v\n", err)
-        }
+	if err := cgi.Serve(pim); err != nil {
+		if err.Error() == "cgi: no REQUEST_METHOD in environment" {
+			fmt.Println(help_message)
+			fmt.Println("In Version: " + util.SemVersion)
+		}
+		log.Fatalf("error: %v\n", err)
+	}
 
 }
