@@ -76,9 +76,9 @@ dist: build_linux build_win
 	mkdir -p dist
 	mkdir -p dist/$(DISTDIR)-windows-amd64/bin-windows-amd64
 	cp README.md dist/$(DISTDIR)-windows-amd64
-	cp bin-windows-amd64/csaf_uploader.exe bin-windows-amd64/csaf_checker.exe dist/$(DISTDIR)-windows-amd64/bin-windows-amd64/
+	cp bin-windows-amd64/csaf_uploader.exe bin-windows-amd64/csaf_checker.exe bin-windows-amd64/csaf_downloader.exe dist/$(DISTDIR)-windows-amd64/bin-windows-amd64/
 	mkdir -p dist/$(DISTDIR)-windows-amd64/docs
-	cp docs/csaf_uploader.md docs/csaf_checker.md dist/$(DISTDIR)-windows-amd64/docs
+	cp docs/csaf_uploader.md docs/csaf_checker.md docs/csaf_downloader.md dist/$(DISTDIR)-windows-amd64/docs
 	mkdir dist/$(DISTDIR)-gnulinux-amd64
 	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
 	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
