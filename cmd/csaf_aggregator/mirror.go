@@ -29,75 +29,10 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/armor"
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 )
-
-func (w *worker) handleROLIE(
-	rolie interface{},
-	process func(*csaf.TLPLabel, []string) error,
-) error {
-	base, err := url.Parse(w.loc)
-	if err != nil {
-		return err
-	}
-	var feeds [][]csaf.Feed
-	if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
-		return err
-	}
-	log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
-
-	for _, fs := range feeds {
-		for i := range fs {
-			feed := &fs[i]
-			if feed.URL == nil {
-				continue
-			}
-			up, err := url.Parse(string(*feed.URL))
-			if err != nil {
-				log.Printf("Invalid URL %s in feed: %v.", *feed.URL, err)
-				continue
-			}
-			feedURL := base.ResolveReference(up).String()
-			log.Printf("Feed URL: %s\n", feedURL)
-
-			fb, err := util.BaseURL(feedURL)
-			if err != nil {
-				log.Printf("error: Invalid feed base URL '%s': %v\n", fb, err)
-				continue
-			}
-			feedBaseURL, err := url.Parse(fb)
-			if err != nil {
-				log.Printf("error: Cannot parse feed base URL '%s': %v\n", fb, err)
-				continue
-			}
-
-			res, err := w.client.Get(feedURL)
-			if err != nil {
-				log.Printf("error: Cannot get feed '%s'\n", err)
-				continue
-			}
-			if res.StatusCode != http.StatusOK {
-				log.Printf("error: Fetching %s failed. Status code %d (%s)",
-					feedURL, res.StatusCode, res.Status)
-				continue
-			}
-			rfeed, err := func() (*csaf.ROLIEFeed, error) {
-				defer res.Body.Close()
-				return csaf.LoadROLIEFeed(res.Body)
-			}()
-			if err != nil {
-				log.Printf("Loading ROLIE feed failed: %v.", err)
-				continue
-			}
-			files := resolveURLs(rfeed.Files("self"), feedBaseURL)
-			if err := process(feed.TLPLabel, files); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
 
 // mirrorAllowed checks if mirroring is allowed.
 func (w *worker) mirrorAllowed() bool {
@@ -129,38 +64,20 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	// Collecting the summaries of the advisories.
 	w.summaries = make(map[string][]summary)
 
-	// Check if we have ROLIE feeds.
-	rolie, err := w.expr.Eval(
-		"$.distributions[*].rolie.feeds", w.metadataProvider)
+	base, err := url.Parse(w.loc)
 	if err != nil {
-		log.Printf("rolie check failed: %v\n", err)
 		return nil, err
 	}
 
-	fs, hasRolie := rolie.([]interface{})
-	hasRolie = hasRolie && len(fs) > 0
+	afp := csaf.NewAdvisoryFileProcessor(
+		w.client,
+		w.expr,
+		w.metadataProvider,
+		base)
 
-	if hasRolie {
-		if err := w.handleROLIE(rolie, w.mirrorFiles); err != nil {
-			return nil, err
-		}
-	} else {
-		// No rolie feeds -> try to load files from index.txt
-		baseURL, err := util.BaseURL(w.loc)
-		if err != nil {
-			return nil, err
-		}
-		files, err := w.loadIndex(baseURL)
-		if err != nil {
-			return nil, err
-		}
-		_ = files
-		// XXX: Is treating as white okay? better look into the advisories?
-		white := csaf.TLPLabel(csaf.TLPLabelWhite)
-		if err := w.mirrorFiles(&white, files); err != nil {
-			return nil, err
-		}
-	} // TODO: else scan directories?
+	if err := afp.Process(w.mirrorFiles); err != nil {
+		return nil, err
+	}
 
 	if err := w.writeIndices(); err != nil {
 		return nil, err
@@ -496,11 +413,8 @@ func (w *worker) sign(data []byte) (string, error) {
 		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
-func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
-	label := "unknown"
-	if tlpLabel != nil {
-		label = strings.ToLower(string(*tlpLabel))
-	}
+func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) error {
+	label := strings.ToLower(string(tlpLabel))
 
 	summaries := w.summaries[label]
 
@@ -514,7 +428,7 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 	yearDirs := make(map[int]string)
 
 	for _, file := range files {
-		u, err := url.Parse(file)
+		u, err := url.Parse(file.URL())
 		if err != nil {
 			log.Printf("error: %s\n", err)
 			continue
@@ -539,7 +453,7 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 			return json.NewDecoder(tee).Decode(&advisory)
 		}
 
-		if err := downloadJSON(w.client, file, download); err != nil {
+		if err := downloadJSON(w.client, file.URL(), download); err != nil {
 			log.Printf("error: %v\n", err)
 			continue
 		}
@@ -578,7 +492,7 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 		summaries = append(summaries, summary{
 			filename: filename,
 			summary:  sum,
-			url:      file,
+			url:      file.URL(),
 		})
 
 		year := sum.InitialReleaseDate.Year()
@@ -604,7 +518,7 @@ func (w *worker) mirrorFiles(tlpLabel *csaf.TLPLabel, files []string) error {
 		}
 
 		// Try to fetch signature file.
-		sigURL := file + ".asc"
+		sigURL := file.SignURL()
 		ascFile := fname + ".asc"
 		if err := w.downloadSignatureOrSign(sigURL, ascFile, data); err != nil {
 			return err

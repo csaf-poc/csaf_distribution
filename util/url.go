@@ -13,12 +13,8 @@ import (
 	"strings"
 )
 
-// BaseURL returns the base URL for a given URL p.
-func BaseURL(p string) (string, error) {
-	u, err := url.Parse(p)
-	if err != nil {
-		return "", err
-	}
+// BaseURL returns the base URL for a given URL.
+func BaseURL(u *url.URL) (string, error) {
 	ep := u.EscapedPath()
 	if idx := strings.LastIndexByte(ep, '/'); idx != -1 {
 		ep = ep[:idx+1]

@@ -26,6 +26,7 @@ jobs:
           ./TLSClientConfigsForITest.sh
           ./setupProviderForITest.sh
           ./testAggregator.sh
+          ./testDownloader.sh
         shell: bash
 
       - name: Upload test results

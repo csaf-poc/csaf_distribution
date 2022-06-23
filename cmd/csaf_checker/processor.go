@@ -329,44 +329,8 @@ func (p *processor) httpClient() util.Client {
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
-// checkFile constructs the urls of a remote file.
-type checkFile interface {
-	url() string
-	sha256() string
-	sha512() string
-	sign() string
-}
-
-// stringFile is a simple implementation of checkFile.
-// The hash and signature files are directly constructed by extending
-// the file name.
-type stringFile string
-
-func (sf stringFile) url() string    { return string(sf) }
-func (sf stringFile) sha256() string { return string(sf) + ".sha256" }
-func (sf stringFile) sha512() string { return string(sf) + ".sha512" }
-func (sf stringFile) sign() string   { return string(sf) + ".asc" }
-
-// hashFile is a more involed version of checkFile.
-// Here each component can be given explicitly.
-// If a component is not given it is constructed by
-// extending the first component.
-type hashFile [4]string
-
-func (hf hashFile) name(i int, ext string) string {
-	if hf[i] != "" {
-		return hf[i]
-	}
-	return hf[0] + ext
-}
-
-func (hf hashFile) url() string    { return hf[0] }
-func (hf hashFile) sha256() string { return hf.name(1, ".sha256") }
-func (hf hashFile) sha512() string { return hf.name(2, ".sha512") }
-func (hf hashFile) sign() string   { return hf.name(3, ".asc") }
-
 func (p *processor) integrity(
-	files []checkFile,
+	files []csaf.AdvisoryFile,
 	base string,
 	mask whereType,
 	lg func(MessageType, string, ...interface{}),
@@ -380,7 +344,7 @@ func (p *processor) integrity(
 	var data bytes.Buffer
 
 	for _, f := range files {
-		fp, err := url.Parse(f.url())
+		fp, err := url.Parse(f.URL())
 		if err != nil {
 			lg(ErrorType, "Bad URL %s: %v", f, err)
 			continue
@@ -452,8 +416,8 @@ func (p *processor) integrity(
 			url  func() string
 			hash []byte
 		}{
-			{"SHA256", f.sha256, s256.Sum(nil)},
-			{"SHA512", f.sha512, s512.Sum(nil)},
+			{"SHA256", f.SHA256URL, s256.Sum(nil)},
+			{"SHA512", f.SHA512URL, s512.Sum(nil)},
 		} {
 			hu, err := url.Parse(x.url())
 			if err != nil {
@@ -490,9 +454,9 @@ func (p *processor) integrity(
 		}
 
 		// Check signature
-		su, err := url.Parse(f.sign())
+		su, err := url.Parse(f.SignURL())
 		if err != nil {
-			lg(ErrorType, "Bad URL %s: %v", f.sign(), err)
+			lg(ErrorType, "Bad URL %s: %v", f.SignURL(), err)
 			continue
 		}
 		sigFile := b.ResolveReference(su).String()
@@ -585,14 +549,20 @@ func (p *processor) processROLIEFeed(feed string) error {
 		}
 	}
 
-	base, err := util.BaseURL(feed)
+	feedURL, err := url.Parse(feed)
+	if err != nil {
+		p.badProviderMetadata.error("Bad base path: %v", err)
+		return errContinue
+	}
+
+	base, err := util.BaseURL(feedURL)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
 		return errContinue
 	}
 
 	// Extract the CSAF files from feed.
-	var files []checkFile
+	var files []csaf.AdvisoryFile
 
 	rfeed.Entries(func(entry *csaf.Entry) {
 
@@ -636,12 +606,12 @@ func (p *processor) processROLIEFeed(feed string) error {
 			return
 		}
 
-		var file checkFile
+		var file csaf.AdvisoryFile
 
 		if sha256 != "" || sha512 != "" || sign != "" {
-			file = hashFile{url, sha256, sha512, sign}
+			file = csaf.HashedAdvisoryFile{url, sha256, sha512, sign}
 		} else {
-			file = stringFile(url)
+			file = csaf.PlainAdvisoryFile(url)
 		}
 
 		files = append(files, file)
@@ -688,12 +658,12 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return errContinue
 	}
 
-	files, err := func() ([]checkFile, error) {
+	files, err := func() ([]csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
-		var files []checkFile
+		var files []csaf.AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
 		for scanner.Scan() {
-			files = append(files, stringFile(scanner.Text()))
+			files = append(files, csaf.PlainAdvisoryFile(scanner.Text()))
 		}
 		return files, scanner.Err()
 	}()
@@ -730,10 +700,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		return errContinue
 	}
 
-	times, files, err := func() ([]time.Time, []checkFile, error) {
+	times, files, err := func() ([]time.Time, []csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
 		var times []time.Time
-		var files []checkFile
+		var files []csaf.AdvisoryFile
 		c := csv.NewReader(res.Body)
 		for {
 			r, err := c.Read()
@@ -750,7 +720,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if err != nil {
 				return nil, nil, err
 			}
-			times, files = append(times, t), append(files, stringFile(r[1]))
+			times, files = append(times, t), append(files, csaf.PlainAdvisoryFile(r[1]))
 		}
 		return times, files, nil
 	}()
@@ -817,7 +787,11 @@ func (p *processor) checkCSAFs(domain string) error {
 	}
 
 	// No rolie feeds
-	base, err := util.BaseURL(p.pmdURL)
+	pmdURL, err := url.Parse(p.pmdURL)
+	if err != nil {
+		return err
+	}
+	base, err := util.BaseURL(pmdURL)
 	if err != nil {
 		return err
 	}
