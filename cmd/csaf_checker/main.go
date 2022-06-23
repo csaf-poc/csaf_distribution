@@ -38,7 +38,7 @@ type options struct {
 
 func errCheck(err error) {
 	if err != nil {
-		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
+		if flags.WroteHelp(err) {
 			os.Exit(0)
 		}
 		log.Fatalf("error: %v\n", err)
