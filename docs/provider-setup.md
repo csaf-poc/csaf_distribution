@@ -109,9 +109,13 @@ sudo chmod g+r,o-rwx /usr/lib/csaf/config.toml
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
-**This and the other settings are just examples, please adjust permissions and paths**
-**according to your webserver and security needs**
-with suitable [replacements](https://github.com/csaf-poc/csaf_distribution/blob/main/docs/csaf_provider.md)
+**This and the other settings are just examples,**
+**please adjust permissions and paths**
+**according to your webserver and security needs.**
+
+Here is a minimal example configuration,
+which you need to customize for a production setup,
+see the [options of `csaf_provider`](https://github.com/csaf-poc/csaf_distribution/blob/main/docs/csaf_provider.md).
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-99) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
