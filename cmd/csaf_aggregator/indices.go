@@ -233,26 +233,3 @@ func (w *worker) writeIndices() error {
 
 	return nil
 }
-
-// loadIndex loads baseURL/index.txt and returns a list of files
-// prefixed by baseURL/.
-func (w *worker) loadIndex(baseURL string) ([]string, error) {
-	indexURL := baseURL + "/index.txt"
-	resp, err := w.client.Get(indexURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var lines []string
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	for scanner.Scan() {
-		lines = append(lines, baseURL+"/"+scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
-}

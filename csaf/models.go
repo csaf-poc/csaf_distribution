@@ -37,11 +37,11 @@ const (
 )
 
 var tlpLabelPattern = alternativesUnmarshal(
-	string(TLPLabelUnlabeled),
-	string(TLPLabelWhite),
-	string(TLPLabelGreen),
-	string(TLPLabelAmber),
-	string(TLPLabelRed),
+	TLPLabelUnlabeled,
+	TLPLabelWhite,
+	TLPLabelGreen,
+	TLPLabelAmber,
+	TLPLabelRed,
 )
 
 // JSONURL is an URL to JSON document.

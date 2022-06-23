@@ -25,4 +25,5 @@ Calling example (as root):
     ./TLSClientConfigsForITest.sh
     ./setupProviderForITest.sh
     ./testAggregator.sh
+    ./testDownloader.sh
 ```
