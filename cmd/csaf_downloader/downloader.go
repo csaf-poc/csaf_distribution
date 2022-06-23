@@ -267,11 +267,12 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		var (
 			writers                    []io.Writer
 			s256, s512                 hash.Hash
+			s256Data, s512Data         []byte
 			remoteSHA256, remoteSHA512 []byte
 		)
 
 		// Only hash when we have a remote counter part we can compare it with.
-		if remoteSHA256, err = d.loadHash(file.SHA256URL()); err != nil {
+		if remoteSHA256, s256Data, err = d.loadHash(file.SHA256URL()); err != nil {
 			if d.opts.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
 			}
@@ -280,7 +281,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			writers = append(writers, s256)
 		}
 
-		if remoteSHA512, err = d.loadHash(file.SHA512URL()); err != nil {
+		if remoteSHA512, s512Data, err = d.loadHash(file.SHA512URL()); err != nil {
 			if d.opts.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
 			}
@@ -360,6 +361,19 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		if err := os.WriteFile(path, data.Bytes(), 0644); err != nil {
 			return err
 		}
+
+		// Write hash sums.
+		if s256Data != nil {
+			if err := os.WriteFile(path+".sha256", s256Data, 0644); err != nil {
+				return err
+			}
+		}
+
+		if s512Data != nil {
+			if err := os.WriteFile(path+".sha512", s512Data, 0644); err != nil {
+				return err
+			}
+		}
 		log.Printf("Written advisory '%s'.\n", path)
 	}
 
@@ -394,17 +408,23 @@ func (d *downloader) loadSignature(p string) (*crypto.PGPSignature, error) {
 	return crypto.NewPGPSignatureFromArmored(string(all))
 }
 
-func (d *downloader) loadHash(p string) ([]byte, error) {
+func (d *downloader) loadHash(p string) ([]byte, []byte, error) {
 	resp, err := d.httpClient().Get(p)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
+		return nil, nil, fmt.Errorf(
 			"fetching hash from '%s' failed: %s (%d)", p, resp.Status, resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	return util.HashFromReader(resp.Body)
+	var data bytes.Buffer
+	tee := io.TeeReader(resp.Body, &data)
+	hash, err := util.HashFromReader(tee)
+	if err != nil {
+		return nil, nil, err
+	}
+	return hash, data.Bytes(), nil
 }
 
 // prepareDirectory ensures that the working directory
