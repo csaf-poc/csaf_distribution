@@ -23,7 +23,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/csaf"
@@ -36,6 +38,14 @@ type downloader struct {
 	opts      *options
 	directory string
 	keys      []*crypto.KeyRing
+	eval      *util.PathEval
+}
+
+func newDownloader(opts *options) *downloader {
+	return &downloader{
+		opts: opts,
+		eval: util.NewPathEval(),
+	}
 }
 
 func (d *downloader) httpClient() util.Client {
@@ -136,11 +146,8 @@ func (d *downloader) download(domain string) error {
 		return fmt.Errorf("invalid URL '%s': %v", lpmd.URL, err)
 	}
 
-	eval := util.NewPathEval()
-
 	if err := d.loadOpenPGPKeys(
 		d.httpClient(),
-		eval,
 		lpmd.Document,
 		base,
 	); err != nil {
@@ -149,7 +156,7 @@ func (d *downloader) download(domain string) error {
 
 	afp := csaf.NewAdvisoryFileProcessor(
 		d.httpClient(),
-		eval,
+		d.eval,
 		lpmd.Document,
 		base)
 
@@ -158,12 +165,11 @@ func (d *downloader) download(domain string) error {
 
 func (d *downloader) loadOpenPGPKeys(
 	client util.Client,
-	eval *util.PathEval,
 	doc interface{},
 	base *url.URL,
 ) error {
 
-	src, err := eval.Eval("$.public_openpgp_keys", doc)
+	src, err := d.eval.Eval("$.public_openpgp_keys", doc)
 	if err != nil {
 		// no keys.
 		return nil
@@ -236,6 +242,12 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 	var data bytes.Buffer
 
 	var lastDir string
+
+	lower := strings.ToLower(string(label))
+
+	var initialReleaseDate time.Time
+
+	dateExtract := util.TimeMatcher(&initialReleaseDate, time.RFC3339)
 
 	for _, file := range files {
 
@@ -349,9 +361,15 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			continue
 		}
 
+		if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {
+			log.Printf("Cannot extract initial_release_date from advisory '%s'\n", file.URL())
+			initialReleaseDate = time.Now()
+		}
+		initialReleaseDate = initialReleaseDate.UTC()
+
 		// Write advisory to file
 
-		newDir := path.Join(d.directory, string(label))
+		newDir := path.Join(d.directory, lower, strconv.Itoa(initialReleaseDate.Year()))
 		if newDir != lastDir {
 			if err := os.MkdirAll(newDir, 0755); err != nil {
 				return err

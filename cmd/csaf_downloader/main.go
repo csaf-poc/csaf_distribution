@@ -53,7 +53,7 @@ func main() {
 		return
 	}
 
-	d := downloader{opts: opts}
+	d := newDownloader(opts)
 
 	errCheck(d.run(domains))
 }
