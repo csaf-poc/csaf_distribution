@@ -4,7 +4,7 @@
 
 ```
 Usage:
-  csaf_downloader [OPTIONS]
+  csaf_downloader [OPTIONS] domain...
 
 Application Options:
   -d, --directory= Directory to store the downloaded files in

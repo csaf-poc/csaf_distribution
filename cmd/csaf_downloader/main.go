@@ -38,7 +38,9 @@ func main() {
 
 	opts := new(options)
 
-	domains, err := flags.Parse(opts)
+	parser := flags.NewParser(opts, flags.Default)
+	parser.Usage = "[OPTIONS] domain..."
+	domains, err := parser.Parse()
 	errCheck(err)
 
 	if opts.Version {
