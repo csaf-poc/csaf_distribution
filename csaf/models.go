@@ -319,6 +319,24 @@ func (a *Aggregator) Validate() error {
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (mdv *MetadataVersion) UnmarshalText(data []byte) error {
+	s, err := metadataVersionPattern(data)
+	if err == nil {
+		*mdv = MetadataVersion(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (mdr *MetadataRole) UnmarshalText(data []byte) error {
+	s, err := metadataRolePattern(data)
+	if err == nil {
+		*mdr = MetadataRole(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (ac *AggregatorCategory) UnmarshalText(data []byte) error {
 	s, err := aggregatorCategoryPattern(data)
 	if err == nil {
