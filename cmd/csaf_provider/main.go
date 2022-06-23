@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cgi"
+	"os"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
@@ -22,7 +23,15 @@ type options struct {
 	Version bool `long:"version" description:"Display version of the binary"`
 }
 
-var helpMessage = "The csaf_provider is a cgi binary and is designed to be served via a web server."
+const cgiRequired = "The csaf_provider is a cgi binary and is designed to be served via a web server."
+
+func ensureCGI() {
+	if _, ok := os.LookupEnv("REQUEST_METHOD"); !ok {
+		fmt.Println(cgiRequired)
+		fmt.Println("In Version: " + util.SemVersion)
+		os.Exit(1)
+	}
+}
 
 func main() {
 	var opts options
@@ -32,6 +41,8 @@ func main() {
 		fmt.Println(util.SemVersion)
 		return
 	}
+
+	ensureCGI()
 
 	cfg, err := loadConfig()
 	if err != nil {
@@ -49,10 +60,6 @@ func main() {
 	c.bind(pim)
 
 	if err := cgi.Serve(pim); err != nil {
-		if err.Error() == "cgi: no REQUEST_METHOD in environment" {
-			fmt.Println(helpMessage)
-			fmt.Println("In Version: " + util.SemVersion)
-		}
 		log.Fatalf("error: %v\n", err)
 	}
 }
