@@ -28,7 +28,7 @@ const cgiRequired = "The csaf_provider is a cgi binary and is designed to be ser
 func ensureCGI() {
 	if _, ok := os.LookupEnv("REQUEST_METHOD"); !ok {
 		fmt.Println(cgiRequired)
-		fmt.Println("In Version: " + util.SemVersion)
+		fmt.Println("Version: " + util.SemVersion)
 		os.Exit(1)
 	}
 }
