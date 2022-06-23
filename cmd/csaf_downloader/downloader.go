@@ -271,7 +271,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		)
 
 		// Only hash when we have a remote counter part we can compare it with.
-		if remoteSHA256, err = loadHash(file.SHA256URL(), client); err != nil {
+		if remoteSHA256, err = d.loadHash(file.SHA256URL()); err != nil {
 			if d.opts.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
 			}
@@ -280,7 +280,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			writers = append(writers, s256)
 		}
 
-		if remoteSHA512, err = loadHash(file.SHA512URL(), client); err != nil {
+		if remoteSHA512, err = d.loadHash(file.SHA512URL()); err != nil {
 			if d.opts.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
 			}
@@ -320,7 +320,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 
 		// Only check signature if we have loaded keys.
 		if len(d.keys) > 0 {
-			sign, err := loadSignature(file.SignURL(), client)
+			sign, err := d.loadSignature(file.SignURL())
 			if err != nil {
 				if d.opts.Verbose {
 					log.Printf("downloading signature '%s' failed: %v\n",
@@ -377,8 +377,8 @@ func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) bool
 	return false
 }
 
-func loadSignature(p string, client util.Client) (*crypto.PGPSignature, error) {
-	resp, err := client.Get(p)
+func (d *downloader) loadSignature(p string) (*crypto.PGPSignature, error) {
+	resp, err := d.httpClient().Get(p)
 	if err != nil {
 		return nil, err
 	}
@@ -394,8 +394,8 @@ func loadSignature(p string, client util.Client) (*crypto.PGPSignature, error) {
 	return crypto.NewPGPSignatureFromArmored(string(all))
 }
 
-func loadHash(p string, client util.Client) ([]byte, error) {
-	resp, err := client.Get(p)
+func (d *downloader) loadHash(p string) ([]byte, error) {
+	resp, err := d.httpClient().Get(p)
 	if err != nil {
 		return nil, err
 	}
