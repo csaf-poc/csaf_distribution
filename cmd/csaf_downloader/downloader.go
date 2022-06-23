@@ -269,6 +269,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			s256, s512                 hash.Hash
 			s256Data, s512Data         []byte
 			remoteSHA256, remoteSHA512 []byte
+			signData                   []byte
 		)
 
 		// Only hash when we have a remote counter part we can compare it with.
@@ -321,7 +322,8 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 
 		// Only check signature if we have loaded keys.
 		if len(d.keys) > 0 {
-			sign, err := d.loadSignature(file.SignURL())
+			var sign *crypto.PGPSignature
+			sign, signData, err = d.loadSignature(file.SignURL())
 			if err != nil {
 				if d.opts.Verbose {
 					log.Printf("downloading signature '%s' failed: %v\n",
@@ -374,6 +376,14 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 				return err
 			}
 		}
+
+		// Write signature.
+		if signData != nil {
+			if err := os.WriteFile(path+".asc", signData, 0644); err != nil {
+				return err
+			}
+		}
+
 		log.Printf("Written advisory '%s'.\n", path)
 	}
 
@@ -391,21 +401,25 @@ func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) bool
 	return false
 }
 
-func (d *downloader) loadSignature(p string) (*crypto.PGPSignature, error) {
+func (d *downloader) loadSignature(p string) (*crypto.PGPSignature, []byte, error) {
 	resp, err := d.httpClient().Get(p)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
+		return nil, nil, fmt.Errorf(
 			"fetching signature from '%s' failed: %s (%d)", p, resp.Status, resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	all, err := io.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return crypto.NewPGPSignatureFromArmored(string(all))
+	sign, err := crypto.NewPGPSignatureFromArmored(string(data))
+	if err != nil {
+		return nil, nil, err
+	}
+	return sign, data, nil
 }
 
 func (d *downloader) loadHash(p string) ([]byte, []byte, error) {
