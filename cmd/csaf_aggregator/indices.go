@@ -143,7 +143,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 
 	fname := "csaf-feed-tlp-" + labelFolder + ".json"
 
-	feedURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
+	feedURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
 		w.provider.Name + "/" + labelFolder + "/" + fname
 
 	entries := make([]*csaf.Entry, len(summaries))
@@ -156,7 +156,7 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	for i := range summaries {
 		s := &summaries[i]
 
-		csafURL := w.cfg.Domain + "/.well-known/csaf-aggregator/" +
+		csafURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
 			w.provider.Name + "/" + label + "/" +
 			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" +
 			s.filename
@@ -232,27 +232,4 @@ func (w *worker) writeIndices() error {
 	}
 
 	return nil
-}
-
-// loadIndex loads baseURL/index.txt and returns a list of files
-// prefixed by baseURL/.
-func (w *worker) loadIndex(baseURL string) ([]string, error) {
-	indexURL := baseURL + "/index.txt"
-	resp, err := w.client.Get(indexURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var lines []string
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	for scanner.Scan() {
-		lines = append(lines, baseURL+"/"+scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return lines, nil
 }

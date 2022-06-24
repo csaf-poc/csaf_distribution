@@ -37,11 +37,11 @@ const (
 )
 
 var tlpLabelPattern = alternativesUnmarshal(
-	string(TLPLabelUnlabeled),
-	string(TLPLabelWhite),
-	string(TLPLabelGreen),
-	string(TLPLabelAmber),
-	string(TLPLabelRed),
+	TLPLabelUnlabeled,
+	TLPLabelWhite,
+	TLPLabelGreen,
+	TLPLabelAmber,
+	TLPLabelRed,
 )
 
 // JSONURL is an URL to JSON document.
@@ -313,7 +313,7 @@ func (a *Aggregator) Validate() error {
 		}
 	}
 	if a.LastUpdated == nil {
-		return errors.New("Aggregator.LastUpdate == nil")
+		return errors.New("aggregator.LastUpdate == nil")
 	}
 	return nil
 }

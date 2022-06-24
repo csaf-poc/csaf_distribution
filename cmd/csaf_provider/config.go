@@ -40,21 +40,22 @@ type providerMetadataConfig struct {
 
 // configs contains the config values for the provider.
 type config struct {
-	Password                *string                 `toml:"password"`
-	OpenPGPPublicKey        string                  `toml:"openpgp_public_key"`
-	OpenPGPPrivateKey       string                  `toml:"openpgp_private_key"`
-	Folder                  string                  `toml:"folder"`
-	Web                     string                  `toml:"web"`
-	TLPs                    []tlp                   `toml:"tlps"`
-	UploadSignature         bool                    `toml:"upload_signature"`
-	CanonicalURLPrefix      string                  `toml:"canonical_url_prefix"`
-	NoPassphrase            bool                    `toml:"no_passphrase"`
-	NoValidation            bool                    `toml:"no_validation"`
-	NoWebUI                 bool                    `toml:"no_web_ui"`
-	DynamicProviderMetaData bool                    `toml:"dynamic_provider_metadata"`
-	ProviderMetaData        *providerMetadataConfig `toml:"provider_metadata"`
-	UploadLimit             *int64                  `toml:"upload_limit"`
-	Issuer                  *string                 `toml:"issuer"`
+	Password                *string                      `toml:"password"`
+	OpenPGPPublicKey        string                       `toml:"openpgp_public_key"`
+	OpenPGPPrivateKey       string                       `toml:"openpgp_private_key"`
+	Folder                  string                       `toml:"folder"`
+	Web                     string                       `toml:"web"`
+	TLPs                    []tlp                        `toml:"tlps"`
+	UploadSignature         bool                         `toml:"upload_signature"`
+	CanonicalURLPrefix      string                       `toml:"canonical_url_prefix"`
+	NoPassphrase            bool                         `toml:"no_passphrase"`
+	NoValidation            bool                         `toml:"no_validation"`
+	NoWebUI                 bool                         `toml:"no_web_ui"`
+	DynamicProviderMetaData bool                         `toml:"dynamic_provider_metadata"`
+	ProviderMetaData        *providerMetadataConfig      `toml:"provider_metadata"`
+	UploadLimit             *int64                       `toml:"upload_limit"`
+	Issuer                  *string                      `toml:"issuer"`
+	RemoteValidator         *csaf.RemoteValidatorOptions `toml:"remote_validator"`
 }
 
 func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {

@@ -1,8 +1,8 @@
 # csaf_distribution
 
-An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker and aggregator. Includes an uploader command line tool for the trusted provider.
+An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker, aggregator and downloader. Includes an uploader command line tool for the trusted provider.
 
-Status: Beta (ready for more testing, but known short comings, see issues)
+Status: Beta (ready for more testing, but known shortcomings see issues)
 
 
 ## [csaf_provider](docs/csaf_provider.md)
@@ -17,6 +17,9 @@ is an implementation of the role CSAF Aggregator.
 
 ## [csaf_checker](docs/csaf_checker.md)
 is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
+
+## [csaf_downloader](docs/csaf_downloader.md)
+is a tool for downloading advisories from a provider.
 
 ## Setup
 Note that the server side is only tested

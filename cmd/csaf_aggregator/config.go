@@ -67,6 +67,9 @@ type config struct {
 	// for interim advisories. Less/equal zero means forever.
 	InterimYears int `toml:"interim_years"`
 
+	// RemoteValidator configures an optional remote validation.
+	RemoteValidatorOptions *csaf.RemoteValidatorOptions `toml:"remote_validator"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error

@@ -26,7 +26,12 @@ type (
 )
 
 func (pgs pages) listed(path string, pro *processor) (bool, error) {
-	base, err := util.BaseURL(path)
+	pathURL, err := url.Parse(path)
+	if err != nil {
+		return false, err
+	}
+
+	base, err := util.BaseURL(pathURL)
 	if err != nil {
 		return false, err
 	}
