@@ -14,7 +14,7 @@ Application Options:
                                             beside CSAF files.
   -s, --no-schema-check                     Do not check files against CSAF JSON schema locally.
   -k, --key=KEY-FILE                        OpenPGP key to sign the CSAF files
-  -p, --password=PASSWORD                   Authentication password for accessing the CSAF provider
+  -p, --password=PASSWORD                   Authentication password for accessing the CSAF provider (Password is only used, if no client cert is configured)
   -P, --passphrase=PASSPHRASE               Passphrase to unlock the OpenPGP key
       --client-cert=CERT-FILE.crt           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE.pem             TLS client private key file (PEM encoded data)
