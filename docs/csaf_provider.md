@@ -39,3 +39,8 @@ namespace = "https://example.com"
 issuing_authority = "We at Example Company are responsible for publishing and maintaining Product Y."
 contact_details = "Example Company can be reached at contact_us@example.com, or via our website at https://www.example.com/contact."
 ```
+Details on authentication:
+
+There are two options to restrict the access to the upload:
+1. ``` password ``` Access is restricted with a password. 
+2. The client certificate is verified at first by NGINX against the configured certificates (via ```ssl_client_certificate```, see [Client-Certificate based authentication](./client-certificate-setup.md) ). The access can be restricted futher with ``` issuer ```. The option contains the CN of the issuing CA, that the uploader uses. A configured password is ignored in this case.
