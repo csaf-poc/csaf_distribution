@@ -32,7 +32,7 @@ An example TOML file with all config options and default values:
 # Let user send password with the request, if set to true the input-field in the web interface will be disappeared.
 #no_passphrase = false
 
-# Validate the uploaded CSAF document against the JSON schema.
+# Skip validation of the uploaded CSAF document against the JSON schema. Default: false.
 #no_validation = false
 
 # Disable the web interface.
