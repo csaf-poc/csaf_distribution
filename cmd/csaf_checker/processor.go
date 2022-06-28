@@ -507,6 +507,7 @@ func (p *processor) integrity(
 }
 
 func (p *processor) processROLIEFeed(feed string) error {
+	domain := feed
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	if err != nil {
@@ -527,6 +528,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		}
 		feed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
 		if err != nil {
+			err = fmt.Errorf(%w in %s", err, domain)
 			return nil, nil, err
 		}
 		var rolieDoc interface{}
