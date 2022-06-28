@@ -528,7 +528,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		}
 		feed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
 		if err != nil {
-			err = fmt.Errorf(%w in %s", err, domain)
+			err = fmt.Errorf("%w in %s", err, domain)
 			return nil, nil, err
 		}
 		var rolieDoc interface{}
