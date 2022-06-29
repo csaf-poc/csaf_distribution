@@ -17,6 +17,58 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// ROLIEServiceWorkspaceCollectionCategoriesCategory is a category in a ROLIE service collection.
+type ROLIEServiceWorkspaceCollectionCategoriesCategory struct {
+	Scheme string `json:"scheme"`
+	Term   string `json:"term"`
+}
+
+// ROLIEServiceWorkspaceCollectionCategories are categories in a ROLIE service collection.
+type ROLIEServiceWorkspaceCollectionCategories struct {
+	Category []ROLIEServiceWorkspaceCollectionCategoriesCategory `json:"category"`
+}
+
+// ROLIEServiceWorkspaceCollection is a collection in a ROLIE service.
+type ROLIEServiceWorkspaceCollection struct {
+	Title      string                                    `json:"title"`
+	HRef       string                                    `json:"href"`
+	Categories ROLIEServiceWorkspaceCollectionCategories `json:"categories"`
+}
+
+// ROLIEServiceWorkspace is a workspace of a ROLIE service.
+type ROLIEServiceWorkspace struct {
+	Title      string                            `json:"title"`
+	Collection []ROLIEServiceWorkspaceCollection `json:"collection"`
+}
+
+// ROLIEService is a ROLIE service.
+type ROLIEService struct {
+	Workspace []ROLIEServiceWorkspace `json:"workspace"`
+}
+
+// ROLIEServiceDocument is a ROLIE service document.
+type ROLIEServiceDocument struct {
+	Service ROLIEService `json:"service"`
+}
+
+// LoadROLIEServiceDocument loads a ROLIE service document from a reader.
+func LoadROLIEServiceDocument(r io.Reader) (*ROLIEServiceDocument, error) {
+	var rsd ROLIEServiceDocument
+	if err := json.NewDecoder(r).Decode(&rsd); err != nil {
+		return nil, err
+	}
+	return &rsd, nil
+}
+
+// WriteTo saves a ROLIE service document to a writer.
+func (rsd *ROLIEServiceDocument) WriteTo(w io.Writer) (int64, error) {
+	nw := util.NWriter{Writer: w, N: 0}
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(rsd)
+	return nw.N, err
+}
+
 // ROLIECategories is a list of ROLIE categories.
 type ROLIECategories struct {
 	Category []ROLIECategory `json:"category"`
@@ -29,9 +81,8 @@ type ROLIECategoryDocument struct {
 
 // LoadROLIECategoryDocument loads a ROLIE category document from a reader.
 func LoadROLIECategoryDocument(r io.Reader) (*ROLIECategoryDocument, error) {
-	dec := json.NewDecoder(r)
 	var rcd ROLIECategoryDocument
-	if err := dec.Decode(&rcd); err != nil {
+	if err := json.NewDecoder(r).Decode(&rcd); err != nil {
 		return nil, err
 	}
 	return &rcd, nil
