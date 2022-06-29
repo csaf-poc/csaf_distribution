@@ -151,13 +151,16 @@ func (cfg *config) HasCategories() bool {
 	return cfg.Categories != nil
 }
 
+// categoryExprPrefix is the prefix for dynamic categories.
+const categoryExprPrefix = "expr:"
+
 // HasDynamicCategories tells if dynamic categories are configured.
 func (cfg *config) HasDynamicCategories() bool {
 	if !cfg.HasCategories() {
 		return false
 	}
 	for _, cat := range *cfg.Categories {
-		if strings.HasPrefix(cat, "dynamic:") {
+		if strings.HasPrefix(cat, categoryExprPrefix) {
 			return true
 		}
 	}
@@ -170,7 +173,7 @@ func (cfg *config) HasStaticCategories() bool {
 		return false
 	}
 	for _, cat := range *cfg.Categories {
-		if !strings.HasPrefix(cat, "expr:") {
+		if !strings.HasPrefix(cat, categoryExprPrefix) {
 			return true
 		}
 	}
@@ -184,7 +187,7 @@ func (cfg *config) StaticCategories() []string {
 	}
 	cats := make([]string, 0, len(*cfg.Categories))
 	for _, cat := range *cfg.Categories {
-		if !strings.HasPrefix(cat, "expr:") {
+		if !strings.HasPrefix(cat, categoryExprPrefix) {
 			cats = append(cats, cat)
 		}
 	}
@@ -198,8 +201,8 @@ func (cfg *config) DynamicCategories() []string {
 	}
 	cats := make([]string, 0, len(*cfg.Categories))
 	for _, cat := range *cfg.Categories {
-		if strings.HasPrefix(cat, "expr:") {
-			cats = append(cats, cat[len("expr:"):])
+		if strings.HasPrefix(cat, categoryExprPrefix) {
+			cats = append(cats, cat[len(categoryExprPrefix):])
 		}
 	}
 	return cats
