@@ -143,6 +143,20 @@ func (c *controller) create(*http.Request) (interface{}, error) {
 	}, nil
 }
 
+// loadROLIEFeed loads a ROLIE feed from file if its exists.
+// Returns nil if the file does not exists.
+func loadROLIEFeed(feed string) (*csaf.ROLIEFeed, error) {
+	f, err := os.Open(feed)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer f.Close()
+	return csaf.LoadROLIEFeed(f)
+}
+
 func (c *controller) upload(r *http.Request) (interface{}, error) {
 
 	newCSAF, data, err := c.loadCSAF(r)
@@ -217,19 +231,8 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			feedName := "csaf-feed-tlp-" + ts + ".json"
 
 			feed := filepath.Join(folder, feedName)
-			var rolie *csaf.ROLIEFeed
-			if err := func() error {
-				f, err := os.Open(feed)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return nil
-					}
-					return err
-				}
-				defer f.Close()
-				rolie, err = csaf.LoadROLIEFeed(f)
-				return err
-			}(); err != nil {
+			rolie, err := loadROLIEFeed(feed)
+			if err != nil {
 				return err
 			}
 
