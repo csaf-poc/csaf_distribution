@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2021 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2021 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
 package main
 
@@ -155,7 +155,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		return nil, err
 	}
 
-	// Validate againt JSON schema.
+	// Validate against JSON schema.
 	if !c.cfg.NoValidation {
 		validationErrors, err := csaf.ValidateCSAF(content)
 		if err != nil {
@@ -167,7 +167,7 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		}
 	}
 
-	// Validate against remote validator
+	// Validate against remote validator.
 	if c.cfg.RemoteValidator != nil {
 		validator, err := c.cfg.RemoteValidator.Open()
 		if err != nil {

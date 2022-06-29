@@ -104,6 +104,20 @@ curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --ce
 
 popd
 
+# Setup validation service
+./setupValidationService.sh
+
+# Disable exit for the next error as these is expected.
+set +e
+
+# Wait for the service to be started
+for ((i = 1; i <= 10; i++)); do
+ if [ $(curl -IL http://localhost:3000/api/v1/tests | grep -c HTTP ) != "0" ]; then
+ break
+ fi
+ sleep 3
+done
+
 # Upload files
 ./uploadToProvider.sh
 
