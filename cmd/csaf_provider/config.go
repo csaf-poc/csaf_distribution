@@ -56,6 +56,7 @@ type config struct {
 	UploadLimit             *int64                       `toml:"upload_limit"`
 	Issuer                  *string                      `toml:"issuer"`
 	RemoteValidator         *csaf.RemoteValidatorOptions `toml:"remote_validator"`
+	Categories              *[]string                    `toml:"categories"`
 }
 
 func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {
@@ -143,6 +144,65 @@ func (cfg *config) openPGPPublicURL(fingerprint string) string {
 func (cfg *config) checkPassword(hash string) bool {
 	return cfg.Password == nil ||
 		bcrypt.CompareHashAndPassword([]byte(hash), []byte(*cfg.Password)) == nil
+}
+
+// HasCategories tells if categories are configured.
+func (cfg *config) HasCategories() bool {
+	return cfg.Categories != nil
+}
+
+// HasDynamicCategories tells if dynamic categories are configured.
+func (cfg *config) HasDynamicCategories() bool {
+	if !cfg.HasCategories() {
+		return false
+	}
+	for _, cat := range *cfg.Categories {
+		if strings.HasPrefix(cat, "dynamic:") {
+			return true
+		}
+	}
+	return false
+}
+
+// HasStaticCategories tells if static categories are configured.
+func (cfg *config) HasStaticCategories() bool {
+	if !cfg.HasCategories() {
+		return false
+	}
+	for _, cat := range *cfg.Categories {
+		if !strings.HasPrefix(cat, "expr:") {
+			return true
+		}
+	}
+	return false
+}
+
+// StaticCategories returns a list on the configured static categories.
+func (cfg *config) StaticCategories() []string {
+	if !cfg.HasCategories() {
+		return nil
+	}
+	cats := make([]string, 0, len(*cfg.Categories))
+	for _, cat := range *cfg.Categories {
+		if !strings.HasPrefix(cat, "expr:") {
+			cats = append(cats, cat)
+		}
+	}
+	return cats
+}
+
+// DynamicCategories returns a list on the configured dynamic categories.
+func (cfg *config) DynamicCategories() []string {
+	if !cfg.HasCategories() {
+		return nil
+	}
+	cats := make([]string, 0, len(*cfg.Categories))
+	for _, cat := range *cfg.Categories {
+		if strings.HasPrefix(cat, "expr:") {
+			cats = append(cats, cat[len("expr:"):])
+		}
+	}
+	return cats
 }
 
 // loadConfig extracts the config values from the config file. The path to the
