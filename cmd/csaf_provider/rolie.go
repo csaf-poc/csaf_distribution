@@ -19,6 +19,7 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// extendROLIE adds a new entry to the ROLIE feed for a given advisory.
 func (c *controller) extendROLIE(
 	folder string,
 	newCSAF string,
