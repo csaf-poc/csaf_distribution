@@ -39,6 +39,8 @@ type provider struct {
 	Rate       *float64  `toml:"rate"`
 	Insecure   *bool     `toml:"insecure"`
 	Categories *[]string `toml:"categories"`
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument *bool `toml:"create_service_document"`
 }
 
 type config struct {
@@ -72,9 +74,21 @@ type config struct {
 	// RemoteValidator configures an optional remote validation.
 	RemoteValidatorOptions *csaf.RemoteValidatorOptions `toml:"remote_validator"`
 
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument bool `toml:"create_service_document"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// serviceDocument tells if we should generate a service document for a
+// given provider.
+func (p *provider) serviceDocument(c *config) bool {
+	if p.ServiceDocument != nil {
+		return *p.ServiceDocument
+	}
+	return c.ServiceDocument
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
