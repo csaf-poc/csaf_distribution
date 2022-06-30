@@ -34,6 +34,7 @@ func ensureFolders(c *config) error {
 	for _, create := range []func(*config, string) error{
 		createWellknown,
 		createFeedFolders,
+		createService,
 		createOpenPGPFolder,
 		createProviderMetadata,
 	} {
@@ -59,6 +60,53 @@ func createWellknown(_ *config, wellknown string) error {
 		return errors.New(".well-known/csaf is not a directory")
 	}
 	return nil
+}
+
+// createService creates the ROLIE service document (if configured).
+func createService(c *config, wellknownCSAF string) error {
+	// no service document needed.
+	if !c.ServiceDocument {
+		return nil
+	}
+
+	categories := csaf.ROLIEServiceWorkspaceCollectionCategories{
+		Category: []csaf.ROLIEServiceWorkspaceCollectionCategoriesCategory{{
+			Scheme: "urn:ietf:params:rolie:category:information-type",
+			Term:   "csaf",
+		}},
+	}
+
+	var collections []csaf.ROLIEServiceWorkspaceCollection
+
+	for _, t := range c.TLPs {
+		if t == tlpCSAF {
+			continue
+		}
+		ts := string(t)
+		title := "CSAF feed (TLP:" + strings.ToUpper(ts) + ")"
+		feedName := "csaf-feed-tlp-" + ts + ".json"
+		href := c.CanonicalURLPrefix +
+			"/.well-known/csaf/" + ts + "/" + feedName
+
+		collection := csaf.ROLIEServiceWorkspaceCollection{
+			Title:      title,
+			HRef:       href,
+			Categories: categories,
+		}
+		collections = append(collections, collection)
+	}
+
+	rsd := &csaf.ROLIEServiceDocument{
+		Service: csaf.ROLIEService{
+			Workspace: []csaf.ROLIEServiceWorkspace{{
+				Title:      "CSAF feeds",
+				Collection: collections,
+			}},
+		},
+	}
+
+	path := filepath.Join(wellknownCSAF, "service.json")
+	return util.WriteToFile(path, rsd)
 }
 
 // createFeedFolders creates the feed folders according to the tlp values

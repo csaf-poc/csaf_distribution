@@ -57,6 +57,7 @@ type config struct {
 	Issuer                  *string                      `toml:"issuer"`
 	RemoteValidator         *csaf.RemoteValidatorOptions `toml:"remote_validator"`
 	Categories              *[]string                    `toml:"categories"`
+	ServiceDocument         bool                         `toml:"create_service_document"`
 }
 
 func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {
