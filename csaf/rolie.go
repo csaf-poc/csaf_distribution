@@ -79,6 +79,20 @@ type ROLIECategoryDocument struct {
 	Categories ROLIECategories `json:"categories"`
 }
 
+// NewROLIECategoryDocument creates a new ROLIE category document from a list
+// of categories.
+func NewROLIECategoryDocument(categories ...string) *ROLIECategoryDocument {
+	cats := make([]ROLIECategory, len(categories))
+	for i, cat := range categories {
+		cats[i] = ROLIECategory{Term: cat}
+	}
+	return &ROLIECategoryDocument{
+		Categories: ROLIECategories{
+			Category: cats,
+		},
+	}
+}
+
 // LoadROLIECategoryDocument loads a ROLIE category document from a reader.
 func LoadROLIECategoryDocument(r io.Reader) (*ROLIECategoryDocument, error) {
 	var rcd ROLIECategoryDocument

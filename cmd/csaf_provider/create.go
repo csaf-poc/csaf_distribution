@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -65,6 +66,15 @@ func createWellknown(_ *config, wellknown string) error {
 // No creation for the "csaf" option will be done.
 // It creates also symbolic links to feed folders.
 func createFeedFolders(c *config, wellknown string) error {
+
+	// If we have static configured categories we need to create
+	// the category documents.
+	var catDoc *csaf.ROLIECategoryDocument
+
+	if categories := c.StaticCategories(); len(categories) > 0 {
+		catDoc = csaf.NewROLIECategoryDocument(categories...)
+	}
+
 	for _, t := range c.TLPs {
 		if t == tlpCSAF {
 			continue
@@ -80,6 +90,13 @@ func createFeedFolders(c *config, wellknown string) error {
 					return err
 				}
 			} else {
+				return err
+			}
+		}
+		// Store the category document.
+		if catDoc != nil {
+			catPath := path.Join(tlpLink, "category.json")
+			if err := util.WriteToFile(catPath, catDoc); err != nil {
 				return err
 			}
 		}
