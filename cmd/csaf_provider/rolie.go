@@ -90,14 +90,22 @@ func (c *controller) extendROLIE(
 
 	// Create new if does not exists.
 	if rolie == nil {
+		links := []csaf.Link{{
+			Rel:  "self",
+			HRef: string(feedURL),
+		}}
+		// If we have a service document we need to link it.
+		if c.cfg.ServiceDocument {
+			links = append(links, csaf.Link{
+				Rel:  "service",
+				HRef: c.cfg.CanonicalURLPrefix + "/.well-known/csaf/service.json",
+			})
+		}
 		rolie = &csaf.ROLIEFeed{
 			Feed: csaf.FeedData{
 				ID:    "csaf-feed-tlp-" + ts,
 				Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
-				Link: []csaf.Link{{
-					Rel:  "self",
-					HRef: string(feedURL),
-				}},
+				Link:  links,
 				Category: []csaf.ROLIECategory{{
 					Scheme: "urn:ietf:params:rolie:category:information-type",
 					Term:   "csaf",

@@ -83,13 +83,12 @@ func createService(c *config, wellknownCSAF string) error {
 			continue
 		}
 		ts := string(t)
-		title := "CSAF feed (TLP:" + strings.ToUpper(ts) + ")"
 		feedName := "csaf-feed-tlp-" + ts + ".json"
 		href := c.CanonicalURLPrefix +
 			"/.well-known/csaf/" + ts + "/" + feedName
 
 		collection := csaf.ROLIEServiceWorkspaceCollection{
-			Title:      title,
+			Title:      "CSAF feed (TLP:" + strings.ToUpper(ts) + ")",
 			HRef:       href,
 			Categories: categories,
 		}
