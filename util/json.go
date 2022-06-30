@@ -146,3 +146,23 @@ func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
 	}
 	return nil
 }
+
+// Strings searches the given document for the given set of expressions
+// and returns the corresponding strings. The optional flag indicates
+// if the expression evaluation have to succseed or not.
+func (pe *PathEval) Strings(
+	exprs []string,
+	optional bool,
+	doc interface{},
+) ([]string, error) {
+	results := make([]string, 0, len(exprs))
+	var result string
+	matcher := StringMatcher(&result)
+	for _, expr := range exprs {
+		if err := pe.Extract(expr, matcher, optional, doc); err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}

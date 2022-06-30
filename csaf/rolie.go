@@ -82,15 +82,41 @@ type ROLIECategoryDocument struct {
 // NewROLIECategoryDocument creates a new ROLIE category document from a list
 // of categories.
 func NewROLIECategoryDocument(categories ...string) *ROLIECategoryDocument {
-	cats := make([]ROLIECategory, len(categories))
-	for i, cat := range categories {
-		cats[i] = ROLIECategory{Term: cat}
+	rcd := &ROLIECategoryDocument{}
+	rcd.Merge(categories...)
+	return rcd
+}
+
+// Merge merges the given categories into the existing ones.
+// The results indicates if there were changes.
+func (rcd *ROLIECategoryDocument) Merge(categories ...string) bool {
+	index := make(map[string]bool)
+	for i := range rcd.Categories.Category {
+		index[rcd.Categories.Category[i].Term] = true
 	}
-	return &ROLIECategoryDocument{
-		Categories: ROLIECategories{
-			Category: cats,
-		},
+
+	oldLen := len(index)
+
+	for _, cat := range categories {
+		if index[cat] {
+			continue
+		}
+		index[cat] = true
+		rcd.Categories.Category = append(
+			rcd.Categories.Category, ROLIECategory{Term: cat})
 	}
+
+	if len(index) == oldLen {
+		// No new categories
+		return false
+	}
+
+	// Re-establish order.
+	sort.Slice(rcd.Categories.Category, func(i, j int) bool {
+		return rcd.Categories.Category[i].Term < rcd.Categories.Category[j].Term
+	})
+
+	return true
 }
 
 // LoadROLIECategoryDocument loads a ROLIE category document from a reader.

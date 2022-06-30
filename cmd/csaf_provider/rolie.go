@@ -19,6 +19,52 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// mergeCategories merges the given categories into the old ones.
+func (c *controller) mergeCategories(
+	folder string,
+	t tlp,
+	categories []string,
+) error {
+	ts := string(t)
+	catName := "category-" + ts + ".json"
+	catPath := filepath.Join(folder, catName)
+
+	catDoc, err := loadCategoryDocument(catPath)
+	if err != nil {
+		return err
+	}
+
+	var changed bool
+
+	if catDoc == nil {
+		catDoc = csaf.NewROLIECategoryDocument(categories...)
+		changed = true
+	} else {
+		changed = catDoc.Merge(categories...)
+	}
+
+	if changed {
+		if err := util.WriteToFile(catPath, catDoc); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// loadROLIEFeed loads a ROLIE feed from file if its exists.
+// Returns nil if the file does not exists.
+func loadCategoryDocument(path string) (*csaf.ROLIECategoryDocument, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer f.Close()
+	return csaf.LoadROLIECategoryDocument(f)
+}
+
 // extendROLIE adds a new entry to the ROLIE feed for a given advisory.
 func (c *controller) extendROLIE(
 	folder string,

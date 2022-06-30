@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -182,9 +183,22 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		}
 	}
 
-	ex, err := csaf.NewAdvisorySummary(util.NewPathEval(), content)
+	// Extract informations from the document.
+	pe := util.NewPathEval()
+
+	ex, err := csaf.NewAdvisorySummary(pe, content)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if we have to search for dynamic categories.
+	var dynamicCategories []string
+	if catExprs := c.cfg.DynamicCategories(); len(catExprs) > 0 {
+		var err error
+		if dynamicCategories, err = pe.Strings(catExprs, true, content); err != nil {
+			// XXX: Should we die here?
+			log.Printf("eval of dynamic catecory expressions failed: %v\n", err)
+		}
 	}
 
 	t, err := c.tlpParam(r)
@@ -215,6 +229,14 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 			// extend the ROLIE feed.
 			if err := c.extendROLIE(folder, newCSAF, t, ex); err != nil {
 				return err
+			}
+
+			// if we have found dynamic categories merge them into
+			// the existing once.
+			if len(dynamicCategories) > 0 {
+				if err := c.mergeCategories(folder, t, dynamicCategories); err != nil {
+					return err
+				}
 			}
 
 			// Create yearly subfolder
