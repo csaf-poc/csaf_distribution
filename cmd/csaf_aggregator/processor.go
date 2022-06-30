@@ -40,12 +40,13 @@ type worker struct {
 	expr     *util.PathEval
 	signRing *crypto.KeyRing
 
-	client           util.Client          // client per provider
-	provider         *provider            // current provider
-	metadataProvider interface{}          // current metadata provider
-	loc              string               // URL of current provider-metadata.json
-	dir              string               // Directory to store data to.
-	summaries        map[string][]summary // the summaries of the advisories.
+	client           util.Client                // client per provider
+	provider         *provider                  // current provider
+	metadataProvider interface{}                // current metadata provider
+	loc              string                     // URL of current provider-metadata.json
+	dir              string                     // Directory to store data to.
+	summaries        map[string][]summary       // the summaries of the advisories.
+	categories       map[string]map[string]bool // the categories per label.
 }
 
 func newWorker(num int, processor *processor) *worker {

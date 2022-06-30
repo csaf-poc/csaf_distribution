@@ -209,6 +209,25 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	return util.WriteToFile(path, rolie)
 }
 
+func (w *worker) writeCategories(label string) error {
+	categories := w.categories[label]
+	if len(categories) == 0 {
+		return nil
+	}
+	cats := make([]string, len(categories))
+	var i int
+	for cat := range categories {
+		cats[i] = cat
+		i++
+	}
+	rcd := csaf.NewROLIECategoryDocument(cats...)
+
+	labelFolder := strings.ToLower(label)
+	fname := "category-" + labelFolder + ".json"
+	path := filepath.Join(w.dir, labelFolder, fname)
+	return util.WriteToFile(path, rcd)
+}
+
 func (w *worker) writeIndices() error {
 
 	if len(w.summaries) == 0 || w.dir == "" {
@@ -227,6 +246,9 @@ func (w *worker) writeIndices() error {
 			return err
 		}
 		if err := w.writeROLIE(label, summaries); err != nil {
+			return err
+		}
+		if err := w.writeCategories(label); err != nil {
 			return err
 		}
 	}

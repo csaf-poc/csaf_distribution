@@ -36,8 +36,9 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate     *float64 `toml:"rate"`
-	Insecure *bool    `toml:"insecure"`
+	Rate       *float64  `toml:"rate"`
+	Insecure   *bool     `toml:"insecure"`
+	Categories *[]string `toml:"categories"`
 }
 
 type config struct {
@@ -50,6 +51,7 @@ type config struct {
 	// Rate gives the average upper limit of https operations per second.
 	Rate                *float64            `toml:"rate"`
 	Insecure            *bool               `toml:"insecure"`
+	Categories          *[]string           `toml:"categories"`
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
 	Providers           []*provider         `toml:"providers"`
 	OpenPGPPrivateKey   string              `toml:"openpgp_private_key"`
