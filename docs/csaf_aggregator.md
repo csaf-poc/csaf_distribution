@@ -78,6 +78,7 @@ web                   // directory to be served by the webserver
 domain                // base url where the contents will be reachable from outside
 rate                  // overall downloading limit per worker
 insecure              // do not check validity of TLS certificates
+write_indices         // write index.txt and changes.csv
 aggregator            // table with basic infos for the aggregator object
 providers             // array of tables, each entry to be mirrored or listed
 openpgp_private_key   // OpenPGP private key

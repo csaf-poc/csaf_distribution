@@ -220,11 +220,14 @@ func (w *worker) writeIndices() error {
 		if err := w.writeInterims(label, summaries); err != nil {
 			return err
 		}
-		if err := w.writeCSV(label, summaries); err != nil {
-			return err
-		}
-		if err := w.writeIndex(label, summaries); err != nil {
-			return err
+		// Only write index.txt and changes.csv if configured.
+		if w.provider.writeIndices(w.processor.cfg) {
+			if err := w.writeCSV(label, summaries); err != nil {
+				return err
+			}
+			if err := w.writeIndex(label, summaries); err != nil {
+				return err
+			}
 		}
 		if err := w.writeROLIE(label, summaries); err != nil {
 			return err

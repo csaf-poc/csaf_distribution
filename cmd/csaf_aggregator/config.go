@@ -36,8 +36,9 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate     *float64 `toml:"rate"`
-	Insecure *bool    `toml:"insecure"`
+	Rate         *float64 `toml:"rate"`
+	Insecure     *bool    `toml:"insecure"`
+	WriteIndices *bool    `toml:"write_indices"`
 }
 
 type config struct {
@@ -50,6 +51,7 @@ type config struct {
 	// Rate gives the average upper limit of https operations per second.
 	Rate                *float64            `toml:"rate"`
 	Insecure            *bool               `toml:"insecure"`
+	WriteIndices        bool                `toml:"write_indices"`
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
 	Providers           []*provider         `toml:"providers"`
 	OpenPGPPrivateKey   string              `toml:"openpgp_private_key"`
@@ -73,6 +75,14 @@ type config struct {
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// writeIndices tells if we should write index.txt and changes.csv.
+func (p *provider) writeIndices(c *config) bool {
+	if p.WriteIndices != nil {
+		return *p.WriteIndices
+	}
+	return c.WriteIndices
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
