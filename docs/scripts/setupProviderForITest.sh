@@ -78,9 +78,12 @@ sudo chgrp www-data /usr/lib/cgi-bin/
 sudo chmod o-rwx /usr/lib/cgi-bin/
 sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
+sudo mkdir /etc/csaf/
 sudo mkdir /usr/lib/csaf/
 sudo chgrp www-data /usr/lib/csaf/
+sudo chgrp www-data /etc/csaf/
 sudo chmod g+s,o-rwx /usr/lib/csaf/
+sudo chmod g+s, o-rwx /etc/csaf/
 sudo touch /etc/csaf/config.toml
 sudo chgrp www-data /etc/csaf/config.toml
 sudo chmod g+r,o-rwx /etc/csaf/config.toml
