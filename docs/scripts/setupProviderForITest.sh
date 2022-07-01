@@ -45,7 +45,7 @@ location /cgi-bin/ {
   fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
 
   fastcgi_param PATH_INFO $fastcgi_path_info;
-  fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+  fastcgi_param CSAF_CONFIG /etc/csaf/config.toml;
 
   fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
   fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
@@ -81,9 +81,9 @@ sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 sudo mkdir /usr/lib/csaf/
 sudo chgrp www-data /usr/lib/csaf/
 sudo chmod g+s,o-rwx /usr/lib/csaf/
-sudo touch /usr/lib/csaf/config.toml
-sudo chgrp www-data /usr/lib/csaf/config.toml
-sudo chmod g+r,o-rwx /usr/lib/csaf/config.toml
+sudo touch /etc/csaf/config.toml
+sudo chgrp www-data /etc/csaf/config.toml
+sudo chmod g+r,o-rwx /etc/csaf/config.toml
 
 sudo cp docs/test-keys/*.asc /usr/lib/csaf/
 sudo chgrp www-data /usr/lib/csaf/private.asc
@@ -97,7 +97,7 @@ openpgp_public_key = "/usr/lib/csaf/public.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
-' | sudo tee --append /usr/lib/csaf/config.toml
+' | sudo tee --append /etc/csaf/config.toml
 
 # Create the Folders
 curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure

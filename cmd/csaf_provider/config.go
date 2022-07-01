@@ -24,7 +24,7 @@ const (
 	// The environment name, that contains the path to the config file.
 	configEnv                = "CSAF_CONFIG"
 	configPrefix             = "/usr/lib/csaf"
-	defaultConfigPath        = configPrefix + "/config.toml" // Default path to the config file.
+	defaultConfigPath        = "etc/csaf/config.toml" // Default path to the config file.
 	defaultOpenPGPPrivateKey = configPrefix + "/openpgp_private.asc"
 	defaultOpenPGPPublicKey  = configPrefix + "/openpgp_public.asc"
 	defaultFolder            = "/var/www/"      // Default folder path.
