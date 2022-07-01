@@ -322,11 +322,14 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 				return err
 			}
 
-			if err := updateIndices(
-				folder, filepath.Join(year, newCSAF),
-				ex.CurrentReleaseDate,
-			); err != nil {
-				return err
+			// Only write index.txt and changes.csv if configured.
+			if c.cfg.WriteIndices {
+				if err := updateIndices(
+					folder, filepath.Join(year, newCSAF),
+					ex.CurrentReleaseDate,
+				); err != nil {
+					return err
+				}
 			}
 
 			// Take over publisher

@@ -56,6 +56,8 @@ type config struct {
 	UploadLimit             *int64                       `toml:"upload_limit"`
 	Issuer                  *string                      `toml:"issuer"`
 	RemoteValidator         *csaf.RemoteValidatorOptions `toml:"remote_validator"`
+	WriteIndices            bool                         `toml:"write_indices"`
+	WriteSecurity           bool                         `toml:"write_security"`
 }
 
 func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {

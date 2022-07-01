@@ -41,7 +41,13 @@ func ensureFolders(c *config) error {
 		}
 	}
 
-	return setupSecurity(c, wellknown)
+	// Only write/modify security.txt if configured.
+	if c.WriteSecurity {
+		if err := setupSecurity(c, wellknown); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // createWellknown creates ".well-known" directory if not exist and returns nil.
