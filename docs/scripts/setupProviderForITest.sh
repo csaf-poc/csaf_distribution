@@ -83,7 +83,7 @@ sudo mkdir /usr/lib/csaf/
 sudo chgrp www-data /usr/lib/csaf/
 sudo chgrp www-data /etc/csaf/
 sudo chmod g+s,o-rwx /usr/lib/csaf/
-sudo chmod g+s, o-rwx /etc/csaf/
+sudo chmod g+s,o-rwx /etc/csaf/
 sudo touch /etc/csaf/config.toml
 sudo chgrp www-data /etc/csaf/config.toml
 sudo chmod g+r,o-rwx /etc/csaf/config.toml
