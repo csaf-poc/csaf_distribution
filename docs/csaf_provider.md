@@ -21,6 +21,8 @@ Following options are supported in the config file:
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
  - upload_limit: Set the upload limit size of a file in bytes. Default: `52428800` (aka 50 MiB).
  - issuer: The issuer of the CA, which if set, restricts the writing permission and the accessing to the web-interface to only the client certificates signed with this CA.
+ - write_indices: Write/update `index.txt` and `changes.csv`. Default: false
+ - write_security: Write `CSAF:` entry into `security.txt`: Default: false
  - tlps: Set the allowed TLP comming with the upload request (one or more of "csaf", "white", "amber", "green", "red").
    The "csaf" selection lets the provider takes the value from the CSAF document.
    These affects the list items in the web interface.

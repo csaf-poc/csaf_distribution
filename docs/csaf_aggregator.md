@@ -78,8 +78,7 @@ web                   // directory to be served by the webserver
 domain                // base url where the contents will be reachable from outside
 rate                  // overall downloading limit per worker
 insecure              // do not check validity of TLS certificates
-aggregator            // table with basic infos for the aggregator object
-providers             // array of tables, each entry to be mirrored or listed
+write_indices         // write index.txt and changes.csv
 openpgp_private_key   // OpenPGP private key
 openpgp_public_key    // OpenPGP public key
 passphrase            // passphrase of the OpenPGP key
@@ -88,6 +87,8 @@ interim_years         // limiting the years for which interim documents are sear
 verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
 remote_validator      // use remote validation checker
+aggregator            // table with basic infos for the aggregator object
+providers             // array of tables, each entry to be mirrored or listed
 ```
 
 Rates are specified as floats in HTTPS operations per second.
@@ -99,6 +100,7 @@ name
 domain
 rate
 insecure
+write_indices
 ```
 
 #### Example config file
