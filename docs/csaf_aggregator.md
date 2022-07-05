@@ -100,6 +100,7 @@ name
 domain
 rate
 insecure
+write_indices
 ```
 
 #### Example config file
