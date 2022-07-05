@@ -114,6 +114,13 @@ web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
 insecure = true
+#key =
+#passphrase =
+#write_indices = false
+
+# specification requires at least two providers (default),
+# to override for testing, enable:
+# allow_single_provider = true
 
 [aggregator]
   category = "aggregator"
@@ -133,12 +140,6 @@ insecure = true
   domain = "localhost"
 #  rate = 1.2
 #  insecure = true
-
-#key =
-#passphrase =
-
-# specification requires at least two providers (default),
-# to override for testing, enable:
-# allow_single_provider = true
+  write_indices = true
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
