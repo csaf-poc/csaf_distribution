@@ -101,6 +101,7 @@ domain
 rate
 insecure
 write_indices
+category
 ```
 
 #### Example config file
@@ -134,6 +135,7 @@ insecure = true
   domain = "localhost"
 #  rate = 1.5
 #  insecure = true
+#  category = "aggregator"
 
 [[providers]]
   name = "local-dev-provider2"

@@ -36,9 +36,10 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate         *float64 `toml:"rate"`
-	Insecure     *bool    `toml:"insecure"`
-	WriteIndices *bool    `toml:"write_indices"`
+	Rate                *float64                 `toml:"rate"`
+	Insecure            *bool                    `toml:"insecure"`
+	WriteIndices        *bool                    `toml:"write_indices"`
+	AggregatoryCategory *csaf.AggregatorCategory `toml:"category"`
 }
 
 type config struct {
@@ -83,6 +84,22 @@ func (p *provider) writeIndices(c *config) bool {
 		return *p.WriteIndices
 	}
 	return c.WriteIndices
+}
+
+func (p *provider) runAsMirror(c *config) bool {
+	if p.AggregatoryCategory != nil {
+		return *p.AggregatoryCategory == csaf.AggregatorAggregator
+	}
+	return c.runAsMirror()
+}
+
+func (c *config) hasMirror() bool {
+	for _, p := range c.Providers {
+		if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
+			return true
+		}
+	}
+	return c.runAsMirror()
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
