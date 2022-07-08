@@ -96,14 +96,14 @@ func (p *processor) full() error {
 		log.Println("Running in aggregator mode")
 		if !p.cfg.hasTwoMirrors() {
 			if !p.cfg.allowMisconfigure(){
-				err = errors.New("At least 2 Providers need to be mirrors.")
+				err := errors.New("At least 2 Providers need to be mirrors.")
     			        log.Fatal(err)
 			}
 		}
 	} else {
 		if p.cfg.hasMirror() {
                          if !p.cfg.allowMisconfigure(){
-                                 err = errors.New("Found mirrors in a lister aggregator.")
+                                 err := errors.New("Found mirrors in a lister aggregator.")
                                  log.Fatal(err)
                          }
 

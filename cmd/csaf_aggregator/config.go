@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"log"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -90,8 +91,9 @@ func (p *provider) runAsMirror(c *config) bool {
 	if p.AggregatoryCategory != nil {
 		return *p.AggregatoryCategory == csaf.AggregatorAggregator
 	}
-	err = errors.New("Couldn't parse aggregator.toml: Provider misconfigured")
+	err := errors.New("Couldn't parse aggregator.toml: Provider has no category.")
 	log.Fatal(err)
+	return false
 }
 
 func (c *config) hasMirror() bool {
