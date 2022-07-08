@@ -135,7 +135,6 @@ insecure = true
   domain = "localhost"
 #  rate = 1.5
 #  insecure = true
-#  category = "aggregator"
 
 [[providers]]
   name = "local-dev-provider2"
@@ -143,5 +142,14 @@ insecure = true
 #  rate = 1.2
 #  insecure = true
   write_indices = true
+  category = "aggregator"
+  
+[[providers]]
+  name = "local-dev-provider3"
+  domain = "localhost"
+#  rate = 1.8
+#  insecure = true
+  write_indices = true
+  category = "lister"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
