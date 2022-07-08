@@ -36,9 +36,12 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate         *float64 `toml:"rate"`
-	Insecure     *bool    `toml:"insecure"`
-	WriteIndices *bool    `toml:"write_indices"`
+	Rate       *float64  `toml:"rate"`
+	Insecure   *bool     `toml:"insecure"`
+	Categories *[]string `toml:"categories"`
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument *bool `toml:"create_service_document"`
+	WriteIndices    *bool `toml:"write_indices"`
 }
 
 type config struct {
@@ -51,6 +54,7 @@ type config struct {
 	// Rate gives the average upper limit of https operations per second.
 	Rate                *float64            `toml:"rate"`
 	Insecure            *bool               `toml:"insecure"`
+	Categories          *[]string           `toml:"categories"`
 	WriteIndices        bool                `toml:"write_indices"`
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
 	Providers           []*provider         `toml:"providers"`
@@ -72,9 +76,21 @@ type config struct {
 	// RemoteValidator configures an optional remote validation.
 	RemoteValidatorOptions *csaf.RemoteValidatorOptions `toml:"remote_validator"`
 
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument bool `toml:"create_service_document"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// serviceDocument tells if we should generate a service document for a
+// given provider.
+func (p *provider) serviceDocument(c *config) bool {
+	if p.ServiceDocument != nil {
+		return *p.ServiceDocument
+	}
+	return c.ServiceDocument
 }
 
 // writeIndices tells if we should write index.txt and changes.csv.

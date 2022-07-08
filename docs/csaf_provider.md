@@ -27,6 +27,12 @@ Following options are supported in the config file:
    The "csaf" selection lets the provider takes the value from the CSAF document.
    These affects the list items in the web interface.
    Default: `["csaf", "white", "amber", "green", "red"]`.
+ - create_service_document: Create ROLIE service document. Default: false
+ - categories: Create ROLIE category document from a list of strings.
+   If a list item starts with `expr:` the rest of the string is used as a [JsonPath expression](https://goessner.net/articles/JsonPath/) to
+   extract a string from the incoming advisories. Strings not starting with `expr:` are took verbatim.
+   By default no category documents are created.
+   E.g: `categories = ["Example Company Product A", "expr:document.lang"]`
  - provider_metadata: Configure the provider metadata.
  - provider_metadata.list_on_CSAF_aggregators: List on aggregators
  - provider_metadata.mirror_on_CSAF_aggregators: Mirror on aggregators
