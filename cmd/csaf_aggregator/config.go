@@ -90,7 +90,8 @@ func (p *provider) runAsMirror(c *config) bool {
 	if p.AggregatoryCategory != nil {
 		return *p.AggregatoryCategory == csaf.AggregatorAggregator
 	}
-	return c.runAsMirror()
+	err = errors.New("Couldn't parse aggregator.toml: Provider misconfigured")
+	log.Fatal(err)
 }
 
 func (c *config) hasMirror() bool {
@@ -99,7 +100,17 @@ func (c *config) hasMirror() bool {
 			return true
 		}
 	}
-	return c.runAsMirror()
+	return false
+}
+
+func (c *config) hasTwoMirrors() bool {
+	var numberMirrors := 0
+        for _, p := range c.Providers {
+                if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
+                        numberMirrors += 1
+                }
+        }
+        return numberMirrors > 1
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
@@ -183,6 +194,13 @@ func (c *config) checkProviders() error {
 		already[p.Name] = true
 	}
 	return nil
+}
+
+func (c *config) allowMisconfigure() bool {
+	if c.AllowSingleProvider {
+		return true
+	}
+	return false
 }
 
 func (c *config) setDefaults() {
