@@ -148,7 +148,7 @@ func createFeedFolders(c *config, wellknown string) error {
 		}
 		// Store the category document.
 		if catDoc != nil {
-			catPath := path.Join(tlpLink, "category.json")
+			catPath := path.Join(tlpLink, "category-"+string(t)+".json")
 			if err := util.WriteToFile(catPath, catDoc); err != nil {
 				return err
 			}
