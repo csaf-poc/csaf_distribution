@@ -106,7 +106,7 @@ func (c *config) hasMirror() bool {
 }
 
 func (c *config) hasTwoMirrors() bool {
-	var numberMirrors := 0
+	var numberMirrors = 0
         for _, p := range c.Providers {
                 if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
                         numberMirrors += 1
