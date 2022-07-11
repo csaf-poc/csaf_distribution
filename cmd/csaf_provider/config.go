@@ -164,10 +164,10 @@ func loadConfig() (*config, error) {
 		return nil, err
 	}
 	if len(md.Undecoded()) != 0 {
-                log.Printf("Couldn't parse %q from config.toml", md.Undecoded())
-                err = errors.New("Something went wrong. Check the server logs for more details")
-                return nil, err
-        }
+		log.Printf("Couldn't parse %q from config.toml", md.Undecoded())
+		err = errors.New("Something went wrong. Check the server logs for more details")
+		return nil, err
+		}
 
 
 
