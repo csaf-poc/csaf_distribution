@@ -23,7 +23,7 @@ import (
 const (
 	// The environment name, that contains the path to the config file.
 	configEnv                = "CSAF_CONFIG"
-	configKeyPrefix		 = "/usr/lib/csaf"
+	configKeyPrefix          = "/usr/lib/csaf"
 	configPrefix             = "/etc/csaf"
 	defaultConfigPath        = configPrefix + "/config.toml" // Default path to the config file.
 	defaultOpenPGPPrivateKey = configKeyPrefix + "/openpgp_private.asc"
