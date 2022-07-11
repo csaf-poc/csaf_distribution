@@ -15,8 +15,8 @@ Following options are supported in the config file:
  - web: Specify the web folder. Default: `/var/www/html`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - canonical_url_prefix: start of the URL where contents shall be accessible from the internet. Default: `https://$SERVER_NAME`.
- - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
- - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
+ - no_passphrase: Let the user send the request without having to send a password. If set to true, the input-field in the web interface will be omitted. Default: `false`.
+ - no_validation: Skip validation of the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
  - upload_limit: Set the upload limit size of a file in bytes. Default: `52428800` (aka 50 MiB).
