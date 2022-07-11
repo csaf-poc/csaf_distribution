@@ -22,3 +22,12 @@ Help Options:
 
 Usage example:
 ` ./csaf_checker example.com -f html --rate=5.3 -o check-results.html`
+
+Each performed check has a return type of either 0,1 or 2:
+```
+type 0: success
+type 1: warning
+type 2: error
+```
+
+The checker result is a success if no checks resulted in type 2, and a failure otherwise. 
