@@ -9,12 +9,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
-	"log"
-	"errors"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -167,9 +167,7 @@ func loadConfig() (*config, error) {
 		log.Printf("Couldn't parse %q from config.toml", md.Undecoded())
 		err = errors.New("Something went wrong. Check the server logs for more details")
 		return nil, err
-		}
-
-
+	}
 
 	// Preset defaults
 
