@@ -9,10 +9,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -163,10 +161,9 @@ func loadConfig() (*config, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(md.Undecoded()) != 0 {
-		log.Printf("Couldn't parse %q from config.toml", md.Undecoded())
-		err = errors.New("Something went wrong. Check the server logs for more details")
-		return nil, err
+
+	if undecoded := md.Undecoded(); len(undecoded) != 0 {
+		return nil, fmt.Errorf("could not parse %q from config.toml", undecoded)
 	}
 
 	// Preset defaults
