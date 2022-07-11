@@ -109,7 +109,7 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badSecurity.used() {
-		req.message(InfoType, "No security.txt checked.")
+		req.message(InfoType, "Performed no in-depth test of security.txt.")
 		return
 	}
 	if len(p.badSecurity) == 0 {
