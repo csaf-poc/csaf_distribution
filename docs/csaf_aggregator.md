@@ -78,8 +78,7 @@ web                   // directory to be served by the webserver
 domain                // base url where the contents will be reachable from outside
 rate                  // overall downloading limit per worker
 insecure              // do not check validity of TLS certificates
-aggregator            // table with basic infos for the aggregator object
-providers             // array of tables, each entry to be mirrored or listed
+write_indices         // write index.txt and changes.csv
 openpgp_private_key   // OpenPGP private key
 openpgp_public_key    // OpenPGP public key
 passphrase            // passphrase of the OpenPGP key
@@ -88,6 +87,8 @@ interim_years         // limiting the years for which interim documents are sear
 verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
 remote_validator      // use remote validation checker
+aggregator            // table with basic infos for the aggregator object
+providers             // array of tables, each entry to be mirrored or listed
 ```
 
 Rates are specified as floats in HTTPS operations per second.
@@ -99,6 +100,7 @@ name
 domain
 rate
 insecure
+write_indices
 ```
 
 #### Example config file
@@ -112,6 +114,13 @@ web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
 insecure = true
+#key =
+#passphrase =
+#write_indices = false
+
+# specification requires at least two providers (default),
+# to override for testing, enable:
+# allow_single_provider = true
 
 [aggregator]
   category = "aggregator"
@@ -131,12 +140,6 @@ insecure = true
   domain = "localhost"
 #  rate = 1.2
 #  insecure = true
-
-#key =
-#passphrase =
-
-# specification requires at least two providers (default),
-# to override for testing, enable:
-# allow_single_provider = true
+  write_indices = true
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
