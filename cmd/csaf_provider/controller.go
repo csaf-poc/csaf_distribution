@@ -89,18 +89,31 @@ func (c *controller) auth(
 			// https://nginx.org/en/docs/http/ngx_http_ssl_module.html#var_ssl_client_verify
 			log.Printf("SSL_CLIENT_I_DN: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
 		}
-
-		switch {
-		case verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")):
-			log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
-		case c.cfg.Password == nil:
-			log.Println("No password set, declining access.")
-			http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return
-		default:
-			if pa := r.Header.Get("X-CSAF-PROVIDER-AUTH"); !c.cfg.checkPassword(pa) {
+		if c.cfg.NeedCcAndPw {
+			if c.cfg.Password == nil {
+				log.Println("No password set, declining access.")
 				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return
+			} else if verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")) {
+				if pa := r.Header.Get("X-CSAF-PROVIDER-AUTH"); !c.cfg.checkPassword(pa) {
+					http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+					return
+				}
+				log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
+			}
+		} else {
+			switch {
+			case verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")):
+				log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
+			case c.cfg.Password == nil:
+				log.Println("No password set, declining access.")
+				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			default:
+				if pa := r.Header.Get("X-CSAF-PROVIDER-AUTH"); !c.cfg.checkPassword(pa) {
+					http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+					return
+				}
 			}
 		}
 		fn(rw, r)
