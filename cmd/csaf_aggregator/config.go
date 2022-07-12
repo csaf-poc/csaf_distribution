@@ -228,8 +228,13 @@ func loadConfig(path string) (*config, error) {
 	}
 
 	var cfg config
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+	md, err := toml.DecodeFile(path, &cfg)
+	if err != nil {
 		return nil, err
+	}
+
+	if undecoded := md.Undecoded(); len(undecoded) != 0 {
+		return nil, fmt.Errorf("could not parse %q from config.toml", undecoded)
 	}
 
 	cfg.setDefaults()
