@@ -48,6 +48,7 @@ type config struct {
 	TLPs                    []tlp                        `toml:"tlps"`
 	UploadSignature         bool                         `toml:"upload_signature"`
 	CanonicalURLPrefix      string                       `toml:"canonical_url_prefix"`
+	CertificateAndPassword  bool                         `toml:"certificate_and_password"`
 	NoPassphrase            bool                         `toml:"no_passphrase"`
 	NoValidation            bool                         `toml:"no_validation"`
 	NoWebUI                 bool                         `toml:"no_web_ui"`
