@@ -286,6 +286,9 @@ func setPath(u *url.URL, p string) error {
 	return nil
 }
 
+// JoinURLPath returns a new URL with the provided path elements joined to
+// any existing path and the resulting path cleaned of any ./ or ../ elements.
+// Any sequences of multiple / characters will be reduced to a single /.
 func JoinURLPath(u *url.URL, elem ...string) *url.URL {
 
 	url := *u
