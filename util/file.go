@@ -29,9 +29,7 @@ var invalidRune = regexp.MustCompile(`[^+\-a-z0-9]+`) // invalid runes + `_`
 // specifies valid runes as 'a' to 'z', '0' to '9' and '+', '-', '_'.
 func CleanFileName(s string) string {
 	s = strings.ToLower(s)
-	if strings.HasSuffix(s, ".json") {
-		s = s[:len(s)-len(".json")]
-	}
+	s = strings.TrimSuffix(s, ".json")
 	return invalidRune.ReplaceAllString(s, "_") + ".json"
 }
 
