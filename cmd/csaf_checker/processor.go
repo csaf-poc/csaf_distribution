@@ -265,8 +265,12 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 		p.redirects = map[string][]string{}
 	}
 
-	for _, v := range via {
-		p.redirects[url] = append(p.redirects[url], v.URL.String())
+	if redirects := p.redirects[url]; len(redirects) == 0 {
+		redirects = make([]string, len(via))
+		for i, v := range via {
+			redirects[i] = v.URL.String()
+		}
+		p.redirects[url] = redirects
 	}
 
 	if len(via) > 10 {
