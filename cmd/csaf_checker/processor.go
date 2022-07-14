@@ -639,7 +639,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 
-	index := base + "/index.txt"
+	index := base + "index.txt"
 	p.checkTLS(index)
 
 	p.badIndices.use()
@@ -681,7 +681,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 // "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
 	client := p.httpClient()
-	changes := base + "/changes.csv"
+	changes := base + "changes.csv"
 	p.checkTLS(changes)
 	res, err := client.Get(changes)
 
