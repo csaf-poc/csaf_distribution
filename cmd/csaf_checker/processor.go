@@ -644,7 +644,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return err
 	}
 
-	index := util.JoinURLPath(bu, "index").String()
+	index := util.JoinURLPath(bu, "index.txt").String()
 
 	p.checkTLS(index)
 
