@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type (
@@ -75,7 +76,7 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 		req.message(InfoType, "No redirections found.")
 		return
 	}
-
+	p.redirects = eliminateStringSubslices(p.redirects)
 	keys := make([]string, len(p.redirects))
 	var i int
 	for k := range p.redirects {
@@ -84,9 +85,41 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	}
 	sort.Strings(keys)
 	for i, k := range keys {
-		keys[i] = fmt.Sprintf("Redirecting: %s -> %s", p.redirects[k], k)
+	keys[i] = fmt.Sprintf("Redirect %s > %s",  builtStringFromSlices(p.redirects[k], " > "), k)
 	}
 	req.message(WarnType, keys...)
+}
+
+
+// Creates a string from a slice by inserting a "between" string
+// between each entry
+func builtStringFromSlices(slice []string, between string) string {
+	var redirects strings.Builder
+	index := 0
+	for _, value := range slice {
+		if index > 0 {
+			redirects.WriteString(between)
+		}
+		redirects.WriteString(value)
+		index++
+	}
+	return redirects.String()
+}
+
+// eliminateStringSubslices deletes all entries of a map of slices of type
+// string where the key is contained in another slice.
+func eliminateStringSubslices(m map[string][]string) map[string][]string {
+	n := m
+	for k, _ := range n {
+		for  _, a := range n {
+			for _, s := range a{
+				if k == s {
+					delete(n, k)
+				}
+			}
+		}
+	}
+	return n
 }
 
 // report tests if an provider-metadata.json are available and sets the
