@@ -85,7 +85,7 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 	}
 	sort.Strings(keys)
 	for i, k := range keys {
-	keys[i] = fmt.Sprintf("Redirect %s > %s",  builtStringFromSlices(p.redirects[k], " > "), k)
+		keys[i] = fmt.Sprintf("Redirect %s > %s",  builtStringFromSlices(p.redirects[k], " > "), k)
 	}
 	req.message(WarnType, keys...)
 }
