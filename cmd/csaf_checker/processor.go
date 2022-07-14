@@ -262,9 +262,14 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	var path strings.Builder
 	for i, v := range via {
 		if i > 0 {
-			path.WriteString(", ")
+			path.WriteString(" > ")
 		}
 		path.WriteString(v.URL.String())
+		for in, _ := range p.redirects {
+			if in == v.URL.String(){
+				delete(p.redirects, in)
+			}
+		}
 	}
 	url := r.URL.String()
 	p.checkTLS(url)
