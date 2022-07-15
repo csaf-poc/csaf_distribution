@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -33,6 +34,7 @@ func ensureFolders(c *config) error {
 	for _, create := range []func(*config, string) error{
 		createWellknown,
 		createFeedFolders,
+		createService,
 		createOpenPGPFolder,
 		createProviderMetadata,
 	} {
@@ -66,11 +68,66 @@ func createWellknown(_ *config, wellknown string) error {
 	return nil
 }
 
+// createService creates the ROLIE service document (if configured).
+func createService(c *config, wellknownCSAF string) error {
+	// no service document needed.
+	if !c.ServiceDocument {
+		return nil
+	}
+
+	categories := csaf.ROLIEServiceWorkspaceCollectionCategories{
+		Category: []csaf.ROLIEServiceWorkspaceCollectionCategoriesCategory{{
+			Scheme: "urn:ietf:params:rolie:category:information-type",
+			Term:   "csaf",
+		}},
+	}
+
+	var collections []csaf.ROLIEServiceWorkspaceCollection
+
+	for _, t := range c.TLPs {
+		if t == tlpCSAF {
+			continue
+		}
+		ts := string(t)
+		feedName := "csaf-feed-tlp-" + ts + ".json"
+		href := c.CanonicalURLPrefix +
+			"/.well-known/csaf/" + ts + "/" + feedName
+
+		collection := csaf.ROLIEServiceWorkspaceCollection{
+			Title:      "CSAF feed (TLP:" + strings.ToUpper(ts) + ")",
+			HRef:       href,
+			Categories: categories,
+		}
+		collections = append(collections, collection)
+	}
+
+	rsd := &csaf.ROLIEServiceDocument{
+		Service: csaf.ROLIEService{
+			Workspace: []csaf.ROLIEServiceWorkspace{{
+				Title:      "CSAF feeds",
+				Collection: collections,
+			}},
+		},
+	}
+
+	path := filepath.Join(wellknownCSAF, "service.json")
+	return util.WriteToFile(path, rsd)
+}
+
 // createFeedFolders creates the feed folders according to the tlp values
 // in the "tlps" config option if they do not already exist.
 // No creation for the "csaf" option will be done.
 // It creates also symbolic links to feed folders.
 func createFeedFolders(c *config, wellknown string) error {
+
+	// If we have static configured categories we need to create
+	// the category documents.
+	var catDoc *csaf.ROLIECategoryDocument
+
+	if categories := c.StaticCategories(); len(categories) > 0 {
+		catDoc = csaf.NewROLIECategoryDocument(categories...)
+	}
+
 	for _, t := range c.TLPs {
 		if t == tlpCSAF {
 			continue
@@ -86,6 +143,13 @@ func createFeedFolders(c *config, wellknown string) error {
 					return err
 				}
 			} else {
+				return err
+			}
+		}
+		// Store the category document.
+		if catDoc != nil {
+			catPath := path.Join(tlpLink, "category-"+string(t)+".json")
+			if err := util.WriteToFile(catPath, catDoc); err != nil {
 				return err
 			}
 		}

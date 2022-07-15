@@ -12,11 +12,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"sync"
-	"log"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -37,9 +37,12 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate                *float64                 `toml:"rate"`
-	Insecure            *bool                    `toml:"insecure"`
-	WriteIndices        *bool                    `toml:"write_indices"`
+	Rate         *float64  `toml:"rate"`
+	Insecure     *bool     `toml:"insecure"`
+	WriteIndices *bool     `toml:"write_indices"`
+	Categories   *[]string `toml:"categories"`
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument     *bool                    `toml:"create_service_document"`
 	AggregatoryCategory *csaf.AggregatorCategory `toml:"category"`
 }
 
@@ -53,6 +56,7 @@ type config struct {
 	// Rate gives the average upper limit of https operations per second.
 	Rate                *float64            `toml:"rate"`
 	Insecure            *bool               `toml:"insecure"`
+	Categories          *[]string           `toml:"categories"`
 	WriteIndices        bool                `toml:"write_indices"`
 	Aggregator          csaf.AggregatorInfo `toml:"aggregator"`
 	Providers           []*provider         `toml:"providers"`
@@ -74,9 +78,21 @@ type config struct {
 	// RemoteValidator configures an optional remote validation.
 	RemoteValidatorOptions *csaf.RemoteValidatorOptions `toml:"remote_validator"`
 
+	// ServiceDocument incidates if we should create a service.json document.
+	ServiceDocument bool `toml:"create_service_document"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// serviceDocument tells if we should generate a service document for a
+// given provider.
+func (p *provider) serviceDocument(c *config) bool {
+	if p.ServiceDocument != nil {
+		return *p.ServiceDocument
+	}
+	return c.ServiceDocument
 }
 
 // writeIndices tells if we should write index.txt and changes.csv.
@@ -107,12 +123,12 @@ func (c *config) hasMirror() bool {
 
 func (c *config) hasTwoMirrors() bool {
 	var numberMirrors = 0
-        for _, p := range c.Providers {
-                if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
-                        numberMirrors += 1
-                }
-        }
-        return numberMirrors > 1
+	for _, p := range c.Providers {
+		if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
+			numberMirrors += 1
+		}
+	}
+	return numberMirrors > 1
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
@@ -249,8 +265,13 @@ func loadConfig(path string) (*config, error) {
 	}
 
 	var cfg config
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+	md, err := toml.DecodeFile(path, &cfg)
+	if err != nil {
 		return nil, err
+	}
+
+	if undecoded := md.Undecoded(); len(undecoded) != 0 {
+		return nil, fmt.Errorf("could not parse %q from config.toml", undecoded)
 	}
 
 	cfg.setDefaults()

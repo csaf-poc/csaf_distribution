@@ -15,8 +15,9 @@ Following options are supported in the config file:
  - web: Specify the web folder. Default: `/var/www/html`.
  - upload_signature: Send signature with the request, an additional input-field in the web interface will be shown to let user enter an ascii armored signature. Default: `false`.
  - canonical_url_prefix: start of the URL where contents shall be accessible from the internet. Default: `https://$SERVER_NAME`.
- - no_passphrase: Let user send password with the request, if set to true the input-field in the web interface will be disappeared. Default: `false`.
- - no_validation: Validate the uploaded CSAF document against the JSON schema. Default: `false`.
+ - certificate_and_password: Require password and a valid Client Certificate for write access. Default: false
+ - no_passphrase: Let the user send the request without having to send a password. If set to true, the input-field in the web interface will be omitted. Default: `false`.
+ - no_validation: Skip validation of the uploaded CSAF document against the JSON schema. Default: `false`.
  - no_web_ui: Disable the web interface. Default: `false`.
  - dynamic_provider_metadata: Take the publisher from the CSAF document. Default: `false`.
  - upload_limit: Set the upload limit size of a file in bytes. Default: `52428800` (aka 50 MiB).
@@ -27,6 +28,12 @@ Following options are supported in the config file:
    The "csaf" selection lets the provider takes the value from the CSAF document.
    These affects the list items in the web interface.
    Default: `["csaf", "white", "amber", "green", "red"]`.
+ - create_service_document: Create ROLIE service document. Default: false
+ - categories: Create ROLIE category document from a list of strings.
+   If a list item starts with `expr:` the rest of the string is used as a [JsonPath expression](https://goessner.net/articles/JsonPath/) to
+   extract a string from the incoming advisories. Strings not starting with `expr:` are took verbatim.
+   By default no category documents are created.
+   E.g: `categories = ["Example Company Product A", "expr:document.lang"]`
  - provider_metadata: Configure the provider metadata.
  - provider_metadata.list_on_CSAF_aggregators: List on aggregators
  - provider_metadata.mirror_on_CSAF_aggregators: Mirror on aggregators

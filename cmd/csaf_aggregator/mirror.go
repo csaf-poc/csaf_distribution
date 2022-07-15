@@ -64,6 +64,9 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	// Collecting the summaries of the advisories.
 	w.summaries = make(map[string][]summary)
 
+	// Collecting the categories per label.
+	w.categories = make(map[string]map[string]bool)
+
 	base, err := url.Parse(w.loc)
 	if err != nil {
 		return nil, err
@@ -413,6 +416,47 @@ func (w *worker) sign(data []byte) (string, error) {
 		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
+func (w *worker) extractCategories(label string, advisory interface{}) error {
+
+	// use provider or global categories
+	var categories []string
+	if w.provider.Categories != nil {
+		categories = *w.provider.Categories
+	} else if w.processor.cfg.Categories != nil {
+		categories = *w.processor.cfg.Categories
+	}
+
+	// Nothing to do.
+	if len(categories) == 0 {
+		return nil
+	}
+
+	cats := w.categories[label]
+	if cats == nil {
+		cats = make(map[string]bool)
+		w.categories[label] = cats
+	}
+
+	var result string
+	matcher := util.StringMatcher(&result)
+
+	const exprPrefix = "expr:"
+
+	for _, cat := range categories {
+		if strings.HasPrefix(cat, exprPrefix) {
+			expr := cat[len(exprPrefix):]
+			if err := w.expr.Extract(expr, matcher, true, advisory); err != nil {
+				return err
+			}
+			cats[result] = true
+		} else { // Normal
+			cats[cat] = true
+		}
+	}
+
+	return nil
+}
+
 func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) error {
 	label := strings.ToLower(string(tlpLabel))
 
@@ -489,6 +533,12 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 			log.Printf("error: %s: %v\n", file, err)
 			continue
 		}
+
+		if err := w.extractCategories(label, advisory); err != nil {
+			log.Printf("error: %s: %v\n", file, err)
+			continue
+		}
+
 		summaries = append(summaries, summary{
 			filename: filename,
 			summary:  sum,

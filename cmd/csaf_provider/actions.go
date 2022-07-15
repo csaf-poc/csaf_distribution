@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -182,9 +183,22 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		}
 	}
 
-	ex, err := csaf.NewAdvisorySummary(util.NewPathEval(), content)
+	// Extract informations from the document.
+	pe := util.NewPathEval()
+
+	ex, err := csaf.NewAdvisorySummary(pe, content)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if we have to search for dynamic categories.
+	var dynamicCategories []string
+	if catExprs := c.cfg.DynamicCategories(); len(catExprs) > 0 {
+		var err error
+		if dynamicCategories, err = pe.Strings(catExprs, true, content); err != nil {
+			// XXX: Should we die here?
+			log.Printf("eval of dynamic catecory expressions failed: %v\n", err)
+		}
 	}
 
 	t, err := c.tlpParam(r)
@@ -212,96 +226,21 @@ func (c *controller) upload(r *http.Request) (interface{}, error) {
 		c.cfg, t,
 		func(folder string, pmd *csaf.ProviderMetadata) error {
 
-			// Load the feed
-			ts := string(t)
-			feedName := "csaf-feed-tlp-" + ts + ".json"
+			// extend the ROLIE feed.
+			if err := c.extendROLIE(folder, newCSAF, t, ex); err != nil {
+				return err
+			}
 
-			feed := filepath.Join(folder, feedName)
-			var rolie *csaf.ROLIEFeed
-			if err := func() error {
-				f, err := os.Open(feed)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return nil
-					}
+			// if we have found dynamic categories merge them into
+			// the existing once.
+			if len(dynamicCategories) > 0 {
+				if err := c.mergeCategories(folder, t, dynamicCategories); err != nil {
 					return err
 				}
-				defer f.Close()
-				rolie, err = csaf.LoadROLIEFeed(f)
-				return err
-			}(); err != nil {
-				return err
-			}
-
-			feedURL := csaf.JSONURL(
-				c.cfg.CanonicalURLPrefix +
-					"/.well-known/csaf/" + ts + "/" + feedName)
-
-			tlpLabel := csaf.TLPLabel(strings.ToUpper(ts))
-
-			// Create new if does not exists.
-			if rolie == nil {
-				rolie = &csaf.ROLIEFeed{
-					Feed: csaf.FeedData{
-						ID:    "csaf-feed-tlp-" + ts,
-						Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
-						Link: []csaf.Link{{
-							Rel:  "self",
-							HRef: string(feedURL),
-						}},
-						Category: []csaf.ROLIECategory{{
-							Scheme: "urn:ietf:params:rolie:category:information-type",
-							Term:   "csaf",
-						}},
-					},
-				}
-			}
-
-			rolie.Feed.Updated = csaf.TimeStamp(time.Now().UTC())
-
-			year := strconv.Itoa(ex.InitialReleaseDate.Year())
-
-			csafURL := c.cfg.CanonicalURLPrefix +
-				"/.well-known/csaf/" + ts + "/" + year + "/" + newCSAF
-
-			e := rolie.EntryByID(ex.ID)
-			if e == nil {
-				e = &csaf.Entry{ID: ex.ID}
-				rolie.Feed.Entry = append(rolie.Feed.Entry, e)
-			}
-
-			e.Titel = ex.Title
-			e.Published = csaf.TimeStamp(ex.InitialReleaseDate)
-			e.Updated = csaf.TimeStamp(ex.CurrentReleaseDate)
-			e.Link = []csaf.Link{
-				{Rel: "self", HRef: csafURL},
-				{Rel: "hash", HRef: csafURL + ".sha256"},
-				{Rel: "hash", HRef: csafURL + ".sha512"},
-				{Rel: "signature", HRef: csafURL + ".asc"},
-			}
-			e.Format = csaf.Format{
-				Schema:  "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json",
-				Version: "2.0",
-			}
-			e.Content = csaf.Content{
-				Type: "application/json",
-				Src:  csafURL,
-			}
-			if ex.Summary != "" {
-				e.Summary = &csaf.Summary{Content: ex.Summary}
-			} else {
-				e.Summary = nil
-			}
-
-			// Sort by descending updated order.
-			rolie.SortEntriesByUpdated()
-
-			// Store the feed
-			if err := util.WriteToFile(feed, rolie); err != nil {
-				return err
 			}
 
 			// Create yearly subfolder
+			year := strconv.Itoa(ex.InitialReleaseDate.Year())
 
 			subDir := filepath.Join(folder, year)
 

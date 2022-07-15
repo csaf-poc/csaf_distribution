@@ -525,13 +525,13 @@ func (p *processor) processROLIEFeed(feed string) error {
 		if err != nil {
 			return nil, nil, err
 		}
-		feed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
+		rfeed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("%s: %v", feed, err)
 		}
 		var rolieDoc interface{}
 		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
-		return feed, rolieDoc, err
+		return rfeed, rolieDoc, err
 
 	}()
 	if err != nil {
