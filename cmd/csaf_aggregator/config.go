@@ -12,7 +12,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -104,13 +103,9 @@ func (p *provider) writeIndices(c *config) bool {
 }
 
 func (p *provider) runAsMirror(c *config) bool {
-	if p.AggregatoryCategory != nil {
-		return *p.AggregatoryCategory == csaf.AggregatorAggregator
-	}
-	// XXX: Do not die here!
-	err := errors.New("couldn't parse aggregator.toml: Provider has no category")
-	log.Fatal(err)
-	return false
+	return p.AggregatoryCategory != nil &&
+		*p.AggregatoryCategory == csaf.AggregatorAggregator ||
+		c.runAsMirror()
 }
 
 func (c *config) hasMirror() bool {
@@ -215,13 +210,6 @@ func (c *config) checkProviders() error {
 		already[p.Name] = true
 	}
 	return nil
-}
-
-func (c *config) allowMisconfigure() bool {
-	if c.AllowSingleProvider {
-		return true
-	}
-	return false
 }
 
 func (c *config) setDefaults() {

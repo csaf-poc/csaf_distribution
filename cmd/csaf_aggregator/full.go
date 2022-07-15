@@ -78,6 +78,13 @@ func (w *worker) fullWork(wg *sync.WaitGroup, jobs <-chan *fullJob) {
 func (p *processor) full() error {
 
 	if p.cfg.runAsMirror() {
+		log.Println("Running in aggregator mode")
+
+		// TODO: Move to config.check.
+		if !p.cfg.AllowSingleProvider && !p.cfg.hasTwoMirrors() {
+			return errors.New("at least 2 Providers need to be mirrors")
+		}
+
 		// check if we need to setup a remote validator
 		if p.cfg.RemoteValidatorOptions != nil {
 			validator, err := p.cfg.RemoteValidatorOptions.Open()
@@ -93,22 +100,12 @@ func (p *processor) full() error {
 			}()
 		}
 
-		log.Println("Running in aggregator mode")
-		if !p.cfg.hasTwoMirrors() {
-			if !p.cfg.allowMisconfigure() {
-				// XXX: Do not die here!
-				err := errors.New("at least 2 Providers need to be mirrors")
-				log.Fatal(err)
-			}
-		}
 	} else {
-		if p.cfg.hasMirror() {
-			if !p.cfg.allowMisconfigure() {
-				// XXX: Do not die here!
-				err := errors.New("found mirrors in a lister aggregator")
-				log.Fatal(err)
-			}
+		log.Println("Running in lister mode")
 
+		// TODO: Move to config.check.
+		if !p.cfg.AllowSingleProvider && p.cfg.hasMirror() {
+			return errors.New("found mirrors in a lister aggregator")
 		}
 	}
 
