@@ -43,7 +43,7 @@ type processor struct {
 	opts   *options
 	client util.Client
 
-	redirects      map[string]string
+	redirects      map[string][]string
 	noneTLS        map[string]struct{}
 	alreadyChecked map[string]whereType
 	pmdURL         string
@@ -259,19 +259,19 @@ func (p *processor) markChecked(s string, mask whereType) bool {
 
 func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 
-	var path strings.Builder
-	for i, v := range via {
-		if i > 0 {
-			path.WriteString(", ")
-		}
-		path.WriteString(v.URL.String())
-	}
 	url := r.URL.String()
 	p.checkTLS(url)
 	if p.redirects == nil {
-		p.redirects = map[string]string{}
+		p.redirects = map[string][]string{}
 	}
-	p.redirects[url] = path.String()
+
+	if redirects := p.redirects[url]; len(redirects) == 0 {
+		redirects = make([]string, len(via))
+		for i, v := range via {
+			redirects[i] = v.URL.String()
+		}
+		p.redirects[url] = redirects
+	}
 
 	if len(via) > 10 {
 		return errors.New("too many redirections")
