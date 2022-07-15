@@ -95,17 +95,17 @@ func (p *processor) full() error {
 
 		log.Println("Running in aggregator mode")
 		if !p.cfg.hasTwoMirrors() {
-			if !p.cfg.allowMisconfigure(){
+			if !p.cfg.allowMisconfigure() {
 				err := errors.New("At least 2 Providers need to be mirrors.")
-    			        log.Fatal(err)
+				log.Fatal(err)
 			}
 		}
 	} else {
 		if p.cfg.hasMirror() {
-                         if !p.cfg.allowMisconfigure(){
-                                 err := errors.New("Found mirrors in a lister aggregator.")
-                                 log.Fatal(err)
-                         }
+			if !p.cfg.allowMisconfigure() {
+				err := errors.New("Found mirrors in a lister aggregator.")
+				log.Fatal(err)
+			}
 
 		}
 	}
@@ -117,7 +117,6 @@ func (p *processor) full() error {
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
 		w := newWorker(i, p)
-		//go w.fullWork(&wg, doWork, queue)
 		go w.fullWork(&wg, queue)
 	}
 
