@@ -212,6 +212,20 @@ func (c *config) checkProviders() error {
 	return nil
 }
 
+func (c *config) checkMirror() error {
+	if c.runAsMirror() {
+		if !c.AllowSingleProvider && !c.hasTwoMirrors() {
+			return errors.New("at least 2 Providers need to be mirrors")
+		}
+	} else {
+		if !c.AllowSingleProvider && c.hasMirror() {
+			return errors.New("found mirrors in a lister aggregator")
+		}
+	}
+
+	return nil
+}
+
 func (c *config) setDefaults() {
 	if c.Folder == "" {
 		c.Folder = defaultFolder
@@ -247,7 +261,11 @@ func (c *config) check() error {
 		return err
 	}
 
-	return c.checkProviders()
+	if err := c.checkProviders(); err != nil {
+		return err
+	}
+
+	return c.checkMirror()
 }
 
 func loadConfig(path string) (*config, error) {
