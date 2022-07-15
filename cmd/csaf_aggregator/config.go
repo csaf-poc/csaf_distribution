@@ -107,7 +107,8 @@ func (p *provider) runAsMirror(c *config) bool {
 	if p.AggregatoryCategory != nil {
 		return *p.AggregatoryCategory == csaf.AggregatorAggregator
 	}
-	err := errors.New("Couldn't parse aggregator.toml: Provider has no category.")
+	// XXX: Do not die here!
+	err := errors.New("couldn't parse aggregator.toml: Provider has no category")
 	log.Fatal(err)
 	return false
 }
@@ -122,13 +123,15 @@ func (c *config) hasMirror() bool {
 }
 
 func (c *config) hasTwoMirrors() bool {
-	var numberMirrors = 0
+	var mirrors int
 	for _, p := range c.Providers {
 		if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
-			numberMirrors += 1
+			if mirrors++; mirrors > 1 {
+				return true
+			}
 		}
 	}
-	return numberMirrors > 1
+	return false
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
