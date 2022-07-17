@@ -371,15 +371,15 @@ func (p *processor) integrity(
 
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
-			folderYear = &year
 			// Check if we are in checking time interval.
 			if p.ageAccept != nil && !p.ageAccept(
 				time.Date(
-					year+1, 1, 1, // Assume 1. jan of next year.
-					0, 0, 0, 0,
+					year, 12, 31, // Assume last day og year.
+					23, 59, 59, 0, // 23:59:59
 					time.UTC)) {
 				continue
 			}
+			folderYear = &year
 		}
 
 		res, err := client.Get(u)
