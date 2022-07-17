@@ -755,6 +755,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if err != nil {
 				return nil, nil, err
 			}
+			// Apply date range filtering.
+			if p.ageAccept != nil && !p.ageAccept(t) {
+				continue
+			}
 			times, files = append(times, t), append(files, csaf.PlainAdvisoryFile(r[1]))
 		}
 		return times, files, nil
