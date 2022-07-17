@@ -40,8 +40,9 @@ import (
 type topicMessages []Message
 
 type processor struct {
-	opts   *options
-	client util.Client
+	opts      *options
+	client    util.Client
+	ageAccept func(time.Time) bool
 
 	redirects      map[string][]string
 	noneTLS        map[string]struct{}
@@ -159,6 +160,17 @@ func newProcessor(opts *options) *processor {
 		opts:           opts,
 		alreadyChecked: map[string]whereType{},
 		expr:           util.NewPathEval(),
+		ageAccept:      ageAccept(opts),
+	}
+}
+
+func ageAccept(opts *options) func(time.Time) bool {
+	if opts.Years == nil {
+		return nil
+	}
+	good := time.Now().AddDate(-int(*opts.Years), 0, 0)
+	return func(t time.Time) bool {
+		return !t.Before(good)
 	}
 }
 
@@ -354,6 +366,22 @@ func (p *processor) integrity(
 			continue
 		}
 		p.checkTLS(u)
+
+		var folderYear *int
+
+		if m := yearFromURL.FindStringSubmatch(u); m != nil {
+			year, _ := strconv.Atoi(m[1])
+			folderYear = &year
+			// Check if we are in checking time interval.
+			if p.ageAccept != nil && !p.ageAccept(
+				time.Date(
+					year+1, 1, 1, // Assume 1. jan of next year.
+					0, 0, 0, 0,
+					time.UTC)) {
+				continue
+			}
+		}
+
 		res, err := client.Get(u)
 		if err != nil {
 			lg(ErrorType, "Fetching %s failed: %v.", u, err)
@@ -402,9 +430,9 @@ func (p *processor) integrity(
 		} else if d, err := time.Parse(time.RFC3339, text); err != nil {
 			p.badFolders.error(
 				"Parsing 'initial_release_date' as RFC3339 failed in %s: %v", u, err)
-		} else if m := yearFromURL.FindStringSubmatch(u); m == nil {
+		} else if folderYear == nil {
 			p.badFolders.error("No year folder found in %s", u)
-		} else if year, _ := strconv.Atoi(m[1]); d.UTC().Year() != year {
+		} else if d.UTC().Year() != *folderYear {
 			p.badFolders.error("%s should be in folder %d", u, d.UTC().Year())
 		}
 
