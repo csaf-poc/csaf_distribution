@@ -594,6 +594,13 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 	rfeed.Entries(func(entry *csaf.Entry) {
 
+		// Filter if we have date checking.
+		if p.ageAccept != nil {
+			if pub := time.Time(entry.Published); !pub.IsZero() && !p.ageAccept(pub) {
+				return
+			}
+		}
+
 		var url, sha256, sha512, sign string
 
 		for i := range entry.Link {
