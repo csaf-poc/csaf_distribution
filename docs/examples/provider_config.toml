@@ -1,13 +1,13 @@
 # Set the authentication password for accessing the CSAF provider.
-# The following shows an example, with the default being no password set.
-# It is essential that you set a secure password for yourself:
-#password = p433m08j 
+# It is essential that you set a secure password between the quotation marks.
+# The default being no password set.
+#password = ""
 
-# Set the public OpenPGP key.
-#openpgp_public_key = "usr/lib/csaf/openpgp_public.asc"
+# Set the path to the public OpenPGP key.
+#openpgp_public_key = "/etc/csaf/openpgp_public.asc"
 
-# Set the private OpenPGP key.
-#openpgp_private_key = "/usr/lib/csaf/openpgp_private.asc"
+# Set the path to the private OpenPGP key.
+#openpgp_private_key = "/etc/csaf/openpgp_private.asc"
 
 # Specify the root folder.
 #folder = "/var/www/"
@@ -15,9 +15,9 @@
 # Specify the web folder.
 #web = "/var/www/html"
 
-# Send a signature with the request.
+# Allow sending a signature with the request.
 # An additional input-field in the web interface will be shown
-# to let user enter an ascii armored signature.
+# to let user enter an ascii armored OpenPGP signature.
 #upload_signature = false
 
 # Set the beginning of the URL where contents are accessible from the internet.
@@ -28,12 +28,13 @@
 # Require users to use a password and a valid Client Certificate for write access.
 #certificate_and_password = false
 
-# Allow the user to send the request without having to send a password. 
+# Allow the user to send the request without having to send a passphrase
+# to unlock the the OpenPGP key.
 # If set to true, the input-field in the web interface will be omitted.
 #no_passphrase = false
 
 # Make the provider skip the validation of the uploaded CSAF document
-# against the JSON schema. 
+# against the JSON schema.
 #no_validation = false
 
 # Disable the web interface.
@@ -42,49 +43,57 @@
 # Make the provider take the publisher from the CSAF document.
 #dynamic_provider_metadata = false
 
-# Set the upload limit size of a file in bytes. 
+# Set the upload limit size of a file in bytes.
 # The default is equivalent to 50 MiB.
 #upload_limit =  52428800
 
-# Set the issuer of the CA. If set, the provider restricts the writing permission and the 
-# access to the web-interface to only users with the client certificates signed with this CA.
+# Set the issuer of the CA.
+# If set, the provider restricts the writing permission and the
+# access to the web-interface to users with the client certificates
+# signed with this CA.
 # The following shows an example. As default, none is set.
 #issuer = "Example Company"
 
-# Make the provider write/update index.txt and changes.csv
+# Make the provider write/update index.txt and changes.csv.
 #write_indices = false
 
 # Make the provider write a `CSAF:` entry into `security.txt`.
 #write_security = false
 
-# Set the TLP allowed to be send with the upload request 
+# Set the TLP allowed to be send with the upload request
 # (one or more of "csaf", "white", "amber", "green", "red").
-# The "csaf" selection lets the provider take the value from the CSAF document.
+# The "csaf" entry lets the provider take the value from the CSAF document.
 # These affect the list items in the web interface.
 #tlps = ["csaf", "white", "amber", "green", "red"]`
 
-# Make the provider create ROLIE service document
+# Make the provider create a ROLIE service document.
 #create_service_document = false
 
-# Make the provider create ROLIE category document from a list of strings. If a list item starts with `expr:`
-# the rest of the string is used as a JsonPath expression to extract a string from the incoming advisories.
-# Strings not starting with `expr:` are taken verbatim. By default no category documents are created.
-# This example provides an overview over the syntax, adjust the parameters depending on your setup.
+# Make the provider create a ROLIE category document from a list of strings.
+# If a list item starts with `expr:`
+#   the rest of the string is used as a JsonPath expression
+#   to extract a string from the incoming advisories.
+# Strings not starting with `expr:` are taken verbatim.
+# By default no category documents are created.
+# This example provides an overview over the syntax,
+# adjust the parameters depending on your setup.
 #categories = ["Example Company Product A", "expr:document.lang"]
 
 # Make the provider use a remote validator service. Not used by default.
-# This example provides an overview over the syntax, adjust the parameters depending on your setup.
+# This example provides an overview over the syntax,
+# adjust the parameters depending on your setup.
 #[remote_validator]
 #url = "http://localhost:3000"
 #presets = ["mandatory"]
 #cache = "/var/lib/csaf/validations.db"
 
 [provider_metadata]
-# List on aggregators
+# Indicate that aggregators can list us.
 list_on_CSAF_aggregators = true
-# Mirror on aggregators
+# Indicate that aggregators can mirror us.
 mirror_on_CSAF_aggregators = true
-# An example publisher
+
+# Set the publisher details.
 [provider_metadata.publisher]
 category = "vendor"
 name = "Example Company"

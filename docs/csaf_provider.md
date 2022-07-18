@@ -6,8 +6,8 @@ explain how to wire this up with nginx and where the config file lives.
 
 ## Provider options
 
-The following depicts an example config.toml file:
-#### Example config file
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/config.toml) -->
+The following example file documents all available configuration options:
+
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/provider_config.toml) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
