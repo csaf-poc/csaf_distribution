@@ -11,6 +11,7 @@ package main
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type (
@@ -76,17 +77,39 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 		return
 	}
 
-	keys := make([]string, len(p.redirects))
-	var i int
-	for k := range p.redirects {
-		keys[i] = k
-		i++
+	keys := keysNotInValues(p.redirects)
+
+	first := func(i int) string {
+		if vs := p.redirects[keys[i]]; len(vs) > 0 {
+			return vs[0]
+		}
+		return ""
 	}
-	sort.Strings(keys)
+
+	sort.Slice(keys, func(i, j int) bool { return first(i) < first(j) })
+
 	for i, k := range keys {
-		keys[i] = fmt.Sprintf("Redirect %s: %s", k, p.redirects[k])
+		keys[i] = fmt.Sprintf("Redirect %s -> %s", strings.Join(p.redirects[k], " -> "), k)
 	}
 	req.message(WarnType, keys...)
+}
+
+// keysNotInValues returns a slice of keys which are not in the values
+// of the given map.
+func keysNotInValues(m map[string][]string) []string {
+	values := map[string]bool{}
+	for _, vs := range m {
+		for _, v := range vs {
+			values[v] = true
+		}
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		if !values[k] {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 // report tests if an provider-metadata.json are available and sets the
