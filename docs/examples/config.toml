@@ -1,5 +1,6 @@
 # Set the authentication password for accessing the CSAF provider.
-# The following shows an example, with the default being no password set:
+# The following shows an example, with the default being no password set.
+# It is essential that you set a secure password for yourself:
 #password = p433m08j 
 
 # Set the public OpenPGP key.
