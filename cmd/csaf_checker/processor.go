@@ -639,7 +639,13 @@ func (p *processor) processROLIEFeed(feed string) error {
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 
-	index := base + "/index.txt"
+	bu, err := url.Parse(base)
+	if err != nil {
+		return err
+	}
+
+	index := util.JoinURLPath(bu, "index.txt").String()
+
 	p.checkTLS(index)
 
 	p.badIndices.use()
@@ -680,9 +686,16 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 // of the fields' values and if they are sorted properly. Then it passes the files to the
 // "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
-	client := p.httpClient()
-	changes := base + "/changes.csv"
+
+	bu, err := url.Parse(base)
+	if err != nil {
+		return err
+	}
+	changes := util.JoinURLPath(bu, "changes.csv").String()
+
 	p.checkTLS(changes)
+
+	client := p.httpClient()
 	res, err := client.Get(changes)
 
 	p.badChanges.use()
