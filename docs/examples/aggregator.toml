@@ -28,7 +28,7 @@ insecure = true
 
 [[providers]]
   name = "local-dev-provider2"
-  domain = "localhost"
+  domain = "https://localhost:8443/.well-known/csaf/provider-metadata.json"
 #  rate = 1.2
 #  insecure = true
   write_indices = true
