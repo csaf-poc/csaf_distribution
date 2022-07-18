@@ -1,19 +1,11 @@
-// This file is Free Software under the MIT License
-// without warranty, see README.md and LICENSES/MIT.txt for details.
-//
-// SPDX-License-Identifier: BSD
-//
-// SPDX-FileCopyrightText: 2009 The Go Authors
-// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
-//
+// SPDX-License-Identifier: LicenseRef-Go119-BSD-Patentgrant
+// SPDX-FileCopyrightText: 2009 The Go Authors, Google Inc.
+
 // The code of this file was extracted and adjusted from
 // https://cs.opensource.google/go/go/+/refs/tags/go1.19rc2:src/net/url/url.go
+// by Intevation 2022
 
 //go:build !go1.19
-
-// Copyright 2009 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
 
 package util
 
