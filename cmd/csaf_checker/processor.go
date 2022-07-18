@@ -741,6 +741,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		var times []time.Time
 		var files []csaf.AdvisoryFile
 		c := csv.NewReader(res.Body)
+		const (
+			pathColumn = 0
+			timeColumn = 1
+		)
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
@@ -752,11 +756,13 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if len(r) < 2 {
 				return nil, nil, errors.New("not enough columns")
 			}
-			t, err := time.Parse(time.RFC3339, r[0])
+			t, err := time.Parse(time.RFC3339, r[timeColumn])
 			if err != nil {
 				return nil, nil, err
 			}
-			times, files = append(times, t), append(files, csaf.PlainAdvisoryFile(r[1]))
+			times, files =
+				append(times, t),
+				append(files, csaf.PlainAdvisoryFile(r[pathColumn]))
 		}
 		return times, files, nil
 	}()

@@ -94,12 +94,17 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 
 	record := make([]string, 2)
 
+	const (
+		pathColumn = 0
+		timeColumn = 1
+	)
+
 	for i := range ss {
 		s := &ss[i]
-		record[0] =
-			s.summary.CurrentReleaseDate.Format(time.RFC3339)
-		record[1] =
+		record[pathColumn] =
 			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" + s.filename
+		record[timeColumn] =
+			s.summary.CurrentReleaseDate.Format(time.RFC3339)
 		if err := out.Write(record); err != nil {
 			f.Close()
 			return err

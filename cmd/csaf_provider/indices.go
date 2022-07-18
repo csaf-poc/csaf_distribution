@@ -74,6 +74,11 @@ func updateChanges(dir, fname string, releaseDate time.Time) error {
 		path string
 	}
 
+	const (
+		pathColumn = 0
+		timeColumn = 1
+	)
+
 	changes := filepath.Join(dir, "changes.csv")
 
 	chs, err := func() ([]change, error) {
@@ -99,9 +104,9 @@ func updateChanges(dir, fname string, releaseDate time.Time) error {
 				return nil, err
 			}
 			// Check if new is already in.
-			if record[1] == fname {
+			if record[pathColumn] == fname {
 				// Identical -> no change at all.
-				if record[0] == releaseDate.Format(dateFormat) {
+				if record[timeColumn] == releaseDate.Format(dateFormat) {
 					return nil, nil
 				}
 				// replace old entry
@@ -109,11 +114,11 @@ func updateChanges(dir, fname string, releaseDate time.Time) error {
 				chs = append(chs, change{releaseDate, fname})
 				continue
 			}
-			t, err := time.Parse(dateFormat, record[0])
+			t, err := time.Parse(dateFormat, record[timeColumn])
 			if err != nil {
 				return nil, err
 			}
-			chs = append(chs, change{t, record[1]})
+			chs = append(chs, change{t, record[pathColumn]})
 		}
 		if !replaced {
 			chs = append(chs, change{releaseDate, fname})
@@ -139,8 +144,8 @@ func updateChanges(dir, fname string, releaseDate time.Time) error {
 	c := csv.NewWriter(o)
 	record := make([]string, 2)
 	for _, ch := range chs {
-		record[0] = ch.time.Format(dateFormat)
-		record[1] = ch.path
+		record[timeColumn] = ch.time.Format(dateFormat)
+		record[pathColumn] = ch.path
 		if err := c.Write(record); err != nil {
 			o.Close()
 			return err
