@@ -11,6 +11,8 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 // MessageType is the kind of the message.
@@ -40,8 +42,10 @@ type Requirement struct {
 
 // Domain are the results of a domain.
 type Domain struct {
-	Name         string         `json:"name"`
-	Requirements []*Requirement `json:"requirements,omitempty"`
+	Name         string             `json:"name"`
+	Publisher    *csaf.Publisher    `json:"publisher,omitempty"`
+	Role         *csaf.MetadataRole `json:"role,omitempty"`
+	Requirements []*Requirement     `json:"requirements,omitempty"`
 }
 
 // ReportTime stores the time of the report.
