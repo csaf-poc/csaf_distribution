@@ -85,57 +85,13 @@ func (d *downloader) httpClient() util.Client {
 	return d.client
 }
 
-func (d *downloader) loadProviderMetadataDirectly(path string) *csaf.LoadedProviderMetadata {
-	client := d.httpClient()
-	resp, err := client.Get(path)
-	if err != nil {
-		log.Printf("Error fetching '%s': %v\n", path, err)
-		return nil
-	}
-	if resp.StatusCode != http.StatusOK {
-		log.Printf(
-			"Error fetching '%s': %s (%d)\n", path, resp.Status, resp.StatusCode)
-		return nil
-	}
-	defer resp.Body.Close()
-
-	var doc interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&doc); err != nil {
-		log.Printf("Decoding '%s' as JSON failed: %v\n", path, err)
-		return nil
-	}
-
-	errors, err := csaf.ValidateProviderMetadata(doc)
-	if err != nil {
-		log.Printf("Schema validation of '%s' failed: %v\n", path, err)
-		return nil
-	}
-
-	if len(errors) > 0 {
-		log.Printf(
-			"Schema validation of '%s' leads to %d issues.\n", path, len(errors))
-		return nil
-	}
-
-	return &csaf.LoadedProviderMetadata{
-		Document: doc,
-		URL:      path,
-	}
-}
-
 func (d *downloader) download(domain string) error {
 
-	var lpmd *csaf.LoadedProviderMetadata
-
-	if strings.HasPrefix(domain, "https://") {
-		lpmd = d.loadProviderMetadataDirectly(domain)
-	} else {
-		lpmd = csaf.LoadProviderMetadataForDomain(
-			d.httpClient(), domain, func(format string, args ...interface{}) {
-				log.Printf(
-					"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
-			})
-	}
+	lpmd := csaf.LoadProviderMetadataForDomain(
+		d.httpClient(), domain, func(format string, args ...interface{}) {
+			log.Printf(
+				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
+		})
 
 	if lpmd == nil {
 		return fmt.Errorf("no provider-metadata.json found for '%s'", domain)

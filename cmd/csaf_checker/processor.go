@@ -215,20 +215,43 @@ func (p *processor) run(reporters []reporter, domains []string) (*Report, error)
 	return &report, nil
 }
 
-func (p *processor) checkDomain(domain string) error {
+// domainChecks compiles a list of checks which should be performed
+// for a given domain.
+func (p *processor) domainChecks(domain string) []func(*processor, string) error {
 
-	// TODO: Implement me!
-	for _, check := range []func(*processor, string) error{
+	// If we have a direct domain url we dont need to
+	// perform certain checks.
+	direct := strings.HasPrefix(domain, "https://")
+
+	checks := []func(*processor, string) error{
 		(*processor).checkProviderMetadata,
 		(*processor).checkPGPKeys,
-		(*processor).checkSecurity,
+	}
+
+	if !direct {
+		checks = append(checks, (*processor).checkSecurity)
+	}
+
+	checks = append(checks,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
 		(*processor).checkInvalid,
 		(*processor).checkListing,
-		(*processor).checkWellknownMetadataReporter,
-		(*processor).checkDNSPathReporter,
-	} {
+	)
+
+	if !direct {
+		checks = append(checks,
+			(*processor).checkWellknownMetadataReporter,
+			(*processor).checkDNSPathReporter,
+		)
+	}
+
+	return checks
+}
+
+func (p *processor) checkDomain(domain string) error {
+
+	for _, check := range p.domainChecks(domain) {
 		if err := check(p, domain); err != nil && err != errContinue {
 			if err == errStop {
 				return nil
