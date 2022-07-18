@@ -117,10 +117,10 @@ func LoadProviderMetadatasFromSecurity(client util.Client, path string) []*Loade
 }
 
 // LoadProviderMetadataForDomain loads a provider metadata for a given domain.
-// Returns nil if no provider metadata was found.
-// If the domain starts with https:// it only attemps to load
+// Returns nil if no provider metadata (PMD) was found.
+// If the domain starts with `https://` it only attemps to load
 // the data from that URL.
-// The logging can be use to track the errors happening while loading.
+// The logging can be used to track the errors happening while loading.
 func LoadProviderMetadataForDomain(
 	client util.Client,
 	domain string,
@@ -220,8 +220,7 @@ func LoadProviderMetadataForDomain(
 		return wellknownGood
 	}
 
-	// Last resort fall back to DNS.
-
+	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
 	dnsResult := LoadProviderMetadataFromURL(client, dnsURL)
 
