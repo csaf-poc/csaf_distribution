@@ -240,10 +240,11 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	)
 
 	if !direct {
-		checks = append(checks, (*processor).checkWellknownMetadataReporter)
+		checks = append(checks,
+			(*processor).checkWellknownMetadataReporter,
+			(*processor).checkDNSPathReporter,
+		)
 	}
-
-	checks = append(checks, (*processor).checkDNSPathReporter)
 
 	return checks
 }
