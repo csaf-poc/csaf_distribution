@@ -23,11 +23,10 @@ import (
 const (
 	// The environment name, that contains the path to the config file.
 	configEnv                = "CSAF_CONFIG"
-	configKeyPrefix          = "/usr/lib/csaf"
 	configPrefix             = "/etc/csaf"
 	defaultConfigPath        = configPrefix + "/config.toml" // Default path to the config file.
-	defaultOpenPGPPrivateKey = configKeyPrefix + "/openpgp_private.asc"
-	defaultOpenPGPPublicKey  = configKeyPrefix + "/openpgp_public.asc"
+	defaultOpenPGPPrivateKey = configPrefix + "/openpgp_private.asc"
+	defaultOpenPGPPublicKey  = configPrefix + "/openpgp_public.asc"
 	defaultFolder            = "/var/www/"      // Default folder path.
 	defaultWeb               = "/var/www/html"  // Default web path.
 	defaultUploadLimit       = 50 * 1024 * 1024 // Default limit size of the uploaded file.

@@ -79,24 +79,21 @@ sudo chmod o-rwx /usr/lib/cgi-bin/
 sudo cp bin-linux-amd64/csaf_provider /usr/lib/cgi-bin/csaf_provider.go
 
 sudo mkdir /etc/csaf/
-sudo mkdir /usr/lib/csaf/
-sudo chgrp www-data /usr/lib/csaf/
 sudo chgrp www-data /etc/csaf/
-sudo chmod g+s,o-rwx /usr/lib/csaf/
 sudo chmod g+s,o-rwx /etc/csaf/
 sudo touch /etc/csaf/config.toml
 sudo chgrp www-data /etc/csaf/config.toml
 sudo chmod g+r,o-rwx /etc/csaf/config.toml
 
-sudo cp docs/test-keys/*.asc /usr/lib/csaf/
-sudo chgrp www-data /usr/lib/csaf/private.asc
-sudo chmod o-rwx  /usr/lib/csaf/private.asc
+sudo cp docs/test-keys/*.asc /etc/csaf/
+sudo chgrp www-data /etc/csaf/private.asc
+sudo chmod o-rwx  /etc/csaf/private.asc
 
 # Configuration file
 echo '
 # upload_signature = true
-openpgp_private_key = "/usr/lib/csaf/private.asc"
-openpgp_public_key = "/usr/lib/csaf/public.asc"
+openpgp_private_key = "/etc/csaf/private.asc"
+openpgp_public_key = "/etc/csaf/public.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
 #no_passphrase = true
