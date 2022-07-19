@@ -954,8 +954,10 @@ func (p *processor) checkListing(string) error {
 
 	var unlisted []string
 
+	badDirs := map[string]struct{}{}
+
 	for f := range p.alreadyChecked {
-		found, err := pgs.listed(f, p)
+		found, err := pgs.listed(f, p, badDirs)
 		if err != nil && err != errContinue {
 			return err
 		}
