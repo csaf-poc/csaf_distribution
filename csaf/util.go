@@ -117,8 +117,10 @@ func LoadProviderMetadatasFromSecurity(client util.Client, path string) []*Loade
 }
 
 // LoadProviderMetadataForDomain loads a provider metadata for a given domain.
-// Returns nil if no provider metadata was found.
-// The logging can be use to track the errors happening while loading.
+// Returns nil if no provider metadata (PMD) was found.
+// If the domain starts with `https://` it only attemps to load
+// the data from that URL.
+// The logging can be used to track the errors happening while loading.
 func LoadProviderMetadataForDomain(
 	client util.Client,
 	domain string,
@@ -131,22 +133,33 @@ func LoadProviderMetadataForDomain(
 		}
 	}
 
+	lg := func(result *LoadedProviderMetadata, url string) {
+		if result == nil {
+			logging("%s not found.", url)
+		} else {
+			for _, msg := range result.Messages {
+				logging(msg)
+			}
+		}
+	}
+
+	// check direct path
+	if strings.HasPrefix(domain, "https://") {
+		result := LoadProviderMetadataFromURL(client, domain)
+		lg(result, domain)
+		return result
+	}
+
 	// Valid provider metadata under well-known.
 	var wellknownGood *LoadedProviderMetadata
 
 	// First try well-know path
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 	wellknownResult := LoadProviderMetadataFromURL(client, wellknownURL)
+	lg(wellknownResult, wellknownURL)
 
-	if wellknownResult == nil {
-		logging("%s not found.", wellknownURL)
-	} else if len(wellknownResult.Messages) > 0 {
-		// There are issues
-		for _, msg := range wellknownResult.Messages {
-			logging(msg)
-		}
-	} else {
-		// We have a candidate.
+	// We have a candidate.
+	if wellknownResult != nil {
 		wellknownGood = wellknownResult
 	}
 
@@ -207,8 +220,7 @@ func LoadProviderMetadataForDomain(
 		return wellknownGood
 	}
 
-	// Last resort fall back to DNS.
-
+	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
 	dnsResult := LoadProviderMetadataFromURL(client, dnsURL)
 

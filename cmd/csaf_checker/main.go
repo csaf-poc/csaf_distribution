@@ -34,6 +34,7 @@ type options struct {
 	Version    bool     `long:"version" description:"Display version of the binary"`
 	Verbose    bool     `long:"verbose" short:"v" description:"Verbose output"`
 	Rate       *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+	Years      *uint    `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS"`
 }
 
 func errCheck(err error) {

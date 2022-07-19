@@ -40,10 +40,11 @@ import (
 type topicMessages []Message
 
 type processor struct {
-	opts   *options
-	client util.Client
+	opts      *options
+	client    util.Client
+	ageAccept func(time.Time) bool
 
-	redirects      map[string]string
+	redirects      map[string][]string
 	noneTLS        map[string]struct{}
 	alreadyChecked map[string]whereType
 	pmdURL         string
@@ -159,6 +160,17 @@ func newProcessor(opts *options) *processor {
 		opts:           opts,
 		alreadyChecked: map[string]whereType{},
 		expr:           util.NewPathEval(),
+		ageAccept:      ageAccept(opts),
+	}
+}
+
+func ageAccept(opts *options) func(time.Time) bool {
+	if opts.Years == nil {
+		return nil
+	}
+	good := time.Now().AddDate(-int(*opts.Years), 0, 0)
+	return func(t time.Time) bool {
+		return !t.Before(good)
 	}
 }
 
@@ -215,20 +227,43 @@ func (p *processor) run(reporters []reporter, domains []string) (*Report, error)
 	return &report, nil
 }
 
-func (p *processor) checkDomain(domain string) error {
+// domainChecks compiles a list of checks which should be performed
+// for a given domain.
+func (p *processor) domainChecks(domain string) []func(*processor, string) error {
 
-	// TODO: Implement me!
-	for _, check := range []func(*processor, string) error{
+	// If we have a direct domain url we dont need to
+	// perform certain checks.
+	direct := strings.HasPrefix(domain, "https://")
+
+	checks := []func(*processor, string) error{
 		(*processor).checkProviderMetadata,
 		(*processor).checkPGPKeys,
-		(*processor).checkSecurity,
+	}
+
+	if !direct {
+		checks = append(checks, (*processor).checkSecurity)
+	}
+
+	checks = append(checks,
 		(*processor).checkCSAFs,
 		(*processor).checkMissing,
 		(*processor).checkInvalid,
 		(*processor).checkListing,
-		(*processor).checkWellknownMetadataReporter,
-		(*processor).checkDNSPathReporter,
-	} {
+	)
+
+	if !direct {
+		checks = append(checks,
+			(*processor).checkWellknownMetadataReporter,
+			(*processor).checkDNSPathReporter,
+		)
+	}
+
+	return checks
+}
+
+func (p *processor) checkDomain(domain string) error {
+
+	for _, check := range p.domainChecks(domain) {
 		if err := check(p, domain); err != nil && err != errContinue {
 			if err == errStop {
 				return nil
@@ -259,19 +294,19 @@ func (p *processor) markChecked(s string, mask whereType) bool {
 
 func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 
-	var path strings.Builder
-	for i, v := range via {
-		if i > 0 {
-			path.WriteString(", ")
-		}
-		path.WriteString(v.URL.String())
-	}
 	url := r.URL.String()
 	p.checkTLS(url)
 	if p.redirects == nil {
-		p.redirects = map[string]string{}
+		p.redirects = map[string][]string{}
 	}
-	p.redirects[url] = path.String()
+
+	if redirects := p.redirects[url]; len(redirects) == 0 {
+		redirects = make([]string, len(via))
+		for i, v := range via {
+			redirects[i] = v.URL.String()
+		}
+		p.redirects[url] = redirects
+	}
 
 	if len(via) > 10 {
 		return errors.New("too many redirections")
@@ -354,6 +389,22 @@ func (p *processor) integrity(
 			continue
 		}
 		p.checkTLS(u)
+
+		var folderYear *int
+
+		if m := yearFromURL.FindStringSubmatch(u); m != nil {
+			year, _ := strconv.Atoi(m[1])
+			// Check if we are in checking time interval.
+			if p.ageAccept != nil && !p.ageAccept(
+				time.Date(
+					year, 12, 31, // Assume last day og year.
+					23, 59, 59, 0, // 23:59:59
+					time.UTC)) {
+				continue
+			}
+			folderYear = &year
+		}
+
 		res, err := client.Get(u)
 		if err != nil {
 			lg(ErrorType, "Fetching %s failed: %v.", u, err)
@@ -402,9 +453,9 @@ func (p *processor) integrity(
 		} else if d, err := time.Parse(time.RFC3339, text); err != nil {
 			p.badFolders.error(
 				"Parsing 'initial_release_date' as RFC3339 failed in %s: %v", u, err)
-		} else if m := yearFromURL.FindStringSubmatch(u); m == nil {
+		} else if folderYear == nil {
 			p.badFolders.error("No year folder found in %s", u)
-		} else if year, _ := strconv.Atoi(m[1]); d.UTC().Year() != year {
+		} else if d.UTC().Year() != *folderYear {
 			p.badFolders.error("%s should be in folder %d", u, d.UTC().Year())
 		}
 
@@ -566,6 +617,13 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 	rfeed.Entries(func(entry *csaf.Entry) {
 
+		// Filter if we have date checking.
+		if p.ageAccept != nil {
+			if pub := time.Time(entry.Published); !pub.IsZero() && !p.ageAccept(pub) {
+				return
+			}
+		}
+
 		var url, sha256, sha512, sign string
 
 		for i := range entry.Link {
@@ -639,7 +697,13 @@ func (p *processor) processROLIEFeed(feed string) error {
 func (p *processor) checkIndex(base string, mask whereType) error {
 	client := p.httpClient()
 
-	index := base + "/index.txt"
+	bu, err := url.Parse(base)
+	if err != nil {
+		return err
+	}
+
+	index := util.JoinURLPath(bu, "index.txt").String()
+
 	p.checkTLS(index)
 
 	p.badIndices.use()
@@ -680,9 +744,16 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 // of the fields' values and if they are sorted properly. Then it passes the files to the
 // "integrity" functions. It returns error if some test fails, otherwise nil.
 func (p *processor) checkChanges(base string, mask whereType) error {
-	client := p.httpClient()
-	changes := base + "/changes.csv"
+
+	bu, err := url.Parse(base)
+	if err != nil {
+		return err
+	}
+	changes := util.JoinURLPath(bu, "changes.csv").String()
+
 	p.checkTLS(changes)
+
+	client := p.httpClient()
 	res, err := client.Get(changes)
 
 	p.badChanges.use()
@@ -705,6 +776,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		var times []time.Time
 		var files []csaf.AdvisoryFile
 		c := csv.NewReader(res.Body)
+		const (
+			pathColumn = 0
+			timeColumn = 1
+		)
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
@@ -716,11 +791,17 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if len(r) < 2 {
 				return nil, nil, errors.New("not enough columns")
 			}
-			t, err := time.Parse(time.RFC3339, r[0])
+			t, err := time.Parse(time.RFC3339, r[timeColumn])
 			if err != nil {
 				return nil, nil, err
 			}
-			times, files = append(times, t), append(files, csaf.PlainAdvisoryFile(r[1]))
+			// Apply date range filtering.
+			if p.ageAccept != nil && !p.ageAccept(t) {
+				continue
+			}
+			times, files =
+				append(times, t),
+				append(files, csaf.PlainAdvisoryFile(r[pathColumn]))
 		}
 		return times, files, nil
 	}()
