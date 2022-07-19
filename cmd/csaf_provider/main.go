@@ -47,7 +47,8 @@ func main() {
 	cfg, err := loadConfig()
 	if err != nil {
 		cgi.Serve(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			http.Error(rw, fmt.Sprintf("Config error: %v\n", err), http.StatusInternalServerError)
+			http.Error(rw, "Something went wrong. Check server logs for more details",
+				http.StatusInternalServerError)
 		}))
 		log.Fatalf("error: %v\n", err)
 	}

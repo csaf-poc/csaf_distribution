@@ -72,36 +72,57 @@ func (c *controller) bind(pim *pathInfoMux) {
 	pim.handleFunc("/api/create", c.auth(api(c.create)))
 }
 
-// auth wraps the given http.HandlerFunc and returns an new one after authenticating the
-// password contained in the header "X-CSAF-PROVIDER-AUTH" with the "password" config value
-// if set, otherwise returns the given http.HandlerFunc.
+// authenticate checks if the incoming request confirms with the
+// configured authentication mechanism.
+func (c *controller) authenticate(r *http.Request) bool {
+
+	verify := os.Getenv("SSL_CLIENT_VERIFY")
+	log.Printf("SSL_CLIENT_VERIFY: %s\n", verify)
+	if verify == "SUCCESS" || strings.HasPrefix(verify, "FAILED") {
+		// potentially we want to see the Issuer when there is a problem
+		// but it is not clear if we get this far in case of "FAILED".
+		// docs (accessed 2022-03-31 when 1.20.2 was current stable):
+		// https://nginx.org/en/docs/http/ngx_http_ssl_module.html#var_ssl_client_verify
+		log.Printf("SSL_CLIENT_I_DN: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
+	}
+
+	checkCert := func() bool {
+		return verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN"))
+	}
+
+	checkPassword := func() bool {
+		return c.cfg.checkPassword(r.Header.Get("X-CSAF-PROVIDER-AUTH"))
+	}
+
+	if c.cfg.CertificateAndPassword {
+		if c.cfg.Password == nil {
+			log.Println("No password set, declining access.")
+			return false
+		}
+		log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
+		return checkPassword() && checkCert()
+	}
+
+	switch {
+	case checkCert():
+		log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
+	case c.cfg.Password == nil:
+		log.Println("No password set, declining access.")
+		return false
+	default:
+		return checkPassword()
+	}
+	return true
+}
+
+// auth is a middleware to decorate endpoints with authentication.
 func (c *controller) auth(
 	fn func(http.ResponseWriter, *http.Request),
 ) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
-
-		verify := os.Getenv("SSL_CLIENT_VERIFY")
-		log.Printf("SSL_CLIENT_VERIFY: %s\n", verify)
-		if verify == "SUCCESS" || strings.HasPrefix(verify, "FAILED") {
-			// potentially we want to see the Issuer when there is a problem
-			// but it is not clear if we get this far in case of "FAILED".
-			// docs (accessed 2022-03-31 when 1.20.2 was current stable):
-			// https://nginx.org/en/docs/http/ngx_http_ssl_module.html#var_ssl_client_verify
-			log.Printf("SSL_CLIENT_I_DN: %s\n", os.Getenv("SSL_CLIENT_I_DN"))
-		}
-
-		switch {
-		case verify == "SUCCESS" && (c.cfg.Issuer == nil || *c.cfg.Issuer == os.Getenv("SSL_CLIENT_I_DN")):
-			log.Printf("user: %s\n", os.Getenv("SSL_CLIENT_S_DN"))
-		case c.cfg.Password == nil:
-			log.Println("No password set, declining access.")
+		if !c.authenticate(r) {
 			http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
-		default:
-			if pa := r.Header.Get("X-CSAF-PROVIDER-AUTH"); !c.cfg.checkPassword(pa) {
-				http.Error(rw, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-				return
-			}
 		}
 		fn(rw, r)
 	}

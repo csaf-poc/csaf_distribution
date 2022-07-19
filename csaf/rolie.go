@@ -17,6 +17,126 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+// ROLIEServiceWorkspaceCollectionCategoriesCategory is a category in a ROLIE service collection.
+type ROLIEServiceWorkspaceCollectionCategoriesCategory struct {
+	Scheme string `json:"scheme"`
+	Term   string `json:"term"`
+}
+
+// ROLIEServiceWorkspaceCollectionCategories are categories in a ROLIE service collection.
+type ROLIEServiceWorkspaceCollectionCategories struct {
+	Category []ROLIEServiceWorkspaceCollectionCategoriesCategory `json:"category"`
+}
+
+// ROLIEServiceWorkspaceCollection is a collection in a ROLIE service.
+type ROLIEServiceWorkspaceCollection struct {
+	Title      string                                    `json:"title"`
+	HRef       string                                    `json:"href"`
+	Categories ROLIEServiceWorkspaceCollectionCategories `json:"categories"`
+}
+
+// ROLIEServiceWorkspace is a workspace of a ROLIE service.
+type ROLIEServiceWorkspace struct {
+	Title      string                            `json:"title"`
+	Collection []ROLIEServiceWorkspaceCollection `json:"collection"`
+}
+
+// ROLIEService is a ROLIE service.
+type ROLIEService struct {
+	Workspace []ROLIEServiceWorkspace `json:"workspace"`
+}
+
+// ROLIEServiceDocument is a ROLIE service document.
+type ROLIEServiceDocument struct {
+	Service ROLIEService `json:"service"`
+}
+
+// LoadROLIEServiceDocument loads a ROLIE service document from a reader.
+func LoadROLIEServiceDocument(r io.Reader) (*ROLIEServiceDocument, error) {
+	var rsd ROLIEServiceDocument
+	if err := json.NewDecoder(r).Decode(&rsd); err != nil {
+		return nil, err
+	}
+	return &rsd, nil
+}
+
+// WriteTo saves a ROLIE service document to a writer.
+func (rsd *ROLIEServiceDocument) WriteTo(w io.Writer) (int64, error) {
+	nw := util.NWriter{Writer: w, N: 0}
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(rsd)
+	return nw.N, err
+}
+
+// ROLIECategories is a list of ROLIE categories.
+type ROLIECategories struct {
+	Category []ROLIECategory `json:"category"`
+}
+
+// ROLIECategoryDocument is a ROLIE category document.
+type ROLIECategoryDocument struct {
+	Categories ROLIECategories `json:"categories"`
+}
+
+// NewROLIECategoryDocument creates a new ROLIE category document from a list
+// of categories.
+func NewROLIECategoryDocument(categories ...string) *ROLIECategoryDocument {
+	rcd := &ROLIECategoryDocument{}
+	rcd.Merge(categories...)
+	return rcd
+}
+
+// Merge merges the given categories into the existing ones.
+// The results indicates if there were changes.
+func (rcd *ROLIECategoryDocument) Merge(categories ...string) bool {
+	index := make(map[string]bool)
+	for i := range rcd.Categories.Category {
+		index[rcd.Categories.Category[i].Term] = true
+	}
+
+	oldLen := len(index)
+
+	for _, cat := range categories {
+		if index[cat] {
+			continue
+		}
+		index[cat] = true
+		rcd.Categories.Category = append(
+			rcd.Categories.Category, ROLIECategory{Term: cat})
+	}
+
+	if len(index) == oldLen {
+		// No new categories
+		return false
+	}
+
+	// Re-establish order.
+	sort.Slice(rcd.Categories.Category, func(i, j int) bool {
+		return rcd.Categories.Category[i].Term < rcd.Categories.Category[j].Term
+	})
+
+	return true
+}
+
+// LoadROLIECategoryDocument loads a ROLIE category document from a reader.
+func LoadROLIECategoryDocument(r io.Reader) (*ROLIECategoryDocument, error) {
+	var rcd ROLIECategoryDocument
+	if err := json.NewDecoder(r).Decode(&rcd); err != nil {
+		return nil, err
+	}
+	return &rcd, nil
+}
+
+// WriteTo saves a ROLIE category document to a writer.
+func (rcd *ROLIECategoryDocument) WriteTo(w io.Writer) (int64, error) {
+	nw := util.NWriter{Writer: w, N: 0}
+	enc := json.NewEncoder(&nw)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(rcd)
+	return nw.N, err
+}
+
 // Link for ROLIE.
 type Link struct {
 	Rel  string `json:"rel"`
@@ -25,7 +145,7 @@ type Link struct {
 
 // ROLIECategory for ROLIE.
 type ROLIECategory struct {
-	Scheme string `json:"scheme"`
+	Scheme string `json:"scheme,omitempty"`
 	Term   string `json:"term"`
 }
 

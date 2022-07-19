@@ -48,6 +48,7 @@ type config struct {
 	TLPs                    []tlp                        `toml:"tlps"`
 	UploadSignature         bool                         `toml:"upload_signature"`
 	CanonicalURLPrefix      string                       `toml:"canonical_url_prefix"`
+	CertificateAndPassword  bool                         `toml:"certificate_and_password"`
 	NoPassphrase            bool                         `toml:"no_passphrase"`
 	NoValidation            bool                         `toml:"no_validation"`
 	NoWebUI                 bool                         `toml:"no_web_ui"`
@@ -56,6 +57,10 @@ type config struct {
 	UploadLimit             *int64                       `toml:"upload_limit"`
 	Issuer                  *string                      `toml:"issuer"`
 	RemoteValidator         *csaf.RemoteValidatorOptions `toml:"remote_validator"`
+	Categories              *[]string                    `toml:"categories"`
+	ServiceDocument         bool                         `toml:"create_service_document"`
+	WriteIndices            bool                         `toml:"write_indices"`
+	WriteSecurity           bool                         `toml:"write_security"`
 }
 
 func (pmdc *providerMetadataConfig) apply(pmd *csaf.ProviderMetadata) {
@@ -145,6 +150,68 @@ func (cfg *config) checkPassword(hash string) bool {
 		bcrypt.CompareHashAndPassword([]byte(hash), []byte(*cfg.Password)) == nil
 }
 
+// HasCategories tells if categories are configured.
+func (cfg *config) HasCategories() bool {
+	return cfg.Categories != nil
+}
+
+// categoryExprPrefix is the prefix for dynamic categories.
+const categoryExprPrefix = "expr:"
+
+// HasDynamicCategories tells if dynamic categories are configured.
+func (cfg *config) HasDynamicCategories() bool {
+	if !cfg.HasCategories() {
+		return false
+	}
+	for _, cat := range *cfg.Categories {
+		if strings.HasPrefix(cat, categoryExprPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasStaticCategories tells if static categories are configured.
+func (cfg *config) HasStaticCategories() bool {
+	if !cfg.HasCategories() {
+		return false
+	}
+	for _, cat := range *cfg.Categories {
+		if !strings.HasPrefix(cat, categoryExprPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// StaticCategories returns a list on the configured static categories.
+func (cfg *config) StaticCategories() []string {
+	if !cfg.HasCategories() {
+		return nil
+	}
+	cats := make([]string, 0, len(*cfg.Categories))
+	for _, cat := range *cfg.Categories {
+		if !strings.HasPrefix(cat, categoryExprPrefix) {
+			cats = append(cats, cat)
+		}
+	}
+	return cats
+}
+
+// DynamicCategories returns a list on the configured dynamic categories.
+func (cfg *config) DynamicCategories() []string {
+	if !cfg.HasCategories() {
+		return nil
+	}
+	cats := make([]string, 0, len(*cfg.Categories))
+	for _, cat := range *cfg.Categories {
+		if strings.HasPrefix(cat, categoryExprPrefix) {
+			cats = append(cats, cat[len(categoryExprPrefix):])
+		}
+	}
+	return cats
+}
+
 // loadConfig extracts the config values from the config file. The path to the
 // file is taken either from environment variable "CSAF_CONFIG" or from the
 // defined default path in "defaultConfigPath".
@@ -156,8 +223,14 @@ func loadConfig() (*config, error) {
 		path = defaultConfigPath
 	}
 	var cfg config
-	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+
+	md, err := toml.DecodeFile(path, &cfg)
+	if err != nil {
 		return nil, err
+	}
+
+	if undecoded := md.Undecoded(); len(undecoded) != 0 {
+		return nil, fmt.Errorf("could not parse %q from config.toml", undecoded)
 	}
 
 	// Preset defaults

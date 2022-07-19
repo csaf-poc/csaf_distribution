@@ -22,15 +22,17 @@ is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSA
 is a tool for downloading advisories from a provider.
 
 ## Setup
-Note that the server side is only tested
-and the binaries available for GNU/Linux-Systems, e.g. Ubuntu LTS.
-It is likely to run on similar systems when build from sources.
+Note that binaries for the server side are only available and tested
+for GNU/Linux-Systems, e.g. Ubuntu LTS.
+They are likely to run on similar systems when build from sources.
 
-The windows binaries only include `csaf_uploader` and `csaf_checker`.
+The windows binary package only includes
+`csaf_downloader`, `csaf_checker` and `csaf_uploader`.
+
 
 ### Prebuild binaries
 
-Download the binaries (from the most recent release assets on Github).
+Download the binaries from the most recent release assets on Github.
 
 
 ### Build from sources

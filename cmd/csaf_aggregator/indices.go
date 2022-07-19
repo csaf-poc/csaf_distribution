@@ -94,12 +94,17 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 
 	record := make([]string, 2)
 
+	const (
+		pathColumn = 0
+		timeColumn = 1
+	)
+
 	for i := range ss {
 		s := &ss[i]
-		record[0] =
-			s.summary.CurrentReleaseDate.Format(time.RFC3339)
-		record[1] =
+		record[pathColumn] =
 			strconv.Itoa(s.summary.InitialReleaseDate.Year()) + "/" + s.filename
+		record[timeColumn] =
+			s.summary.CurrentReleaseDate.Format(time.RFC3339)
 		if err := out.Write(record); err != nil {
 			f.Close()
 			return err
@@ -185,14 +190,24 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 		}
 	}
 
+	links := []csaf.Link{{
+		Rel:  "self",
+		HRef: feedURL,
+	}}
+
+	if w.provider.serviceDocument(w.processor.cfg) {
+		links = append(links, csaf.Link{
+			Rel: "service",
+			HRef: w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
+				w.provider.Name + "/service.json",
+		})
+	}
+
 	rolie := &csaf.ROLIEFeed{
 		Feed: csaf.FeedData{
 			ID:    "csaf-feed-tlp-" + strings.ToLower(label),
 			Title: "CSAF feed (TLP:" + strings.ToUpper(label) + ")",
-			Link: []csaf.Link{{
-				Rel:  "self",
-				HRef: feedURL,
-			}},
+			Link:  links,
 			Category: []csaf.ROLIECategory{{
 				Scheme: "urn:ietf:params:rolie:category:information-type",
 				Term:   "csaf",
@@ -209,6 +224,75 @@ func (w *worker) writeROLIE(label string, summaries []summary) error {
 	return util.WriteToFile(path, rolie)
 }
 
+func (w *worker) writeCategories(label string) error {
+	categories := w.categories[label]
+	if len(categories) == 0 {
+		return nil
+	}
+	cats := make([]string, len(categories))
+	var i int
+	for cat := range categories {
+		cats[i] = cat
+		i++
+	}
+	rcd := csaf.NewROLIECategoryDocument(cats...)
+
+	labelFolder := strings.ToLower(label)
+	fname := "category-" + labelFolder + ".json"
+	path := filepath.Join(w.dir, labelFolder, fname)
+	return util.WriteToFile(path, rcd)
+}
+
+// writeService writes a service.json document if it is configured.
+func (w *worker) writeService() error {
+
+	if !w.provider.serviceDocument(w.processor.cfg) {
+		return nil
+	}
+	labels := make([]string, len(w.summaries))
+	var i int
+	for label := range w.summaries {
+		labels[i] = strings.ToLower(label)
+		i++
+	}
+	sort.Strings(labels)
+
+	categories := csaf.ROLIEServiceWorkspaceCollectionCategories{
+		Category: []csaf.ROLIEServiceWorkspaceCollectionCategoriesCategory{{
+			Scheme: "urn:ietf:params:rolie:category:information-type",
+			Term:   "csaf",
+		}},
+	}
+
+	var collections []csaf.ROLIEServiceWorkspaceCollection
+
+	for _, ts := range labels {
+		feedName := "csaf-feed-tlp-" + ts + ".json"
+
+		href := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
+			w.provider.Name + "/" + ts + "/" + feedName
+
+		collection := csaf.ROLIEServiceWorkspaceCollection{
+			Title:      "CSAF feed (TLP:" + strings.ToUpper(ts) + ")",
+			HRef:       href,
+			Categories: categories,
+		}
+		collections = append(collections, collection)
+	}
+
+	rsd := &csaf.ROLIEServiceDocument{
+		Service: csaf.ROLIEService{
+			Workspace: []csaf.ROLIEServiceWorkspace{{
+				Title:      "CSAF feeds",
+				Collection: collections,
+			}},
+		},
+	}
+
+	path := filepath.Join(w.dir, "service.json")
+	return util.WriteToFile(path, rsd)
+}
+
 func (w *worker) writeIndices() error {
 
 	if len(w.summaries) == 0 || w.dir == "" {
@@ -220,16 +304,22 @@ func (w *worker) writeIndices() error {
 		if err := w.writeInterims(label, summaries); err != nil {
 			return err
 		}
-		if err := w.writeCSV(label, summaries); err != nil {
-			return err
-		}
-		if err := w.writeIndex(label, summaries); err != nil {
-			return err
+		// Only write index.txt and changes.csv if configured.
+		if w.provider.writeIndices(w.processor.cfg) {
+			if err := w.writeCSV(label, summaries); err != nil {
+				return err
+			}
+			if err := w.writeIndex(label, summaries); err != nil {
+				return err
+			}
 		}
 		if err := w.writeROLIE(label, summaries); err != nil {
 			return err
 		}
+		if err := w.writeCategories(label); err != nil {
+			return err
+		}
 	}
 
-	return nil
+	return w.writeService()
 }

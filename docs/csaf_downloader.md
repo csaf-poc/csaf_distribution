@@ -1,4 +1,5 @@
-## csaf_uploader
+## csaf_downloader
+A tool to download CSAF content from a specific domain/provider.
 
 ### Usage
 
