@@ -103,25 +103,18 @@ func (p *provider) writeIndices(c *config) bool {
 }
 
 func (p *provider) runAsMirror(c *config) bool {
-	return p.AggregatoryCategory != nil &&
-		*p.AggregatoryCategory == csaf.AggregatorAggregator ||
-		c.runAsMirror()
-}
-
-func (c *config) hasMirror() bool {
-	for _, p := range c.Providers {
-		if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
-			return true
-		}
+	if p.AggregatoryCategory != nil {
+		return *p.AggregatoryCategory == csaf.AggregatorAggregator
 	}
-	return false
+	return c.runAsMirror()
 }
 
-func (c *config) hasTwoMirrors() bool {
+// atLeastNMirrors checks if there are at least n mirrors configured.
+func (c *config) atLeastNMirrors(n int) bool {
 	var mirrors int
 	for _, p := range c.Providers {
-		if p.AggregatoryCategory != nil && *p.AggregatoryCategory == csaf.AggregatorAggregator {
-			if mirrors++; mirrors > 1 {
+		if p.runAsMirror(c) {
+			if mirrors++; mirrors >= n {
 				return true
 			}
 		}
@@ -214,11 +207,11 @@ func (c *config) checkProviders() error {
 
 func (c *config) checkMirror() error {
 	if c.runAsMirror() {
-		if !c.AllowSingleProvider && !c.hasTwoMirrors() {
+		if !c.AllowSingleProvider && !c.atLeastNMirrors(2) {
 			return errors.New("at least 2 Providers need to be mirrors")
 		}
 	} else {
-		if !c.AllowSingleProvider && c.hasMirror() {
+		if !c.AllowSingleProvider && c.atLeastNMirrors(1) {
 			return errors.New("found mirrors in a lister aggregator")
 		}
 	}
