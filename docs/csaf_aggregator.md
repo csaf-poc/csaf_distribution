@@ -132,6 +132,8 @@ insecure = true
 [[providers]]
   name = "local-dev-provider"
   domain = "localhost"
+  categories = ["Example Company Product A", "expr:document.lang"]
+  create_service_document = true
 #  rate = 1.5
 #  insecure = true
 

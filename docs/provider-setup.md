@@ -125,6 +125,8 @@ openpgp_private_key = "/usr/lib/csaf/private.asc"
 openpgp_public_key = "/usr/lib/csaf/public.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
+categories = ["Example Company Product A", "expr:document.lang"]
+create_service_document = true
 #no_passphrase = true
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
