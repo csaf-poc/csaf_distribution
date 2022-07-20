@@ -25,7 +25,11 @@ type (
 	pages map[string]*pageContent
 )
 
-func (pgs pages) listed(path string, pro *processor) (bool, error) {
+func (pgs pages) listed(
+	path string,
+	pro *processor,
+	badDirs map[string]struct{},
+) (bool, error) {
 	pathURL, err := url.Parse(path)
 	if err != nil {
 		return false, err
@@ -50,6 +54,10 @@ func (pgs pages) listed(path string, pro *processor) (bool, error) {
 		return false, err
 	}
 
+	if _, ok := badDirs[base]; ok {
+		return false, errContinue
+	}
+
 	// load page
 	client := pro.httpClient()
 	pro.checkTLS(base)
@@ -59,11 +67,13 @@ func (pgs pages) listed(path string, pro *processor) (bool, error) {
 
 	if err != nil {
 		pro.badDirListings.error("Fetching %s failed: %v", base, err)
+		badDirs[base] = struct{}{}
 		return false, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		pro.badDirListings.error("Fetching %s failed. Status code %d (%s)",
 			base, res.StatusCode, res.Status)
+		badDirs[base] = struct{}{}
 		return false, errContinue
 	}
 

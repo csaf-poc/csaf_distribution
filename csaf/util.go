@@ -223,20 +223,8 @@ func LoadProviderMetadataForDomain(
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
 	dnsResult := LoadProviderMetadataFromURL(client, dnsURL)
-
-	if dnsResult == nil {
-		logging("%s not found.", dnsURL)
-	} else if len(dnsResult.Messages) > 0 {
-		for _, msg := range dnsResult.Messages {
-			logging(msg)
-		}
-	} else {
-		// DNS seems to be okay.
-		return dnsResult
-	}
-
-	// We failed all.
-	return nil
+	lg(dnsResult, dnsURL)
+	return dnsResult
 }
 
 // ExtractProviderURL extracts URLs of provider metadata.
