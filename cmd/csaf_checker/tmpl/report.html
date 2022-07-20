@@ -9,6 +9,47 @@
     <h1>CSAF-Checker - Report</h1>
 {{- range .Domains }}
     <h2>{{ .Name }}{{ if .HasErrors }} (failed){{ end }}</h2>
+    <p>
+    {{ with .Publisher }}
+    <fieldset>
+    <legend>Publisher</legend>
+    <table>
+      {{ with .Category }}
+      <tr>
+        <td><strong>Category:</strong></td>
+        <td>{{ . }}</td>
+      </tr>
+      {{ end }}
+      {{ with .Name }}
+      <tr>
+        <td><strong>Name:</strong></td>
+        <td>{{ . }}</td>
+      </tr>
+      {{ end }}
+      {{ with .Namespace }}
+      <tr>
+        <td><strong>Namespace:</strong></td>
+        <td>{{ . }}</td>
+      </tr>
+      {{ end }}
+      {{ with .ContactDetails }}
+      <tr>
+        <td><strong>Contact Details:</strong></td>
+        <td>{{ . }}</td>
+      </tr>
+      {{ end }}
+      {{ with .IssuingAuthority }}
+      <tr>
+        <td><strong>Issuing Authority:</strong></td>
+        <td>{{ . }}</td>
+      </tr>
+      {{ end }}
+    </table>
+    </fieldset>
+    {{ end }}
+    </br>
+    {{ with .Role }}<strong>Role:</strong> {{ . }}{{ end }}
+    </p>
 
     <dl>
 {{ range .Requirements }}
