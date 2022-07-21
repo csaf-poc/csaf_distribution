@@ -16,7 +16,7 @@ Calling example (as root):
     curl --fail -O https://raw.githubusercontent.com/csaf-poc/csaf_distribution/main/docs/scripts/prepareUbuntuInstanceForITests.sh
     bash prepareUbuntuInstanceForITests.sh
 
-    git clone https://github.com/csaf-poc/csaf_distribution.git
+    git clone https://github.com/csaf-poc/csaf_distribution.git # --branch <name>
     pushd csaf_distribution/docs/scripts/
 
     export FOLDERNAME=devca1 ORGANAME="CSAF Tools Development (internal)"
