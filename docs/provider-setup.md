@@ -92,7 +92,7 @@ Create `cgi-bin` folder if it not exists: `mkdir -p /usr/lib/cgi-bin/`.
 Rename and place the `csaf_provider` binary file under `/usr/lib/cgi-bin/csaf_provider.go`.
 
 
-Create configuration file under `/usr/lib/csaf/config.toml`
+Create configuration file under `/etc/csaf/config.toml`
 and make sure is has good, restrictive permissions.
 It must be readable by the user(id), which the webserver's fastcgi interface
 uses to start the CGI-binary with,
@@ -118,17 +118,6 @@ which you need to customize for a production setup,
 see the [options of `csaf_provider`](https://github.com/csaf-poc/csaf_distribution/blob/main/docs/csaf_provider.md).
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-101) -->
-<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
-```sh
-# upload_signature = true
-openpgp_private_key = "/usr/lib/csaf/private.asc"
-openpgp_public_key = "/usr/lib/csaf/public.asc"
-#tlps = ["green", "red"]
-canonical_url_prefix = "https://localhost:8443"
-categories = ["Example Company Product A", "expr:document.lang"]
-create_service_document = true
-#no_passphrase = true
-```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 

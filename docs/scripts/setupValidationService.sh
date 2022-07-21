@@ -9,7 +9,7 @@ sudo chmod g+rw,o-rwx /var/lib/csaf/validations.db
 
 echo '
 remote_validator= { "url" = "http://localhost:3000", "presets" = ["mandatory"], "cache" = "/var/lib/csaf/validations.db" }
-' | sudo tee --append /usr/lib/csaf/config.toml
+' | sudo tee --append /etc/csaf/config.toml
 
 # Install nodejs
 curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
