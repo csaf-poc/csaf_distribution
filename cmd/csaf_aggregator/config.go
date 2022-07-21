@@ -36,12 +36,13 @@ type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
 	// Rate gives the provider specific rate limiting (see overall Rate).
-	Rate       *float64  `toml:"rate"`
-	Insecure   *bool     `toml:"insecure"`
-	Categories *[]string `toml:"categories"`
+	Rate         *float64  `toml:"rate"`
+	Insecure     *bool     `toml:"insecure"`
+	WriteIndices *bool     `toml:"write_indices"`
+	Categories   *[]string `toml:"categories"`
 	// ServiceDocument incidates if we should create a service.json document.
-	ServiceDocument *bool `toml:"create_service_document"`
-	WriteIndices    *bool `toml:"write_indices"`
+	ServiceDocument     *bool                    `toml:"create_service_document"`
+	AggregatoryCategory *csaf.AggregatorCategory `toml:"category"`
 }
 
 type config struct {
@@ -99,6 +100,26 @@ func (p *provider) writeIndices(c *config) bool {
 		return *p.WriteIndices
 	}
 	return c.WriteIndices
+}
+
+func (p *provider) runAsMirror(c *config) bool {
+	if p.AggregatoryCategory != nil {
+		return *p.AggregatoryCategory == csaf.AggregatorAggregator
+	}
+	return c.runAsMirror()
+}
+
+// atLeastNMirrors checks if there are at least n mirrors configured.
+func (c *config) atLeastNMirrors(n int) bool {
+	var mirrors int
+	for _, p := range c.Providers {
+		if p.runAsMirror(c) {
+			if mirrors++; mirrors >= n {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // runAsMirror determines if the aggregator should run in mirror mode.
@@ -184,6 +205,20 @@ func (c *config) checkProviders() error {
 	return nil
 }
 
+func (c *config) checkMirror() error {
+	if c.runAsMirror() {
+		if !c.AllowSingleProvider && !c.atLeastNMirrors(2) {
+			return errors.New("at least 2 providers need to be mirrored")
+		} else if c.AllowSingleProvider && !c.atLeastNMirrors(1) {
+			return errors.New("at least one provider must be mirrored")
+		}
+	} else if !c.AllowSingleProvider && c.atLeastNMirrors(1) {
+		return errors.New("found mirrors in a lister aggregator")
+	}
+
+	return nil
+}
+
 func (c *config) setDefaults() {
 	if c.Folder == "" {
 		c.Folder = defaultFolder
@@ -219,7 +254,11 @@ func (c *config) check() error {
 		return err
 	}
 
-	return c.checkProviders()
+	if err := c.checkProviders(); err != nil {
+		return err
+	}
+
+	return c.checkMirror()
 }
 
 func loadConfig(path string) (*config, error) {
