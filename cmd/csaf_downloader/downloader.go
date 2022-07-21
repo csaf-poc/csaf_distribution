@@ -191,6 +191,23 @@ func (d *downloader) loadOpenPGPKeys(
 	return nil
 }
 
+// logValidationIssues logs the issues reported by the advisory schema validation.
+func (d *downloader) logValidationIssues(url string, errors []string, err error) {
+	if err != nil {
+		log.Printf("Failed to validate %s: %v", url, err)
+		return
+	}
+	if len(errors) > 0 {
+		if d.opts.Verbose {
+			log.Printf("CSAF file %s has validation errors: %s\n",
+				url, strings.Join(errors, ", "))
+		} else {
+			log.Printf("CSAF file %s has %d validation errors.\n",
+				url, len(errors))
+		}
+	}
+}
+
 func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
 
 	client := d.httpClient()
@@ -307,13 +324,8 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		}
 
 		// Validate against CSAF schema.
-		errors, err := csaf.ValidateCSAF(doc)
-		if err != nil {
-			log.Printf("Failed to validate %s: %v", file.URL(), err)
-			continue
-		}
-		if len(errors) > 0 {
-			log.Printf("CSAF file %s has %d validation errors.", file.URL(), len(errors))
+		if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
+			d.logValidationIssues(file.URL(), errors, err)
 			continue
 		}
 

@@ -28,6 +28,38 @@ chmod -R g+w .
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
+```sh
+# Include this file on your nginx.conf to support debian cgi-bin scripts using
+# fcgiwrap
+location /cgi-bin/ {
+  # Disable gzip (it makes scripts feel slower since they have to complete
+  # before getting gzipped)
+  gzip off;
+
+  # Set the root to /usr/lib (inside this location this means that we are
+  # giving access to the files under /usr/lib/cgi-bin)
+  root  /usr/lib;
+
+  # Fastcgi socket
+  fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+
+  # Fastcgi parameters, include the standard ones
+  include /etc/nginx/fastcgi_params;
+
+  fastcgi_split_path_info ^(.+\.go)(.*)$;
+
+  # Adjust non standard parameters (SCRIPT_FILENAME)
+  fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
+
+  fastcgi_param PATH_INFO $fastcgi_path_info;
+  fastcgi_param CSAF_CONFIG /usr/lib/csaf/config.toml;
+
+  fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
+  fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
+  fastcgi_param SSL_CLIENT_I_DN $ssl_client_i_dn;
+}
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 Add to `/etc/nginx/sites-enabled/default`:
 
@@ -69,6 +101,12 @@ as `csaf_provider.go` must be able to read it.
 Many systems use `www-data` as user id, so you could do something like
 
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=84-86) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
+```sh
+sudo touch /usr/lib/csaf/config.toml
+sudo chgrp www-data /usr/lib/csaf/config.toml
+sudo chmod g+r,o-rwx /usr/lib/csaf/config.toml
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 **This and the other settings are just examples,**
@@ -79,7 +117,7 @@ Here is a minimal example configuration,
 which you need to customize for a production setup,
 see the [options of `csaf_provider`](https://github.com/csaf-poc/csaf_distribution/blob/main/docs/csaf_provider.md).
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-99) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-101) -->
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 
@@ -107,6 +145,27 @@ Again replacing `{clientCert.crt}` and `{clientKey.pem}` accordingly.
 
 To let nginx resolves the DNS record `csaf.data.security.domain.tld` to fulfill the [Requirement 10](https://docs.oasis-open.org/csaf/csaf/v2.0/cs01/csaf-v2.0-cs01.html#7110-requirement-10-dns-path) configure a new server block (virtual host) in a separated file under `/etc/nginx/available-sites/{DNSNAME}` like following:
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/DNSConfigForItest.sh&lines=18-35) -->
+<!-- The below code snippet is automatically added from ../docs/scripts/DNSConfigForItest.sh -->
+```sh
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+
+        ssl_certificate  '${SSL_CERTIFICATE}'; # e.g. ssl_certificate /etc/ssl/csaf/bundle.crt
+        ssl_certificate_key '${SSL_CERTIFICATE_KEY}'; # e.g. ssl_certificate_key /etc/ssl/csaf/testserver-key.pem;
+
+        root /var/www/html;
+
+        server_name ${DNS_NAME}; # e.g. server_name csaf.data.security.domain.tld;
+
+        location / {
+                try_files /.well-known/csaf/provider-metadata.json =404;
+        }
+
+        access_log /var/log/nginx/dns-domain_access.log;
+        error_log /var/log/nginx/dns-domain_error.log;
+}
+```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
 Then create a symbolic link to enable the new server block:

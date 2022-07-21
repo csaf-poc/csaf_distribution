@@ -96,6 +96,8 @@ openpgp_private_key = "/etc/csaf/private.asc"
 openpgp_public_key = "/etc/csaf/public.asc"
 #tlps = ["green", "red"]
 canonical_url_prefix = "https://localhost:8443"
+categories = ["Example Company Product A", "expr:document.lang"]
+create_service_document = true
 #no_passphrase = true
 ' | sudo tee --append /etc/csaf/config.toml
 
