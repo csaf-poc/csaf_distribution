@@ -75,6 +75,7 @@ type AdvisoryFileProcessor struct {
 	expr   *util.PathEval
 	doc    interface{}
 	base   *url.URL
+	log    func(format string, args ...interface{})
 }
 
 // NewAdvisoryFileProcessor constructs an filename extractor
@@ -84,24 +85,34 @@ func NewAdvisoryFileProcessor(
 	expr *util.PathEval,
 	doc interface{},
 	base *url.URL,
+	log func(format string, args ...interface{}),
 ) *AdvisoryFileProcessor {
 	return &AdvisoryFileProcessor{
 		client: client,
 		expr:   expr,
 		doc:    doc,
 		base:   base,
+		log:    log,
 	}
 }
 
 // Process extracts the adivisory filenames and passes them with
 // the corresponding label to fn.
-func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []AdvisoryFile) error) error {
+func (afp *AdvisoryFileProcessor) Process(
+	fn func(TLPLabel, []AdvisoryFile) error,
+) error {
+	lg := afp.log
+	if lg == nil {
+		lg = func(format string, args ...interface{}) {
+			log.Printf("AdvisoryFileProcessor.Process: "+format, args...)
+		}
+	}
 
 	// Check if we have ROLIE feeds.
 	rolie, err := afp.expr.Eval(
 		"$.distributions[*].rolie.feeds", afp.doc)
 	if err != nil {
-		log.Printf("rolie check failed: %v\n", err)
+		lg("rolie check failed: %v\n", err)
 		return err
 	}
 
@@ -113,7 +124,7 @@ func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []AdvisoryFile) erro
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			return err
 		}
-		log.Printf("Found %d ROLIE feed(s).\n", len(feeds))
+		lg("Found %d ROLIE feed(s).\n", len(feeds))
 
 		for _, feed := range feeds {
 			if err := afp.processROLIE(feed, fn); err != nil {
@@ -122,7 +133,7 @@ func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []AdvisoryFile) erro
 		}
 	} else {
 		// No rolie feeds -> try to load files from index.txt
-		files, err := afp.loadIndex()
+		files, err := afp.loadIndex(lg)
 		if err != nil {
 			return err
 		}
@@ -136,12 +147,19 @@ func (afp *AdvisoryFileProcessor) Process(fn func(TLPLabel, []AdvisoryFile) erro
 
 // loadIndex loads baseURL/index.txt and returns a list of files
 // prefixed by baseURL/.
-func (afp *AdvisoryFileProcessor) loadIndex() ([]AdvisoryFile, error) {
+func (afp *AdvisoryFileProcessor) loadIndex(
+	lg func(string, ...interface{}),
+) ([]AdvisoryFile, error) {
 	baseURL, err := util.BaseURL(afp.base)
 	if err != nil {
 		return nil, err
 	}
-	indexURL := baseURL + "/index.txt"
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	indexURL := util.JoinURLPath(base, "index.txt").String()
 	resp, err := afp.client.Get(indexURL)
 	if err != nil {
 		return nil, err
@@ -151,8 +169,14 @@ func (afp *AdvisoryFileProcessor) loadIndex() ([]AdvisoryFile, error) {
 
 	scanner := bufio.NewScanner(resp.Body)
 
-	for scanner.Scan() {
-		files = append(files, PlainAdvisoryFile(baseURL+"/"+scanner.Text()))
+	for line := 1; scanner.Scan(); line++ {
+		u := scanner.Text()
+		if _, err := url.Parse(u); err != nil {
+			lg("index.txt contains invalid URL %q in line %d", u, line)
+			continue
+		}
+		files = append(files,
+			PlainAdvisoryFile(util.JoinURLPath(base, u).String()))
 	}
 
 	if err := scanner.Err(); err != nil {
