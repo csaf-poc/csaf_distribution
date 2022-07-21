@@ -104,6 +104,11 @@ write_indices
 category
 ```
 
+If you want an entry to be listed instead of mirrored
+in a `aggregator.category == "aggregator"` instance,
+set `category` to `lister` in the entry.
+Otherwise it is recommended to not set `category` for entries.
+
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
 <!-- The below code snippet is automatically added from ../docs/examples/aggregator.toml -->

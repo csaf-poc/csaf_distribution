@@ -208,12 +208,12 @@ func (c *config) checkProviders() error {
 func (c *config) checkMirror() error {
 	if c.runAsMirror() {
 		if !c.AllowSingleProvider && !c.atLeastNMirrors(2) {
-			return errors.New("at least 2 Providers need to be mirrors")
+			return errors.New("at least 2 providers need to be mirrored")
+		} else if c.AllowSingleProvider && !c.atLeastNMirrors(1) {
+			return errors.New("at least one provider must be mirrored")
 		}
-	} else {
-		if !c.AllowSingleProvider && c.atLeastNMirrors(1) {
-			return errors.New("found mirrors in a lister aggregator")
-		}
+	} else if !c.AllowSingleProvider && c.atLeastNMirrors(1) {
+		return errors.New("found mirrors in a lister aggregator")
 	}
 
 	return nil
