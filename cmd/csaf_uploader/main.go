@@ -309,6 +309,7 @@ func (p *processor) process(filename string) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		err := errors.New("Error: view server logs for details")
 		return err
 	}
 
