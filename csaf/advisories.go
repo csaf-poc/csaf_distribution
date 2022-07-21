@@ -101,9 +101,7 @@ func NewAdvisoryFileProcessor(
 func (afp *AdvisoryFileProcessor) Process(
 	fn func(TLPLabel, []AdvisoryFile) error,
 ) error {
-
 	lg := afp.log
-
 	if lg == nil {
 		lg = func(format string, args ...interface{}) {
 			log.Printf("AdvisoryFileProcessor.Process: "+format, args...)
@@ -156,7 +154,12 @@ func (afp *AdvisoryFileProcessor) loadIndex(
 	if err != nil {
 		return nil, err
 	}
-	indexURL := baseURL + "/index.txt"
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	indexURL := util.JoinURLPath(base, "index.txt").String()
 	resp, err := afp.client.Get(indexURL)
 	if err != nil {
 		return nil, err
@@ -172,7 +175,8 @@ func (afp *AdvisoryFileProcessor) loadIndex(
 			lg("index.txt contains invalid URL %q in line %d", u, line)
 			continue
 		}
-		files = append(files, PlainAdvisoryFile(baseURL+"/"+u))
+		files = append(files,
+			PlainAdvisoryFile(util.JoinURLPath(base, u).String()))
 	}
 
 	if err := scanner.Err(); err != nil {
