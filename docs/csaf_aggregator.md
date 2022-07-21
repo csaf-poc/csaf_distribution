@@ -129,6 +129,8 @@ insecure = true
 # allow_single_provider = true
 
 [aggregator]
+  # Set if this instance shall be a mirror (aka `aggregator`) or a `lister`.
+  # This determines the default value for the entries in [[provider]].
   category = "aggregator"
   name = "Example Development CSAF Aggregator"
   contact_details = "some @ somewhere"
@@ -142,7 +144,6 @@ insecure = true
   create_service_document = true
 #  rate = 1.5
 #  insecure = true
-   category = "lister"
 
 [[providers]]
   name = "local-dev-provider2"
@@ -150,14 +151,15 @@ insecure = true
 #  rate = 1.2
 #  insecure = true
   write_indices = true
-  category = "aggregator"
-  
+
 [[providers]]
   name = "local-dev-provider3"
   domain = "localhost"
 #  rate = 1.8
 #  insecure = true
   write_indices = true
-  category = "aggregator"
+  # If aggregator.category == "aggreator", set for an entry that should
+  # be listed in addition:
+  category = "lister"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
