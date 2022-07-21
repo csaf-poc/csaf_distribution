@@ -146,7 +146,7 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWellknownMetadata.used() {
-		req.message(InfoType, "Did not find provider-metadata.json. Therefore no extended check was performed.")
+		req.message(InfoType, "Since provider-metadata.json was not found, no extended check was performed.")
 		return
 	}
 	if len(p.badWellknownMetadata) == 0 {
