@@ -756,8 +756,13 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		defer res.Body.Close()
 		var files []csaf.AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
-		for scanner.Scan() {
-			files = append(files, csaf.PlainAdvisoryFile(scanner.Text()))
+		for line := 1; scanner.Scan(); line++ {
+			u := scanner.Text()
+			if _, err := url.Parse(u); err != nil {
+				p.badIntegrities.error("index.txt contains invalid URL %q in line %d", u, line)
+				continue
+			}
+			files = append(files, csaf.PlainAdvisoryFile(u))
 		}
 		return files, scanner.Err()
 	}()

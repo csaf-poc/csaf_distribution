@@ -114,7 +114,8 @@ func (d *downloader) download(domain string) error {
 		d.httpClient(),
 		d.eval,
 		lpmd.Document,
-		base)
+		base,
+		nil)
 
 	return afp.Process(d.downloadFiles)
 }
