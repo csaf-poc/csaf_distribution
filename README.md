@@ -16,7 +16,7 @@ is a command line tool that uploads CSAF documents to the `csaf_provider`.
 is an implementation of the role CSAF Aggregator.
 
 ## [csaf_checker](docs/csaf_checker.md)
-is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
+is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents). Does check requirements without considering the indicated `role` yet.
 
 ## [csaf_downloader](docs/csaf_downloader.md)
 is a tool for downloading advisories from a provider.
