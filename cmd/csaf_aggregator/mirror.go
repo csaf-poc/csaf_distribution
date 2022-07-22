@@ -116,7 +116,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 func (w *worker) labelsFromSummaries() []csaf.TLPLabel {
 	labels := make([]csaf.TLPLabel, 0, len(w.summaries))
 	for label := range w.summaries {
-		labels = append(labels, csaf.TLPLabel(label))
+		labels = append(labels, csaf.TLPLabel(strings.ToUpper(label)))
 	}
 	sort.Slice(labels, func(i, j int) bool { return labels[i] < labels[j] })
 	return labels
