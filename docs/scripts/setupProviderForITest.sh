@@ -113,6 +113,8 @@ popd
 set +e
 
 # Wait for the service to be started
+echo
+echo === Try to reach the validator service ten times, up to nine fails are ok
 for ((i = 1; i <= 10; i++)); do
  if [ $(curl -IL http://localhost:3000/api/v1/tests | grep -c HTTP ) != "0" ]; then
  break

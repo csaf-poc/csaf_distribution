@@ -10,9 +10,10 @@
 
 set -e  # to exit if a command in the script fails
 
-echo
-echo '==== run downloader'
 cd ~/csaf_distribution
+
+echo
+echo '==== run downloader (1)'
 
 mkdir ~/downloaded1
 
@@ -20,6 +21,21 @@ mkdir ~/downloaded1
   --rate 4.1 --verbose --insecure localhost
 
 echo
-echo '==== this was downloaded'
-cd ~/downloaded1
+echo '==== this was downloaded (1)'
+pushd ~/downloaded1
 find .
+popd
+
+echo
+echo '==== run downloader (2)'
+
+mkdir ~/downloaded2
+
+./bin-linux-amd64/csaf_downloader --directory ../downloaded2 \
+  --verbose --insecure https://localhost:9443/.well-known/csaf-aggregator/local-dev-provider2/provider-metadata.json
+
+echo
+echo '==== this was downloaded (2)'
+pushd ~/downloaded2
+find .
+popd

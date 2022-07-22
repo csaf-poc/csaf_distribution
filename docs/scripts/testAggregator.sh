@@ -15,5 +15,20 @@ sudo mkdir /var/csaf_aggregator
 sudo chgrp www-data /var/csaf_aggregator
 sudo chmod g+ws /var/csaf_aggregator
 
+echo
+echo '=== setup nginx to serve aggregator directory on 9443'
+
+pushd /etc/nginx/sites-enabled
+sudo cp default default2
+sudo sed -i -e 's/8443/9443/' -e 's/\(listen []:[]*443\)/#\1/' \
+    -e 's|root /var/www/html;|root /var/csaf_aggregator/html;|' \
+    default2
+sudo systemctl reload nginx
+popd
+
+echo
+echo '=== run aggregator'
+
 cd ~/csaf_distribution/
-sudo ./bin-linux-amd64/csaf_aggregator -c docs/examples/aggregator.toml
+sudo cp docs/examples/aggregator.toml /etc/csaf
+sudo ./bin-linux-amd64/csaf_aggregator -c /etc/csaf/aggregator.toml
