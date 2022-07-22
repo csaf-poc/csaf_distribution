@@ -31,3 +31,10 @@ type 2: error
 ```
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise. 
+
+
+### Remarks
+
+The `role` given in the `provider-metadata.json` is not
+yet considered to change the overall result,
+see https://github.com/csaf-poc/csaf_distribution/issues/221 .

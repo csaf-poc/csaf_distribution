@@ -101,7 +101,13 @@ domain
 rate
 insecure
 write_indices
+category
 ```
+
+If you want an entry to be listed instead of mirrored
+in a `aggregator.category == "aggregator"` instance,
+set `category` to `lister` in the entry.
+Otherwise it is recommended to not set `category` for entries.
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
@@ -123,6 +129,8 @@ insecure = true
 # allow_single_provider = true
 
 [aggregator]
+  # Set if this instance shall be a mirror (aka `aggregator`) or a `lister`.
+  # This determines the default value for the entries in [[provider]].
   category = "aggregator"
   name = "Example Development CSAF Aggregator"
   contact_details = "some @ somewhere"
@@ -143,5 +151,15 @@ insecure = true
 #  rate = 1.2
 #  insecure = true
   write_indices = true
+
+[[providers]]
+  name = "local-dev-provider3"
+  domain = "localhost"
+#  rate = 1.8
+#  insecure = true
+  write_indices = true
+  # If aggregator.category == "aggreator", set for an entry that should
+  # be listed in addition:
+  category = "lister"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->

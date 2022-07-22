@@ -24,6 +24,7 @@ import (
 type fullJob struct {
 	provider           *provider
 	aggregatorProvider *csaf.AggregatorCSAFProvider
+	work               fullWorkFunc
 	err                error
 }
 
@@ -61,11 +62,7 @@ func (w *worker) setupProviderFull(provider *provider) error {
 type fullWorkFunc func(*worker) (*csaf.AggregatorCSAFProvider, error)
 
 // fullWork handles the treatment of providers concurrently.
-func (w *worker) fullWork(
-	wg *sync.WaitGroup,
-	doWork fullWorkFunc,
-	jobs <-chan *fullJob,
-) {
+func (w *worker) fullWork(wg *sync.WaitGroup, jobs <-chan *fullJob) {
 	defer wg.Done()
 
 	for j := range jobs {
@@ -73,16 +70,15 @@ func (w *worker) fullWork(
 			j.err = err
 			continue
 		}
-		j.aggregatorProvider, j.err = doWork(w)
+		j.aggregatorProvider, j.err = j.work(w)
 	}
 }
 
 // full performs the complete lister/download
 func (p *processor) full() error {
 
-	var doWork fullWorkFunc
-
 	if p.cfg.runAsMirror() {
+		log.Println("Running in aggregator mode")
 
 		// check if we need to setup a remote validator
 		if p.cfg.RemoteValidatorOptions != nil {
@@ -98,11 +94,7 @@ func (p *processor) full() error {
 				p.remoteValidator = nil
 			}()
 		}
-
-		doWork = (*worker).mirror
-		log.Println("Running in aggregator mode")
 	} else {
-		doWork = (*worker).lister
 		log.Println("Running in lister mode")
 	}
 
@@ -113,13 +105,22 @@ func (p *processor) full() error {
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
 		w := newWorker(i, p)
-		go w.fullWork(&wg, doWork, queue)
+		go w.fullWork(&wg, queue)
 	}
 
 	jobs := make([]fullJob, len(p.cfg.Providers))
 
-	for i, p := range p.cfg.Providers {
-		jobs[i] = fullJob{provider: p}
+	for i, provider := range p.cfg.Providers {
+		var work fullWorkFunc
+		if provider.runAsMirror(p.cfg) {
+			work = (*worker).mirror
+		} else {
+			work = (*worker).lister
+		}
+		jobs[i] = fullJob{
+			provider: provider,
+			work:     work,
+		}
 		queue <- &jobs[i]
 	}
 	close(queue)
