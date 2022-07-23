@@ -157,7 +157,7 @@ func LoadProviderMetadataForDomain(
 
 	if logging == nil {
 		logging = func(format string, args ...interface{}) {
-			log.Printf("FindProviderMetadata: "+format+"\n", args...)
+			log.Printf("LoadProviderMetadataForDomain: "+format+"\n", args...)
 		}
 	}
 
