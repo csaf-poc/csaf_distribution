@@ -15,11 +15,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ProtonMail/gopenpgp/v2/armor"
 	"github.com/ProtonMail/gopenpgp/v2/constants"
@@ -301,6 +303,15 @@ func (p *processor) process(filename string) error {
 		fmt.Printf("HTTPS %s\n", uploadErr)
 	}
 
+	// We expect a JSON answer so all other is not valid.
+	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+		var sb strings.Builder
+		if _, err := io.Copy(&sb, resp.Body); err != nil {
+			return fmt.Errorf("reading none JSON reply from server failed: %v", err)
+		}
+		return fmt.Errorf("none JSON replay: %v", sb.String())
+	}
+
 	var result struct {
 		Name        string   `json:"name"`
 		ReleaseDate string   `json:"release_date"`
@@ -309,7 +320,6 @@ func (p *processor) process(filename string) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		err := errors.New("Error: view server logs for details")
 		return err
 	}
 
