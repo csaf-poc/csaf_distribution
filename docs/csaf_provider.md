@@ -50,7 +50,7 @@ The following example file documents all available configuration options:
 # against the JSON schema.
 #no_validation = false
 
-# Disable the experimantel web interface.
+# Disable the experimental web interface.
 #no_web_ui = true
 
 # Make the provider take the publisher from the CSAF document.
