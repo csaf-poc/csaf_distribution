@@ -223,10 +223,11 @@ func loadConfig() (*config, error) {
 	if path == "" {
 		path = defaultConfigPath
 	}
-	var cfg config
 
-	// Preset defaults for simple types like bool
-	cfg.NoWebUI = defaultNoWebUI
+	// Preset defaults
+	cfg := config{
+		NoWebUI: defaultNoWebUI,
+	}
 
 	md, err := toml.DecodeFile(path, &cfg)
 	if err != nil {
