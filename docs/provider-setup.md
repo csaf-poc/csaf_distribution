@@ -27,7 +27,7 @@ chmod -R g+w .
 
 Modify the content of `/etc/nginx/fcgiwrap.conf` like following:
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-53) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=25-51) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # Include this file on your nginx.conf to support debian cgi-bin scripts using
@@ -100,7 +100,7 @@ as `csaf_provider.go` must be able to read it.
 
 Many systems use `www-data` as user id, so you could do something like
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=84-86) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=82-84) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 sudo touch /etc/csaf/config.toml
@@ -117,7 +117,7 @@ Here is a minimal example configuration,
 which you need to customize for a production setup,
 see the [options of `csaf_provider`](https://github.com/csaf-poc/csaf_distribution/blob/main/docs/csaf_provider.md).
 
-<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=94-101) -->
+<!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/scripts/setupProviderForITest.sh&lines=92-99) -->
 <!-- The below code snippet is automatically added from ../docs/scripts/setupProviderForITest.sh -->
 ```sh
 # upload_signature = true

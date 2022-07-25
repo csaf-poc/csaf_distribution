@@ -43,9 +43,7 @@ location /cgi-bin/ {
 
   # Adjust non standard parameters (SCRIPT_FILENAME)
   fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
-
   fastcgi_param PATH_INFO $fastcgi_path_info;
-  fastcgi_param CSAF_CONFIG /etc/csaf/config.toml;
 
   fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
   fastcgi_param SSL_CLIENT_S_DN $ssl_client_s_dn;
@@ -53,7 +51,7 @@ location /cgi-bin/ {
 }
 ' | sudo tee /etc/nginx/fcgiwrap.conf
 
-sudo sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/a\        include fcgiwrap.conf;\n\        fastcgi_param CSAF_CONFIG /etc/csaf/config.toml;" $NGINX_CONFIG_PATH
 
 echo "
         # For atomic directory switches
