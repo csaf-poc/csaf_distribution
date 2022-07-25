@@ -50,8 +50,8 @@ The following example file documents all available configuration options:
 # against the JSON schema.
 #no_validation = false
 
-# Disable the web interface.
-#no_web_ui = false
+# Disable the experimental web interface.
+#no_web_ui = true
 
 # Make the provider take the publisher from the CSAF document.
 #dynamic_provider_metadata = false
@@ -116,3 +116,10 @@ contact_details = "Example Company can be reached at contact_us@example.com, or 
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
+
+### Experimental web upload interface
+
+There is an experimental upload interface which works with a web browser.
+It is disabled by default, as there are known issues, notably:
+ * https://github.com/csaf-poc/csaf_distribution/issues/43
+ * https://github.com/csaf-poc/csaf_distribution/issues/256

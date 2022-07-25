@@ -27,8 +27,9 @@ const (
 	defaultConfigPath        = configPrefix + "/config.toml" // Default path to the config file.
 	defaultOpenPGPPrivateKey = configPrefix + "/openpgp_private.asc"
 	defaultOpenPGPPublicKey  = configPrefix + "/openpgp_public.asc"
-	defaultFolder            = "/var/www/"      // Default folder path.
-	defaultWeb               = "/var/www/html"  // Default web path.
+	defaultFolder            = "/var/www/"     // Default folder path.
+	defaultWeb               = "/var/www/html" // Default web path.
+	defaultNoWebUI           = true
 	defaultUploadLimit       = 50 * 1024 * 1024 // Default limit size of the uploaded file.
 )
 
@@ -222,7 +223,11 @@ func loadConfig() (*config, error) {
 	if path == "" {
 		path = defaultConfigPath
 	}
-	var cfg config
+
+	// Preset defaults
+	cfg := config{
+		NoWebUI: defaultNoWebUI,
+	}
 
 	md, err := toml.DecodeFile(path, &cfg)
 	if err != nil {
