@@ -36,7 +36,11 @@ type LoadedProviderMetadata struct {
 
 // LoadProviderMetadataFromURL loads a provider metadata from a given URL.
 // Returns nil if the document was not found.
-func LoadProviderMetadataFromURL(client util.Client, url string) *LoadedProviderMetadata {
+func LoadProviderMetadataFromURL(
+	client util.Client,
+	url string,
+	already map[string]*LoadedProviderMetadata,
+) *LoadedProviderMetadata {
 
 	res, err := client.Get(url)
 
@@ -56,21 +60,40 @@ func LoadProviderMetadataFromURL(client util.Client, url string) *LoadedProvider
 
 	tee := io.TeeReader(res.Body, hash)
 
-	if err := json.NewDecoder(tee).Decode(&result.Document); err != nil {
-		result.Messages = []string{fmt.Sprintf("%s: Decoding JSON failed: %v", url, err)}
-		return &result
-	}
+	err = json.NewDecoder(tee).Decode(&result.Document)
+	// Before checking the err lets check if we had the same
+	// document before. If so it will have failed parsing before.
 
 	result.Hash = hash.Sum(nil)
 
-	errors, err := ValidateProviderMetadata(result.Document)
+	var key string
+	if already != nil {
+		key = string(result.Hash)
+		if r, ok := already[key]; ok {
+			return r
+		}
+	}
+
+	// write it back as loaded
+	storeLoaded := func() {
+		if already != nil {
+			already[key] = &result
+		}
+	}
+
+	// We have loaded it the first time.
 	if err != nil {
-		result.Messages = []string{
-			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
+		result.Messages = []string{fmt.Sprintf("%s: Decoding JSON failed: %v", url, err)}
+		storeLoaded()
 		return &result
 	}
 
-	if len(errors) > 0 {
+	switch errors, err := ValidateProviderMetadata(result.Document); {
+	case err != nil:
+		result.Messages = []string{
+			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
+
+	case len(errors) > 0:
 		result.Messages = []string{
 			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
 		for _, msg := range errors {
@@ -78,13 +101,18 @@ func LoadProviderMetadataFromURL(client util.Client, url string) *LoadedProvider
 		}
 	}
 
+	storeLoaded()
 	return &result
 }
 
 // LoadProviderMetadatasFromSecurity loads a secturity.txt,
 // extracts and the CSAF urls from the document.
 // Returns nil if no url was successfully found.
-func LoadProviderMetadatasFromSecurity(client util.Client, path string) []*LoadedProviderMetadata {
+func LoadProviderMetadatasFromSecurity(
+	client util.Client,
+	path string,
+	already map[string]*LoadedProviderMetadata,
+) []*LoadedProviderMetadata {
 
 	res, err := client.Get(path)
 
@@ -108,7 +136,7 @@ func LoadProviderMetadatasFromSecurity(client util.Client, path string) []*Loade
 
 	// Load the URLs
 	for _, url := range urls {
-		if result := LoadProviderMetadataFromURL(client, url); result != nil {
+		if result := LoadProviderMetadataFromURL(client, url, already); result != nil {
 			results = append(results, result)
 		}
 	}
@@ -129,23 +157,34 @@ func LoadProviderMetadataForDomain(
 
 	if logging == nil {
 		logging = func(format string, args ...interface{}) {
-			log.Printf("FindProviderMetadata: "+format+"\n", args...)
+			log.Printf("LoadProviderMetadataForDomain: "+format+"\n", args...)
 		}
 	}
+
+	// As many URLs may lead to the same content only log once per content.
+	alreadyLogged := map[*LoadedProviderMetadata]string{}
 
 	lg := func(result *LoadedProviderMetadata, url string) {
 		if result == nil {
-			logging("%s not found.", url)
-		} else {
-			for _, msg := range result.Messages {
-				logging(msg)
-			}
+			logging("%q not found.", url)
+			return
+		}
+		if other := alreadyLogged[result]; other != "" {
+			logging("%q is same %q.", url, other)
+			return
+		}
+		alreadyLogged[result] = url
+		for _, msg := range result.Messages {
+			logging(msg)
 		}
 	}
 
+	// keey track of already loaded pmds.
+	already := map[string]*LoadedProviderMetadata{}
+
 	// check direct path
 	if strings.HasPrefix(domain, "https://") {
-		result := LoadProviderMetadataFromURL(client, domain)
+		result := LoadProviderMetadataFromURL(client, domain, already)
 		lg(result, domain)
 		return result
 	}
@@ -155,7 +194,7 @@ func LoadProviderMetadataForDomain(
 
 	// First try well-know path
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	wellknownResult := LoadProviderMetadataFromURL(client, wellknownURL)
+	wellknownResult := LoadProviderMetadataFromURL(client, wellknownURL, already)
 	lg(wellknownResult, wellknownURL)
 
 	// We have a candidate.
@@ -165,7 +204,7 @@ func LoadProviderMetadataForDomain(
 
 	// Next load the PMDs from security.txt
 	secURL := "https://" + domain + "/.well-known/security.txt"
-	secResults := LoadProviderMetadatasFromSecurity(client, secURL)
+	secResults := LoadProviderMetadatasFromSecurity(client, secURL, already)
 
 	if secResults == nil {
 		logging("%s failed to load.", secURL)
@@ -175,9 +214,7 @@ func LoadProviderMetadataForDomain(
 
 		for _, result := range secResults {
 			if len(result.Messages) > 0 {
-				for _, msg := range result.Messages {
-					logging(msg)
-				}
+				lg(result, result.URL)
 			} else {
 				secGoods = append(secGoods, result)
 			}
@@ -222,7 +259,7 @@ func LoadProviderMetadataForDomain(
 
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
-	dnsResult := LoadProviderMetadataFromURL(client, dnsURL)
+	dnsResult := LoadProviderMetadataFromURL(client, dnsURL, already)
 	lg(dnsResult, dnsURL)
 	return dnsResult
 }
