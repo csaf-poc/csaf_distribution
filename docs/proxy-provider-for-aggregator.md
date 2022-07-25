@@ -41,7 +41,7 @@ web = "/var/www-p1/html"
 
 For `csaf_provider.go` to find this file, you need to adjust
 the path via the variable, normally set in `/etc/nginx/fcgiwrap.conf`:
-```
+```nginx
   fastcgi_param CSAF_CONFIG /etc/csaf/internal-provider1.toml;
 ```
 
@@ -50,13 +50,15 @@ fcgiwrap via an array. It is not guaranteed that the last value will be
 used. So if you are thinking about setting this variable dynamically,
 you need to make sure only once.)
 
-For example you can clone the file
+For example you can clone the files
 ```bash
 sudo cp /etc/nginx/fcgiwrap.conf /etc/nginx/fcgiwrap-p1.conf
 sudo vim /etc/nginx/fcgiwrap-p1.conf
 sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/internal-p1-cgi
 sudo ln -s /etc/nginx/sites-available/internal-p1-cgi  /etc/nginx/sites-enabled/
 sudo vim  /etc/nginx/sites-available/internal-p1-cgi
+
+and then set the right config and port like
 ```
 
 ```nginx
@@ -79,9 +81,10 @@ limit the interfaces where it is listening in the `listen` directive.
 The following setting will only respond to requests
 on the loopback interface on port 10443 with TLS.
 
-```
-  listen localhost:10443 ssl default_server;
-  listen [::1]:10443 ssl default_server;
+```nginx
+        listen localhost:10443 ssl default_server;
+        listen [::1]:10443 ssl default_server;
+        root /var/www-p1/html;
 ```
 
 (Don't forget to reload nginx, so it gets the config change.)
@@ -118,7 +121,7 @@ to it is used next time when `csaf_aggregator` does a full run, e.g.:
 
 ```toml
 [[providers]]
-  name = "Example Proxy Provider"
+  name = "example-proxy-provider"
   domain = "https://nein.ntvtn.de:10443/.well-known/csaf/provider-metadata.json"
 ```
 
