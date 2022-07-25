@@ -37,8 +37,8 @@
 # against the JSON schema.
 #no_validation = false
 
-# Disable the web interface.
-#no_web_ui = false
+# Disable the experimental web interface.
+#no_web_ui = true
 
 # Make the provider take the publisher from the CSAF document.
 #dynamic_provider_metadata = false
