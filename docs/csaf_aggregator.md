@@ -79,7 +79,8 @@ domain                // base url where the contents will be reachable from outs
 rate                  // overall downloading limit per worker
 insecure              // do not check validity of TLS certificates
 write_indices         // write index.txt and changes.csv
-openpgp_private_key   // OpenPGP private key (must have no passphrase set, if you want to run the aggregator unattented, e.g. via cron.)
+openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
+                      // you want to be able to run unattended, e.g. via cron.)
 openpgp_public_key    // OpenPGP public key
 passphrase            // passphrase of the OpenPGP key
 lock_file             // path to lockfile, to stop other instances if one is not done
