@@ -304,12 +304,12 @@ func (p *processor) process(filename string) error {
 	}
 
 	// We expect a JSON answer so all other is not valid.
-	if strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
+	if !strings.Contains(resp.Header.Get("Content-Type"), "application/json") {
 		var sb strings.Builder
 		if _, err := io.Copy(&sb, resp.Body); err != nil {
-			return fmt.Errorf("reading none JSON reply from server failed: %v", err)
+			return fmt.Errorf("reading non-JSON reply from server failed: %v", err)
 		}
-		return fmt.Errorf("none JSON replay: %v", sb.String())
+		return fmt.Errorf("non-JSON reply from server: %v", sb.String())
 	}
 
 	var result struct {
