@@ -22,7 +22,7 @@ adjust the content of the `server{}` block like shown in the following example:
             if  ($ssl_client_verify != SUCCESS){
                 return 403;
             }
-       }
+        }
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
