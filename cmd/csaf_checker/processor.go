@@ -749,6 +749,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
 		}
+		p.badIndices.warn("Fetching index.txt failed: %v not found.", index)
 		return errContinue
 	}
 
@@ -803,6 +804,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
 		}
+		p.badChanges.warn("Fetching changes.csv failed: %v not found.", changes)
 		return errContinue
 	}
 
@@ -957,7 +959,7 @@ func (p *processor) checkMissing(string) error {
 	return nil
 }
 
-// checkInvalid wents over all found adivisories URLs and checks
+// checkInvalid goes over all found adivisories URLs and checks
 // if file name confirms to standard.
 func (p *processor) checkInvalid(string) error {
 
@@ -979,13 +981,17 @@ func (p *processor) checkInvalid(string) error {
 	return nil
 }
 
-// checkListing wents over all found adivisories URLs and checks
+// checkListing goes over all found adivisories URLs and checks
 // if their parent directory is listable.
 func (p *processor) checkListing(string) error {
 
 	p.badDirListings.use()
 
 	pgs := pages{}
+
+	if len(p.alreadyChecked) == 0 {
+		p.badDirListings.warn("no directory listings found")
+	}
 
 	var unlisted []string
 
