@@ -1,26 +1,27 @@
 If an organisation publishes their advisories via the internet
 as valid CSAF documents, with good filenames and using TLS,
 the [CSAF specification](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.md)
-calls it a *CASF publisher*.
+calls it a *CSAF publisher*.
 
 After manually downloading the advisories from such a publisher,
 the tools here can be used to offer the CSAF files for automated downloading
 as *CSAF aggregator*.
 
-There three necessary steps, easiest ist to use
+There are three necessary steps, easiest is to use
 one single virtual maschine (or container) per internal provider.
 Use a different port for each.
 Other setups are possible of course, e.g. virtual hosts
-or dynamic setting using nginx configuration methods.
+or dynamic settings using nginx configuration methods.
+(Of course: adapt it to your security needs and procedures,
+ask someone with experience to administrate your web server.)
 
 
 ### Setup provider api via FastCGI
 
-Follow the general instructions to setup the `csaf_provider`
-as FastCGI binary, but differ in the following way:
+Follow the [general instructions to setup the `csaf_provider` as FastCGI binary](provider-setup.md),
+but differ in the following ways:
 
-Recommended is to use non-standard TLS port to serve
-and an internal domain name.
+Recommended is to use non-standard TLS port and an internal domain name.
 
 For each internal provider a customized configuration file
 must point to a place which can be served via a web server internally
@@ -32,21 +33,37 @@ openpgp_private_key = "/etc/csaf/real_private.asc"
 openpgp_public_key = "/etc/csaf/real_public.asc"
 tlps = ["white"]
 canonical_url_prefix = "https://nein.ntvtn.de:10443"
-categories = ["Example Company Product A", "expr:document.lang"]
+categories = ["Example Company Product B", "expr:document.lang"]
 create_service_document = true
 folder = "/var/www-p1/"
 web = "/var/www-p1/html"
 ```
 
 For `csaf_provider.go` to find this file, you need to adjust
-the paths via a variable, normally set in `/etc/nginx/fcgiwrap.conf`:
+the path via the variable, normally set in `/etc/nginx/fcgiwrap.conf`:
 ```
-fastcgi_param CSAF_CONFIG /etc/csaf/internal-provider1.toml;
+  fastcgi_param CSAF_CONFIG /etc/csaf/internal-provider1.toml;
 ```
-(Careful: setting this variable a second time will transfer both values to
-facgiwrap via an array. It is not guarantee that the last value will be
-used.  So if you are thinking about setting this variable dynamically,
-you need to make sure to set in a general file, but only once elsewhere.)
+
+(Careful: setting the variable a second time will transfer both values to
+fcgiwrap via an array. It is not guaranteed that the last value will be
+used. So if you are thinking about setting this variable dynamically,
+you need to make sure only once.)
+
+For example you can clone the file
+```bash
+sudo cp /etc/nginx/fcgiwrap.conf /etc/nginx/fcgiwrap-p1.conf
+sudo vim /etc/nginx/fcgiwrap-p1.conf
+sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/internal-p1-cgi
+sudo ln -s /etc/nginx/sites-available/internal-p1-cgi  /etc/nginx/sites-enabled/
+sudo vim  /etc/nginx/sites-available/internal-p1-cgi
+```
+
+```nginx
+        include fcgiwrap-p1.conf;
+        listen 10001 ssl default_server; # ipv4
+        listen [::]:10001 ssl http2 default_server;  # ipv6
+```
 
 
 #### Networking
