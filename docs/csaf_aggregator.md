@@ -164,3 +164,10 @@ insecure = true
   category = "lister"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
+
+
+#### Publish others' advisories
+
+In case you want to provide CSAF advisories from others
+that only qualify as CSAF publishers, see
+[how to use the `csaf_aggregator` for it](proxy-provider-for-aggregator.md).
