@@ -991,10 +991,6 @@ func (p *processor) checkListing(string) error {
 
 	pgs := pages{}
 
-//	if len(p.alreadyChecked) == 0 {
-//		p.badDirListings.warn("no directory listings found")
-//	}
-
 	var unlisted []string
 
 	badDirs := map[string]struct{}{}
