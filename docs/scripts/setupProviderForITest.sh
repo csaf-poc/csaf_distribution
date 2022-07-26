@@ -102,7 +102,7 @@ create_service_document = true
 ' | sudo tee --append /etc/csaf/config.toml
 
 # Create the Folders
-curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
+curl https://localhost:8443/cgi-bin/csaf_provider.go/api/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
 
 popd
 
