@@ -34,18 +34,38 @@ type LoadedProviderMetadata struct {
 	Messages []string
 }
 
+// defaultLogging generates a logging function if given is nil.
+func defaultLogging(
+	logging func(format string, args ...interface{}),
+	prefix, suffix string,
+) func(format string, args ...interface{}) {
+
+	if logging != nil {
+		return logging
+	}
+	return func(format string, args ...interface{}) {
+		log.Printf(prefix+format+suffix, args...)
+	}
+}
+
 // LoadProviderMetadataFromURL loads a provider metadata from a given URL.
 // Returns nil if the document was not found.
 func LoadProviderMetadataFromURL(
 	client util.Client,
 	url string,
 	already map[string]*LoadedProviderMetadata,
+	logging func(format string, args ...interface{}),
 ) *LoadedProviderMetadata {
 
-	res, err := client.Get(url)
+	logging = defaultLogging(logging, "LoadProviderMetadataFromURL: ", "\n")
 
-	if err != nil || res.StatusCode != http.StatusOK {
-		// Treat as not found.
+	res, err := client.Get(url)
+	if err != nil {
+		logging("Fetching %q failed: %v", url, err)
+		return nil
+	}
+	if res.StatusCode != http.StatusOK {
+		logging("Fetching %q failed: %s (%d)", url, res.Status, res.StatusCode)
 		return nil
 	}
 
@@ -112,12 +132,18 @@ func LoadProviderMetadatasFromSecurity(
 	client util.Client,
 	path string,
 	already map[string]*LoadedProviderMetadata,
+	logging func(format string, args ...interface{}),
 ) []*LoadedProviderMetadata {
 
-	res, err := client.Get(path)
+	logging = defaultLogging(logging, "LoadProviderMetadataFromSecurity: ", "\n")
 
-	if err != nil || res.StatusCode != http.StatusOK {
-		// Treat as not found.
+	res, err := client.Get(path)
+	if err != nil {
+		logging("Fetching %q failed: %v", path, err)
+		return nil
+	}
+	if res.StatusCode != http.StatusOK {
+		logging("Fetching %q failed: %s (%d)", path, res.Status, res.StatusCode)
 		return nil
 	}
 
@@ -136,7 +162,9 @@ func LoadProviderMetadatasFromSecurity(
 
 	// Load the URLs
 	for _, url := range urls {
-		if result := LoadProviderMetadataFromURL(client, url, already); result != nil {
+		if result := LoadProviderMetadataFromURL(
+			client, url, already, logging,
+		); result != nil {
 			results = append(results, result)
 		}
 	}
@@ -155,11 +183,7 @@ func LoadProviderMetadataForDomain(
 	logging func(format string, args ...interface{}),
 ) *LoadedProviderMetadata {
 
-	if logging == nil {
-		logging = func(format string, args ...interface{}) {
-			log.Printf("LoadProviderMetadataForDomain: "+format+"\n", args...)
-		}
-	}
+	logging = defaultLogging(logging, "LoadProviderMetadataForDomain: ", "\n")
 
 	// As many URLs may lead to the same content only log once per content.
 	alreadyLogged := map[*LoadedProviderMetadata]string{}
@@ -184,7 +208,8 @@ func LoadProviderMetadataForDomain(
 
 	// check direct path
 	if strings.HasPrefix(domain, "https://") {
-		result := LoadProviderMetadataFromURL(client, domain, already)
+		result := LoadProviderMetadataFromURL(
+			client, domain, already, logging)
 		lg(result, domain)
 		return result
 	}
@@ -194,7 +219,8 @@ func LoadProviderMetadataForDomain(
 
 	// First try well-know path
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	wellknownResult := LoadProviderMetadataFromURL(client, wellknownURL, already)
+	wellknownResult := LoadProviderMetadataFromURL(
+		client, wellknownURL, already, logging)
 	lg(wellknownResult, wellknownURL)
 
 	// We have a candidate.
@@ -204,7 +230,8 @@ func LoadProviderMetadataForDomain(
 
 	// Next load the PMDs from security.txt
 	secURL := "https://" + domain + "/.well-known/security.txt"
-	secResults := LoadProviderMetadatasFromSecurity(client, secURL, already)
+	secResults := LoadProviderMetadatasFromSecurity(
+		client, secURL, already, logging)
 
 	if secResults == nil {
 		logging("%s failed to load.", secURL)
@@ -259,7 +286,8 @@ func LoadProviderMetadataForDomain(
 
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
-	dnsResult := LoadProviderMetadataFromURL(client, dnsURL, already)
+	dnsResult := LoadProviderMetadataFromURL(
+		client, dnsURL, already, logging)
 	lg(dnsResult, dnsURL)
 	return dnsResult
 }
