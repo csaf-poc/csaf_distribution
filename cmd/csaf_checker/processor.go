@@ -359,12 +359,8 @@ func (p *processor) httpClient() util.Client {
 		tlsConfig.InsecureSkipVerify = true
 	}
 
-	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
-		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
+	if len(p.opts.clientCerts) != 0 {
+		tlsConfig.Certificates = p.opts.clientCerts
 	}
 
 	hClient.Transport = &http.Transport{
