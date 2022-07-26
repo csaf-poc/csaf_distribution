@@ -96,7 +96,7 @@ The following example file documents all available configuration options:
 # This example provides an overview over the syntax,
 # adjust the parameters depending on your setup.
 #[remote_validator]
-#url = "http://localhost:3000"
+#url = "http://localhost:8082"
 #presets = ["mandatory"]
 #cache = "/var/lib/csaf/validations.db"
 
