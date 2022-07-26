@@ -23,7 +23,7 @@ import (
 // defaultURL is default URL where to look for
 // the validation service.
 const (
-	defaultURL     = "http://localhost:3000"
+	defaultURL     = "http://localhost:8082"
 	validationPath = "/api/v1/validate"
 )
 

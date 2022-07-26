@@ -116,7 +116,7 @@ set +e
 echo
 echo === Try to reach the validator service ten times, up to nine fails are ok
 for ((i = 1; i <= 10; i++)); do
- if [ $(curl -IL http://localhost:3000/api/v1/tests | grep -c HTTP ) != "0" ]; then
+ if [ $(curl -IL http://localhost:8082/api/v1/tests | grep -c HTTP ) != "0" ]; then
  break
  fi
  sleep 3
