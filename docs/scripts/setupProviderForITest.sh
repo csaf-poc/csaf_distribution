@@ -122,6 +122,11 @@ for ((i = 1; i <= 10; i++)); do
  sleep 3
 done
 
+if [ $i == 11 ]; then
+    echo Could not connect to validation service!
+    exit 1
+fi
+
 # Upload files
 ./uploadToProvider.sh
 

@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+#
+# This file is Free Software under the MIT License
+# without warranty, see README.md and LICENSES/MIT.txt for details.
+#
+# SPDX-License-Identifier: MIT
+#
+# SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+# Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
+
+set -e  # to exit if a command in the script fails
 
 sudo mkdir -p /var/lib/csaf
 sudo chgrp www-data /var/lib/csaf/
