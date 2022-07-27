@@ -13,6 +13,7 @@ import (
 	"crypto/tls"
 	_ "embed" // Used for embedding.
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -51,7 +52,12 @@ func errCheck(err error) {
 
 func (o *options) prepare() error {
 	// Load client certs.
-	if o.ClientCert != nil && o.ClientKey != nil {
+	switch hasCert, hasKey := o.ClientCert != nil, o.ClientKey != nil; {
+
+	case hasCert && !hasKey || !hasCert && hasKey:
+		return errors.New("both client-key and client-cert options must be set for the authentication")
+
+	case hasCert:
 		cert, err := tls.LoadX509KeyPair(*o.ClientCert, *o.ClientKey)
 		if err != nil {
 			return err
@@ -162,11 +168,6 @@ func main() {
 
 	if len(domains) == 0 {
 		log.Println("No domains given.")
-		return
-	}
-
-	if opts.ClientCert != nil && opts.ClientKey == nil || opts.ClientCert == nil && opts.ClientKey != nil {
-		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}
 

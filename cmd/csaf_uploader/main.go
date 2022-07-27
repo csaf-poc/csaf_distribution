@@ -55,6 +55,8 @@ type options struct {
 
 	Config  *string `short:"c" long:"config" description:"Path to config ini file" value-name:"INI-FILE" no-ini:"true"`
 	Version bool    `long:"version" description:"Display version of the binary"`
+
+	clientCerts []tls.Certificate
 }
 
 type processor struct {
@@ -68,6 +70,23 @@ var iniPaths = []string{
 	"~/.config/csaf/uploader.ini",
 	"~/.csaf_uploader.ini",
 	"csaf_uploader.ini",
+}
+
+func (o *options) prepare() error {
+	// Load client certs.
+	switch hasCert, hasKey := o.ClientCert != nil, o.ClientKey != nil; {
+
+	case hasCert && !hasKey || !hasCert && hasKey:
+		return errors.New("both client-key and client-cert options must be set for the authentication")
+
+	case hasCert:
+		cert, err := tls.LoadX509KeyPair(*o.ClientCert, *o.ClientKey)
+		if err != nil {
+			return err
+		}
+		o.clientCerts = []tls.Certificate{cert}
+	}
+	return nil
 }
 
 // loadKey loads an OpenPGP key.
@@ -129,13 +148,8 @@ func (p *processor) httpClient() *http.Client {
 		tlsConfig.InsecureSkipVerify = true
 	}
 
-	if p.opts.ClientCert != nil && p.opts.ClientKey != nil {
-		cert, err := tls.LoadX509KeyPair(*p.opts.ClientCert, *p.opts.ClientKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tlsConfig.Certificates = []tls.Certificate{cert}
+	if len(p.opts.clientCerts) != 0 {
+		tlsConfig.Certificates = p.opts.clientCerts
 	}
 
 	client.Transport = &http.Transport{
@@ -398,17 +412,14 @@ func main() {
 		check(iniParser.ParseFile(iniFile))
 	}
 
+	check(opts.prepare())
+
 	if opts.PasswordInteractive {
 		check(readInteractive("Enter auth password: ", &opts.Password))
 	}
 
 	if opts.PassphraseInteractive {
 		check(readInteractive("Enter OpenPGP passphrase: ", &opts.Passphrase))
-	}
-
-	if opts.ClientCert != nil && opts.ClientKey == nil || opts.ClientCert == nil && opts.ClientKey != nil {
-		log.Println("Both client-key and client-cert options must be set for the authentication.")
-		return
 	}
 
 	p, err := newProcessor(&opts)
