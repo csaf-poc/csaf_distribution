@@ -171,11 +171,6 @@ func main() {
 		return
 	}
 
-	if opts.ClientCert != nil && opts.ClientKey == nil || opts.ClientCert == nil && opts.ClientKey != nil {
-		log.Println("Both client-key and client-cert options must be set for the authentication.")
-		return
-	}
-
 	p := newProcessor(opts)
 
 	report, err := p.run(buildReporters(), domains)
