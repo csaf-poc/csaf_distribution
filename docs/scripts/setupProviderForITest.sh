@@ -43,8 +43,8 @@ location /cgi-bin/ {
 
   # Adjust non standard parameters (SCRIPT_FILENAME)
   fastcgi_param SCRIPT_FILENAME  /usr/lib$fastcgi_script_name;
-
   fastcgi_param PATH_INFO $fastcgi_path_info;
+
   fastcgi_param CSAF_CONFIG /etc/csaf/config.toml;
 
   fastcgi_param SSL_CLIENT_VERIFY $ssl_client_verify;
@@ -53,7 +53,7 @@ location /cgi-bin/ {
 }
 ' | sudo tee /etc/nginx/fcgiwrap.conf
 
-sudo sed -i "/^server {/a        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
+sudo sed -i "/^server {/a\        include fcgiwrap.conf;" $NGINX_CONFIG_PATH
 
 echo "
         # For atomic directory switches
@@ -102,7 +102,7 @@ create_service_document = true
 ' | sudo tee --append /etc/csaf/config.toml
 
 # Create the Folders
-curl https://localhost:8443/cgi-bin/csaf_provider.go/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
+curl https://localhost:8443/cgi-bin/csaf_provider.go/api/create --cert-type p12 --cert ~/devca1/testclient1.p12 --insecure
 
 popd
 
@@ -116,11 +116,16 @@ set +e
 echo
 echo === Try to reach the validator service ten times, up to nine fails are ok
 for ((i = 1; i <= 10; i++)); do
- if [ $(curl -IL http://localhost:3000/api/v1/tests | grep -c HTTP ) != "0" ]; then
+ if [ $(curl -IL http://localhost:8082/api/v1/tests | grep -c HTTP ) != "0" ]; then
  break
  fi
  sleep 3
 done
+
+if [ $i == 11 ]; then
+    echo Could not connect to validation service!
+    exit 1
+fi
 
 # Upload files
 ./uploadToProvider.sh

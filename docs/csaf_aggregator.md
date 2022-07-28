@@ -71,7 +71,7 @@ adjust the `root` path accordingly.
 
 The following options can be used in the config file in TOML format:
 
-```
+```go
 workers               // number of parallel workers to start (default 10)
 folder                // target folder on disc for writing the downloaded documents
 web                   // directory to be served by the webserver
@@ -79,7 +79,8 @@ domain                // base url where the contents will be reachable from outs
 rate                  // overall downloading limit per worker
 insecure              // do not check validity of TLS certificates
 write_indices         // write index.txt and changes.csv
-openpgp_private_key   // OpenPGP private key
+openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
+                      // you want to be able to run unattended, e.g. via cron.)
 openpgp_public_key    // OpenPGP public key
 passphrase            // passphrase of the OpenPGP key
 lock_file             // path to lockfile, to stop other instances if one is not done
@@ -163,3 +164,10 @@ insecure = true
   category = "lister"
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
+
+
+#### Publish others' advisories
+
+In case you want to provide CSAF advisories from others
+that only qualify as CSAF publishers, see
+[how to use the `csaf_aggregator` for it](proxy-provider-for-aggregator.md).

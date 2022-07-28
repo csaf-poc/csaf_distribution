@@ -35,7 +35,7 @@ echo '
             if  ($ssl_client_verify != SUCCESS){
                 return 403;
             }
-       }
+        }
 '> ~/${FOLDERNAME}/clientCertificateConfigs.txt
 
 sudo sed -i "/^server {/r  ${HOME}/${FOLDERNAME}/clientCertificateConfigs.txt" $NGINX_CONFIG_PATH

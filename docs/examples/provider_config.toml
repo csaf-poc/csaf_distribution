@@ -37,8 +37,8 @@
 # against the JSON schema.
 #no_validation = false
 
-# Disable the web interface.
-#no_web_ui = false
+# Disable the experimental web interface.
+#no_web_ui = true
 
 # Make the provider take the publisher from the CSAF document.
 #dynamic_provider_metadata = false
@@ -83,7 +83,7 @@
 # This example provides an overview over the syntax,
 # adjust the parameters depending on your setup.
 #[remote_validator]
-#url = "http://localhost:3000"
+#url = "http://localhost:8082"
 #presets = ["mandatory"]
 #cache = "/var/lib/csaf/validations.db"
 

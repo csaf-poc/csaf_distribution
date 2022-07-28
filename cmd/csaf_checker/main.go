@@ -10,8 +10,10 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	_ "embed" // Used for embedding.
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -35,6 +37,8 @@ type options struct {
 	Verbose    bool     `long:"verbose" short:"v" description:"Verbose output"`
 	Rate       *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
 	Years      *uint    `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS"`
+
+	clientCerts []tls.Certificate
 }
 
 func errCheck(err error) {
@@ -44,6 +48,23 @@ func errCheck(err error) {
 		}
 		log.Fatalf("error: %v\n", err)
 	}
+}
+
+func (o *options) prepare() error {
+	// Load client certs.
+	switch hasCert, hasKey := o.ClientCert != nil, o.ClientKey != nil; {
+
+	case hasCert && !hasKey || !hasCert && hasKey:
+		return errors.New("both client-key and client-cert options must be set for the authentication")
+
+	case hasCert:
+		cert, err := tls.LoadX509KeyPair(*o.ClientCert, *o.ClientKey)
+		if err != nil {
+			return err
+		}
+		o.clientCerts = []tls.Certificate{cert}
+	}
+	return nil
 }
 
 // writeJSON writes the JSON encoding of the given report to the given stream.
@@ -143,13 +164,10 @@ func main() {
 		return
 	}
 
+	errCheck(opts.prepare())
+
 	if len(domains) == 0 {
 		log.Println("No domains given.")
-		return
-	}
-
-	if opts.ClientCert != nil && opts.ClientKey == nil || opts.ClientCert == nil && opts.ClientKey != nil {
-		log.Println("Both client-key and client-cert options must be set for the authentication.")
 		return
 	}
 
