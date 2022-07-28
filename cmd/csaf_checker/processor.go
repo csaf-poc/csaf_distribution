@@ -831,7 +831,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 				}
 				break
 			}
-			emptyChanges = false
+			changesEmpty = false
 			if err != nil {
 				return nil, nil, err
 			}
