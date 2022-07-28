@@ -757,11 +757,10 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		indexEmpty := true
 		for line := 1; scanner.Scan(); line++ {
 			u := scanner.Text()
-			contents, err := url.Parse(u);
-			if contexts != io.EOF {										// Questionable, urgently needs testing when avaible (currently, index.txt can't be found)
+			if  u != "" {										// Questionable, urgently needs testing when avaible (currently, index.txt can't be found)
 				indexEmpty = false
 			}
-			if err != nil {
+			if _, err := url.Parse(u); err != nil {
 				p.badIntegrities.error("index.txt contains invalid URL %q in line %d", u, line)
 				continue
 			}
