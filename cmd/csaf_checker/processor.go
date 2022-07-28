@@ -826,7 +826,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
-				if emptyChanges{
+				if changesEmpty{
 					p.badChanges.warn("no entries in changes.csv found")                         // Needs testing when avaible
 				}
 				break
