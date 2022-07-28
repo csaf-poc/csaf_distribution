@@ -754,13 +754,21 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		defer res.Body.Close()
 		var files []csaf.AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
+		indexEmpty := true
 		for line := 1; scanner.Scan(); line++ {
 			u := scanner.Text()
-			if _, err := url.Parse(u); err != nil {
+			contents, err := url.Parse(u);
+			if contexts != io.EOF {										// Questionable, urgently needs testing when avaible (currently, index.txt can't be found)
+				indexEmpty = false
+			}
+			if err != nil {
 				p.badIntegrities.error("index.txt contains invalid URL %q in line %d", u, line)
 				continue
 			}
 			files = append(files, csaf.PlainAdvisoryFile(u))
+		}
+		if indexEmpty {
+			p.badIntegrities.warn("index.txt contains no URLs")
 		}
 		return files, scanner.Err()
 	}()
@@ -815,11 +823,16 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			pathColumn = 0
 			timeColumn = 1
 		)
+		changesEmpty := true
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
+				if emptyChanges{
+					p.badChanges.warn("no entries in changes.csv found")                         // Needs testing when avaible
+				}
 				break
 			}
+			emptyChanges = false
 			if err != nil {
 				return nil, nil, err
 			}
