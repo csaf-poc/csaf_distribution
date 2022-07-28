@@ -757,7 +757,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		indexEmpty := true
 		for line := 1; scanner.Scan(); line++ {
 			u := scanner.Text()
-			if  u != "" {
+			if u != "" {
 				indexEmpty = false
 			}
 			if _, err := url.Parse(u); err != nil {
@@ -826,7 +826,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
-				if changesEmpty{
+				if changesEmpty {
 					p.badChanges.warn("no entries in changes.csv found")
 				}
 				break
