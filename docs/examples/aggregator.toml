@@ -5,7 +5,9 @@ web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
 insecure = true
-#key =
+#openpgp_private_key =
+#openpgp_public_key =
+#interim_years =
 #passphrase =
 #write_indices = false
 
