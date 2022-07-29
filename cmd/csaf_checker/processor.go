@@ -586,6 +586,7 @@ func (p *processor) integrity(
 func (p *processor) processROLIEFeed(feed string) error {
 	client := p.httpClient()
 	res, err := client.Get(feed)
+	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
 		return errContinue
@@ -700,7 +701,9 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 		files = append(files, file)
 	})
-
+	if len(files) == 0 {
+		p.badDirListings.warn("no listing directories found")
+	}
 	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil &&
 		err != errContinue {
 		return err
