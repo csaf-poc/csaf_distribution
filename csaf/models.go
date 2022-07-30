@@ -466,6 +466,18 @@ func (pmd *ProviderMetadata) Defaults() {
 	}
 }
 
+// AddDirectoryDistribution adds a directory based distribution
+// with a given url to the provider metadata.
+func (pmd *ProviderMetadata) AddDirectoryDistribution(url string) {
+	// Avoid duplicates.
+	for i := range pmd.Distributions {
+		if pmd.Distributions[i].DirectoryURL == url {
+			return
+		}
+	}
+	pmd.Distributions = append(pmd.Distributions, Distribution{DirectoryURL: url})
+}
+
 // Validate checks if the feed is valid.
 // Returns an error if the validation fails otherwise nil.
 func (f *Feed) Validate() error {
