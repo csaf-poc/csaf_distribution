@@ -1,4 +1,4 @@
-// This file is Free Software under the MIT License
+W// This file is Free Software under the MIT License
 // without warranty, see README.md and LICENSES/MIT.txt for details.
 //
 // SPDX-License-Identifier: MIT
@@ -1003,7 +1003,7 @@ func (p *processor) checkListing(string) error {
 
 	badDirs := map[string]struct{}{}
 
-	if len(p.alreadyChecked) ==0 {
+	if len(p.alreadyChecked) == 0 {
 		p.badDirListings.info("No directory listings found.")
 	}
 
