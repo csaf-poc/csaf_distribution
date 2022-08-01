@@ -748,6 +748,8 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 			p.badIndices.warn("Fetching index.txt failed: %v not found.", index)
 		}
 		return errContinue
+	} else {
+		p.badIndices.info("Found %v", index)
 	}
 
 	files, err := func() ([]csaf.AdvisoryFile, error) {
@@ -811,6 +813,8 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			p.badChanges.warn("Fetching changes.csv failed: %v not found.", changes)
 		}
 		return errContinue
+	} else {
+		p.badChanges.info("Found %v", changes)
 	}
 
 	times, files, err := func() ([]time.Time, []csaf.AdvisoryFile, error) {
