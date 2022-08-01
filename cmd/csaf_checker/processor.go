@@ -755,26 +755,22 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		defer res.Body.Close()
 		var files []csaf.AdvisoryFile
 		scanner := bufio.NewScanner(res.Body)
-		indexEmpty := true
 		for line := 1; scanner.Scan(); line++ {
 			u := scanner.Text()
-			if u != "" {
-				indexEmpty = false
-			}
 			if _, err := url.Parse(u); err != nil {
 				p.badIntegrities.error("index.txt contains invalid URL %q in line %d", u, line)
 				continue
 			}
 			files = append(files, csaf.PlainAdvisoryFile(u))
 		}
-		if indexEmpty {
-			p.badIntegrities.warn("index.txt contains no URLs")
-		}
 		return files, scanner.Err()
 	}()
 	if err != nil {
 		p.badIndices.error("Reading %s failed: %v", index, err)
 		return errContinue
+	}
+	if len(files) == 0 {
+		p.badIntegrities.warn("index.txt contains no URLs")
 	}
 
 	return p.integrity(files, base, mask, p.badIndices.add)
@@ -824,16 +820,11 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			pathColumn = 0
 			timeColumn = 1
 		)
-		changesEmpty := true
 		for {
 			r, err := c.Read()
 			if err == io.EOF {
-				if changesEmpty {
-					p.badChanges.warn("no entries in changes.csv found")
-				}
 				break
 			}
-			changesEmpty = false
 			if err != nil {
 				return nil, nil, err
 			}
@@ -857,6 +848,14 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	if err != nil {
 		p.badChanges.error("Reading %s failed: %v", changes, err)
 		return errContinue
+	}
+
+	if len(files) == 0 {
+		var filtered string
+		if p.ageAccept != nil {
+			filtered = " (maybe filtered out by time interval)"
+		}
+		p.badChanges.warn("no entries in changes.csv found" + filtered)
 	}
 
 	if !sort.SliceIsSorted(times, func(i, j int) bool {
