@@ -85,30 +85,21 @@ type whereType byte
 
 const (
 	rolieMask = whereType(1) << iota
-	rolieIndexMask
-	rolieChangesMask
 	indexMask
 	changesMask
 	listingMask
-	rolieListingMask
 )
 
 func (wt whereType) String() string {
 	switch wt {
 	case rolieMask:
 		return "ROLIE"
-	case rolieIndexMask:
-		return "index.txt [ROLIE]"
-	case rolieChangesMask:
-		return "changes.csv [ROLIE]"
 	case indexMask:
 		return "index.txt"
 	case changesMask:
 		return "changes.csv"
 	case listingMask:
 		return "directory listing"
-	case rolieListingMask:
-		return "directory listing [ROLIE]"
 	default:
 		var mixed []string
 		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
@@ -706,14 +697,6 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return err
 	}
 
-	if err := p.checkIndex(base, rolieIndexMask); err != nil && err != errContinue {
-		return err
-	}
-
-	if err := p.checkChanges(base, rolieChangesMask); err != nil && err != errContinue {
-		return err
-	}
-
 	return nil
 }
 
@@ -937,7 +920,7 @@ func (p *processor) checkMissing(string) error {
 	for _, f := range files {
 		v := p.alreadyChecked[f]
 		var where []string
-		for mask := rolieMask; mask <= rolieListingMask; mask <<= 1 {
+		for mask := rolieMask; mask <= listingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
 				if v&mask == mask {
