@@ -395,12 +395,21 @@ func (p *processor) integrity(
 
 	var data bytes.Buffer
 
+	makeAbs := func(u *url.URL) *url.URL {
+		if u.IsAbs() {
+			return u
+		}
+		return util.JoinURLPath(b, u.String())
+	}
+
 	for _, f := range files {
 		fp, err := url.Parse(f.URL())
 		if err != nil {
 			lg(ErrorType, "Bad URL %s: %v", f, err)
 			continue
 		}
+		fp = makeAbs(fp)
+
 		u := b.ResolveReference(fp).String()
 		if p.markChecked(u, mask) {
 			continue
@@ -492,6 +501,7 @@ func (p *processor) integrity(
 				lg(ErrorType, "Bad URL %s: %v", x.url(), err)
 				continue
 			}
+			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
@@ -527,6 +537,7 @@ func (p *processor) integrity(
 			lg(ErrorType, "Bad URL %s: %v", f.SignURL(), err)
 			continue
 		}
+		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
 
@@ -822,9 +833,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if p.ageAccept != nil && !p.ageAccept(t) {
 				continue
 			}
+			path := r[pathColumn]
 			times, files =
 				append(times, t),
-				append(files, csaf.PlainAdvisoryFile(r[pathColumn]))
+				append(files, csaf.PlainAdvisoryFile(path))
 		}
 		return times, files, nil
 	}()
@@ -877,6 +889,16 @@ func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error 
 	return nil
 }
 
+// empty checks if list of strings contains at least one none empty string.
+func empty(arr []string) bool {
+	for _, s := range arr {
+		if s != "" {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *processor) checkCSAFs(domain string) error {
 	// Check for ROLIE
 	rolie, err := p.expr.Eval("$.distributions[*].rolie.feeds", p.pmd)
@@ -898,22 +920,46 @@ func (p *processor) checkCSAFs(domain string) error {
 		}
 	}
 
-	// No rolie feeds
-	pmdURL, err := url.Parse(p.pmdURL)
+	// No rolie feeds -> try directory_urls.
+	directoryURLs, err := p.expr.Eval(
+		"$.distributions[*].directory_url", p.pmd)
+
+	var dirURLs []string
+
 	if err != nil {
-		return err
-	}
-	base, err := util.BaseURL(pmdURL)
-	if err != nil {
-		return err
+		p.badProviderMetadata.warn("extracting directory URLs failed: %v.", err)
+	} else {
+		var ok bool
+		dirURLs, ok = util.AsStrings(directoryURLs)
+		if !ok {
+			p.badProviderMetadata.warn("directory URLs are not strings.")
+		}
 	}
 
-	if err := p.checkIndex(base, indexMask); err != nil && err != errContinue {
-		return err
+	// Not found -> fall back to PMD url
+	if empty(dirURLs) {
+		pmdURL, err := url.Parse(p.pmdURL)
+		if err != nil {
+			return err
+		}
+		baseURL, err := util.BaseURL(pmdURL)
+		if err != nil {
+			return err
+		}
+		dirURLs = []string{baseURL}
 	}
 
-	if err := p.checkChanges(base, changesMask); err != nil && err != errContinue {
-		return err
+	for _, base := range dirURLs {
+		if base == "" {
+			continue
+		}
+		if err := p.checkIndex(base, indexMask); err != nil && err != errContinue {
+			return err
+		}
+
+		if err := p.checkChanges(base, changesMask); err != nil && err != errContinue {
+			return err
+		}
 	}
 
 	return nil

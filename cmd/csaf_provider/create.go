@@ -298,6 +298,17 @@ func createProviderMetadata(c *config, wellknownCSAF string) error {
 	pm := csaf.NewProviderMetadataDomain(c.CanonicalURLPrefix, c.modelTLPs())
 	c.ProviderMetaData.apply(pm)
 
+	// We have directory based distributions.
+	if c.WriteIndices {
+		// Every TLP as a distribution?
+		for _, t := range c.TLPs {
+			if t != tlpCSAF {
+				pm.AddDirectoryDistribution(
+					c.CanonicalURLPrefix + "/.well-known/csaf/" + string(t))
+			}
+		}
+	}
+
 	key, err := loadCryptoKeyFromFile(c.OpenPGPPublicKey)
 	if err != nil {
 		return fmt.Errorf("cannot load public key: %v", err)

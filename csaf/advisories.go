@@ -96,6 +96,16 @@ func NewAdvisoryFileProcessor(
 	}
 }
 
+// empty checks if list of strings contains at least one none empty string.
+func empty(arr []string) bool {
+	for _, s := range arr {
+		if s != "" {
+			return false
+		}
+	}
+	return true
+}
+
 // Process extracts the adivisory filenames and passes them with
 // the corresponding label to fn.
 func (afp *AdvisoryFileProcessor) Process(
@@ -133,13 +143,44 @@ func (afp *AdvisoryFileProcessor) Process(
 		}
 	} else {
 		// No rolie feeds -> try to load files from index.txt
-		files, err := afp.loadIndex(lg)
+
+		directoryURLs, err := afp.expr.Eval(
+			"$.distributions[*].directory_url", afp.doc)
+
+		var dirURLs []string
+
 		if err != nil {
-			return err
+			lg("extracting directory URLs failed: %v\n", err)
+		} else {
+			var ok bool
+			dirURLs, ok = util.AsStrings(directoryURLs)
+			if !ok {
+				lg("directory_urls are not strings.\n")
+			}
 		}
-		// XXX: Is treating as white okay? better look into the advisories?
-		if err := fn(TLPLabelWhite, files); err != nil {
-			return err
+
+		// Not found -> fall back to PMD url
+		if empty(dirURLs) {
+			baseURL, err := util.BaseURL(afp.base)
+			if err != nil {
+				return err
+			}
+			dirURLs = []string{baseURL}
+		}
+
+		for _, base := range dirURLs {
+			if base == "" {
+				continue
+			}
+
+			files, err := afp.loadIndex(base, lg)
+			if err != nil {
+				return err
+			}
+			// XXX: Is treating as white okay? better look into the advisories?
+			if err := fn(TLPLabelWhite, files); err != nil {
+				return err
+			}
 		}
 	} // TODO: else scan directories?
 	return nil
@@ -148,12 +189,10 @@ func (afp *AdvisoryFileProcessor) Process(
 // loadIndex loads baseURL/index.txt and returns a list of files
 // prefixed by baseURL/.
 func (afp *AdvisoryFileProcessor) loadIndex(
+	baseURL string,
 	lg func(string, ...interface{}),
 ) ([]AdvisoryFile, error) {
-	baseURL, err := util.BaseURL(afp.base)
-	if err != nil {
-		return nil, err
-	}
+
 	base, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
