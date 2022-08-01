@@ -701,9 +701,6 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 		files = append(files, file)
 	})
-	if len(files) == 0 {
-		p.badDirListings.warn("no listing directories found")
-	}
 	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil &&
 		err != errContinue {
 		return err
@@ -1005,6 +1002,10 @@ func (p *processor) checkListing(string) error {
 	var unlisted []string
 
 	badDirs := map[string]struct{}{}
+
+	if len(p.alreadyChecked) ==0 {
+		p.badDirListings.info("No directory listings found.")
+	}
 
 	for f := range p.alreadyChecked {
 		found, err := pgs.listed(f, p, badDirs)
