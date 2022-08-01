@@ -395,12 +395,21 @@ func (p *processor) integrity(
 
 	var data bytes.Buffer
 
+	makeAbs := func(u *url.URL) *url.URL {
+		if u.IsAbs() {
+			return u
+		}
+		return util.JoinURLPath(b, u.String())
+	}
+
 	for _, f := range files {
 		fp, err := url.Parse(f.URL())
 		if err != nil {
 			lg(ErrorType, "Bad URL %s: %v", f, err)
 			continue
 		}
+		fp = makeAbs(fp)
+
 		u := b.ResolveReference(fp).String()
 		if p.markChecked(u, mask) {
 			continue
@@ -492,6 +501,7 @@ func (p *processor) integrity(
 				lg(ErrorType, "Bad URL %s: %v", x.url(), err)
 				continue
 			}
+			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
@@ -527,6 +537,7 @@ func (p *processor) integrity(
 			lg(ErrorType, "Bad URL %s: %v", f.SignURL(), err)
 			continue
 		}
+		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
 
@@ -822,9 +833,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			if p.ageAccept != nil && !p.ageAccept(t) {
 				continue
 			}
+			path := r[pathColumn]
 			times, files =
 				append(times, t),
-				append(files, csaf.PlainAdvisoryFile(r[pathColumn]))
+				append(files, csaf.PlainAdvisoryFile(path))
 		}
 		return times, files, nil
 	}()
