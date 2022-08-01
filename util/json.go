@@ -166,3 +166,19 @@ func (pe *PathEval) Strings(
 	}
 	return results, nil
 }
+
+// AsStrings transforms an []interface{string, string,... }
+// to a []string.
+func AsStrings(x interface{}) ([]string, bool) {
+	strs, ok := x.([]interface{})
+	if !ok {
+		return nil, false
+	}
+	res := make([]string, 0, len(strs))
+	for _, y := range strs {
+		if s, ok := y.(string); ok {
+			res = append(res, s)
+		}
+	}
+	return res, true
+}

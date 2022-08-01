@@ -918,7 +918,7 @@ func (p *processor) checkCSAFs(domain string) error {
 		p.badProviderMetadata.warn("extracting directory URLs failed: %v.", err)
 	} else {
 		var ok bool
-		dirURLs, ok = directoryURLs.([]string)
+		dirURLs, ok = util.AsStrings(directoryURLs)
 		if !ok {
 			p.badProviderMetadata.warn("directory URLs are not strings.")
 		}

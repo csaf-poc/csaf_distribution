@@ -153,7 +153,7 @@ func (afp *AdvisoryFileProcessor) Process(
 			lg("extracting directory URLs failed: %v\n", err)
 		} else {
 			var ok bool
-			dirURLs, ok = directoryURLs.([]string)
+			dirURLs, ok = util.AsStrings(directoryURLs)
 			if !ok {
 				lg("directory_urls are not strings.\n")
 			}
