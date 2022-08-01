@@ -85,30 +85,21 @@ type whereType byte
 
 const (
 	rolieMask = whereType(1) << iota
-	rolieIndexMask
-	rolieChangesMask
 	indexMask
 	changesMask
 	listingMask
-	rolieListingMask
 )
 
 func (wt whereType) String() string {
 	switch wt {
 	case rolieMask:
 		return "ROLIE"
-	case rolieIndexMask:
-		return "index.txt [ROLIE]"
-	case rolieChangesMask:
-		return "changes.csv [ROLIE]"
 	case indexMask:
 		return "index.txt"
 	case changesMask:
 		return "changes.csv"
 	case listingMask:
 		return "directory listing"
-	case rolieListingMask:
-		return "directory listing [ROLIE]"
 	default:
 		var mixed []string
 		for mask := rolieMask; mask <= changesMask; mask <<= 1 {
@@ -586,6 +577,7 @@ func (p *processor) integrity(
 func (p *processor) processROLIEFeed(feed string) error {
 	client := p.httpClient()
 	res, err := client.Get(feed)
+	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
 		return errContinue
@@ -700,17 +692,8 @@ func (p *processor) processROLIEFeed(feed string) error {
 
 		files = append(files, file)
 	})
-
 	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil &&
 		err != errContinue {
-		return err
-	}
-
-	if err := p.checkIndex(base, rolieIndexMask); err != nil && err != errContinue {
-		return err
-	}
-
-	if err := p.checkChanges(base, rolieChangesMask); err != nil && err != errContinue {
 		return err
 	}
 
@@ -744,9 +727,12 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		if res.StatusCode != http.StatusNotFound {
 			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
+		} else {
+			p.badIndices.warn("Fetching index.txt failed: %v not found.", index)
 		}
 		return errContinue
 	}
+	p.badIndices.info("Found %v", index)
 
 	files, err := func() ([]csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
@@ -765,6 +751,9 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	if err != nil {
 		p.badIndices.error("Reading %s failed: %v", index, err)
 		return errContinue
+	}
+	if len(files) == 0 {
+		p.badIntegrities.warn("index.txt contains no URLs")
 	}
 
 	return p.integrity(files, base, mask, p.badIndices.add)
@@ -798,9 +787,12 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			// It's optional
 			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
+		} else {
+			p.badChanges.warn("Fetching changes.csv failed: %v not found.", changes)
 		}
 		return errContinue
 	}
+	p.badChanges.info("Found %v", changes)
 
 	times, files, err := func() ([]time.Time, []csaf.AdvisoryFile, error) {
 		defer res.Body.Close()
@@ -839,6 +831,14 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	if err != nil {
 		p.badChanges.error("Reading %s failed: %v", changes, err)
 		return errContinue
+	}
+
+	if len(files) == 0 {
+		var filtered string
+		if p.ageAccept != nil {
+			filtered = " (maybe filtered out by time interval)"
+		}
+		p.badChanges.warn("no entries in changes.csv found" + filtered)
 	}
 
 	if !sort.SliceIsSorted(times, func(i, j int) bool {
@@ -971,7 +971,7 @@ func (p *processor) checkMissing(string) error {
 	for _, f := range files {
 		v := p.alreadyChecked[f]
 		var where []string
-		for mask := rolieMask; mask <= rolieListingMask; mask <<= 1 {
+		for mask := rolieMask; mask <= listingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
 				if v&mask == mask {
@@ -987,7 +987,7 @@ func (p *processor) checkMissing(string) error {
 	return nil
 }
 
-// checkInvalid wents over all found adivisories URLs and checks
+// checkInvalid goes over all found adivisories URLs and checks
 // if file name confirms to standard.
 func (p *processor) checkInvalid(string) error {
 
@@ -1009,7 +1009,7 @@ func (p *processor) checkInvalid(string) error {
 	return nil
 }
 
-// checkListing wents over all found adivisories URLs and checks
+// checkListing goes over all found adivisories URLs and checks
 // if their parent directory is listable.
 func (p *processor) checkListing(string) error {
 
@@ -1020,6 +1020,10 @@ func (p *processor) checkListing(string) error {
 	var unlisted []string
 
 	badDirs := map[string]struct{}{}
+
+	if len(p.alreadyChecked) == 0 {
+		p.badDirListings.info("No directory listings found.")
+	}
 
 	for f := range p.alreadyChecked {
 		found, err := pgs.listed(f, p, badDirs)
