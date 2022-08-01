@@ -131,6 +131,19 @@ func (w *worker) writeProviderMetadata() error {
 		w.processor.cfg.Domain+"/.well-known/csaf-aggregator/"+w.provider.Name,
 		w.labelsFromSummaries())
 
+	// Fill in directory URLs if needed.
+	if w.provider.writeIndices(w.processor.cfg) {
+		labels := make([]string, 0, len(w.summaries))
+		for label := range w.summaries {
+			labels = append(labels, label)
+		}
+		sort.Strings(labels)
+		prefix := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" + w.provider.Name + "/"
+		for _, label := range labels {
+			pm.AddDirectoryDistribution(prefix + label)
+		}
+	}
+
 	// Figure out the role
 	var role csaf.MetadataRole
 
