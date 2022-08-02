@@ -47,7 +47,7 @@ func (lt *lazyTransaction) Dst() (string, error) {
 	}
 
 	// Copy old content into new.
-	if err := util.DeepCopy(lt.dst, lt.src); err != nil {
+	if err := util.DeepCopy(dst, lt.src); err != nil {
 		os.RemoveAll(dst)
 		return "", err
 	}
