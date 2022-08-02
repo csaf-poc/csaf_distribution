@@ -62,7 +62,7 @@ func (w *worker) checkInterims(
 		// Load local SHA256 of the advisory
 		localHash, err := util.HashFromFile(local + ".sha256")
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 
 		res, err := w.client.Get(url)
@@ -289,8 +289,9 @@ func (p *processor) interim() error {
 
 type interimsEntry [3]string
 
-func (ie interimsEntry) url() string  { return ie[1] }
-func (ie interimsEntry) path() string { return ie[2] }
+// func (ie interimsEntry) date() string { return ie[0] }
+func (ie interimsEntry) path() string { return ie[1] }
+func (ie interimsEntry) url() string  { return ie[2] }
 
 func writeInterims(interimsCSV string, interims []interimsEntry) error {
 
@@ -343,10 +344,7 @@ func readInterims(
 	c := csv.NewReader(interimsF)
 	c.FieldsPerRecord = 3
 
-	var (
-		files []interimsEntry
-		olds  []interimsEntry
-	)
+	var files, olds []interimsEntry
 
 	youngEnough := true
 
