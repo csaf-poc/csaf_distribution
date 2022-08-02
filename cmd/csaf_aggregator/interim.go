@@ -195,8 +195,8 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 				label = strings.ToLower(label)
 				labelPath := filepath.Join(providerPath, label)
 
-				interimsCSV := filepath.Join(labelPath, "interims.csv")
-				interims, olds, err := readInterims(interimsCSV, tooOld)
+				interCSV := filepath.Join(labelPath, interimsCSV)
+				interims, olds, err := readInterims(interCSV, tooOld)
 				if err != nil {
 					return err
 				}
@@ -222,8 +222,8 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 					if err != nil {
 						return err
 					}
-					interimsCSV := filepath.Join(dst, label, "interims.csv")
-					if err := writeInterims(interimsCSV, notFinalized); err != nil {
+					interCSV := filepath.Join(dst, label, interimsCSV)
+					if err := writeInterims(interCSV, notFinalized); err != nil {
 						return err
 					}
 				}
@@ -289,7 +289,6 @@ func (p *processor) interim() error {
 
 type interimsEntry [3]string
 
-func (ie interimsEntry) date() string { return ie[0] }
 func (ie interimsEntry) url() string  { return ie[1] }
 func (ie interimsEntry) path() string { return ie[2] }
 
@@ -298,7 +297,6 @@ func writeInterims(interimsCSV string, interims []interimsEntry) error {
 	if len(interims) == 0 {
 		return os.RemoveAll(interimsCSV)
 	}
-	return os.RemoveAll(interimsCSV)
 	// Overwrite old. It's save because we are in a transaction.
 
 	f, err := os.Create(interimsCSV)

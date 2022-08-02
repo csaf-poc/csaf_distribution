@@ -24,6 +24,21 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
+const (
+	// interimsCSV is the name of the file to store the URLs
+	// of the interim advisories.
+	interimsCSV = "interims.csv"
+
+	// changesCSV is the name of the file to store the
+	// the paths to the advisories sorted in descending order
+	// of the release date along with the release date.
+	changesCSV = "changes.csv"
+
+	// indexTXT is the name of the file to store the
+	// the paths of the advisories.
+	indexTXT = "index.txt"
+)
+
 func (w *worker) writeInterims(label string, summaries []summary) error {
 
 	// Filter out the interims.
@@ -44,7 +59,7 @@ func (w *worker) writeInterims(label string, summaries []summary) error {
 			ss[j].summary.CurrentReleaseDate)
 	})
 
-	fname := filepath.Join(w.dir, label, "interim.csv")
+	fname := filepath.Join(w.dir, label, interimsCSV)
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
@@ -85,7 +100,7 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 			ss[j].summary.CurrentReleaseDate)
 	})
 
-	fname := filepath.Join(w.dir, label, "changes.csv")
+	fname := filepath.Join(w.dir, label, changesCSV)
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
@@ -121,7 +136,7 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 
 func (w *worker) writeIndex(label string, summaries []summary) error {
 
-	fname := filepath.Join(w.dir, label, "index.txt")
+	fname := filepath.Join(w.dir, label, indexTXT)
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
