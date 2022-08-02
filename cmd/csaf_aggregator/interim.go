@@ -221,16 +221,14 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 				// a greater interims interval later.
 				notFinalized = append(notFinalized, olds...)
 
-				if len(notFinalized) > 0 {
-					// We want to write in the transaction folder.
-					dst, err := tx.Dst()
-					if err != nil {
-						return err
-					}
-					interCSV := filepath.Join(dst, label, interimsCSV)
-					if err := writeInterims(interCSV, notFinalized); err != nil {
-						return err
-					}
+				// We want to write in the transaction folder.
+				dst, err := tx.Dst()
+				if err != nil {
+					return err
+				}
+				ninterCSV := filepath.Join(dst, label, interimsCSV)
+				if err := writeInterims(ninterCSV, notFinalized); err != nil {
+					return err
 				}
 			}
 			return tx.commit()
