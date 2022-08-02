@@ -212,6 +212,11 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 					return err
 				}
 
+				// Nothing has changed.
+				if len(notFinalized) == len(interims) {
+					continue
+				}
+
 				// Simply append the olds. Maybe we got re-configured with
 				// a greater interims interval later.
 				notFinalized = append(notFinalized, olds...)
