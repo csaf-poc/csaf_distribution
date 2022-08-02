@@ -144,7 +144,7 @@ func (w *worker) checkInterims(
 			return nil, err
 		}
 
-		// Check if we can remove this advisory as it is not iterim any more.
+		// Check if we can remove this advisory as it is not interim any more.
 		var status string
 		if err := w.expr.Extract(statusExpr, util.StringMatcher(&status), true, doc); err != nil {
 			return nil, err
@@ -256,7 +256,7 @@ func joinErrors(errs []error) error {
 func (p *processor) interim() error {
 
 	if !p.cfg.runAsMirror() {
-		return errors.New("iterim in lister mode does not work")
+		return errors.New("interim in lister mode does not work")
 	}
 
 	queue := make(chan *interimJob)
@@ -325,7 +325,7 @@ func writeInterims(interimsCSV string, interims []interimsEntry) error {
 }
 
 // readInterims scans a interims.csv file for matching
-// iterim advisories. Its sorted with youngest
+// interim advisories. Its sorted with youngest
 // first, so we can stop scanning if entries get too old.
 // It returns two slices: The advisories that are young enough
 // and a slice of the advisories that are too old.
