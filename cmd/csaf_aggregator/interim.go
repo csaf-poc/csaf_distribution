@@ -34,23 +34,30 @@ type interimJob struct {
 	err      error
 }
 
+// statusExpr is used as an expression to check the new status
+// of an advisory which was interim before.
+const statusExpr = `$.document.tracking.status`
+
+// checkInterims checks the current status of the given
+// interim advisories. It returns a slice of advisories
+// which are not finished, yet.
 func (w *worker) checkInterims(
 	tx *lazyTransaction,
 	label string,
-	interims [][2]string,
-) ([]string, error) {
+	interims []interimsEntry,
+) ([]interimsEntry, error) {
 
 	var data bytes.Buffer
 
 	labelPath := filepath.Join(tx.Src(), label)
 
 	// advisories which are not interim any longer.
-	var finalized []string
+	var notFinalized []interimsEntry
 
 	for _, interim := range interims {
 
-		local := filepath.Join(labelPath, interim[0])
-		url := interim[1]
+		local := filepath.Join(labelPath, interim.path())
+		url := interim.url()
 
 		// Load local SHA256 of the advisory
 		localHash, err := util.HashFromFile(local + ".sha256")
@@ -84,6 +91,7 @@ func (w *worker) checkInterims(
 
 		// If the hashes are equal then we can ignore this advisory.
 		if bytes.Equal(localHash, remoteHash) {
+			notFinalized = append(notFinalized, interim)
 			continue
 		}
 
@@ -106,7 +114,7 @@ func (w *worker) checkInterims(
 		}
 
 		// Overwrite in the cloned folder.
-		nlocal := filepath.Join(dst, label, interim[0])
+		nlocal := filepath.Join(dst, label, interim.path())
 
 		bytes := data.Bytes()
 
@@ -135,9 +143,18 @@ func (w *worker) checkInterims(
 		if err := w.downloadSignatureOrSign(sigURL, ascFile, bytes); err != nil {
 			return nil, err
 		}
+
+		// Check if we can remove this advisory as it is not iterim any more.
+		var status string
+		if err := w.expr.Extract(statusExpr, util.StringMatcher(&status), true, doc); err != nil {
+			return nil, err
+		}
+		if status == "interim" {
+			notFinalized = append(notFinalized, interim)
+		}
 	}
 
-	return finalized, nil
+	return notFinalized, nil
 }
 
 // setupProviderInterim prepares the worker for a specific provider.
@@ -155,6 +172,8 @@ func (w *worker) setupProviderInterim(provider *provider) {
 func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
 	path := filepath.Join(w.processor.cfg.Web, ".well-known", "csaf-aggregator")
+
+	tooOld := w.processor.cfg.TooOldForInterims()
 
 	for j := range jobs {
 		w.setupProviderInterim(j.provider)
@@ -177,8 +196,7 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 				labelPath := filepath.Join(providerPath, label)
 
 				interimsCSV := filepath.Join(labelPath, "interims.csv")
-				interims, err := readInterims(
-					interimsCSV, w.processor.cfg.InterimYears)
+				interims, olds, err := readInterims(interimsCSV, tooOld)
 				if err != nil {
 					return err
 				}
@@ -189,19 +207,23 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 				}
 
 				// Compare locals against remotes.
-				finalized, err := w.checkInterims(tx, label, interims)
+				notFinalized, err := w.checkInterims(tx, label, interims)
 				if err != nil {
 					return err
 				}
 
-				if len(finalized) > 0 {
+				// Simply append the olds. Maybe we got re-configured with
+				// a greater interims interval later.
+				notFinalized = append(notFinalized, olds...)
+
+				if len(notFinalized) > 0 {
 					// We want to write in the transaction folder.
 					dst, err := tx.Dst()
 					if err != nil {
 						return err
 					}
 					interimsCSV := filepath.Join(dst, label, "interims.csv")
-					if err := writeInterims(interimsCSV, finalized); err != nil {
+					if err := writeInterims(interimsCSV, notFinalized); err != nil {
 						return err
 					}
 				}
@@ -265,49 +287,18 @@ func (p *processor) interim() error {
 	return joinErrors(errs)
 }
 
-func writeInterims(interimsCSV string, finalized []string) error {
+type interimsEntry [3]string
 
-	// In case this is a longer list (unlikely).
-	removed := make(map[string]bool, len(finalized))
-	for _, f := range finalized {
-		removed[f] = true
-	}
+func (ie interimsEntry) date() string { return ie[0] }
+func (ie interimsEntry) url() string  { return ie[1] }
+func (ie interimsEntry) path() string { return ie[2] }
 
-	lines, err := func() ([][]string, error) {
-		interimsF, err := os.Open(interimsCSV)
-		if err != nil {
-			return nil, err
-		}
-		defer interimsF.Close()
-		c := csv.NewReader(interimsF)
-		c.FieldsPerRecord = 3
+func writeInterims(interimsCSV string, interims []interimsEntry) error {
 
-		var lines [][]string
-		for {
-			record, err := c.Read()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return nil, err
-			}
-			// If not finalized it survives
-			if !removed[record[1]] {
-				lines = append(lines, record)
-			}
-		}
-		return lines, nil
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	// All interims are finalized now -> remove file.
-	if len(lines) == 0 {
+	if len(interims) == 0 {
 		return os.RemoveAll(interimsCSV)
 	}
-
+	return os.RemoveAll(interimsCSV)
 	// Overwrite old. It's save because we are in a transaction.
 
 	f, err := os.Create(interimsCSV)
@@ -316,8 +307,10 @@ func writeInterims(interimsCSV string, finalized []string) error {
 	}
 	c := csv.NewWriter(f)
 
-	if err := c.WriteAll(lines); err != nil {
-		return f.Close()
+	for _, ie := range interims {
+		if err := c.Write(ie[:]); err != nil {
+			return err
+		}
 	}
 
 	c.Flush()
@@ -332,49 +325,58 @@ func writeInterims(interimsCSV string, finalized []string) error {
 // readInterims scans a interims.csv file for matching
 // iterim advisories. Its sorted with youngest
 // first, so we can stop scanning if entries get too old.
-func readInterims(interimsCSV string, years int) ([][2]string, error) {
-
-	var tooOld func(time.Time) bool
-
-	if years <= 0 {
-		tooOld = func(time.Time) bool { return false }
-	} else {
-		from := time.Now().AddDate(-years, 0, 0)
-		tooOld = func(t time.Time) bool { return t.Before(from) }
-	}
+// It returns two slices: The advisories that are young enough
+// and a slice of the advisories that are too old.
+func readInterims(
+	interimsCSV string,
+	tooOld func(time.Time) bool,
+) ([]interimsEntry, []interimsEntry, error) {
 
 	interimsF, err := os.Open(interimsCSV)
 	if err != nil {
 		// None existing file -> no interims.
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil, nil, nil
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	defer interimsF.Close()
 
 	c := csv.NewReader(interimsF)
 	c.FieldsPerRecord = 3
 
-	var files [][2]string
+	var (
+		files []interimsEntry
+		olds  []interimsEntry
+	)
+
+	youngEnough := true
 
 	for {
-		record, err := c.Read()
+		row, err := c.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		t, err := time.Parse(time.RFC3339, record[0])
-		if err != nil {
-			return nil, err
+
+		if youngEnough {
+			t, err := time.Parse(time.RFC3339, row[0])
+			if err != nil {
+				return nil, nil, err
+			}
+			if tooOld(t) {
+				olds = []interimsEntry{{row[0], row[1], row[2]}}
+				youngEnough = false
+			} else {
+				files = append(files, interimsEntry{row[0], row[1], row[2]})
+			}
+		} else {
+			// These are too old.
+			olds = append(olds, interimsEntry{row[0], row[1], row[2]})
 		}
-		if tooOld(t) {
-			break
-		}
-		files = append(files, [2]string{record[1], record[2]})
 	}
 
-	return files, nil
+	return files, olds, nil
 }
