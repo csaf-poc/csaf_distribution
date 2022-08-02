@@ -176,9 +176,9 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 				label = strings.ToLower(label)
 				labelPath := filepath.Join(providerPath, label)
 
-				interimsCSV := filepath.Join(labelPath, "interims.csv")
+				interCSV := filepath.Join(labelPath, interimsCSV)
 				interims, err := readInterims(
-					interimsCSV, w.processor.cfg.InterimYears)
+					interCSV, w.processor.cfg.InterimYears)
 				if err != nil {
 					return err
 				}
@@ -200,8 +200,8 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 					if err != nil {
 						return err
 					}
-					interimsCSV := filepath.Join(dst, label, "interims.csv")
-					if err := writeInterims(interimsCSV, finalized); err != nil {
+					interCSV := filepath.Join(dst, label, interimsCSV)
+					if err := writeInterims(interCSV, finalized); err != nil {
 						return err
 					}
 				}
