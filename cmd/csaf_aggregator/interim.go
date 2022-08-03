@@ -173,7 +173,7 @@ func (w *worker) interimWork(wg *sync.WaitGroup, jobs <-chan *interimJob) {
 	defer wg.Done()
 	path := filepath.Join(w.processor.cfg.Web, ".well-known", "csaf-aggregator")
 
-	tooOld := w.processor.cfg.TooOldForInterims()
+	tooOld := w.processor.cfg.tooOldForInterims()
 
 	for j := range jobs {
 		w.setupProviderInterim(j.provider)

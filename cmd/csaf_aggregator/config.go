@@ -86,9 +86,9 @@ type config struct {
 	keyErr error
 }
 
-// TooOldForInterims returns a function that tells if a given
+// tooOldForInterims returns a function that tells if a given
 // time is too old for the configured interims interval.
-func (c *config) TooOldForInterims() func(time.Time) bool {
+func (c *config) tooOldForInterims() func(time.Time) bool {
 	if c.InterimYears <= 0 {
 		return func(time.Time) bool { return false }
 	}
