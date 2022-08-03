@@ -9,6 +9,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -47,7 +48,7 @@ func (lt *lazyTransaction) Dst() (string, error) {
 	}
 
 	// Copy old content into new.
-	if err := util.DeepCopy(lt.dst, lt.src); err != nil {
+	if err := util.DeepCopy(dst, lt.src); err != nil {
 		os.RemoveAll(dst)
 		return "", err
 	}
@@ -71,16 +72,24 @@ func (lt *lazyTransaction) commit() error {
 	}
 	defer func() { lt.dst = "" }()
 
-	// Switch directories.
-	symlink := filepath.Join(lt.dstDir, filepath.Base(lt.src))
-	if err := os.Symlink(lt.dstDir, symlink); err != nil {
-		os.RemoveAll(lt.dstDir)
-		return err
-	}
-	if err := os.Rename(symlink, lt.src); err != nil {
-		os.RemoveAll(lt.dstDir)
+	// The expanded path of the original link.
+	orig, err := filepath.EvalSymlinks(lt.src)
+	if err != nil {
+		os.RemoveAll(lt.dst)
 		return err
 	}
 
-	return os.RemoveAll(lt.src)
+	// Switch directories.
+	symlink := filepath.Join(lt.dst, filepath.Base(lt.src))
+	if err := os.Symlink(lt.dst, symlink); err != nil {
+		os.RemoveAll(lt.dst)
+		return err
+	}
+	log.Printf("Move %q -> %q\n", symlink, lt.src)
+	if err := os.Rename(symlink, lt.src); err != nil {
+		os.RemoveAll(lt.dst)
+		return err
+	}
+
+	return os.RemoveAll(orig)
 }

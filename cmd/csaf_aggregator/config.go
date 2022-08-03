@@ -16,6 +16,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -83,6 +84,16 @@ type config struct {
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// TooOldForInterims returns a function that tells if a given
+// time is too old for the configured interims interval.
+func (c *config) TooOldForInterims() func(time.Time) bool {
+	if c.InterimYears <= 0 {
+		return func(time.Time) bool { return false }
+	}
+	from := time.Now().AddDate(-c.InterimYears, 0, 0)
+	return func(t time.Time) bool { return t.Before(from) }
 }
 
 // serviceDocument tells if we should generate a service document for a
