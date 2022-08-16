@@ -225,12 +225,6 @@ type AggregatorCSAFPublisher struct {
 	UpdateInterval string                          `json:"update_interval,omitempty"` // required
 }
 
-// FromProvider fills a publisher from a provider.
-func (acpub *AggregatorCSAFPublisher) FromProvider(acpro *AggregatorCSAFProvider) {
-	acpub.Metadata = acpro.Metadata
-	acpub.Mirrors = acpro.Mirrors
-}
-
 // Aggregator is the CSAF Aggregator.
 type Aggregator struct {
 	Aggregator     *AggregatorInfo            `json:"aggregator,omitempty"`         // required

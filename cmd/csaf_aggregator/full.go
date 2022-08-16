@@ -146,13 +146,12 @@ func (p *processor) full() error {
 
 		// "https://" signals a publisher.
 		if strings.HasPrefix(j.provider.Domain, "https://") {
-
-			var pub csaf.AggregatorCSAFPublisher
-
-			pub.FromProvider(j.aggregatorProvider)
-			pub.UpdateInterval = j.provider.updateInterval(p.cfg)
-
-			publishers = append(publishers, &pub)
+			pub := &csaf.AggregatorCSAFPublisher{
+				Metadata:       j.aggregatorProvider.Metadata,
+				Mirrors:        j.aggregatorProvider.Mirrors,
+				UpdateInterval: j.provider.updateInterval(p.cfg),
+			}
+			publishers = append(publishers, pub)
 		} else {
 			providers = append(providers, j.aggregatorProvider)
 		}
