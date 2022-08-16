@@ -26,11 +26,12 @@ import (
 )
 
 const (
-	defaultConfigPath = "aggregator.toml"
-	defaultWorkers    = 10
-	defaultFolder     = "/var/www"
-	defaultWeb        = "/var/www/html"
-	defaultDomain     = "https://example.com"
+	defaultConfigPath     = "aggregator.toml"
+	defaultWorkers        = 10
+	defaultFolder         = "/var/www"
+	defaultWeb            = "/var/www/html"
+	defaultDomain         = "https://example.com"
+	defaultUpdateInterval = "on best effort"
 )
 
 type provider struct {
@@ -44,6 +45,9 @@ type provider struct {
 	// ServiceDocument incidates if we should create a service.json document.
 	ServiceDocument     *bool                    `toml:"create_service_document"`
 	AggregatoryCategory *csaf.AggregatorCategory `toml:"category"`
+
+	// UpdateInterval is as the mandatory `update_interval` if this is a publisher.
+	UpdateInterval *string `toml:"update_interval"`
 }
 
 type config struct {
@@ -81,6 +85,10 @@ type config struct {
 	// ServiceDocument incidates if we should create a service.json document.
 	ServiceDocument bool `toml:"create_service_document"`
 
+	// UpdateInterval is used for publishers a the mandatory field
+	// 'update_interval'.
+	UpdateInterval *string
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
@@ -94,6 +102,17 @@ func (c *config) tooOldForInterims() func(time.Time) bool {
 	}
 	from := time.Now().AddDate(-c.InterimYears, 0, 0)
 	return func(t time.Time) bool { return t.Before(from) }
+}
+
+// updateInterval returns the update interval of a publisher.
+func (p *provider) updateInterval(c *config) string {
+	if p.UpdateInterval != nil {
+		return *p.UpdateInterval
+	}
+	if c.UpdateInterval != nil {
+		return *c.UpdateInterval
+	}
+	return defaultUpdateInterval
 }
 
 // serviceDocument tells if we should generate a service document for a

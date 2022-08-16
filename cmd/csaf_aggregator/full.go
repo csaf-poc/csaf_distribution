@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -128,8 +129,8 @@ func (p *processor) full() error {
 	wg.Wait()
 
 	// Assemble aggregator data structure.
-
-	csafProviders := make([]*csaf.AggregatorCSAFProvider, 0, len(jobs))
+	var providers []*csaf.AggregatorCSAFProvider
+	var publishers []*csaf.AggregatorCSAFPublisher
 
 	for i := range jobs {
 		j := &jobs[i]
@@ -142,10 +143,21 @@ func (p *processor) full() error {
 				"error: '%s' does not produce any result.\n", j.provider.Name)
 			continue
 		}
-		csafProviders = append(csafProviders, j.aggregatorProvider)
+
+		// "https://" signals a publisher.
+		if strings.HasPrefix(j.provider.Domain, "https://") {
+			pub := &csaf.AggregatorCSAFPublisher{
+				Metadata:       j.aggregatorProvider.Metadata,
+				Mirrors:        j.aggregatorProvider.Mirrors,
+				UpdateInterval: j.provider.updateInterval(p.cfg),
+			}
+			publishers = append(publishers, pub)
+		} else {
+			providers = append(providers, j.aggregatorProvider)
+		}
 	}
 
-	if len(csafProviders) == 0 {
+	if len(providers)+len(publishers) == 0 {
 		return errors.New("all jobs failed, stopping")
 	}
 
@@ -156,11 +168,12 @@ func (p *processor) full() error {
 	lastUpdated := csaf.TimeStamp(time.Now().UTC())
 
 	agg := csaf.Aggregator{
-		Aggregator:    &p.cfg.Aggregator,
-		Version:       &version,
-		CanonicalURL:  &canonicalURL,
-		CSAFProviders: csafProviders,
-		LastUpdated:   &lastUpdated,
+		Aggregator:     &p.cfg.Aggregator,
+		Version:        &version,
+		CanonicalURL:   &canonicalURL,
+		CSAFProviders:  providers,
+		CSAFPublishers: publishers,
+		LastUpdated:    &lastUpdated,
 	}
 
 	web := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
