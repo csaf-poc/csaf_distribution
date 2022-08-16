@@ -218,13 +218,27 @@ type AggregatorCSAFProvider struct {
 	Mirrors  []ProviderURL                   `json:"mirrors,omitempty"`  // required
 }
 
+// AggregatorCSAFPublisher reflects one publisher in an aggregator.
+type AggregatorCSAFPublisher struct {
+	Metadata       *AggregatorCSAFProviderMetadata `json:"metadata,omitempty"`        // required
+	Mirrors        []ProviderURL                   `json:"mirrors,omitempty"`         // required
+	UpdateInterval string                          `json:"update_interval,omitempty"` // required
+}
+
+// FromProvider fills a publisher from a provider.
+func (acpub *AggregatorCSAFPublisher) FromProvider(acpro *AggregatorCSAFProvider) {
+	acpub.Metadata = acpro.Metadata
+	acpub.Mirrors = acpro.Mirrors
+}
+
 // Aggregator is the CSAF Aggregator.
 type Aggregator struct {
-	Aggregator    *AggregatorInfo           `json:"aggregator,omitempty"`         // required
-	Version       *AggregatorVersion        `json:"aggregator_version,omitempty"` // required
-	CanonicalURL  *AggregatorURL            `json:"canonical_url,omitempty"`      // required
-	CSAFProviders []*AggregatorCSAFProvider `json:"csaf_providers,omitempty"`     // required
-	LastUpdated   *TimeStamp                `json:"last_updated,omitempty"`       // required
+	Aggregator     *AggregatorInfo            `json:"aggregator,omitempty"`         // required
+	Version        *AggregatorVersion         `json:"aggregator_version,omitempty"` // required
+	CanonicalURL   *AggregatorURL             `json:"canonical_url,omitempty"`      // required
+	CSAFProviders  []*AggregatorCSAFProvider  `json:"csaf_providers,omitempty"`     // required
+	CSAFPublishers []*AggregatorCSAFPublisher `json:"csaf_publishers,omitempty"`
+	LastUpdated    *TimeStamp                 `json:"last_updated,omitempty"` // required
 }
 
 // Validate validates the current state of the AggregatorCategory.
