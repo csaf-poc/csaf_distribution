@@ -155,15 +155,12 @@ insecure = true
 #  rate = 1.5
 #  insecure = true
 
-
 [[providers]]
   name = "local-dev-provider2"
   domain = "https://localhost:8443/.well-known/csaf/provider-metadata.json"
 #  rate = 1.2
 #  insecure = true
   write_indices = true
-#  Default value: "on best effort"
-  update_interval = "monthly"
 
 [[providers]]
   name = "local-dev-provider3"
