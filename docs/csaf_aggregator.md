@@ -103,12 +103,19 @@ rate
 insecure
 write_indices
 category
+update_interval
 ```
 
 If you want an entry to be listed instead of mirrored
 in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
+
+If a provider's domain starts with https:// its considered a publisher.
+These publishers are added to the csaf_publishers list instead of the csaf_providers list which was used before.
+
+The mandatory value of update_interval can be configured for each publisher (provider) individually. If not given it falls back
+to the global update_interval. If this is not given either the default is "on best effort".
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
