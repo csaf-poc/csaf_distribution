@@ -105,7 +105,7 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 	if err != nil {
 		return err
 	}
-	out := csv.NewWriter(f)
+	out := util.NewFullyQuotedCSWWriter(f)
 
 	record := make([]string, 2)
 
