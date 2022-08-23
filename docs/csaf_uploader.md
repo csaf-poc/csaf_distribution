@@ -27,7 +27,7 @@ Application Options:
 Help Options:
   -h, --help                                Show this help message
 ```
-E.g. creating the initial directiories and files
+E.g. creating the initial directories and files.
 
 ```bash
 ./csaf_uploader -a create  -u https://localhost/cgi-bin/csaf_provider.go
