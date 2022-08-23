@@ -16,7 +16,8 @@ or update the`security.txt`.
 Once the files exist, they will **not** be overwriten
 by additional `create` calls, even if the config values have been changed.
 Changes should happen rarely and can be done manually.
-
+Also keep an eye on having the keys in the `.well-known/csaf/openpgp`
+folder match the ones mentioned in the `provider-metadata.json`.
 
 ### /api/upload
 Called for each upload of a document and will update
