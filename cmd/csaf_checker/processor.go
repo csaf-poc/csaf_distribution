@@ -262,7 +262,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	}
 
 	if !direct {
-		checks = append(checks, (*processor).check810) 
+		checks = append(checks, (*processor).check810)
 	}
 
 	checks = append(checks,
@@ -1092,8 +1092,8 @@ func (p *processor) check810(domain string) error {
 	client := p.httpClient()
 	warnings := make(map[string]string)
 	warnings["Security"] = ""
-        warnings["DNS"] = ""
-        warnings["Wellknown"] = ""
+	warnings["DNS"] = ""
+	warnings["Wellknown"] = ""
 
 	p.badSecurity.use()
 
@@ -1123,7 +1123,7 @@ func (p *processor) check810(domain string) error {
 			warnings["Security"] = fmt.Sprintf("No CSAF line found in security.txt.")
 		}
 
-			// Try to load
+		// Try to load
 		up, err := url.Parse(u)
 		if err != nil {
 			warnings["Security"] = fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
@@ -1141,7 +1141,7 @@ func (p *processor) check810(domain string) error {
 		}
 		if res.StatusCode != http.StatusOK {
 			warnings["Security"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-                                u, res.StatusCode, res.Status)
+				u, res.StatusCode, res.Status)
 		}
 		defer res.Body.Close()
 		// Compare checksums to already read provider-metadata.json.
@@ -1152,51 +1152,49 @@ func (p *processor) check810(domain string) error {
 
 		if !bytes.Equal(h.Sum(nil), p.pmd256) {
 			warnings["Security"] = fmt.Sprintf("Content of %s from security.txt is not "+
-                                "identical to .well-known/csaf/provider-metadata.json", u)
+				"identical to .well-known/csaf/provider-metadata.json", u)
 		}
 	}
-        client = p.httpClient()
+	client = p.httpClient()
 
-        p.badDNSPath.use()
+	p.badDNSPath.use()
 
-        path = "https://csaf.data.security." + domain
-        res, err = client.Get(path)
-        if err != nil {
+	path = "https://csaf.data.security." + domain
+	res, err = client.Get(path)
+	if err != nil {
 		warnings["DNS"] = fmt.Sprintf("Fetching %s failed: %v", path, err)
 
-        }
-        if res.StatusCode != http.StatusOK {
+	}
+	if res.StatusCode != http.StatusOK {
 		warnings["DNS"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-                        path, res.StatusCode, res.Status)
+			path, res.StatusCode, res.Status)
 
-        }
-        hash := sha256.New()
-        defer res.Body.Close()
-        content, err := io.ReadAll(res.Body)
-        if err != nil {
+	}
+	hash := sha256.New()
+	defer res.Body.Close()
+	content, err := io.ReadAll(res.Body)
+	if err != nil {
 		warnings["DNS"] = fmt.Sprintf("Error while reading the response from %s", path)
-                p.badDNSPath.error("Error while reading the response from %s", path)
-                return errContinue
-        }
-        hash.Write(content)
-        if !bytes.Equal(hash.Sum(nil), p.pmd256) {
+	}
+	hash.Write(content)
+	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
 		warnings["DNS"] = fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path)
-        }
+	}
 
-        client = p.httpClient()
+	client = p.httpClient()
 
-        p.badWellknownMetadata.use()
+	p.badWellknownMetadata.use()
 
-        path = "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+	path = "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 
-        res, err = client.Get(path)
-        if err != nil {
+	res, err = client.Get(path)
+	if err != nil {
 		warnings["Wellknown"] = fmt.Sprintf("Fetching %s failed: %v", path, err)
 
-        } else if res.StatusCode != http.StatusOK {
+	} else if res.StatusCode != http.StatusOK {
 		warnings["Wellknown"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-                        path, res.StatusCode, res.Status)
-        }
+			path, res.StatusCode, res.Status)
+	}
 	success := false
 	for _, v := range warnings {
 		if v == "" {
