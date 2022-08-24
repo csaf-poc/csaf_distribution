@@ -1091,70 +1091,81 @@ func (p *processor) check810(domain string) error {
 
 	client := p.httpClient()
 	warnings := make(map[string]string)
-	warnings["Security"] = ""
-	warnings["DNS"] = ""
-	warnings["Wellknown"] = ""
+	warnings["Security"] = []
+	warnings["DNS"] = []
+	warnings["Wellknown"] = []
 
 	p.badSecurity.use()
 
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
-		warnings["Security"] = fmt.Sprintf("Fetching %s failed: %v", path, err)
-	} else if res.StatusCode != http.StatusOK {
-		warnings["Security"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)", path, res.StatusCode, res.Status)
-	} else {
-
-		u, err := func() (string, error) {
-			defer res.Body.Close()
-			lines := bufio.NewScanner(res.Body)
-			for lines.Scan() {
-				line := lines.Text()
-				if strings.HasPrefix(line, "CSAF:") {
-					return strings.TrimSpace(line[6:]), nil
-				}
-			}
-			return "", lines.Err()
-		}()
-		if err != nil {
-			warnings["Security"] = fmt.Sprintf("Error while reading security.txt: %v", err)
-		}
-		if u == "" {
-			warnings["Security"] = fmt.Sprintf("No CSAF line found in security.txt.")
-		}
-
-		// Try to load
-		up, err := url.Parse(u)
-		if err != nil {
-			warnings["Security"] = fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
-		}
-
-		base, err := url.Parse("https://" + domain + "/.well-known/")
-		if err != nil {
-			return err
-		}
-
-		u = base.ResolveReference(up).String()
-		p.checkTLS(u)
-		if res, err = client.Get(u); err != nil {
-			warnings["Security"] = fmt.Sprintf("Cannot fetch %s from security.txt: %v", u, err)
-		}
-		if res.StatusCode != http.StatusOK {
-			warnings["Security"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-				u, res.StatusCode, res.Status)
-		}
-		defer res.Body.Close()
-		// Compare checksums to already read provider-metadata.json.
-		h := sha256.New()
-		if _, err := io.Copy(h, res.Body); err != nil {
-			warnings["Security"] = fmt.Sprintf("Reading %s failed: %v", u, err)
-		}
-
-		if !bytes.Equal(h.Sum(nil), p.pmd256) {
-			warnings["Security"] = fmt.Sprintf("Content of %s from security.txt is not "+
-				"identical to .well-known/csaf/provider-metadata.json", u)
-		}
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Fetching %s failed: %v", path, err))
 	}
+	if res.StatusCode != http.StatusOK {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status))
+	}
+
+	u, err := func() (string, error) {
+		defer res.Body.Close()
+		lines := bufio.NewScanner(res.Body)
+		for lines.Scan() {
+			line := lines.Text()
+			if strings.HasPrefix(line, "CSAF:") {
+				return strings.TrimSpace(line[6:]), nil
+			}
+		}
+		return "", lines.Err()
+	}()
+	if err != nil {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Error while reading security.txt: %v", err))
+	}
+	if u == "" {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("No CSAF line found in security.txt."))
+	}
+	// Try to load
+
+	up, err := url.Parse(u)
+	if err != nil {
+		warnings["Security"] = append(warnings["Security",
+			fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err))
+	}
+
+	base, err := url.Parse("https://" + domain + "/.well-known/")
+	if err != nil {
+		return err
+	}
+
+	u = base.ResolveReference(up).String()
+	p.checkTLS(u)
+	if res, err = client.Get(u); err != nil {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Cannot fetch %s from security.txt: %v", u, err))
+	}
+	if res.StatusCode != http.StatusOK {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			u, res.StatusCode, res.Status))
+	}
+	defer res.Body.Close()
+	// Compare checksums to already read provider-metadata.json.
+	h := sha256.New()
+	if _, err := io.Copy(h, res.Body); err != nil {
+		warnings["Security"] = append(warnings["Security"],
+			fmt.Sprintf("Reading %s failed: %v", u, err))
+	}
+
+	if !bytes.Equal(h.Sum(nil), p.pmd256) {
+		warnings["Security"] = append(warnings["Security"], 
+			fmt.Sprintf("Content of %s from security.txt is not "+
+			"identical to .well-known/csaf/provider-metadata.json", u))
+	}
+
 	client = p.httpClient()
 
 	p.badDNSPath.use()
@@ -1162,23 +1173,26 @@ func (p *processor) check810(domain string) error {
 	path = "https://csaf.data.security." + domain
 	res, err = client.Get(path)
 	if err != nil {
-		warnings["DNS"] = fmt.Sprintf("Fetching %s failed: %v", path, err)
-
+		warnings["DNS"] = append(warnings["DNS"],
+			fmt.Sprintf("Fetching %s failed: %v", path, err))
 	}
 	if res.StatusCode != http.StatusOK {
-		warnings["DNS"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status)
+		warnings["DNS"] = append(warnings["DNS"],
+			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status))
 
 	}
 	hash := sha256.New()
 	defer res.Body.Close()
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		warnings["DNS"] = fmt.Sprintf("Error while reading the response from %s", path)
+		warnings["DNS"] = append(warnings["DNS"],
+			fmt.Sprintf("Error while reading the response from %s", path))
 	}
 	hash.Write(content)
 	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
-		warnings["DNS"] = fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path)
+		warnings["DNS"] = append(warnings["DNS"],
+			fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path))
 	}
 
 	client = p.httpClient()
@@ -1189,33 +1203,47 @@ func (p *processor) check810(domain string) error {
 
 	res, err = client.Get(path)
 	if err != nil {
-		warnings["Wellknown"] = fmt.Sprintf("Fetching %s failed: %v", path, err)
-
-	} else if res.StatusCode != http.StatusOK {
-		warnings["Wellknown"] = fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status)
+		warnings["Wellknown"] = append(warnings["Wellknown"],
+			fmt.Sprintf("Fetching %s failed: %v", path, err))
+	}
+	if res.StatusCode != http.StatusOK {
+		warnings["Wellknown"] = append(warnings["Wellknown"],
+			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status))
 	}
 	success := false
 	for _, v := range warnings {
-		if v == "" {
+		if len(v) == 0 {
 			success = true
 		}
 	}
 
 	if success {
-		if warnings["Security"] != "" {
-			p.badSecurity.warn(warnings["Security"])
+		if len(warnings["Security"]) > 0 {
+			for warn := range warnings["Security"] {
+				p.badSecurity.warn(warn)
+			}
 		}
-		if warnings["DNS"] != "" {
-			p.badDNSPath.warn(warnings["DNS"])
+		if len(warnings["DNS"]) > 0 {
+			for warn := range warnings["DNS"] {
+				p.badDNSPath.warn(warn)
+			}
 		}
-		if warnings["Wellknown"] != "" {
-			p.badWellknownMetadata.warn(warnings["Wellknown"])
+		if len(warnings["Wellknown"]) > 0 {
+			for warn := range warnings["Wellknown"] {
+				p.badWellknownMetadata.warn(warn)
+			}
 		}
 	} else {
-		p.badSecurity.error(warnings["Security"])
-		p.badDNSPath.error(warnings["DNS"])
-		p.badWellknownMetadata.error(warnings["Wellknown"])
+		for err := range warnings["Security"]{
+			p.badSecurity.error(err)
+		}
+		for err := range warnings["DNS"]{
+			p.badDNSPath.error(err)
+		}
+		for err := range warnings["Wellknown"]{
+			p.badWellknownMetadata.error(err)
+		}
 	}
 	return nil
 }
