@@ -262,7 +262,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	}
 
 	if !direct {
-		checks = append(checks, (*processor).check810)
+		checks = append(checks, (*processor).checkWellknownSecurityDNS)
 	}
 
 	checks = append(checks,
@@ -1075,35 +1075,20 @@ func (p *processor) checkProviderMetadata(domain string) error {
 	return nil
 }
 
-// check810 checks the security.txt file by making HTTP request to fetch it.
+// checkSecurity checks the security.txt file by making HTTP request to fetch it.
 // It checks the existence of the CSAF field in the file content and tries to fetch
-// the value of this field. As a result of these a respective error messages are
-// passed to the badSecurity method in case of errors.
-// Then it checks if the "csaf.data.security.domain.tld" DNS record is available
-// and serves the "provider-metadata.json". Finally it
-// checks if the provider-metadata.json file is
-// available under the /.well-known/csaf/ directory.
-// If all three checks fail, errors are given,
-// otherwise warnings for all failed checks.
-// The function returns nil, unless errors outside the checks were found.
-// In that case, errors are returned.
-func (p *processor) check810(domain string) error {
-
+// the value of this field. Returns an empty string if no error was encountered,
+// the errormessage otherwise.
+func (p *processor) checkSecurity(domain string) string {
 	client := p.httpClient()
-	var warningsS, warningsD, warningsW []string
-
-	p.badSecurity.use()
-
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Fetching %s failed: %v", path, err))
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
 	}
 	if res.StatusCode != http.StatusOK {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-				path, res.StatusCode, res.Status))
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
 	}
 
 	u, err := func() (string, error) {
@@ -1118,107 +1103,136 @@ func (p *processor) check810(domain string) error {
 		return "", lines.Err()
 	}()
 	if err != nil {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Error while reading security.txt: %v", err))
+		return fmt.Sprintf("Error while reading security.txt: %v", err)
 	}
 	if u == "" {
-		warningsS = append(warningsS,
-			"No CSAF line found in security.txt.")
+		return "No CSAF line found in security.txt."
 	}
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
-		warningsS = append(warningsS,
-			fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err))
+		return  fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
 	}
 
 	base, err := url.Parse("https://" + domain + "/.well-known/")
 	if err != nil {
-		return err
+		return err.Error()
 	}
 
 	u = base.ResolveReference(up).String()
 	p.checkTLS(u)
 	if res, err = client.Get(u); err != nil {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Cannot fetch %s from security.txt: %v", u, err))
+		return fmt.Sprintf("Cannot fetch %s from security.txt: %v", u, err)
 	}
 	if res.StatusCode != http.StatusOK {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-				u, res.StatusCode, res.Status))
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			u, res.StatusCode, res.Status)
 	}
 	defer res.Body.Close()
 	// Compare checksums to already read provider-metadata.json.
 	h := sha256.New()
 	if _, err := io.Copy(h, res.Body); err != nil {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Reading %s failed: %v", u, err))
+		return fmt.Sprintf("Reading %s failed: %v", u, err)
 	}
 
 	if !bytes.Equal(h.Sum(nil), p.pmd256) {
-		warningsS = append(warningsS,
-			fmt.Sprintf("Content of %s from security.txt is not "+
-				"identical to .well-known/csaf/provider-metadata.json", u))
+		return fmt.Sprintf("Content of %s from security.txt is not "+
+			"identical to .well-known/csaf/provider-metadata.json", u)
 	}
+	return ""
+}
 
-	p.badDNSPath.use()
+// checkDNS checks if the "csaf.data.security.domain.tld" DNS record is available
+// and serves the "provider-metadata.json".
+// It returns an empty string if all checks are passed, otherwise the errormessage.
+func (p *processor) checkDNS(domain string) string {
 
-	path = "https://csaf.data.security." + domain
-	res, err = client.Get(path)
+	client := p.httpClient()
+	path := "https://csaf.data.security." + domain
+	res, err := client.Get(path)
 	if err != nil {
-		warningsD = append(warningsD,
-			fmt.Sprintf("Fetching %s failed: %v", path, err))
+		return  fmt.Sprintf("Fetching %s failed: %v", path, err)
 	}
 	if res.StatusCode != http.StatusOK {
-		warningsD = append(warningsD,
-			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-				path, res.StatusCode, res.Status))
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
 
 	}
 	hash := sha256.New()
 	defer res.Body.Close()
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		warningsD = append(warningsD,
-			fmt.Sprintf("Error while reading the response from %s", path))
+		return fmt.Sprintf("Error while reading the response from %s", path)
 	}
 	hash.Write(content)
 	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
-		warningsD = append(warningsD,
-			fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path))
+		return fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path)
 	}
+	return ""
+}
+
+
+// checkWellknownMetadataReporter checks if the provider-metadata.json file is
+// available under the /.well-known/csaf/ directory. Returns the errormessage if
+// an error was encountered, or an empty string otherwise
+func (p *processor) checkWellknown(domain string) string {
+
+	client := p.httpClient()
+	path := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	res, err := client.Get(path)
+	if err != nil {
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+	}
+	return ""
+}
+
+// checkWellknownSecurityDNS checks if the provider-metadata.json file is
+// available under the /.well-known/csaf/ directory. Then it checks the security.txt file
+// by making HTTP request to fetch it.
+// After that it checks the existence of the CSAF field in the file content and tries to fetch
+// the value of this field.
+// Finally it checks if the "csaf.data.security.domain.tld" DNS record is available
+// and serves the "provider-metadata.json".
+// If all three checks fail, errors are given,
+// otherwise warnings for all failed checks.
+// The function returns nil, unless errors outside the checks were found.
+// In that case, errors are returned.
+func (p *processor) checkWellknownSecurityDNS(domain string) error {
+
+	var warningsS, warningsD, warningsW string
+
+	warningsW = p.checkWellknown(domain)
+
+	warningsS = p.checkSecurity(domain)
+
+	warningsD = p.checkDNS(domain)
 
 	p.badWellknownMetadata.use()
 
-	path = "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+	p.badSecurity.use()
 
-	res, err = client.Get(path)
-	if err != nil {
-		warningsW = append(warningsW,
-			fmt.Sprintf("Fetching %s failed: %v", path, err))
-	}
-	if res.StatusCode != http.StatusOK {
-		warningsW = append(warningsW,
-			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-				path, res.StatusCode, res.Status))
-	}
+	p.badDNSPath.use()
 
 	var kind MessageType
-	if len(warningsS) == 0 || len(warningsD) == 0 || len(warningsW) == 0 {
+	if warningsS == "" || warningsD == "" || warningsW == "" {
 		kind = WarnType
 	} else {
 		kind = ErrorType
 	}
 
-	for _, msg := range warningsS {
-		p.badSecurity.add(kind, msg)
+	if warningsW != "" {
+		p.badWellknownMetadata.add(kind, warningsW)
 	}
-	for _, msg := range warningsD {
-		p.badDNSPath.add(kind, msg)
+	if warningsS != "" {
+		p.badSecurity.add(kind, warningsS)
 	}
-	for _, msg := range warningsW {
-		p.badWellknownMetadata.add(kind, msg)
+	if warningsD != "" {
+		p.badDNSPath.add(kind, warningsD)
 	}
 	return nil
 }
