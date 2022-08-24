@@ -1105,7 +1105,7 @@ func (p *processor) check810(domain string) error {
 	if res.StatusCode != http.StatusOK {
 		warningsS = append(warningsS,
 			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status))
+				path, res.StatusCode, res.Status))
 	}
 
 	u, err := func() (string, error) {
@@ -1149,7 +1149,7 @@ func (p *processor) check810(domain string) error {
 	if res.StatusCode != http.StatusOK {
 		warningsS = append(warningsS,
 			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			u, res.StatusCode, res.Status))
+				u, res.StatusCode, res.Status))
 	}
 	defer res.Body.Close()
 	// Compare checksums to already read provider-metadata.json.
@@ -1162,7 +1162,7 @@ func (p *processor) check810(domain string) error {
 	if !bytes.Equal(h.Sum(nil), p.pmd256) {
 		warningsS = append(warningsS,
 			fmt.Sprintf("Content of %s from security.txt is not "+
-			"identical to .well-known/csaf/provider-metadata.json", u))
+				"identical to .well-known/csaf/provider-metadata.json", u))
 	}
 
 	client = p.httpClient()
@@ -1178,7 +1178,7 @@ func (p *processor) check810(domain string) error {
 	if res.StatusCode != http.StatusOK {
 		warningsD = append(warningsD,
 			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status))
+				path, res.StatusCode, res.Status))
 
 	}
 	hash := sha256.New()
@@ -1208,10 +1208,10 @@ func (p *processor) check810(domain string) error {
 	if res.StatusCode != http.StatusOK {
 		warningsW = append(warningsW,
 			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status))
+				path, res.StatusCode, res.Status))
 	}
 	success := false
-	if len(warningsS) == 0 || len(warningsD) == 0 || len(warningsW) == 0{
+	if len(warningsS) == 0 || len(warningsD) == 0 || len(warningsW) == 0 {
 		success = true
 	}
 	if success {
@@ -1231,13 +1231,13 @@ func (p *processor) check810(domain string) error {
 			}
 		}
 	} else {
-		for er := range warningsS{
+		for er := range warningsS {
 			p.badSecurity.error(warningsS[er])
 		}
-		for er := range warningsD{
+		for er := range warningsD {
 			p.badDNSPath.error(warningsD[er])
 		}
-		for er := range warningsW{
+		for er := range warningsW {
 			p.badWellknownMetadata.error(warningsW[er])
 		}
 	}
