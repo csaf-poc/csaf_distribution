@@ -1090,9 +1090,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 func (p *processor) check810(domain string) error {
 
 	client := p.httpClient()
-	var warningsS []string
-	var warningsD []string
-	var warningsW []string
+	var warningsS, warningsD, warningsW []string
 
 	p.badSecurity.use()
 
@@ -1125,7 +1123,7 @@ func (p *processor) check810(domain string) error {
 	}
 	if u == "" {
 		warningsS = append(warningsS,
-			fmt.Sprintf("No CSAF line found in security.txt."))
+			"No CSAF line found in security.txt.")
 	}
 	// Try to load
 	up, err := url.Parse(u)
@@ -1205,36 +1203,22 @@ func (p *processor) check810(domain string) error {
 			fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
 				path, res.StatusCode, res.Status))
 	}
-	success := false
+
+	var kind MessageType
 	if len(warningsS) == 0 || len(warningsD) == 0 || len(warningsW) == 0 {
-		success = true
-	}
-	if success {
-		if len(warningsS) > 0 {
-			for war := range warningsS {
-				p.badSecurity.warn(warningsS[war])
-			}
-		}
-		if len(warningsD) > 0 {
-			for war := range warningsD {
-				p.badDNSPath.warn(warningsD[war])
-			}
-		}
-		if len(warningsW) > 0 {
-			for war := range warningsW {
-				p.badWellknownMetadata.warn(warningsW[war])
-			}
-		}
+		kind = WarnType
 	} else {
-		for er := range warningsS {
-			p.badSecurity.error(warningsS[er])
-		}
-		for er := range warningsD {
-			p.badDNSPath.error(warningsD[er])
-		}
-		for er := range warningsW {
-			p.badWellknownMetadata.error(warningsW[er])
-		}
+		kind = ErrorType
+	}
+
+	for _, msg := range warningsS {
+		p.badSecurity.add(kind, msg)
+	}
+	for _, msg := range warningsD {
+		p.badDNSPath.add(kind, msg)
+	}
+	for _, msg := range warningsW {
+		p.badWellknownMetadata.add(kind, msg)
 	}
 	return nil
 }
