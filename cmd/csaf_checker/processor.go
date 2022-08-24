@@ -1091,9 +1091,9 @@ func (p *processor) check810(domain string) error {
 
 	client := p.httpClient()
 	warnings := make(map[string][]string)
-	warnings["Security"] = []
-	warnings["DNS"] = []
-	warnings["Wellknown"] = []
+	warnings["Security"] = []string
+	warnings["DNS"] = []string
+	warnings["Wellknown"] = []string
 
 	p.badSecurity.use()
 
