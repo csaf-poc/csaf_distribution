@@ -1,7 +1,27 @@
-`csaf_provider` implements the CGI interface for webservers
+`csaf_provider` implements a CGI interface for webservers
 and reads its configuration from a [TOML](https://toml.io/en/) file.
 The [setup docs](../README.md#setup-trusted-provider)
 explain how to wire this up with nginx and where the config file lives.
+
+When installed, two endpoints are offered,
+and you should use the [csaf_uploader](../docs/csaf_uploader)
+to access them:
+
+### /api/create
+
+Must be called once after all configuration values are set.
+It will write the `provider-metadata.json` and may write
+or update the`security.txt`.
+
+Once the files exist, they will **not** be overwriten
+by additional `create` calls, even if the config values have been changed.
+Changes should happen rarely and can be done manually.
+Also keep an eye on having the keys in the `.well-known/csaf/openpgp`
+folder match the ones mentioned in the `provider-metadata.json`.
+
+### /api/upload
+Called for each upload of a document and will update
+the CSAF structure in the file system accordingly.
 
 
 ## Provider options

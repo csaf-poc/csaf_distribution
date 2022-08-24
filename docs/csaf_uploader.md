@@ -28,6 +28,9 @@ Help Options:
   -h, --help                                Show this help message
 ```
 E.g. creating the initial directories and files.
+This must only be done once, as subsequent `create` calls to the
+[csaf_provider](../docs/csaf_provider.md)
+may not lead to the desired result.
 
 ```bash
 ./csaf_uploader -a create  -u https://localhost/cgi-bin/csaf_provider.go
