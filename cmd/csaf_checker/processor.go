@@ -1080,12 +1080,14 @@ func (p *processor) checkProviderMetadata(domain string) error {
 // the value of this field. Returns an empty string if no error was encountered,
 // the errormessage otherwise.
 func (p *processor) checkSecurity(domain string) string {
+
 	client := p.httpClient()
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
 		return fmt.Sprintf("Fetching %s failed: %v", path, err)
 	}
+
 	if res.StatusCode != http.StatusOK {
 		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
 			path, res.StatusCode, res.Status)
@@ -1093,14 +1095,12 @@ func (p *processor) checkSecurity(domain string) string {
 
 	u, err := func() (string, error) {
 		defer res.Body.Close()
-		lines := bufio.NewScanner(res.Body)
-		for lines.Scan() {
-			line := lines.Text()
-			if strings.HasPrefix(line, "CSAF:") {
-				return strings.TrimSpace(line[6:]), nil
-			}
+		lines, err := csaf.ExtractProviderURL(res.Body, false)
+		var u string
+		if len(lines) > 0 {
+			u = lines[0]
 		}
-		return "", lines.Err()
+		return u, err
 	}()
 	if err != nil {
 		return fmt.Sprintf("Error while reading security.txt: %v", err)
@@ -1108,6 +1108,7 @@ func (p *processor) checkSecurity(domain string) string {
 	if u == "" {
 		return "No CSAF line found in security.txt."
 	}
+
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
@@ -1203,18 +1204,12 @@ func (p *processor) checkWellknown(domain string) string {
 // In that case, errors are returned.
 func (p *processor) checkWellknownSecurityDNS(domain string) error {
 
-	var warningsS, warningsD, warningsW string
-
-	warningsW = p.checkWellknown(domain)
-
-	warningsS = p.checkSecurity(domain)
-
-	warningsD = p.checkDNS(domain)
+	warningsW := p.checkWellknown(domain)
+	warningsS := p.checkSecurity(domain)
+	warningsD := p.checkDNS(domain)
 
 	p.badWellknownMetadata.use()
-
 	p.badSecurity.use()
-
 	p.badDNSPath.use()
 
 	var kind MessageType
