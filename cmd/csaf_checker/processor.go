@@ -1111,7 +1111,7 @@ func (p *processor) checkSecurity(domain string) string {
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
-		return  fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
+		return fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
 	}
 
 	base, err := url.Parse("https://" + domain + "/.well-known/")
@@ -1151,7 +1151,7 @@ func (p *processor) checkDNS(domain string) string {
 	path := "https://csaf.data.security." + domain
 	res, err := client.Get(path)
 	if err != nil {
-		return  fmt.Sprintf("Fetching %s failed: %v", path, err)
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
 	}
 	if res.StatusCode != http.StatusOK {
 		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
@@ -1170,7 +1170,6 @@ func (p *processor) checkDNS(domain string) string {
 	}
 	return ""
 }
-
 
 // checkWellknownMetadataReporter checks if the provider-metadata.json file is
 // available under the /.well-known/csaf/ directory. Returns the errormessage if
