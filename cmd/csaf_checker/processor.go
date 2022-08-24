@@ -1217,28 +1217,28 @@ func (p *processor) check810(domain string) error {
 	if success {
 		if len(warningsS) > 0 {
 			for war := range warningsS {
-				p.badSecurity.warn(war)
+				p.badSecurity.warn(warningsS[war])
 			}
 		}
-		if len(warnings["DNS"]) > 0 {
+		if len(warningsD) > 0 {
 			for war := range warningsD {
-				p.badDNSPath.warn(war)
+				p.badDNSPath.warn(warningsD[war])
 			}
 		}
-		if len(warnings["Wellknown"]) > 0 {
+		if len(warningsW) > 0 {
 			for war := range warningsW {
-				p.badWellknownMetadata.warn(war)
+				p.badWellknownMetadata.warn(warningsW[war])
 			}
 		}
 	} else {
 		for er := range warningsS{
-			p.badSecurity.error(er)
+			p.badSecurity.error(warningsS[er])
 		}
 		for er := range warningsD{
-			p.badDNSPath.error(er)
+			p.badDNSPath.error(warningsD[er])
 		}
 		for er := range warningsW{
-			p.badWellknownMetadata.error(er)
+			p.badWellknownMetadata.error(warningsW[er])
 		}
 	}
 	return nil
