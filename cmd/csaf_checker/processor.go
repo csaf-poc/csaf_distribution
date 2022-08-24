@@ -1090,7 +1090,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 func (p *processor) check810(domain string) error {
 
 	client := p.httpClient()
-	warnings := make(map[string]string)
+	warnings := make(map[string][]string)
 	warnings["Security"] = []
 	warnings["DNS"] = []
 	warnings["Wellknown"] = []
@@ -1132,7 +1132,7 @@ func (p *processor) check810(domain string) error {
 
 	up, err := url.Parse(u)
 	if err != nil {
-		warnings["Security"] = append(warnings["Security",
+		warnings["Security"] = append(warnings["Security"],
 			fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err))
 	}
 
