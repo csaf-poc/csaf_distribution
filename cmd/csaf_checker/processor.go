@@ -1128,7 +1128,6 @@ func (p *processor) check810(domain string) error {
 			fmt.Sprintf("No CSAF line found in security.txt."))
 	}
 	// Try to load
-
 	up, err := url.Parse(u)
 	if err != nil {
 		warningsS = append(warningsS,
@@ -1165,8 +1164,6 @@ func (p *processor) check810(domain string) error {
 				"identical to .well-known/csaf/provider-metadata.json", u))
 	}
 
-	client = p.httpClient()
-
 	p.badDNSPath.use()
 
 	path = "https://csaf.data.security." + domain
@@ -1193,8 +1190,6 @@ func (p *processor) check810(domain string) error {
 		warningsD = append(warningsD,
 			fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path))
 	}
-
-	client = p.httpClient()
 
 	p.badWellknownMetadata.use()
 
