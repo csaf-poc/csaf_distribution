@@ -217,7 +217,7 @@ func LoadProviderMetadataForDomain(
 	// Valid provider metadata under well-known.
 	var wellknownGood *LoadedProviderMetadata
 
-	// First try well-know path
+	// First try the well-known path.
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 	wellknownResult := LoadProviderMetadataFromURL(
 		client, wellknownURL, already, logging)
@@ -249,7 +249,7 @@ func LoadProviderMetadataForDomain(
 
 		// security.txt contains good entries.
 		if len(secGoods) > 0 {
-			// we have a wellknown good take it.
+			// we already have a good wellknown, take it.
 			if wellknownGood != nil {
 				// check if first of security urls is identical to wellknown.
 				if bytes.Equal(wellknownGood.Hash, secGoods[0].Hash) {
