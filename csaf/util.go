@@ -34,7 +34,7 @@ type LoadedProviderMetadata struct {
 	Messages []string
 }
 
-// Valid returns if the loaded document is valid.
+// Valid returns true if the loaded document is valid.
 func (lpm *LoadedProviderMetadata) Valid() bool {
 	return lpm != nil && lpm.Document != nil && lpm.Hash != nil
 }
