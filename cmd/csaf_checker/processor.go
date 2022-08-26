@@ -262,7 +262,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	}
 
 	if !direct {
-		checks = append(checks, (*processor).checkSecurity)
+		checks = append(checks, (*processor).checkWellknownSecurityDNS)
 	}
 
 	checks = append(checks,
@@ -271,13 +271,6 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 		(*processor).checkInvalid,
 		(*processor).checkListing,
 	)
-
-	if !direct {
-		checks = append(checks,
-			(*processor).checkWellknownMetadataReporter,
-			(*processor).checkDNSPathReporter,
-		)
-	}
 
 	return checks
 }
@@ -1084,83 +1077,159 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 // checkSecurity checks the security.txt file by making HTTP request to fetch it.
 // It checks the existence of the CSAF field in the file content and tries to fetch
-// the value of this field. As a result of these a respective error messages are
-// passed to the badSecurity method in case of errors.
-// It returns nil if all checks are passed.
-func (p *processor) checkSecurity(domain string) error {
+// the value of this field. Returns an empty string if no error was encountered,
+// the errormessage otherwise.
+func (p *processor) checkSecurity(domain string) string {
 
 	client := p.httpClient()
-	p.badSecurity.use()
-
 	path := "https://" + domain + "/.well-known/security.txt"
 	res, err := client.Get(path)
 	if err != nil {
-		p.badSecurity.error("Fetching %s failed: %v", path, err)
-		return errContinue
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		p.badSecurity.error("Fetching %s failed. Status code %d (%s)",
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
 			path, res.StatusCode, res.Status)
-		return errContinue
 	}
 
 	u, err := func() (string, error) {
 		defer res.Body.Close()
-		lines := bufio.NewScanner(res.Body)
-		for lines.Scan() {
-			line := lines.Text()
-			if strings.HasPrefix(line, "CSAF:") {
-				return strings.TrimSpace(line[6:]), nil
-			}
+		lines, err := csaf.ExtractProviderURL(res.Body, false)
+		var u string
+		if len(lines) > 0 {
+			u = lines[0]
 		}
-		return "", lines.Err()
+		return u, err
 	}()
 	if err != nil {
-		p.badSecurity.error("Error while reading security.txt: %v", err)
-		return errContinue
+		return fmt.Sprintf("Error while reading security.txt: %v", err)
 	}
 	if u == "" {
-		p.badSecurity.error("No CSAF line found in security.txt.")
-		return errContinue
+		return "No CSAF line found in security.txt."
 	}
 
 	// Try to load
 	up, err := url.Parse(u)
 	if err != nil {
-		p.badSecurity.error("CSAF URL '%s' invalid: %v", u, err)
-		return errContinue
+		return fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
 	}
 
 	base, err := url.Parse("https://" + domain + "/.well-known/")
 	if err != nil {
-		return err
+		return err.Error()
 	}
 
 	u = base.ResolveReference(up).String()
 	p.checkTLS(u)
 	if res, err = client.Get(u); err != nil {
-		p.badSecurity.error("Cannot fetch %s from security.txt: %v", u, err)
-		return errContinue
+		return fmt.Sprintf("Cannot fetch %s from security.txt: %v", u, err)
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badSecurity.error("Fetching %s failed. Status code %d (%s)",
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
 			u, res.StatusCode, res.Status)
-		return errContinue
 	}
 	defer res.Body.Close()
 	// Compare checksums to already read provider-metadata.json.
 	h := sha256.New()
 	if _, err := io.Copy(h, res.Body); err != nil {
-		p.badSecurity.error("Reading %s failed: %v", u, err)
-		return errContinue
+		return fmt.Sprintf("Reading %s failed: %v", u, err)
 	}
 
 	if !bytes.Equal(h.Sum(nil), p.pmd256) {
-		p.badSecurity.error("Content of %s from security.txt is not "+
+		return fmt.Sprintf("Content of %s from security.txt is not "+
 			"identical to .well-known/csaf/provider-metadata.json", u)
 	}
+	return ""
+}
 
+// checkDNS checks if the "csaf.data.security.domain.tld" DNS record is available
+// and serves the "provider-metadata.json".
+// It returns an empty string if all checks are passed, otherwise the errormessage.
+func (p *processor) checkDNS(domain string) string {
+
+	client := p.httpClient()
+	path := "https://csaf.data.security." + domain
+	res, err := client.Get(path)
+	if err != nil {
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+
+	}
+	hash := sha256.New()
+	defer res.Body.Close()
+	content, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Sprintf("Error while reading the response from %s", path)
+	}
+	hash.Write(content)
+	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
+		return fmt.Sprintf("%s does not serve the same provider-metadata.json as previously found", path)
+	}
+	return ""
+}
+
+// checkWellknownMetadataReporter checks if the provider-metadata.json file is
+// available under the /.well-known/csaf/ directory. Returns the errormessage if
+// an error was encountered, or an empty string otherwise
+func (p *processor) checkWellknown(domain string) string {
+
+	client := p.httpClient()
+	path := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	res, err := client.Get(path)
+	if err != nil {
+		return fmt.Sprintf("Fetching %s failed: %v", path, err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Fetching %s failed. Status code %d (%s)",
+			path, res.StatusCode, res.Status)
+	}
+	return ""
+}
+
+// checkWellknownSecurityDNS
+//  1. checks if the provider-metadata.json file is
+//     available under the /.well-known/csaf/ directory.
+//  2. Then it checks the security.txt file by making HTTP request to fetch it.
+//  3.  After that it checks the existence of the CSAF field in the file
+//      content and tries to fetch the value of this field.
+//  4. Finally it checks if the "csaf.data.security.domain.tld" DNS record
+//     is available and serves the "provider-metadata.json".
+///
+// If all three checks fail, errors are given,
+// otherwise warnings for all failed checks.
+// The function returns nil, unless errors outside the checks were found.
+// In that case, errors are returned.
+func (p *processor) checkWellknownSecurityDNS(domain string) error {
+
+	warningsW := p.checkWellknown(domain)
+	warningsS := p.checkSecurity(domain)
+	warningsD := p.checkDNS(domain)
+
+	p.badWellknownMetadata.use()
+	p.badSecurity.use()
+	p.badDNSPath.use()
+
+	var kind MessageType
+	if warningsS == "" || warningsD == "" || warningsW == "" {
+		kind = WarnType
+	} else {
+		kind = ErrorType
+	}
+
+	if warningsW != "" {
+		p.badWellknownMetadata.add(kind, warningsW)
+	}
+	if warningsS != "" {
+		p.badSecurity.add(kind, warningsS)
+	}
+	if warningsD != "" {
+		p.badDNSPath.add(kind, warningsD)
+	}
 	return nil
 }
 
@@ -1249,66 +1318,5 @@ func (p *processor) checkPGPKeys(domain string) error {
 	if len(p.keys) == 0 {
 		p.badPGPs.info("No OpenPGP keys loaded.")
 	}
-	return nil
-}
-
-// checkWellknownMetadataReporter checks if the provider-metadata.json file is
-// available under the /.well-known/csaf/ directory.
-// It returns nil if all checks are passed, otherwise error.
-func (p *processor) checkWellknownMetadataReporter(domain string) error {
-
-	client := p.httpClient()
-
-	p.badWellknownMetadata.use()
-
-	path := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-
-	res, err := client.Get(path)
-	if err != nil {
-		p.badWellknownMetadata.error("Fetching %s failed: %v", path, err)
-		return errContinue
-	}
-	if res.StatusCode != http.StatusOK {
-		p.badWellknownMetadata.error("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status)
-		return errContinue
-	}
-
-	return nil
-}
-
-// checkDNSPathReporter checks if the "csaf.data.security.domain.tld" DNS record is available
-// and serves the "provider-metadata.json".
-// It returns nil if all checks are passed, otherwise error.
-func (p *processor) checkDNSPathReporter(domain string) error {
-
-	client := p.httpClient()
-
-	p.badDNSPath.use()
-
-	path := "https://csaf.data.security." + domain
-	res, err := client.Get(path)
-	if err != nil {
-		p.badDNSPath.error("Fetching %s failed: %v", path, err)
-		return errContinue
-	}
-	if res.StatusCode != http.StatusOK {
-		p.badDNSPath.error("Fetching %s failed. Status code %d (%s)",
-			path, res.StatusCode, res.Status)
-		return errContinue
-	}
-	hash := sha256.New()
-	defer res.Body.Close()
-	content, err := io.ReadAll(res.Body)
-	if err != nil {
-		p.badDNSPath.error("Error while reading the response from %s", path)
-		return errContinue
-	}
-	hash.Write(content)
-	if !bytes.Equal(hash.Sum(nil), p.pmd256) {
-		p.badDNSPath.error("%s does not serve the same provider-metadata.json as previously found", path)
-		return errContinue
-	}
-
 	return nil
 }
