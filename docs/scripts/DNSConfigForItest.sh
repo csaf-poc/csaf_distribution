@@ -26,7 +26,7 @@ echo "
 
         server_name ${DNS_NAME}; # e.g. server_name csaf.data.security.domain.tld;
 
-        location / {
+        location = / {
                 try_files /.well-known/csaf/provider-metadata.json =404;
         }
 
