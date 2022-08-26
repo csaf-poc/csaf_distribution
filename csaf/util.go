@@ -34,6 +34,11 @@ type LoadedProviderMetadata struct {
 	Messages []string
 }
 
+// Valid returns true if the loaded document is valid.
+func (lpm *LoadedProviderMetadata) Valid() bool {
+	return lpm != nil && lpm.Document != nil && lpm.Hash != nil
+}
+
 // defaultLogging generates a logging function if given is nil.
 func defaultLogging(
 	logging func(format string, args ...interface{}),
@@ -80,15 +85,17 @@ func LoadProviderMetadataFromURL(
 
 	tee := io.TeeReader(res.Body, hash)
 
-	err = json.NewDecoder(tee).Decode(&result.Document)
+	var doc interface{}
+
+	err = json.NewDecoder(tee).Decode(&doc)
 	// Before checking the err lets check if we had the same
 	// document before. If so it will have failed parsing before.
 
-	result.Hash = hash.Sum(nil)
+	sum := hash.Sum(nil)
 
 	var key string
 	if already != nil {
-		key = string(result.Hash)
+		key = string(sum)
 		if r, ok := already[key]; ok {
 			return r
 		}
@@ -108,7 +115,7 @@ func LoadProviderMetadataFromURL(
 		return &result
 	}
 
-	switch errors, err := ValidateProviderMetadata(result.Document); {
+	switch errors, err := ValidateProviderMetadata(doc); {
 	case err != nil:
 		result.Messages = []string{
 			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
@@ -119,6 +126,10 @@ func LoadProviderMetadataFromURL(
 		for _, msg := range errors {
 			result.Messages = append(result.Messages, strings.ReplaceAll(msg, `%`, `%%`))
 		}
+	default:
+		// Only store in result if validation passed.
+		result.Document = doc
+		result.Hash = sum
 	}
 
 	storeLoaded()
@@ -164,7 +175,7 @@ func LoadProviderMetadatasFromSecurity(
 	for _, url := range urls {
 		if result := LoadProviderMetadataFromURL(
 			client, url, already, logging,
-		); result != nil {
+		); result.Valid() {
 			results = append(results, result)
 		}
 	}
@@ -224,7 +235,7 @@ func LoadProviderMetadataForDomain(
 	lg(wellknownResult, wellknownURL)
 
 	// We have a candidate.
-	if wellknownResult != nil {
+	if wellknownResult.Valid() {
 		wellknownGood = wellknownResult
 	}
 
@@ -233,7 +244,7 @@ func LoadProviderMetadataForDomain(
 	secResults := LoadProviderMetadatasFromSecurity(
 		client, secURL, already, logging)
 
-	if secResults == nil {
+	if len(secResults) == 0 {
 		logging("%s failed to load.", secURL)
 	} else {
 		// Filter out the results which are valid.

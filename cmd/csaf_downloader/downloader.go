@@ -93,8 +93,8 @@ func (d *downloader) download(domain string) error {
 				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
 		})
 
-	if lpmd == nil {
-		return fmt.Errorf("no provider-metadata.json found for '%s'", domain)
+	if !lpmd.Valid() {
+		return fmt.Errorf("no valid provider-metadata.json found for '%s'", domain)
 	}
 
 	base, err := url.Parse(lpmd.URL)
