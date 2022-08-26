@@ -1062,7 +1062,7 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 	lpmd := csaf.LoadProviderMetadataForDomain(client, domain, p.badProviderMetadata.warn)
 
-	if lpmd == nil {
+	if !lpmd.Valid() {
 		p.badProviderMetadata.error("No valid provider-metadata.json found.")
 		p.badProviderMetadata.error("STOPPING here - cannot perform other checks.")
 		return errStop
