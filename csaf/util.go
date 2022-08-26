@@ -115,7 +115,7 @@ func LoadProviderMetadataFromURL(
 		return &result
 	}
 
-	switch errors, err := ValidateProviderMetadata(result.Document); {
+	switch errors, err := ValidateProviderMetadata(doc); {
 	case err != nil:
 		result.Messages = []string{
 			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
