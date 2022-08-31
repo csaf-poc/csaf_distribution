@@ -2,9 +2,6 @@
 
 An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker, aggregator and downloader. Includes an uploader command line tool for the trusted provider.
 
-Status: Release Candidate
-
-
 ## [csaf_provider](docs/csaf_provider.md)
 is an implementation of the role CSAF Trusted Provider, also offering
 a simple HTTPS based management service.
