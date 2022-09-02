@@ -56,7 +56,7 @@ The following example file documents all available configuration options:
 # Set the beginning of the URL where contents are accessible from the internet.
 # If not set, the provider will read from the $SERVER_NAME variable.
 # The following shows an example of a manually set prefix:
-#canonical_url_prefix  = https://localhost
+#canonical_url_prefix  = "https://localhost"
 
 # Require users to use a password and a valid Client Certificate for write access.
 #certificate_and_password = false
@@ -97,7 +97,7 @@ The following example file documents all available configuration options:
 # (one or more of "csaf", "white", "amber", "green", "red").
 # The "csaf" entry lets the provider take the value from the CSAF document.
 # These affect the list items in the web interface.
-#tlps = ["csaf", "white", "amber", "green", "red"]`
+#tlps = ["csaf", "white", "amber", "green", "red"]
 
 # Make the provider create a ROLIE service document.
 #create_service_document = false
