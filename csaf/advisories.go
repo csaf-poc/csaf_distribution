@@ -198,7 +198,7 @@ func (afp *AdvisoryFileProcessor) loadIndex(
 		return nil, err
 	}
 
-	indexURL := util.JoinURLPath(base, "index.txt").String()
+	indexURL := base.JoinPath("index.txt").String()
 	resp, err := afp.client.Get(indexURL)
 	if err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func (afp *AdvisoryFileProcessor) loadIndex(
 			continue
 		}
 		files = append(files,
-			PlainAdvisoryFile(util.JoinURLPath(base, u).String()))
+			PlainAdvisoryFile(base.JoinPath(u).String()))
 	}
 
 	if err := scanner.Err(); err != nil {
