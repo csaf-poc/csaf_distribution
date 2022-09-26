@@ -392,7 +392,7 @@ func (p *processor) integrity(
 		if u.IsAbs() {
 			return u
 		}
-		return util.JoinURLPath(b, u.String())
+		return b.JoinPath(u.String())
 	}
 
 	for _, f := range files {
@@ -715,7 +715,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 		return err
 	}
 
-	index := util.JoinURLPath(bu, "index.txt").String()
+	index := bu.JoinPath("index.txt").String()
 
 	p.checkTLS(index)
 
@@ -773,7 +773,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	if err != nil {
 		return err
 	}
-	changes := util.JoinURLPath(bu, "changes.csv").String()
+	changes := bu.JoinPath("changes.csv").String()
 
 	p.checkTLS(changes)
 
@@ -1195,11 +1195,12 @@ func (p *processor) checkWellknown(domain string) string {
 //  1. checks if the provider-metadata.json file is
 //     available under the /.well-known/csaf/ directory.
 //  2. Then it checks the security.txt file by making HTTP request to fetch it.
-//  3.  After that it checks the existence of the CSAF field in the file
-//      content and tries to fetch the value of this field.
+//  3. After that it checks the existence of the CSAF field in the file
+//     content and tries to fetch the value of this field.
 //  4. Finally it checks if the "csaf.data.security.domain.tld" DNS record
 //     is available and serves the "provider-metadata.json".
-///
+//
+// /
 // If all three checks fail, errors are given,
 // otherwise warnings for all failed checks.
 // The function returns nil, unless errors outside the checks were found.
