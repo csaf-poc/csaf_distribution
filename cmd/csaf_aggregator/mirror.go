@@ -430,7 +430,7 @@ func (w *worker) sign(data []byte) (string, error) {
 		sig.Data, constants.PGPSignatureHeader, "", "")
 }
 
-func (w *worker) extractCategories(label string, advisory interface{}) error {
+func (w *worker) extractCategories(label string, advisory any) error {
 
 	// use provider or global categories
 	var categories []string
@@ -499,7 +499,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 			continue
 		}
 
-		var advisory interface{}
+		var advisory any
 
 		s256 := sha256.New()
 		s512 := sha512.New()

@@ -20,7 +20,7 @@ import (
 )
 
 // ReMarshalJSON transforms data from src to dst via JSON marshalling.
-func ReMarshalJSON(dst, src interface{}) error {
+func ReMarshalJSON(dst, src any) error {
 	intermediate, err := json.Marshal(src)
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func NewPathEval() *PathEval {
 
 // Eval evalutes expression expr on document doc.
 // Returns the result of the expression.
-func (pe *PathEval) Eval(expr string, doc interface{}) (interface{}, error) {
+func (pe *PathEval) Eval(expr string, doc any) (any, error) {
 	if doc == nil {
 		return nil, errors.New("no document to extract data from")
 	}
@@ -65,21 +65,21 @@ type PathEvalMatcher struct {
 	// Expr is the expression to evaluate
 	Expr string
 	// Action is executed with the result of the match.
-	Action func(interface{}) error
+	Action func(any) error
 	// Optional expresses if the expression is optional.
 	Optional bool
 }
 
 // ReMarshalMatcher is an action to re-marshal the result to another type.
-func ReMarshalMatcher(dst interface{}) func(interface{}) error {
-	return func(src interface{}) error {
+func ReMarshalMatcher(dst any) func(any) error {
+	return func(src any) error {
 		return ReMarshalJSON(dst, src)
 	}
 }
 
 // BoolMatcher stores the matched result in a bool.
-func BoolMatcher(dst *bool) func(interface{}) error {
-	return func(x interface{}) error {
+func BoolMatcher(dst *bool) func(any) error {
+	return func(x any) error {
 		b, ok := x.(bool)
 		if !ok {
 			return errors.New("not a bool")
@@ -90,8 +90,8 @@ func BoolMatcher(dst *bool) func(interface{}) error {
 }
 
 // StringMatcher stores the matched result in a string.
-func StringMatcher(dst *string) func(interface{}) error {
-	return func(x interface{}) error {
+func StringMatcher(dst *string) func(any) error {
+	return func(x any) error {
 		s, ok := x.(string)
 		if !ok {
 			return errors.New("not a string")
@@ -102,8 +102,8 @@ func StringMatcher(dst *string) func(interface{}) error {
 }
 
 // TimeMatcher stores a time with a given format.
-func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
-	return func(x interface{}) error {
+func TimeMatcher(dst *time.Time, format string) func(any) error {
+	return func(x any) error {
 		s, ok := x.(string)
 		if !ok {
 			return errors.New("not a string")
@@ -120,9 +120,9 @@ func TimeMatcher(dst *time.Time, format string) func(interface{}) error {
 // Extract extracts a value from a given document with a given expression/action.
 func (pe *PathEval) Extract(
 	expr string,
-	action func(interface{}) error,
+	action func(any) error,
 	optional bool,
-	doc interface{},
+	doc any,
 ) error {
 	optErr := func(err error) error {
 		if err == nil || optional {
@@ -138,7 +138,7 @@ func (pe *PathEval) Extract(
 }
 
 // Match matches a list of PathEvalMatcher pairs against a document.
-func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
+func (pe *PathEval) Match(matcher []PathEvalMatcher, doc any) error {
 	for _, m := range matcher {
 		if err := pe.Extract(m.Expr, m.Action, m.Optional, doc); err != nil {
 			return err
@@ -153,7 +153,7 @@ func (pe *PathEval) Match(matcher []PathEvalMatcher, doc interface{}) error {
 func (pe *PathEval) Strings(
 	exprs []string,
 	optional bool,
-	doc interface{},
+	doc any,
 ) ([]string, error) {
 	results := make([]string, 0, len(exprs))
 	var result string
@@ -169,8 +169,8 @@ func (pe *PathEval) Strings(
 
 // AsStrings transforms an []interface{string, string,... }
 // to a []string.
-func AsStrings(x interface{}) ([]string, bool) {
-	strs, ok := x.([]interface{})
+func AsStrings(x any) ([]string, bool) {
+	strs, ok := x.([]any)
 	if !ok {
 		return nil, false
 	}

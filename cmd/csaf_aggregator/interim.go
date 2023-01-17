@@ -78,7 +78,7 @@ func (w *worker) checkInterims(
 		data.Reset()
 		hasher := io.MultiWriter(s256, &data)
 
-		var doc interface{}
+		var doc any
 		if err := func() error {
 			defer res.Body.Close()
 			tee := io.TeeReader(res.Body, hasher)

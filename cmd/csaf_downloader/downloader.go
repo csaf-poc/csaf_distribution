@@ -88,7 +88,7 @@ func (d *downloader) httpClient() util.Client {
 func (d *downloader) download(domain string) error {
 
 	lpmd := csaf.LoadProviderMetadataForDomain(
-		d.httpClient(), domain, func(format string, args ...interface{}) {
+		d.httpClient(), domain, func(format string, args ...any) {
 			log.Printf(
 				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
 		})
@@ -122,7 +122,7 @@ func (d *downloader) download(domain string) error {
 
 func (d *downloader) loadOpenPGPKeys(
 	client util.Client,
-	doc interface{},
+	doc any,
 	base *url.URL,
 ) error {
 
@@ -284,7 +284,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		// Download the advisory and hash it.
 		hasher := io.MultiWriter(writers...)
 
-		var doc interface{}
+		var doc any
 
 		if err := func() error {
 			defer resp.Body.Close()

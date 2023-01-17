@@ -95,7 +95,7 @@ func (cs *compiledSchema) compiler(sds []schemaData) {
 	}
 }
 
-func (cs *compiledSchema) validate(doc interface{}) ([]string, error) {
+func (cs *compiledSchema) validate(doc any) ([]string, error) {
 	cs.once.Do(cs.compile)
 
 	if cs.err != nil {
@@ -153,24 +153,24 @@ func (cs *compiledSchema) validate(doc interface{}) ([]string, error) {
 
 // ValidateCSAF validates the document doc against the JSON schema
 // of CSAF.
-func ValidateCSAF(doc interface{}) ([]string, error) {
+func ValidateCSAF(doc any) ([]string, error) {
 	return compiledCSAFSchema.validate(doc)
 }
 
 // ValidateProviderMetadata validates the document doc against the JSON schema
 // of provider metadata.
-func ValidateProviderMetadata(doc interface{}) ([]string, error) {
+func ValidateProviderMetadata(doc any) ([]string, error) {
 	return compiledProviderSchema.validate(doc)
 }
 
 // ValidateAggregator validates the document doc against the JSON schema
 // of aggregator.
-func ValidateAggregator(doc interface{}) ([]string, error) {
+func ValidateAggregator(doc any) ([]string, error) {
 	return compiledAggregatorSchema.validate(doc)
 }
 
 // ValidateROLIE validates the ROLIE feed against the JSON schema
 // of ROLIE
-func ValidateROLIE(doc interface{}) ([]string, error) {
+func ValidateROLIE(doc any) ([]string, error) {
 	return compiledRolieSchema.validate(doc)
 }

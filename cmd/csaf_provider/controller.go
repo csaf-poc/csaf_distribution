@@ -131,7 +131,7 @@ func (c *controller) auth(
 // render sets the headers for the response. It applies the given template "tmpl" to
 // the given object "arg" and writes the output to http.ResponseWriter.
 // It logs a warning in case of error.
-func (c *controller) render(rw http.ResponseWriter, tmpl string, arg interface{}) {
+func (c *controller) render(rw http.ResponseWriter, tmpl string, arg any) {
 	rw.Header().Set("Content-type", "text/html; charset=utf-8")
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
 	if err := c.tmpl.ExecuteTemplate(rw, tmpl, arg); err != nil {
@@ -142,13 +142,13 @@ func (c *controller) render(rw http.ResponseWriter, tmpl string, arg interface{}
 // failed constructs the error messages by calling "asMultiError" and calls "render"
 // function to render the passed template and error object.
 func (c *controller) failed(rw http.ResponseWriter, tmpl string, err error) {
-	result := map[string]interface{}{"Error": asMultiError(err)}
+	result := map[string]any{"Error": asMultiError(err)}
 	c.render(rw, tmpl, result)
 }
 
 // index calls the "render" function and passes the "index.html" and c.cfg to it.
 func (c *controller) index(rw http.ResponseWriter, r *http.Request) {
-	c.render(rw, "index.html", map[string]interface{}{
+	c.render(rw, "index.html", map[string]any{
 		"Config": c.cfg,
 	})
 }
@@ -158,7 +158,7 @@ func (c *controller) index(rw http.ResponseWriter, r *http.Request) {
 // in case of no error occurred, otherwise calls the "failed" function and passes the given
 // template and the error from "fn".
 func (c *controller) web(
-	fn func(*http.Request) (interface{}, error),
+	fn func(*http.Request) (any, error),
 	tmpl string,
 ) func(http.ResponseWriter, *http.Request) {
 
@@ -173,7 +173,7 @@ func (c *controller) web(
 
 // writeJSON sets the header for the response and writes the JSON encoding of the given "content".
 // It logs out an error message in case of an error.
-func writeJSON(rw http.ResponseWriter, content interface{}, code int) {
+func writeJSON(rw http.ResponseWriter, content any, code int) {
 	rw.Header().Set("Content-type", "application/json; charset=utf-8")
 	rw.Header().Set("X-Content-Type-Options", "nosniff")
 	rw.WriteHeader(code)
@@ -182,7 +182,7 @@ func writeJSON(rw http.ResponseWriter, content interface{}, code int) {
 	}
 }
 
-func errorToContent(err error) interface{} {
+func errorToContent(err error) any {
 	return &struct {
 		Errors multiError `json:"errors"`
 	}{
@@ -191,7 +191,7 @@ func errorToContent(err error) interface{} {
 }
 
 func api(
-	fn func(*http.Request) (interface{}, error),
+	fn func(*http.Request) (any, error),
 ) func(http.ResponseWriter, *http.Request) {
 
 	return func(rw http.ResponseWriter, r *http.Request) {

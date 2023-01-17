@@ -27,7 +27,7 @@ type LoadedProviderMetadata struct {
 	// URL is location where the document was found.
 	URL string
 	// Document is the de-serialized JSON document.
-	Document interface{}
+	Document any
 	// Hash is a SHA256 sum over the document.
 	Hash []byte
 	// Messages are the error message happened while loading.
@@ -41,14 +41,14 @@ func (lpm *LoadedProviderMetadata) Valid() bool {
 
 // defaultLogging generates a logging function if given is nil.
 func defaultLogging(
-	logging func(format string, args ...interface{}),
+	logging func(format string, args ...any),
 	prefix, suffix string,
-) func(format string, args ...interface{}) {
+) func(format string, args ...any) {
 
 	if logging != nil {
 		return logging
 	}
-	return func(format string, args ...interface{}) {
+	return func(format string, args ...any) {
 		log.Printf(prefix+format+suffix, args...)
 	}
 }
@@ -59,7 +59,7 @@ func LoadProviderMetadataFromURL(
 	client util.Client,
 	url string,
 	already map[string]*LoadedProviderMetadata,
-	logging func(format string, args ...interface{}),
+	logging func(format string, args ...any),
 ) *LoadedProviderMetadata {
 
 	logging = defaultLogging(logging, "LoadProviderMetadataFromURL: ", "\n")
@@ -85,7 +85,7 @@ func LoadProviderMetadataFromURL(
 
 	tee := io.TeeReader(res.Body, hash)
 
-	var doc interface{}
+	var doc any
 
 	err = json.NewDecoder(tee).Decode(&doc)
 	// Before checking the err lets check if we had the same
@@ -143,7 +143,7 @@ func LoadProviderMetadatasFromSecurity(
 	client util.Client,
 	path string,
 	already map[string]*LoadedProviderMetadata,
-	logging func(format string, args ...interface{}),
+	logging func(format string, args ...any),
 ) []*LoadedProviderMetadata {
 
 	logging = defaultLogging(logging, "LoadProviderMetadataFromSecurity: ", "\n")
@@ -191,7 +191,7 @@ func LoadProviderMetadatasFromSecurity(
 func LoadProviderMetadataForDomain(
 	client util.Client,
 	domain string,
-	logging func(format string, args ...interface{}),
+	logging func(format string, args ...any),
 ) *LoadedProviderMetadata {
 
 	logging = defaultLogging(logging, "LoadProviderMetadataForDomain: ", "\n")

@@ -49,7 +49,7 @@ type processor struct {
 	alreadyChecked map[string]whereType
 	pmdURL         string
 	pmd256         []byte
-	pmd            interface{}
+	pmd            any
 	keys           []*crypto.KeyRing
 
 	badIntegrities       topicMessages
@@ -112,22 +112,22 @@ func (wt whereType) String() string {
 }
 
 // add adds a message to this topic.
-func (m *topicMessages) add(typ MessageType, format string, args ...interface{}) {
+func (m *topicMessages) add(typ MessageType, format string, args ...any) {
 	*m = append(*m, Message{Type: typ, Text: fmt.Sprintf(format, args...)})
 }
 
 // error adds an error message to this topic.
-func (m *topicMessages) error(format string, args ...interface{}) {
+func (m *topicMessages) error(format string, args ...any) {
 	m.add(ErrorType, format, args...)
 }
 
 // warn adds a warning message to this topic.
-func (m *topicMessages) warn(format string, args ...interface{}) {
+func (m *topicMessages) warn(format string, args ...any) {
 	m.add(WarnType, format, args...)
 }
 
 // info adds an info message to this topic.
-func (m *topicMessages) info(format string, args ...interface{}) {
+func (m *topicMessages) info(format string, args ...any) {
 	m.add(InfoType, format, args...)
 }
 
@@ -378,7 +378,7 @@ func (p *processor) integrity(
 	files []csaf.AdvisoryFile,
 	base string,
 	mask whereType,
-	lg func(MessageType, string, ...interface{}),
+	lg func(MessageType, string, ...any),
 ) error {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -440,7 +440,7 @@ func (p *processor) integrity(
 		data.Reset()
 		hasher := io.MultiWriter(s256, s512, &data)
 
-		var doc interface{}
+		var doc any
 
 		if err := func() error {
 			defer res.Body.Close()
@@ -592,7 +592,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return errContinue
 	}
 
-	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, interface{}, error) {
+	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
 		defer res.Body.Close()
 		all, err := io.ReadAll(res.Body)
 		if err != nil {
@@ -602,7 +602,7 @@ func (p *processor) processROLIEFeed(feed string) error {
 		if err != nil {
 			return nil, nil, fmt.Errorf("%s: %v", feed, err)
 		}
-		var rolieDoc interface{}
+		var rolieDoc any
 		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
 		return rfeed, rolieDoc, err
 
@@ -899,7 +899,7 @@ func (p *processor) checkCSAFs(domain string) error {
 		return err
 	}
 
-	fs, hasRolie := rolie.([]interface{})
+	fs, hasRolie := rolie.([]any)
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {

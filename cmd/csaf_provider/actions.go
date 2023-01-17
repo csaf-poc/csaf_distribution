@@ -132,7 +132,7 @@ func (c *controller) tlpParam(r *http.Request) (tlp, error) {
 
 // create calls the "ensureFolders" functions to create the directories and files.
 // It returns a struct by success, otherwise an error.
-func (c *controller) create(*http.Request) (interface{}, error) {
+func (c *controller) create(*http.Request) (any, error) {
 	if err := ensureFolders(c.cfg); err != nil {
 		return nil, err
 	}
@@ -144,14 +144,14 @@ func (c *controller) create(*http.Request) (interface{}, error) {
 	}, nil
 }
 
-func (c *controller) upload(r *http.Request) (interface{}, error) {
+func (c *controller) upload(r *http.Request) (any, error) {
 
 	newCSAF, data, err := c.loadCSAF(r)
 	if err != nil {
 		return nil, err
 	}
 
-	var content interface{}
+	var content any
 	if err := json.Unmarshal(data, &content); err != nil {
 		return nil, err
 	}

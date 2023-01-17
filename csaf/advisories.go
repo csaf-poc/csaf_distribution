@@ -73,9 +73,9 @@ func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
 type AdvisoryFileProcessor struct {
 	client util.Client
 	expr   *util.PathEval
-	doc    interface{}
+	doc    any
 	base   *url.URL
-	log    func(format string, args ...interface{})
+	log    func(format string, args ...any)
 }
 
 // NewAdvisoryFileProcessor constructs an filename extractor
@@ -83,9 +83,9 @@ type AdvisoryFileProcessor struct {
 func NewAdvisoryFileProcessor(
 	client util.Client,
 	expr *util.PathEval,
-	doc interface{},
+	doc any,
 	base *url.URL,
-	log func(format string, args ...interface{}),
+	log func(format string, args ...any),
 ) *AdvisoryFileProcessor {
 	return &AdvisoryFileProcessor{
 		client: client,
@@ -113,7 +113,7 @@ func (afp *AdvisoryFileProcessor) Process(
 ) error {
 	lg := afp.log
 	if lg == nil {
-		lg = func(format string, args ...interface{}) {
+		lg = func(format string, args ...any) {
 			log.Printf("AdvisoryFileProcessor.Process: "+format, args...)
 		}
 	}
@@ -126,7 +126,7 @@ func (afp *AdvisoryFileProcessor) Process(
 		return err
 	}
 
-	fs, hasRolie := rolie.([]interface{})
+	fs, hasRolie := rolie.([]any)
 	hasRolie = hasRolie && len(fs) > 0
 
 	if hasRolie {
@@ -190,7 +190,7 @@ func (afp *AdvisoryFileProcessor) Process(
 // prefixed by baseURL/.
 func (afp *AdvisoryFileProcessor) loadIndex(
 	baseURL string,
-	lg func(string, ...interface{}),
+	lg func(string, ...any),
 ) ([]AdvisoryFile, error) {
 
 	base, err := url.Parse(baseURL)

@@ -51,8 +51,8 @@ type test struct {
 
 // outDocument is the document send to the remote validation service.
 type outDocument struct {
-	Tests    []test      `json:"tests"`
-	Document interface{} `json:"document"`
+	Tests    []test `json:"tests"`
+	Document any    `json:"document"`
 }
 
 // inDocument is the document recieved from the remote validation service.
@@ -70,7 +70,7 @@ type cache interface {
 
 // RemoteValidator validates an advisory document remotely.
 type RemoteValidator interface {
-	Validate(doc interface{}) (bool, error)
+	Validate(doc any) (bool, error)
 	Close() error
 }
 
@@ -94,7 +94,7 @@ type syncedRemoteValidator struct {
 }
 
 // Validate implements the validation part of the RemoteValidator interface.
-func (srv *syncedRemoteValidator) Validate(doc interface{}) (bool, error) {
+func (srv *syncedRemoteValidator) Validate(doc any) (bool, error) {
 	srv.Lock()
 	defer srv.Unlock()
 	return srv.RemoteValidator.Validate(doc)
@@ -204,7 +204,7 @@ func (v *remoteValidator) Close() error {
 }
 
 // key calculates the key for an advisory document and presets.
-func (v *remoteValidator) key(doc interface{}) ([]byte, error) {
+func (v *remoteValidator) key(doc any) ([]byte, error) {
 	h := sha256.New()
 	if err := json.NewEncoder(h).Encode(doc); err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (v *remoteValidator) key(doc interface{}) ([]byte, error) {
 }
 
 // Validate executes a remote validation of an advisory.
-func (v *remoteValidator) Validate(doc interface{}) (bool, error) {
+func (v *remoteValidator) Validate(doc any) (bool, error) {
 
 	var key []byte
 

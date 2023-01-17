@@ -216,7 +216,7 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	}
 
 	if !p.opts.NoSchemaCheck {
-		var doc interface{}
+		var doc any
 		if err := json.NewDecoder(bytes.NewReader(data)).Decode(&doc); err != nil {
 			return nil, err
 		}
