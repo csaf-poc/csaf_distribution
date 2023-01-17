@@ -42,7 +42,7 @@ type worker struct {
 
 	client           util.Client                // client per provider
 	provider         *provider                  // current provider
-	metadataProvider interface{}                // current metadata provider
+	metadataProvider any                        // current metadata provider
 	loc              string                     // URL of current provider-metadata.json
 	dir              string                     // Directory to store data to.
 	summaries        map[string][]summary       // the summaries of the advisories.
@@ -80,7 +80,7 @@ func (w *worker) createDir() (string, error) {
 func (w *worker) locateProviderMetadata(domain string) error {
 
 	lpmd := csaf.LoadProviderMetadataForDomain(
-		w.client, domain, func(format string, args ...interface{}) {
+		w.client, domain, func(format string, args ...any) {
 			log.Printf(
 				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
 		})

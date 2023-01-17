@@ -41,7 +41,7 @@ type AdvisorySummary struct {
 // with the help of an expression evaluator expr.
 func NewAdvisorySummary(
 	pe *util.PathEval,
-	doc interface{},
+	doc any,
 ) (*AdvisorySummary, error) {
 
 	e := &AdvisorySummary{
