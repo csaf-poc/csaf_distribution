@@ -195,9 +195,10 @@ func (c *controller) upload(r *http.Request) (any, error) {
 	var dynamicCategories []string
 	if catExprs := c.cfg.DynamicCategories(); len(catExprs) > 0 {
 		var err error
-		if dynamicCategories, err = pe.Strings(catExprs, true, content); err != nil {
+		if dynamicCategories, err = pe.StringsFromTree(
+			catExprs, true, content); err != nil {
 			// XXX: Should we die here?
-			log.Printf("eval of dynamic catecory expressions failed: %v\n", err)
+			log.Printf("eval of dynamic catergory expressions failed: %v\n", err)
 		}
 	}
 

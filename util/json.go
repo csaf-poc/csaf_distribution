@@ -101,6 +101,37 @@ func StringMatcher(dst *string) func(any) error {
 	}
 }
 
+// StringTreeMatcher returns a matcher which add strings from
+// stringss and recursively from arrays from strings.
+func StringTreeMatcher(strings *[]string) func(any) error {
+	// Only add unique strings.
+	unique := func(s string) {
+		for _, t := range *strings {
+			if s == t {
+				return
+			}
+		}
+		*strings = append(*strings, s)
+	}
+	var recurse func(any) error
+	recurse = func(x any) error {
+		switch y := x.(type) {
+		case string:
+			unique(y)
+		case []any:
+			for _, z := range y {
+				if err := recurse(z); err != nil {
+					return err
+				}
+			}
+		default:
+			return fmt.Errorf("unsupported type: %T", x)
+		}
+		return nil
+	}
+	return recurse
+}
+
 // TimeMatcher stores a time with a given format.
 func TimeMatcher(dst *time.Time, format string) func(any) error {
 	return func(x any) error {
@@ -145,6 +176,25 @@ func (pe *PathEval) Match(matcher []PathEvalMatcher, doc any) error {
 		}
 	}
 	return nil
+}
+
+// StringsFromTree returns strings from the given exprs.
+//  1. If a expression results a string this string is used.
+//  2. if a expression results in an array the elements
+//     of this array are recursively treated with 1. and 2.
+func (pe *PathEval) StringsFromTree(
+	exprs []string,
+	optional bool,
+	doc any,
+) ([]string, error) {
+	results := make([]string, 0, len(exprs))
+	matcher := StringTreeMatcher(&results)
+	for _, expr := range exprs {
+		if err := pe.Extract(expr, matcher, optional, doc); err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
 }
 
 // Strings searches the given document for the given set of expressions

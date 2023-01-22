@@ -451,18 +451,19 @@ func (w *worker) extractCategories(label string, advisory any) error {
 		w.categories[label] = cats
 	}
 
-	var result string
-	matcher := util.StringMatcher(&result)
-
 	const exprPrefix = "expr:"
 
 	for _, cat := range categories {
 		if strings.HasPrefix(cat, exprPrefix) {
 			expr := cat[len(exprPrefix):]
+			var results []string
+			matcher := util.StringTreeMatcher(&results)
 			if err := w.expr.Extract(expr, matcher, true, advisory); err != nil {
 				return err
 			}
-			cats[result] = true
+			for _, result := range results {
+				cats[result] = true
+			}
 		} else { // Normal
 			cats[cat] = true
 		}
