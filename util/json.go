@@ -155,7 +155,7 @@ func TimeMatcher(dst *time.Time, format string) func(any) error {
 		}
 		t, err := time.Parse(format, s)
 		if err != nil {
-			return nil
+			return err
 		}
 		*dst = t
 		return nil
