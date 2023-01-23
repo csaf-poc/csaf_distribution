@@ -101,8 +101,8 @@ func StringMatcher(dst *string) func(any) error {
 	}
 }
 
-// StringTreeMatcher returns a matcher which add strings from
-// stringss and recursively from arrays from strings.
+// StringTreeMatcher returns a matcher which addis strings from
+// strings and recursively from arrays of strings.
 func StringTreeMatcher(strings *[]string) func(any) error {
 	// Only add unique strings.
 	unique := func(s string) {
