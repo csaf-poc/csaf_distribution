@@ -101,8 +101,8 @@ func StringMatcher(dst *string) func(any) error {
 	}
 }
 
-// StringTreeMatcher returns a matcher which addis strings from
-// strings and recursively from arrays of strings.
+// StringTreeMatcher returns a matcher which adds strings
+// to a slice and recursively strings from arrays of strings.
 func StringTreeMatcher(strings *[]string) func(any) error {
 	// Only add unique strings.
 	unique := func(s string) {
@@ -179,8 +179,8 @@ func (pe *PathEval) Match(matcher []PathEvalMatcher, doc any) error {
 }
 
 // StringsFromTree returns strings from the given exprs.
-//  1. If a expression results a string this string is used.
-//  2. if a expression results in an array the elements
+//  1. If an expression results in a string this string is used.
+//  2. if an expression results in an array the elements
 //     of this array are recursively treated with 1. and 2.
 func (pe *PathEval) StringsFromTree(
 	exprs []string,

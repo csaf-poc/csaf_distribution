@@ -112,6 +112,16 @@ The following example file documents all available configuration options:
 #   If this test fails the expression fails. If the
 #   test succeeds the rules are applied recursively to
 #   collect all strings in the result.
+#   If the result of the expression is a string this string
+#   is used. If the result is an array each element of
+#   this array is tested if it is a string or an array.
+#   If this test fails the expression fails. If the
+#   test succeeds the rules are applied recursively to
+#   collect all strings in the result.
+#   Suggested expressions are:
+#   - vendor, product family and product names:  "expr:$.product_tree..branches[?(@.category=='vendor' || @.category=='product_family' || @.category=='product_name')].name"
+#   - CVEs: "expr:$.vulnerabilities[*].cve"
+#   - CWEs: "expr:$.vulnerabilities[*].cwe.id"
 # Strings not starting with `expr:` are taken verbatim.
 # By default no category documents are created.
 # This example provides an overview over the syntax,
