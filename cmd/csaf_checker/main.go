@@ -39,6 +39,10 @@ type options struct {
 	Rate       *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
 	Years      *uint    `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS"`
 
+	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
+	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely"`
+
 	clientCerts []tls.Certificate
 }
 
@@ -154,6 +158,17 @@ func buildReporters() []reporter {
 	}
 }
 
+// run uses a processor to check all the given domains
+// and generates a report.
+func run(opts *options, domains []string) (*Report, error) {
+	p, err := newProcessor(opts)
+	if err != nil {
+		return nil, err
+	}
+	defer p.close()
+	return p.run(buildReporters(), domains)
+}
+
 func main() {
 	opts := new(options)
 
@@ -172,9 +187,7 @@ func main() {
 		return
 	}
 
-	p := newProcessor(opts)
-
-	report, err := p.run(buildReporters(), domains)
+	report, err := run(opts, domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))

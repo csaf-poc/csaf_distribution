@@ -41,6 +41,7 @@ type topicMessages []Message
 
 type processor struct {
 	opts      *options
+	validator csaf.RemoteValidator
 	client    util.Client
 	ageAccept func(time.Time) bool
 
@@ -146,12 +147,37 @@ func (m *topicMessages) used() bool { return *m != nil }
 
 // newProcessor returns a processor structure after assigning the given options to the opts attribute
 // and initializing the "alreadyChecked" and "expr" fields.
-func newProcessor(opts *options) *processor {
+func newProcessor(opts *options) (*processor, error) {
+
+	var validator csaf.RemoteValidator
+
+	if opts.RemoteValidator != "" {
+		validatorOptions := csaf.RemoteValidatorOptions{
+			URL:     opts.RemoteValidator,
+			Presets: opts.RemoteValidatorPresets,
+			Cache:   opts.RemoteValidatorCache,
+		}
+		var err error
+		if validator, err = validatorOptions.Open(); err != nil {
+			return nil, fmt.Errorf(
+				"preparing remote validator failed: %w", err)
+		}
+	}
+
 	return &processor{
 		opts:           opts,
 		alreadyChecked: map[string]whereType{},
 		expr:           util.NewPathEval(),
 		ageAccept:      ageAccept(opts),
+		validator:      validator,
+	}, nil
+}
+
+// close closes external ressources of the processor.
+func (p *processor) close() {
+	if p.validator != nil {
+		p.validator.Close()
+		p.validator = nil
 	}
 }
 
@@ -451,6 +477,7 @@ func (p *processor) integrity(
 			continue
 		}
 
+		// Validate against JSON schema.
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
 			lg(ErrorType, "Failed to validate %s: %v", u, err)
@@ -458,6 +485,15 @@ func (p *processor) integrity(
 		}
 		if len(errors) > 0 {
 			lg(ErrorType, "CSAF file %s has %d validation errors.", u, len(errors))
+		}
+
+		// Validate against remote validator.
+		if p.validator != nil {
+			if ok, err := p.validator.Validate(doc); err != nil {
+				lg(ErrorType, "Calling remote validator on %s failed: %v", u, err)
+			} else if !ok {
+				lg(ErrorType, "Remote validation of %s failed.", u)
+			}
 		}
 
 		// Check if file is in the right folder.
