@@ -39,7 +39,7 @@ type LimitingClient struct {
 	Limiter *rate.Limiter
 }
 
-// HeaderClient adds extra HTTP header fields to the ou going requests.
+// HeaderClient adds extra HTTP header fields to requests.
 type HeaderClient struct {
 	Client
 	Header http.Header
