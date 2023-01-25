@@ -351,24 +351,30 @@ func (p *processor) httpClient() util.Client {
 		TLSClientConfig: &tlsConfig,
 	}
 
-	var client util.Client
+	client := util.Client(&hClient)
 
+	// Add extra headers.
+	if len(p.opts.ExtraHeader) > 0 {
+		client = &util.HeaderClient{
+			Client: client,
+			Header: p.opts.ExtraHeader,
+		}
+	}
+
+	// Add optional URL logging.
 	if p.opts.Verbose {
-		client = &util.LoggingClient{Client: &hClient}
-	} else {
-		client = &hClient
+		client = &util.LoggingClient{Client: client}
 	}
 
-	if p.opts.Rate == nil {
-		p.client = client
-		return client
+	// Add optional rate limiting.
+	if p.opts.Rate != nil {
+		client = &util.LimitingClient{
+			Client:  client,
+			Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
+		}
 	}
 
-	p.client = &util.LimitingClient{
-		Client:  client,
-		Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
-	}
-
+	p.client = client
 	return p.client
 }
 

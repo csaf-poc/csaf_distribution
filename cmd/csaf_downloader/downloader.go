@@ -64,24 +64,30 @@ func (d *downloader) httpClient() util.Client {
 		}
 	}
 
-	var client util.Client
+	client := util.Client(&hClient)
 
+	// Add extra headers.
+	if len(d.opts.ExtraHeader) > 0 {
+		client = &util.HeaderClient{
+			Client: client,
+			Header: d.opts.ExtraHeader,
+		}
+	}
+
+	// Add optional URL logging.
 	if d.opts.Verbose {
-		client = &util.LoggingClient{Client: &hClient}
-	} else {
-		client = &hClient
+		client = &util.LoggingClient{Client: client}
 	}
 
-	if d.opts.Rate == nil {
-		d.client = client
-		return client
+	// Add optional rate limiting.
+	if d.opts.Rate != nil {
+		client = &util.LimitingClient{
+			Client:  client,
+			Limiter: rate.NewLimiter(rate.Limit(*d.opts.Rate), 1),
+		}
 	}
 
-	d.client = &util.LimitingClient{
-		Client:  client,
-		Limiter: rate.NewLimiter(rate.Limit(*d.opts.Rate), 1),
-	}
-
+	d.client = client
 	return d.client
 }
 
