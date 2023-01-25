@@ -15,13 +15,14 @@ Application Options:
   -v, --verbose                  Verbose output
   -r, --rate=                    The average upper limit of https operations per second
   -y, --years=YEARS              Number of years to look back from now
+  -H, --header=                  One or more extra HTTP header fields
 
 Help Options:
   -h, --help                     Show this help message
 ```
 
 Usage example:
-` ./csaf_checker example.com -f html --rate=5.3 -o check-results.html`
+` ./csaf_checker example.com -f html --rate=5.3 -H apikey:SECRET -o check-results.html`
 
 Each performed check has a return type of either 0,1 or 2:
 ```
