@@ -113,9 +113,10 @@ The following example file documents all available configuration options:
 #   test succeeds the rules are applied recursively to
 #   collect all strings in the result.
 #   Suggested expressions are:
-#   - vendor, product family and product names:  "expr:$.product_tree..branches[?(@.category=='vendor' || @.category=='product_family' || @.category=='product_name')].name"
+#   - vendor, product family and product names:  "expr:$.product_tree..branches[?(@.category==\"vendor\" || @.category==\"product_family\" || @.category==\"product_name\")].name"
 #   - CVEs: "expr:$.vulnerabilities[*].cve"
 #   - CWEs: "expr:$.vulnerabilities[*].cwe.id"
+#  s implementation of JsonPath expressions does not support the use of single-quotes. Double quotes have to be quoted. 
 # Strings not starting with `expr:` are taken verbatim.
 # By default no category documents are created.
 # This example provides an overview over the syntax,
