@@ -453,20 +453,28 @@ func (w *worker) extractCategories(label string, advisory any) error {
 
 	const exprPrefix = "expr:"
 
+	var dynamic []string
+	matcher := util.StringTreeMatcher(&dynamic)
+
 	for _, cat := range categories {
 		if strings.HasPrefix(cat, exprPrefix) {
 			expr := cat[len(exprPrefix):]
-			var results []string
-			matcher := util.StringTreeMatcher(&results)
-			if err := w.expr.Extract(expr, matcher, true, advisory); err != nil {
-				return err
+			// Compile first to check that the expression is okay.
+			if _, err := w.expr.Compile(expr); err != nil {
+				fmt.Printf("Compiling category expression %q failed: %v\n",
+					expr, err)
+				continue
 			}
-			for _, result := range results {
-				cats[result] = true
-			}
+			// Ignore errors here as they result from not matching.
+			w.expr.Extract(expr, matcher, true, advisory)
 		} else { // Normal
 			cats[cat] = true
 		}
+	}
+
+	// Add dynamic categories.
+	for _, cat := range dynamic {
+		cats[cat] = true
 	}
 
 	return nil

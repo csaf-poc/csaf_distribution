@@ -42,6 +42,20 @@ func NewPathEval() *PathEval {
 	}
 }
 
+// Compile compiles an expression and stores it in the
+// internal cache on success.
+func (pe *PathEval) Compile(expr string) (gval.Evaluable, error) {
+	if eval := pe.exprs[expr]; eval != nil {
+		return eval, nil
+	}
+	eval, err := pe.builder.NewEvaluable(expr)
+	if err != nil {
+		return nil, err
+	}
+	pe.exprs[expr] = eval
+	return eval, nil
+}
+
 // Eval evalutes expression expr on document doc.
 // Returns the result of the expression.
 func (pe *PathEval) Eval(expr string, doc any) (any, error) {
@@ -176,25 +190,6 @@ func (pe *PathEval) Match(matcher []PathEvalMatcher, doc any) error {
 		}
 	}
 	return nil
-}
-
-// StringsFromTree returns strings from the given exprs.
-//  1. If an expression results in a string this string is used.
-//  2. if an expression results in an array the elements
-//     of this array are recursively treated with 1. and 2.
-func (pe *PathEval) StringsFromTree(
-	exprs []string,
-	optional bool,
-	doc any,
-) ([]string, error) {
-	results := make([]string, 0, len(exprs))
-	matcher := StringTreeMatcher(&results)
-	for _, expr := range exprs {
-		if err := pe.Extract(expr, matcher, optional, doc); err != nil {
-			return nil, err
-		}
-	}
-	return results, nil
 }
 
 // Strings searches the given document for the given set of expressions
