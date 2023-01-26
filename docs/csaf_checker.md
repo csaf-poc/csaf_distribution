@@ -3,7 +3,7 @@
 ### Usage
 
 ```
-csaf_checker [OPTIONS]
+csaf_checker [OPTIONS] domain...
 
 Application Options:
   -o, --output=REPORT-FILE       File name of the generated report
