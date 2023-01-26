@@ -85,7 +85,7 @@ type config struct {
 	// ServiceDocument incidates if we should create a service.json document.
 	ServiceDocument bool `toml:"create_service_document"`
 
-	// UpdateInterval is used for publishers a the mandatory field
+	// UpdateInterval is used for publishers as the mandatory field
 	// 'update_interval'.
 	UpdateInterval *string
 
