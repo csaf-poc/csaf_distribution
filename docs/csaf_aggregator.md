@@ -111,12 +111,13 @@ in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
 
-If a provider's domain starts with `https://` its considered a publisher.
-These publishers are added to the `csaf_publishers` list.
-Each publisher must announce an `update_interval`.
-This can be configured for each entry.
-If not given it is taken from the global `update_interval`
-and otherwise the default is "on best effort".
+If a provider's domain starts with `https://` it is considered a publisher.
+These publishers are added to the `csaf_publishers` list, written
+to the resulting `aggregator.json`.
+Each publisher must announce an `update_interval` there.
+This can be configured for each entry, by the config option with the same name.
+If not given it is taken from the configured default
+and otherwise the internal default is "on best effort".
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
