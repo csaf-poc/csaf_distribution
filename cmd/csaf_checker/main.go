@@ -41,7 +41,7 @@ type options struct {
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
 
 	clientCerts []tls.Certificate
 }
@@ -172,7 +172,9 @@ func run(opts *options, domains []string) (*Report, error) {
 func main() {
 	opts := new(options)
 
-	domains, err := flags.Parse(opts)
+	parser := flags.NewParser(opts, flags.Default)
+	parser.Usage = "[OPTIONS] domain..."
+	domains, err := parser.Parse()
 	errCheck(err)
 
 	if opts.Version {

@@ -3,7 +3,8 @@
 ### Usage
 
 ```
-csaf_checker [OPTIONS]
+Usage:
+  csaf_checker [OPTIONS] domain...
 
 Application Options:
   -o, --output=REPORT-FILE       File name of the generated report
@@ -17,7 +18,7 @@ Application Options:
   -y, --years=YEARS              Number of years to look back from now
       --validator=URL            URL to validate documents remotely
       --validatorcache=FILE      FILE to cache remote validations
-      --validatorpreset=         One or more presets to validate remotely
+      --validatorpreset=         One or more presets to validate remotely (default: mandatory)
 
 Help Options:
   -h, --help                     Show this help message
