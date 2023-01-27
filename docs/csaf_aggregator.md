@@ -117,7 +117,7 @@ to the resulting `aggregator.json`.
 Each publisher must announce an `update_interval` there.
 This can be configured for each entry, by the config option with the same name.
 If not given it is taken from the configured default
-and otherwise the internal default is "on best effort".
+Otherwise, the internal default "on best effort" is used.
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
