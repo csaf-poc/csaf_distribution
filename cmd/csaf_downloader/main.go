@@ -12,6 +12,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -19,11 +20,12 @@ import (
 )
 
 type options struct {
-	Directory *string  `short:"d" long:"directory" description:"Directory to store the downloaded files in"`
-	Insecure  bool     `long:"insecure" description:"Do not check TLS certificates from provider"`
-	Version   bool     `long:"version" description:"Display version of the binary"`
-	Verbose   bool     `long:"verbose" short:"v" description:"Verbose output"`
-	Rate      *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+	Directory   *string     `short:"d" long:"directory" description:"Directory to store the downloaded files in"`
+	Insecure    bool        `long:"insecure" description:"Do not check TLS certificates from provider"`
+	Version     bool        `long:"version" description:"Display version of the binary"`
+	Verbose     bool        `long:"verbose" short:"v" description:"Verbose output"`
+	Rate        *float64    `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
 }
 
 func errCheck(err error) {

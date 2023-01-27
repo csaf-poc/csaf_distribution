@@ -194,10 +194,17 @@ func (c *controller) upload(r *http.Request) (any, error) {
 	// Check if we have to search for dynamic categories.
 	var dynamicCategories []string
 	if catExprs := c.cfg.DynamicCategories(); len(catExprs) > 0 {
-		var err error
-		if dynamicCategories, err = pe.Strings(catExprs, true, content); err != nil {
-			// XXX: Should we die here?
-			log.Printf("eval of dynamic catecory expressions failed: %v\n", err)
+		matcher := util.StringTreeMatcher(&dynamicCategories)
+
+		for _, expr := range catExprs {
+			// Compile first to check that the expression is okay.
+			if _, err := pe.Compile(expr); err != nil {
+				log.Printf("Compiling category expression %q failed: %v\n",
+					expr, err)
+				continue
+			}
+			// Ignore errors here as they result from not matching.
+			pe.Extract(expr, matcher, true, content)
 		}
 	}
 
