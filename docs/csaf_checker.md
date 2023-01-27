@@ -16,10 +16,10 @@ Application Options:
   -v, --verbose                  Verbose output
   -r, --rate=                    The average upper limit of https operations per second
   -y, --years=YEARS              Number of years to look back from now
+  -H, --header=                  One or more extra HTTP header fields
       --validator=URL            URL to validate documents remotely
       --validatorcache=FILE      FILE to cache remote validations
       --validatorpreset=         One or more presets to validate remotely (default: mandatory)
-  -H, --header=                  One or more extra HTTP header fields
 
 
 Help Options:
