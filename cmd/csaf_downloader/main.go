@@ -12,6 +12,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -24,6 +25,8 @@ type options struct {
 	Version   bool     `long:"version" description:"Display version of the binary"`
 	Verbose   bool     `long:"verbose" short:"v" description:"Verbose output"`
 	Rate      *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+
+	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`

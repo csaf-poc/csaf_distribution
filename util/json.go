@@ -42,6 +42,20 @@ func NewPathEval() *PathEval {
 	}
 }
 
+// Compile compiles an expression and stores it in the
+// internal cache on success.
+func (pe *PathEval) Compile(expr string) (gval.Evaluable, error) {
+	if eval := pe.exprs[expr]; eval != nil {
+		return eval, nil
+	}
+	eval, err := pe.builder.NewEvaluable(expr)
+	if err != nil {
+		return nil, err
+	}
+	pe.exprs[expr] = eval
+	return eval, nil
+}
+
 // Eval evalutes expression expr on document doc.
 // Returns the result of the expression.
 func (pe *PathEval) Eval(expr string, doc any) (any, error) {
@@ -99,6 +113,37 @@ func StringMatcher(dst *string) func(any) error {
 		*dst = s
 		return nil
 	}
+}
+
+// StringTreeMatcher returns a matcher which adds strings
+// to a slice and recursively strings from arrays of strings.
+func StringTreeMatcher(strings *[]string) func(any) error {
+	// Only add unique strings.
+	unique := func(s string) {
+		for _, t := range *strings {
+			if s == t {
+				return
+			}
+		}
+		*strings = append(*strings, s)
+	}
+	var recurse func(any) error
+	recurse = func(x any) error {
+		switch y := x.(type) {
+		case string:
+			unique(y)
+		case []any:
+			for _, z := range y {
+				if err := recurse(z); err != nil {
+					return err
+				}
+			}
+		default:
+			return fmt.Errorf("unsupported type: %T", x)
+		}
+		return nil
+	}
+	return recurse
 }
 
 // TimeMatcher stores a time with a given format.

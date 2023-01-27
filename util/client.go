@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"golang.org/x/time/rate"
 )
@@ -36,6 +37,64 @@ type LoggingClient struct {
 type LimitingClient struct {
 	Client
 	Limiter *rate.Limiter
+}
+
+// HeaderClient adds extra HTTP header fields to requests.
+type HeaderClient struct {
+	Client
+	Header http.Header
+}
+
+// Do implements the respective method of the [Client] interface.
+func (hc *HeaderClient) Do(req *http.Request) (*http.Response, error) {
+	// Maybe this overly careful but this minimizes
+	// potential side effects in the caller.
+	orig := req.Header
+	defer func() { req.Header = orig }()
+
+	// Work on a copy.
+	req.Header = req.Header.Clone()
+
+	for key, values := range hc.Header {
+		for _, v := range values {
+			req.Header.Add(key, v)
+		}
+	}
+	return hc.Client.Do(req)
+}
+
+// Get implements the respective method of the [Client] interface.
+func (hc *HeaderClient) Get(url string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return hc.Do(req)
+}
+
+// Head implements the respective method of the [Client] interface.
+func (hc *HeaderClient) Head(url string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return hc.Do(req)
+}
+
+// Post implements the respective method of the [Client] interface.
+func (hc *HeaderClient) Post(url, contentType string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", contentType)
+	return hc.Do(req)
+}
+
+// PostForm implements the respective method of the [Client] interface.
+func (hc *HeaderClient) PostForm(url string, data url.Values) (*http.Response, error) {
+	return hc.Post(
+		url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
 // Do implements the respective method of the Client interface.
