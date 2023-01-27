@@ -27,7 +27,7 @@ type options struct {
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
 }
 
 func errCheck(err error) {

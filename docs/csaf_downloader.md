@@ -15,7 +15,7 @@ Application Options:
   -r, --rate=                  The average upper limit of https operations per second
       --validator=URL          URL to validate documents remotely
       --validatorcache=FILE    FILE to cache remote validations
-      --validatorpreset=       One or more presets to validate remotely
+      --validatorpreset=       One or more presets to validate remotely (default: mandatory)
 
 Help Options:
   -h, --help                   Show this help message
