@@ -435,6 +435,8 @@ func main() {
 	}
 
 	for _, arg := range args {
-		check(p.process(arg))
+		if err := p.process(arg); err != nil {
+			log.Fatalf("error: processing %q failed: %v\n", arg, err)
+		}
 	}
 }
