@@ -18,6 +18,9 @@ is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSA
 ## [csaf_downloader](docs/csaf_downloader.md)
 is a tool for downloading advisories from a provider.
 
+## [csaf_validator](docs/csaf_validator.md)
+is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
+
 ## Setup
 Note that binaries for the server side are only available and tested
 for GNU/Linux-Systems, e.g. Ubuntu LTS.
