@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
@@ -68,6 +69,10 @@ func run(opts *options, files []string) error {
 	}
 
 	for _, file := range files {
+		// Check if the file name is valid.
+		if !util.ConfirmingFileName(filepath.Base(file)) {
+			fmt.Printf("%q is not a valid advisory name.\n", file)
+		}
 		doc, err := loadJSONFromFile(file)
 		if err != nil {
 			log.Printf("error: loading %q as JSON failed: %v\n", file, err)
