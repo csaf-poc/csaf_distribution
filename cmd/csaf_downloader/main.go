@@ -20,12 +20,17 @@ import (
 )
 
 type options struct {
-	Directory   *string     `short:"d" long:"directory" description:"Directory to store the downloaded files in"`
-	Insecure    bool        `long:"insecure" description:"Do not check TLS certificates from provider"`
-	Version     bool        `long:"version" description:"Display version of the binary"`
-	Verbose     bool        `long:"verbose" short:"v" description:"Verbose output"`
-	Rate        *float64    `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+	Directory *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR"`
+	Insecure  bool     `long:"insecure" description:"Do not check TLS certificates from provider"`
+	Version   bool     `long:"version" description:"Display version of the binary"`
+	Verbose   bool     `long:"verbose" short:"v" description:"Verbose output"`
+	Rate      *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
+
+	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
+	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
 }
 
 func errCheck(err error) {
@@ -35,6 +40,15 @@ func errCheck(err error) {
 		}
 		log.Fatalf("error: %v\n", err)
 	}
+}
+
+func run(opts *options, domains []string) error {
+	d, err := newDownloader(opts)
+	if err != nil {
+		return err
+	}
+	defer d.close()
+	return d.run(domains)
 }
 
 func main() {
@@ -56,7 +70,5 @@ func main() {
 		return
 	}
 
-	d := newDownloader(opts)
-
-	errCheck(d.run(domains))
+	errCheck(run(opts, domains))
 }
