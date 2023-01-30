@@ -111,11 +111,13 @@ in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
 
-If a provider's domain starts with https:// its considered a publisher.
-These publishers are added to the csaf_publishers list instead of the csaf_providers list which was used before.
-
-The mandatory value of update_interval can be configured for each publisher (provider) individually. If not given it falls back
-to the global update_interval. If this is not given either the default is "on best effort".
+If a provider's domain starts with `https://` it is considered a publisher.
+These publishers are added to the `csaf_publishers` list, written
+to the resulting `aggregator.json`.
+Each publisher must announce an `update_interval` there.
+This can be configured for each entry, by the config option with the same name.
+If not given it is taken from the configured default
+Otherwise, the internal default "on best effort" is used.
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
@@ -179,4 +181,4 @@ insecure = true
 
 In case you want to provide CSAF advisories from others
 that only qualify as CSAF publishers, see
-[how to use the `csaf_aggregator` for it](proxy-provider-for-aggregator.md).
+[how to use the `csaf_aggregator` as "CSAF proxy provider"](proxy-provider-for-aggregator.md).
