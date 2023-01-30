@@ -5,7 +5,7 @@ calls it a *CSAF publisher*.
 
 After manually downloading the advisories from such a publisher,
 the tools here can be used to offer the CSAF files for automated downloading
-as *CSAF aggregator*.
+as *CSAF aggregator*. (The construct is called *CSAF proxy provider*. See [Section 7.2.5](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#725-role-csaf-aggregator) for more details.)
 
 There are three necessary steps, easiest is to use
 one single virtual maschine (or container) per internal provider.
@@ -48,7 +48,7 @@ the path via the variable, normally set in `/etc/nginx/fcgiwrap.conf`:
 (Careful: setting the variable a second time will transfer both values to
 fcgiwrap via an array. It is not guaranteed that the last value will be
 used. So if you are thinking about setting this variable dynamically,
-you need to make sure only once.)
+you need to make sure that is set only once.)
 
 For example you can clone the files
 ```bash
@@ -57,9 +57,8 @@ sudo vim /etc/nginx/fcgiwrap-p1.conf
 sudo cp /etc/nginx/sites-available/default /etc/nginx/sites-available/internal-p1-cgi
 sudo ln -s /etc/nginx/sites-available/internal-p1-cgi  /etc/nginx/sites-enabled/
 sudo vim  /etc/nginx/sites-available/internal-p1-cgi
-
-and then set the right config and port like
 ```
+and then set the right config file and port like
 
 ```nginx
         include fcgiwrap-p1.conf;
