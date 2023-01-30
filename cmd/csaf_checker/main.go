@@ -41,6 +41,10 @@ type options struct {
 	Years       *uint       `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS"`
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
 
+	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
+	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
+
 	clientCerts []tls.Certificate
 }
 
@@ -156,10 +160,23 @@ func buildReporters() []reporter {
 	}
 }
 
+// run uses a processor to check all the given domains
+// and generates a report.
+func run(opts *options, domains []string) (*Report, error) {
+	p, err := newProcessor(opts)
+	if err != nil {
+		return nil, err
+	}
+	defer p.close()
+	return p.run(buildReporters(), domains)
+}
+
 func main() {
 	opts := new(options)
 
-	domains, err := flags.Parse(opts)
+	parser := flags.NewParser(opts, flags.Default)
+	parser.Usage = "[OPTIONS] domain..."
+	domains, err := parser.Parse()
 	errCheck(err)
 
 	if opts.Version {
@@ -174,9 +191,7 @@ func main() {
 		return
 	}
 
-	p := newProcessor(opts)
-
-	report, err := p.run(buildReporters(), domains)
+	report, err := run(opts, domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))
