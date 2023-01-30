@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if len(files) == 0 {
-		log.Println("No domains given.")
+		log.Println("No files given.")
 		return
 	}
 
@@ -86,21 +86,23 @@ func run(opts *options, files []string) error {
 				fmt.Printf("  * %s\n", vErr)
 			}
 		} else {
-			fmt.Printf("%s passes the schema validation.\n", file)
+			fmt.Printf("%q passes the schema validation.\n", file)
 		}
 		// Validate against remote validator.
-		validate, err := validator.Validate(doc)
-		if err != nil {
-			return fmt.Errorf("remote validation of %q failed: %w",
-				file, err)
+		if validator != nil {
+			validate, err := validator.Validate(doc)
+			if err != nil {
+				return fmt.Errorf("remote validation of %q failed: %w",
+					file, err)
+			}
+			var passes string
+			if validate {
+				passes = "passes"
+			} else {
+				passes = "does not pass"
+			}
+			fmt.Printf("%q %s remote validation.\n", file, passes)
 		}
-		var passes string
-		if validate {
-			passes = "passes"
-		} else {
-			passes = "does not pass"
-		}
-		fmt.Printf("%q %s remote validation.\n", file, passes)
 	}
 
 	return nil
