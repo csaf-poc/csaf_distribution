@@ -19,6 +19,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,6 +207,19 @@ func (p *processor) create() error {
 	return nil
 }
 
+var escapeQuotes = strings.NewReplacer("\\", "\\\\", `"`, "\\\"").Replace
+
+// createFromFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
+// This version allows to set the mime type, too.
+func createFromFile(w *multipart.Writer, fieldname, filename, mimeType string) (io.Writer, error) {
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition",
+		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
+			escapeQuotes(fieldname), escapeQuotes(filename)))
+	h.Set("Content-Type", mimeType)
+	return w.CreatePart(h)
+}
+
 // uploadRequest creates the request for uploading a csaf document by passing the filename.
 // According to the flags values the multipart sections of the request are established.
 // It returns the created http request.
@@ -233,7 +247,10 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
-	part, err := writer.CreateFormFile("csaf", filepath.Base(filename))
+	// As the csaf_provider only accepts uploads with mime type
+	// "application/json" we have to set this.
+	part, err := createFromFile(
+		writer, "csaf", filepath.Base(filename), "application/json")
 	if err != nil {
 		return nil, err
 	}
