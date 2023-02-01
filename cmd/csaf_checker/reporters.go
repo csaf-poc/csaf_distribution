@@ -19,6 +19,8 @@ type (
 		num         int
 		description string
 	}
+	validReporter             struct{ baseReporter }
+	filenameReporter          struct{ baseReporter }
 	tlsReporter               struct{ baseReporter }
 	redirectsReporter         struct{ baseReporter }
 	providerMetadataReport    struct{ baseReporter }
@@ -41,6 +43,29 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	}
 	domain.Requirements = append(domain.Requirements, req)
 	return req
+}
+
+// report reports if there where any invalid filenames,
+func (r *validReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if p.validator == nil {
+		req.message(InfoType, "No remote validator configured")
+	}
+	if !p.invalidAdvisories.used() {
+		req.message(InfoType, "No validations performed")
+	} else {
+		req.Append(p.invalidAdvisories)
+	}
+}
+
+// report reposrts if there where any bad filename.
+func (r *filenameReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badFilenames.used() {
+		req.message(InfoType, "No filenames checked for conformance")
+	} else {
+		req.Append(p.badFilenames)
+	}
 }
 
 // report tests if the URLs are HTTPS and sets the "message" field value
@@ -142,7 +167,7 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badSecurity
 }
 
-//report tests the availability of the "provider-metadata.json" under /.well-known/csaf/ directoy.
+// report tests the availability of the "provider-metadata.json" under /.well-known/csaf/ directoy.
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWellknownMetadata.used() {

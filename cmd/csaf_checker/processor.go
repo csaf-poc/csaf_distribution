@@ -53,6 +53,8 @@ type processor struct {
 	pmd            any
 	keys           []*crypto.KeyRing
 
+	invalidAdvisories    topicMessages
+	badFilenames         topicMessages
 	badIntegrities       topicMessages
 	badPGPs              topicMessages
 	badSignatures        topicMessages
@@ -203,6 +205,8 @@ func (p *processor) clean() {
 	p.pmd = nil
 	p.keys = nil
 
+	p.invalidAdvisories.reset()
+	p.badFilenames.reset()
 	p.badIntegrities.reset()
 	p.badPGPs.reset()
 	p.badSignatures.reset()
@@ -441,6 +445,12 @@ func (p *processor) integrity(
 		}
 		p.checkTLS(u)
 
+		// Check if the filename is confirming.
+		p.badFilenames.use()
+		if !util.ConfirmingFileName(filepath.Base(u)) {
+			p.badFilenames.error("%s has not a confirming filename.", u)
+		}
+
 		var folderYear *int
 
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
@@ -483,22 +493,24 @@ func (p *processor) integrity(
 			continue
 		}
 
+		p.invalidAdvisories.use()
+
 		// Validate against JSON schema.
 		errors, err := csaf.ValidateCSAF(doc)
 		if err != nil {
-			lg(ErrorType, "Failed to validate %s: %v", u, err)
+			p.invalidAdvisories.error("Failed to validate %s: %v", u, err)
 			continue
 		}
 		if len(errors) > 0 {
-			lg(ErrorType, "CSAF file %s has %d validation errors.", u, len(errors))
+			p.invalidAdvisories.error("CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
 		// Validate against remote validator.
 		if p.validator != nil {
 			if ok, err := p.validator.Validate(doc); err != nil {
-				lg(ErrorType, "Calling remote validator on %s failed: %v", u, err)
+				p.invalidAdvisories.error("Calling remote validator on %s failed: %v", u, err)
 			} else if !ok {
-				lg(ErrorType, "Remote validation of %s failed.", u)
+				p.invalidAdvisories.error("Remote validation of %s failed.", u)
 			}
 		}
 
