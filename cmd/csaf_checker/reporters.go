@@ -53,6 +53,8 @@ func (r *validReporter) report(p *processor, domain *Domain) {
 	}
 	if !p.invalidAdvisories.used() {
 		req.message(InfoType, "No validations performed")
+	} else if len(p.invalidAdvisories) == 0 {
+		req.message(InfoType, "All advisories validated fine.")
 	} else {
 		req.Append(p.invalidAdvisories)
 	}
@@ -63,6 +65,8 @@ func (r *filenameReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badFilenames.used() {
 		req.message(InfoType, "No filenames checked for conformance")
+	} else if len(p.badFilenames) == 0 {
+		req.message(InfoType, "All found filenames are confirming.")
 	} else {
 		req.Append(p.badFilenames)
 	}
