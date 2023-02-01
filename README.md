@@ -27,7 +27,7 @@ for GNU/Linux-Systems, e.g. Ubuntu LTS.
 They are likely to run on similar systems when build from sources.
 
 The windows binary package only includes
-`csaf_downloader`, `csaf_checker` and `csaf_uploader`.
+`csaf_downloader`, `csaf_validator`, `csaf_checker` and `csaf_uploader`.
 
 
 ### Prebuild binaries
