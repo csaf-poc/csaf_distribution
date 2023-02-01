@@ -73,6 +73,11 @@ func (r *Requirement) HasErrors() bool {
 	return false
 }
 
+// Append appends messages to requirement.
+func (r *Requirement) Append(msgs []Message) {
+	r.Messages = append(r.Messages, msgs...)
+}
+
 // HasErrors tells if this domain has errors.
 func (d *Domain) HasErrors() bool {
 	for _, r := range d.Requirements {

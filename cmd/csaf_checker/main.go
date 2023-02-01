@@ -144,6 +144,8 @@ func writeReport(report *Report, opts *options) error {
 // It returns an array of the reporter interface type.
 func buildReporters() []reporter {
 	return []reporter{
+		&validReporter{baseReporter{num: 1, description: "Valid CSAF documents"}},
+		&filenameReporter{baseReporter{num: 2, description: "Filename"}},
 		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
 		&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
 		&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
