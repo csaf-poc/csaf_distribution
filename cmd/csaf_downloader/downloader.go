@@ -284,7 +284,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		// Warn if we do not get JSON.
 		if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
 			log.Printf(
-				"WARN: The content type of %s should be 'application/json but is '%s'\n",
+				"WARN: The content type of %s should be 'application/json' but is '%s'\n",
 				file.URL(), ct)
 		}
 
