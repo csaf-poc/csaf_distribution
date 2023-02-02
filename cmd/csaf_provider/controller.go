@@ -72,7 +72,7 @@ func (c *controller) bind(pim *pathInfoMux) {
 	pim.handleFunc("/api/create", c.auth(api(c.create)))
 }
 
-// authenticate checks if the incoming request confirms with the
+// authenticate checks if the incoming request conforms with the
 // configured authentication mechanism.
 func (c *controller) authenticate(r *http.Request) bool {
 

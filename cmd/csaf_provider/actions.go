@@ -47,8 +47,8 @@ func (c *controller) loadCSAF(r *http.Request) (string, []byte, error) {
 		return "", nil, errors.New("expected content type 'application/json'")
 	}
 
-	if !util.ConfirmingFileName(handler.Filename) {
-		return "", nil, errors.New("given csaf filename is not confirming")
+	if !util.ConformingFileName(handler.Filename) {
+		return "", nil, errors.New("given csaf filename is not conforming")
 	}
 
 	var buf bytes.Buffer

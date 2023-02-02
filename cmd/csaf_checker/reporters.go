@@ -66,7 +66,7 @@ func (r *filenameReporter) report(p *processor, domain *Domain) {
 	if !p.badFilenames.used() {
 		req.message(InfoType, "No filenames checked for conformance")
 	} else if len(p.badFilenames) == 0 {
-		req.message(InfoType, "All found filenames are confirming.")
+		req.message(InfoType, "All found filenames are conforming.")
 	} else {
 		req.Append(p.badFilenames)
 	}

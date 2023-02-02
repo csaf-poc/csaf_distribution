@@ -23,7 +23,7 @@ func TestCleanFileName(t *testing.T) {
 	}
 }
 
-func TestConfirmingFileName(t *testing.T) {
+func TestConformingFileName(t *testing.T) {
 	for _, x := range []struct {
 		s string
 		b bool
@@ -41,7 +41,7 @@ func TestConfirmingFileName(t *testing.T) {
 		{`abc_.htm__l`, false},
 		{`foo+BAR`, false},
 	} {
-		if got := ConfirmingFileName(x.s); got != x.b {
+		if got := ConformingFileName(x.s); got != x.b {
 			t.Errorf("%q: Expected %t but got %t.", x.s, x.b, got)
 		}
 	}

@@ -445,10 +445,10 @@ func (p *processor) integrity(
 		}
 		p.checkTLS(u)
 
-		// Check if the filename is confirming.
+		// Check if the filename is conforming.
 		p.badFilenames.use()
-		if !util.ConfirmingFileName(filepath.Base(u)) {
-			p.badFilenames.error("%s has not a confirming filename.", u)
+		if !util.ConformingFileName(filepath.Base(u)) {
+			p.badFilenames.error("%s has not a conforming filename.", u)
 		}
 
 		var folderYear *int
@@ -1054,14 +1054,14 @@ func (p *processor) checkMissing(string) error {
 }
 
 // checkInvalid goes over all found adivisories URLs and checks
-// if file name confirms to standard.
+// if file name conforms to standard.
 func (p *processor) checkInvalid(string) error {
 
 	p.badDirListings.use()
 	var invalids []string
 
 	for f := range p.alreadyChecked {
-		if !util.ConfirmingFileName(filepath.Base(f)) {
+		if !util.ConformingFileName(filepath.Base(f)) {
 			invalids = append(invalids, f)
 		}
 	}
