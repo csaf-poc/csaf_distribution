@@ -60,7 +60,7 @@ func (r *validReporter) report(p *processor, domain *Domain) {
 	}
 }
 
-// report reposrts if there where any bad filename.
+// report reports if there where any bad filename.
 func (r *filenameReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badFilenames.used() {
