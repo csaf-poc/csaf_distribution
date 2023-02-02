@@ -209,9 +209,10 @@ func (p *processor) create() error {
 
 var escapeQuotes = strings.NewReplacer("\\", "\\\\", `"`, "\\\"").Replace
 
-// createFromFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
+// createFormFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
 // This version allows to set the mime type, too.
-func createFromFile(w *multipart.Writer, fieldname, filename, mimeType string) (io.Writer, error) {
+func createFormFile(w *multipart.Writer, fieldname, filename, mimeType string) (io.Writer, error) {
+	// Source: https://cs.opensource.google/go/go/+/refs/tags/go1.20:src/mime/multipart/writer.go;l=140
 	h := make(textproto.MIMEHeader)
 	h.Set("Content-Disposition",
 		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
@@ -249,7 +250,7 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 
 	// As the csaf_provider only accepts uploads with mime type
 	// "application/json" we have to set this.
-	part, err := createFromFile(
+	part, err := createFormFile(
 		writer, "csaf", filepath.Base(filename), "application/json")
 	if err != nil {
 		return nil, err
