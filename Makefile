@@ -81,7 +81,7 @@ dist: build_linux build_win
 	dist/$(DISTDIR)-windows-amd64/bin-windows-amd64/
 	mkdir -p dist/$(DISTDIR)-windows-amd64/docs
 	cp docs/csaf_uploader.md docs/csaf_validator.md docs/csaf_checker.md \
-docs/csaf_downloader.md dist/$(DISTDIR)-windows-amd64/docs
+	docs/csaf_downloader.md dist/$(DISTDIR)-windows-amd64/docs
 	mkdir dist/$(DISTDIR)-gnulinux-amd64
 	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
 	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
