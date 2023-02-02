@@ -33,8 +33,8 @@ func CleanFileName(s string) string {
 	return invalidRune.ReplaceAllString(s, "_") + ".json"
 }
 
-// ConfirmingFileName checks if the given filename is confirming the standard.
-func ConfirmingFileName(fname string) bool {
+// ConformingFileName checks if the given filename conforms to the standard.
+func ConformingFileName(fname string) bool {
 	return fname == CleanFileName(fname)
 }
 

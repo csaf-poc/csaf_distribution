@@ -314,8 +314,8 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 // It prints the response messages.
 func (p *processor) process(filename string) error {
 
-	if bn := filepath.Base(filename); !util.ConfirmingFileName(bn) {
-		return fmt.Errorf("%q is not a confirming file name", bn)
+	if bn := filepath.Base(filename); !util.ConformingFileName(bn) {
+		return fmt.Errorf("%q is not a conforming file name", bn)
 	}
 
 	req, err := p.uploadRequest(filename)

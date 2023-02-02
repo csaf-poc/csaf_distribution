@@ -70,7 +70,7 @@ func run(opts *options, files []string) error {
 
 	for _, file := range files {
 		// Check if the file name is valid.
-		if !util.ConfirmingFileName(filepath.Base(file)) {
+		if !util.ConformingFileName(filepath.Base(file)) {
 			fmt.Printf("%q is not a valid advisory name.\n", file)
 		}
 		doc, err := loadJSONFromFile(file)

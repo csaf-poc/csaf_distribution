@@ -262,10 +262,10 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 			continue
 		}
 
-		// Ignore not confirming filenames.
+		// Ignore not conforming filenames.
 		filename := filepath.Base(u.Path)
-		if !util.ConfirmingFileName(filename) {
-			log.Printf("Not confirming filename %q. Ignoring.\n", filename)
+		if !util.ConformingFileName(filename) {
+			log.Printf("Not conforming filename %q. Ignoring.\n", filename)
 			continue
 		}
 
