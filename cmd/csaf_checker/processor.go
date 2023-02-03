@@ -448,7 +448,7 @@ func (p *processor) integrity(
 		// Check if the filename is conforming.
 		p.badFilenames.use()
 		if !util.ConformingFileName(filepath.Base(u)) {
-			p.badFilenames.error("%s has not a conforming filename.", u)
+			p.badFilenames.error("%s does not have a conforming filename.", u)
 		}
 
 		var folderYear *int
