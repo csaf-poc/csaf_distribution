@@ -119,6 +119,15 @@ This can be configured for each entry, by the config option with the same name.
 If not given it is taken from the configured default
 Otherwise, the internal default "on best effort" is used.
 
+If a provider's `create_service_document` option is set to true,
+a `service.json` will be written listing its ROLIE feed documents.
+If it is not set or set to false, then no `service.json` will be written.
+
+To further dissect CSAF-documents by criteria like document category,
+languages or values of the branch category within the Product Tree you
+can set a providers categories value. This consists of an array of either
+literal category values or, by prepending "expr:", JSONPath values.
+
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
 <!-- The below code snippet is automatically added from ../docs/examples/aggregator.toml -->
@@ -170,7 +179,7 @@ insecure = true
 #  rate = 1.8
 #  insecure = true
   write_indices = true
-  # If aggregator.category == "aggreator", set for an entry that should
+  # If aggregator.category == "aggregator", set for an entry that should
   # be listed in addition:
   category = "lister"
 ```
