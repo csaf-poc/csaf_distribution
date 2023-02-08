@@ -123,11 +123,12 @@ If a provider's `create_service_document` option is set to true,
 a `service.json` will be written listing its ROLIE feed documents.
 If it is not set or set to false, then no `service.json` will be written.
 
-To further dissect CSAF-documents by criteria like document category,
-languages or values of the branch category within the product tree you
-can set providers categories values. This can be done using an array
-of strings taken literally or, by prepending "expr:", have it be read
-through JSONPath values. For a more detailed explanation,
+To offer an easy way of assorting CSAF documents by criteria like 
+document category, languages or values of the branch category within
+the product tree ROLIE category values can be configured. This can either
+be done using an array of strings taken literally or, by prepending `"expr:"`. 
+The latter is evaluated as JSONPath and the result will be added into the 
+categories document. For a more detailed explanation and examples,
 [refer to the provider config](csaf_provider.md#provider-options).
 
 #### Example config file
