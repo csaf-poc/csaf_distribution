@@ -125,7 +125,7 @@ If it is not set or set to false, then no `service.json` will be written.
 
 To offer an easy way of assorting CSAF documents by criteria like 
 document category, languages or values of the branch category within
-the product tree ROLIE category values can be configured. This can either
+the product tree, ROLIE category values can be configured. This can either
 be done using an array of strings taken literally or, by prepending `"expr:"`. 
 The latter is evaluated as JSONPath and the result will be added into the 
 categories document. For a more detailed explanation and examples,
