@@ -128,7 +128,7 @@ languages or values of the branch category within the product tree you
 can set providers categories values. This can be done using an array
 of strings taken literally or, by prepending "expr:", have it be read
 through JSONPath values. For a more detailed explanation,
-[refer to the provider config.](csaf_provider.md)
+[refer to the provider config](csaf_provider.md#provider-options).
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
