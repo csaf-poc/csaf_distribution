@@ -92,6 +92,8 @@ aggregator            // table with basic infos for the aggregator object
 providers             // array of tables, each entry to be mirrored or listed
 ```
 
+At least 2 providers have to be configured. The other options are optional.
+
 Rates are specified as floats in HTTPS operations per second.
 0 means no limit. The rates can be specified per provider. Any provider
 which has no specified rate will use the configured default. If
@@ -107,6 +109,9 @@ write_indices
 category
 update_interval
 ```
+
+Any provider needs a valid name and domain. The other
+options are optional.
 
 If you want an entry to be listed instead of mirrored
 in a `aggregator.category == "aggregator"` instance,
