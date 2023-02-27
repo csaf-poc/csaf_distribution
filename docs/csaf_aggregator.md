@@ -93,7 +93,9 @@ providers             // array of tables, each entry to be mirrored or listed
 ```
 
 Rates are specified as floats in HTTPS operations per second.
-0 means no limit.
+0 means no limit. The rates can be specified per provider. Any provider
+which has no specified rate will use the configured default. If
+no default was configured, the internal default with no limits is used.
 
 `providers` is an array of tables, each allowing
 ```
