@@ -20,3 +20,7 @@ Application Options:
 Help Options:
   -h, --help                   Show this help message
 ```
+
+The downloader will attempt to download from the given domain URL. 
+A direct URL to the metadata.json can be given by starting the URL with
+`https://`. Otherwise the downloader will attempt to find the metadata.json.

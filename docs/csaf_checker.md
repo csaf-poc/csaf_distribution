@@ -26,6 +26,10 @@ Help Options:
   -h, --help                     Show this help message
 ```
 
+The checker will attempt to download from the given domain URL. 
+A direct URL to the metadata.json can be given by starting the URL with
+`https://`. Otherwise the checker will attempt to find the metadata.json.
+
 Usage example:
 ` ./csaf_checker example.com -f html --rate=5.3 -H apikey:SECRET -o check-results.html`
 
