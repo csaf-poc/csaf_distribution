@@ -26,12 +26,12 @@ Help Options:
   -h, --help                     Show this help message
 ```
 
-The checker attempts to check each `target`.
+The checker attempts to check each given _target_.
 
-If a `target` start with `https://` it is considered
+If a _target_ start with `https://` it is considered
 a direct URL to the `provider-metadata.json`.
 
-Otherwise it will be treated as a _domain_ for which the
+Else it will be treated as a _domain_ for which the
 `provider-metadata.json` shall be found as documented in the CSAF standard.
 
 Usage example:
