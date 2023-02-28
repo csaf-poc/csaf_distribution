@@ -4,7 +4,7 @@
 
 ```
 Usage:
-  csaf_checker [OPTIONS] target...
+  csaf_checker [OPTIONS] domain...
 
 Application Options:
   -o, --output=REPORT-FILE       File name of the generated report
@@ -26,13 +26,10 @@ Help Options:
   -h, --help                     Show this help message
 ```
 
-The checker attempts to check each given _target_.
+Will check all given _domains_, by trying each as a CSAF provider.
 
-If a _target_ starts with `https://` it is considered
-a direct URL to the `provider-metadata.json`.
+If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and checking procedes from there.
 
-Else it will be treated as a _domain_ for which the
-`provider-metadata.json` shall be found as documented in the CSAF standard.
 
 Usage example:
 ` ./csaf_checker example.com -f html --rate=5.3 -H apikey:SECRET -o check-results.html`

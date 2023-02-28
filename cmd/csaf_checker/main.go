@@ -162,23 +162,23 @@ func buildReporters() []reporter {
 	}
 }
 
-// run uses a processor to check all the given targets
+// run uses a processor to check all the given domains or direct urls
 // and generates a report.
-func run(opts *options, targets []string) (*Report, error) {
+func run(opts *options, domains []string) (*Report, error) {
 	p, err := newProcessor(opts)
 	if err != nil {
 		return nil, err
 	}
 	defer p.close()
-	return p.run(buildReporters(), targets)
+	return p.run(buildReporters(), domains)
 }
 
 func main() {
 	opts := new(options)
 
 	parser := flags.NewParser(opts, flags.Default)
-	parser.Usage = "[OPTIONS] target..."
-	targets, err := parser.Parse()
+	parser.Usage = "[OPTIONS] domain..."
+	domains, err := parser.Parse()
 	errCheck(err)
 
 	if opts.Version {
@@ -188,12 +188,12 @@ func main() {
 
 	errCheck(opts.prepare())
 
-	if len(targets) == 0 {
-		log.Println("No targets given.")
+	if len(domains) == 0 {
+		log.Println("No domain or direct url given.")
 		return
 	}
 
-	report, err := run(opts, targets)
+	report, err := run(opts, domains)
 	errCheck(err)
 
 	errCheck(writeReport(report, opts))
