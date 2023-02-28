@@ -21,7 +21,9 @@ Usage example for a single run, to test if the config is good:
 ```
 
 Once the config is good, you can run the aggregator periodically
-in two modes. For instance using `cron` on Ubuntu and after placing
+in two modes: full and interim.
+
+Here is a complete example using `cron` on Ubuntu. After placing
 the config file in `/etc/csaf_aggregator.toml` and making sure
 its permissions only allow the user `www-data` to read it:
 
@@ -40,7 +42,7 @@ crontab -u www-data -l
 crontab -u www-data -e
 ```
 
-Crontab example, running the full mode one a day and updating
+Here is a crontab that runs the full mode once a day and updating
 interim advisories every 60 minutes:
 
 ```crontab
@@ -56,46 +58,62 @@ SHELL=/bin/bash
 
 Serve the paths where the aggregator writes its `html/` output
 by means of a webserver.
-In the config example below place is configured by the path given for `web`.
+In the config example below the place in the filesystem
+is configured by the path given for `web`.
 
 The user running the aggregator has to be able to write there
 and the web server must be able to read the files.
 
-If you are using nginx, the setup instructions for the provider provide
-and example. You can leave out the cgi-bin part,
-potentially commend out the TLS client parts and
+If you are using nginx, the setup instructions for the provider give
+a template. For the aggregator the difference is that you can leave out
+the cgi-bin part, potentially commend out the TLS client parts and
 adjust the `root` path accordingly.
 
 
 ### config options
 
-The following options can be used in the config file in TOML format:
+The config file is written in [TOML](https://toml.io/en/v1.0.0).
+Each _key_ in the following table is optional and
+can be used directly in the file. If given it overrides the internal default.
 
 ```go
-workers               // number of parallel workers to start (default 10)
-folder                // target folder on disc for writing the downloaded documents
-web                   // directory to be served by the webserver
-domain                // base url where the contents will be reachable from outside
-rate                  // overall downloading limit per worker
-insecure              // do not check validity of TLS certificates
-write_indices         // write index.txt and changes.csv
-openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
-                      // you want to be able to run unattended, e.g. via cron.)
-openpgp_public_key    // OpenPGP public key
-passphrase            // passphrase of the OpenPGP key
-lock_file             // path to lockfile, to stop other instances if one is not done
-interim_years         // limiting the years for which interim documents are searched
-verbose               // print more diagnostic output, e.g. https request
-allow_single_provider // debugging option
-remote_validator      // use remote validation checker
-aggregator            // table with basic infos for the aggregator object
-providers             // array of tables, each entry to be mirrored or listed
+workers                 // number of parallel workers to start (default 10)
+folder                  // target folder on disc for writing the downloaded documents (default "/var/www")
+web                     // directory to be served by the webserver (default "/var/www/html")
+domain                  // base url where the contents will be reachable from outside (default "https://example.com")
+rate                    // downloading limit per worker in HTTPS req/s (default: no limiting)
+insecure                // do not check validity of TLS certificates
+write_indices           // write index.txt and changes.csv
+update_interval         // to indicate the collection interval for a provider (default ""on best effort")
+create_service_document // write a service.json to the ROLIE feed docs for a provider (default false)
+categories              // configure ROLIE category values for a provider
+openpgp_private_key     // OpenPGP private key (must have no passphrase set, if
+                        // you want to be able to run unattended, e.g. via cron.)
+openpgp_public_key      // OpenPGP public key
+passphrase              // passphrase of the OpenPGP key
+lock_file               // path to lockfile, to stop other instances if one is not done (default no locking)
+interim_years           // limiting the years for which interim documents are searched (default 0)
+verbose                 // print more diagnostic output, e.g. https requests (default false)
+allow_single_provider   // debugging option (default false)
 ```
 
-Rates are specified as floats in HTTPS operations per second.
-0 means no limit.
+Next we have two TOML _tables_:
 
-`providers` is an array of tables, each allowing
+```
+aggregator            // basic infos for the aggregator object
+remote_validator      // config for optional remote validation checker
+```
+[See the provider config](csaf_provider.md#provider-options) about
+how to configure `remote_validator`.
+
+At last there is the TOML _array of tables_:
+```
+providers             // each entry to be mirrored or listed
+```
+
+where at least 2 providers have to be configured.
+With each _table_ allowing:
+
 ```
 name
 domain
@@ -104,32 +122,34 @@ insecure
 write_indices
 category
 update_interval
+create_service_document
+categories
 ```
+
+Where valid `name` and `domain` settings are required.
 
 If you want an entry to be listed instead of mirrored
 in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
 
-If a provider's domain starts with `https://` it is considered a publisher.
-These publishers are added to the `csaf_publishers` list, written
-to the resulting `aggregator.json`.
-Each publisher must announce an `update_interval` there.
-This can be configured for each entry, by the config option with the same name.
-If not given it is taken from the configured default
-Otherwise, the internal default "on best effort" is used.
+The remaining _keys_ per entry in the _table_ `providers`
+are optional and will take precedence instead
+of the directly given _keys_ in the TOML file and the internal defaults.
 
-If a provider's `create_service_document` option is set to true,
-a `service.json` will be written listing its ROLIE feed documents.
-If it is not set or set to false, then no `service.json` will be written.
+If a provider's `domain` starts with `https://` it is considered a publisher.
+These publishers are added to the `csaf_publishers` list, which is written
+to the `aggregator.json`.
 
-To offer an easy way of assorting CSAF documents by criteria like 
+To offer an easy way of assorting CSAF documents by criteria like
 document category, languages or values of the branch category within
-the product tree, ROLIE category values can be configured. This can either
+the product tree, ROLIE category values can be configured in `categories`.
+This can either
 be done using an array of strings taken literally or, by prepending `"expr:"`. 
 The latter is evaluated as JSONPath and the result will be added into the 
 categories document. For a more detailed explanation and examples,
 [refer to the provider config](csaf_provider.md#provider-options).
+
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
