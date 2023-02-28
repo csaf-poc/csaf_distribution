@@ -27,8 +27,8 @@ Help Options:
 ```
 
 The checker will attempt to download from the given domain URL. 
-A direct URL to the metadata.json can be given by starting the URL with
-`https://`. Otherwise the checker will attempt to find the metadata.json
+A direct URL to the `provider-metadata.json` can be given by starting the URL with
+`https://`. Otherwise the checker will attempt to find the `provider-metadata.json`
 in any valid default location.
 
 Usage example:
