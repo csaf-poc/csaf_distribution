@@ -1,5 +1,5 @@
 ## csaf_downloader
-A tool to download CSAF content from a specific domain/provider.
+A tool to download CSAF documents from CSAF providers.
 
 ### Usage
 
@@ -20,3 +20,7 @@ Application Options:
 Help Options:
   -h, --help                   Show this help message
 ```
+
+Will download all CSAF documents for the given _domains_, by trying each as a CSAF provider.
+
+If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and downloading procedes from there.

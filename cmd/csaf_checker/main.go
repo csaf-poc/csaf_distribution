@@ -162,7 +162,7 @@ func buildReporters() []reporter {
 	}
 }
 
-// run uses a processor to check all the given domains
+// run uses a processor to check all the given domains or direct urls
 // and generates a report.
 func run(opts *options, domains []string) (*Report, error) {
 	p, err := newProcessor(opts)
@@ -189,7 +189,7 @@ func main() {
 	errCheck(opts.prepare())
 
 	if len(domains) == 0 {
-		log.Println("No domains given.")
+		log.Println("No domain or direct url given.")
 		return
 	}
 

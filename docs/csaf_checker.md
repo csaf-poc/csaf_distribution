@@ -26,6 +26,11 @@ Help Options:
   -h, --help                     Show this help message
 ```
 
+Will check all given _domains_, by trying each as a CSAF provider.
+
+If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and checking procedes from there.
+
+
 Usage example:
 ` ./csaf_checker example.com -f html --rate=5.3 -H apikey:SECRET -o check-results.html`
 
