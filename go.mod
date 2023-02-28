@@ -3,8 +3,8 @@ module github.com/csaf-poc/csaf_distribution
 go 1.19
 
 require (
-	github.com/BurntSushi/toml v1.2.1
-	github.com/PaesslerAG/gval v1.2.2
+	github.com/BurntSushi/toml v1.1.0
+	github.com/PaesslerAG/gval v1.2.0
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ProtonMail/gopenpgp/v2 v2.5.2
 	github.com/PuerkitoBio/goquery v1.8.1
