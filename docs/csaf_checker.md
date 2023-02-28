@@ -4,7 +4,7 @@
 
 ```
 Usage:
-  csaf_checker [OPTIONS] targets...
+  csaf_checker [OPTIONS] target...
 
 Application Options:
   -o, --output=REPORT-FILE       File name of the generated report

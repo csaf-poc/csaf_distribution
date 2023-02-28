@@ -177,7 +177,7 @@ func main() {
 	opts := new(options)
 
 	parser := flags.NewParser(opts, flags.Default)
-	parser.Usage = "[OPTIONS] targets..."
+	parser.Usage = "[OPTIONS] target..."
 	targets, err := parser.Parse()
 	errCheck(err)
 
