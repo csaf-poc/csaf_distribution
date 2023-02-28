@@ -23,7 +23,7 @@ Usage example for a single run, to test if the config is good:
 Once the config is good, you can run the aggregator periodically
 in two modes: full and interim.
 
-Here is a complete example using `cron` on Ubuntu: After placing
+Here is a complete example using `cron` on Ubuntu. After placing
 the config file in `/etc/csaf_aggregator.toml` and making sure
 its permissions only allow the user `www-data` to read it:
 
@@ -103,7 +103,7 @@ Next we have two TOML _tables_:
 aggregator            // basic infos for the aggregator object
 remote_validator      // config for optional remote validation checker
 ```
-[see the provider config](csaf_provider.md#provider-options) about
+[See the provider config](csaf_provider.md#provider-options) about
 how to configure `remote_validator`.
 
 At last there is the TOML _array of tables_:
