@@ -15,7 +15,7 @@ require (
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
-	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
+	golang.org/x/time v0.3.0
 )
 
 require (
