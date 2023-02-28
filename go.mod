@@ -3,16 +3,16 @@ module github.com/csaf-poc/csaf_distribution
 go 1.19
 
 require (
-	github.com/BurntSushi/toml v1.1.0
-	github.com/PaesslerAG/gval v1.2.0
+	github.com/BurntSushi/toml v1.2.1
+	github.com/PaesslerAG/gval v1.2.2
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/ProtonMail/gopenpgp/v2 v2.5.2
+	github.com/ProtonMail/gopenpgp/v2 v2.4.8
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/gofrs/flock v0.8.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
-	go.etcd.io/bbolt v1.3.7
+	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.6.0
 	golang.org/x/term v0.5.0
 	golang.org/x/time v0.3.0
