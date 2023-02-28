@@ -87,7 +87,7 @@ type config struct {
 
 	// UpdateInterval is used for publishers as the mandatory field
 	// 'update_interval'.
-	UpdateInterval *string
+	UpdateInterval *string `toml:"update_interval"`
 
 	keyMu  sync.Mutex
 	key    *crypto.Key

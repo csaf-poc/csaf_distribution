@@ -77,43 +77,43 @@ Each _key_ in the following table is optional and
 can be used directly in the file. If given it overrides the internal default.
 
 ```go
-workers               // number of parallel workers to start (default 10)
-folder                // target folder on disc for writing the downloaded documents (default "/var/www")
-web                   // directory to be served by the webserver (default "/var/www/html")
-domain                // base url where the contents will be reachable from outside (default "https://example.com")
-rate                  // overall downloading limit per worker (default: no limiting)
-insecure              // do not check validity of TLS certificates
-write_indices         // write index.txt and changes.csv
-openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
-                      // you want to be able to run unattended, e.g. via cron.)
-openpgp_public_key    // OpenPGP public key
-passphrase            // passphrase of the OpenPGP key
-lock_file             // path to lockfile, to stop other instances if one is not done
-interim_years         // limiting the years for which interim documents are searched (default 0)
-verbose               // print more diagnostic output, e.g. https request
-allow_single_provider // debugging option
+workers                 // number of parallel workers to start (default 10)
+folder                  // target folder on disc for writing the downloaded documents (default "/var/www")
+web                     // directory to be served by the webserver (default "/var/www/html")
+domain                  // base url where the contents will be reachable from outside (default "https://example.com")
+rate                    // downloading limit per worker in HTTPS req/s (default: no limiting)
+insecure                // do not check validity of TLS certificates
+write_indices           // write index.txt and changes.csv
+update_interval         // to indicate the collection interval for a provider (default ""on best effort")
+create_service_document // write a service.json to the ROLIE feed docs for a provider (default false)
+categories              // configure ROLIE category values for a provider
+openpgp_private_key     // OpenPGP private key (must have no passphrase set, if
+                        // you want to be able to run unattended, e.g. via cron.)
+openpgp_public_key      // OpenPGP public key
+passphrase              // passphrase of the OpenPGP key
+lock_file               // path to lockfile, to stop other instances if one is not done (default no locking)
+interim_years           // limiting the years for which interim documents are searched (default 0)
+verbose                 // print more diagnostic output, e.g. https requests (default false)
+allow_single_provider   // debugging option (default false)
 ```
 
 Next we have two TOML _tables_:
 
 ```
-remote_validator      // table use remote validation checker
-aggregator            // table with basic infos for the aggregator object
+aggregator            // basic infos for the aggregator object
+remote_validator      // config for optional remote validation checker
+```
+[see the provider config](csaf_provider.md#provider-options) about
+how to configure `remote_validator`.
+
+At last there is the TOML _array of tables_:
+```
+providers             // each entry to be mirrored or listed
 ```
 
-and a TOML _array of tables_:
-```
-providers             // array of tables, each entry to be mirrored or listed
-```
+where at least 2 providers have to be configured.
+With each _table_ allowing:
 
-At least 2 providers have to be configured.
-
-Rates are specified as floats in HTTPS operations per second.
-0 means no limit. The rates can be specified per provider. Any provider
-which has no specified rate will use the configured default. If
-no default was configured, the internal default with no limits is used.
-
-`providers` is an array of tables, each allowing
 ```
 name
 domain
@@ -122,35 +122,34 @@ insecure
 write_indices
 category
 update_interval
+create_service_document
+categories
 ```
 
-Any provider needs a valid name and domain. The other
-options are optional.
+Where valid `name` and `domain` settings are required.
 
 If you want an entry to be listed instead of mirrored
 in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
 
+The remaining _keys_ per entry in the _table_ `providers`
+are optional and will take precedence instead
+of the directly given _keys_ in the TOML file and the internal defaults.
+
 If a provider's `domain` starts with `https://` it is considered a publisher.
-These publishers are added to the `csaf_publishers` list, written
-to the resulting `aggregator.json`.
-Each publisher must announce an `update_interval` there.
-This can be configured for each entry, by the config option with the same name.
-If not given it is taken from the configured default
-Otherwise, the internal default "on best effort" is used.
+These publishers are added to the `csaf_publishers` list, which is written
+to the `aggregator.json`.
 
-If a provider's `create_service_document` option is set to true,
-a `service.json` will be written listing its ROLIE feed documents.
-If it is not set or set to false, then no `service.json` will be written.
-
-To offer an easy way of assorting CSAF documents by criteria like 
+To offer an easy way of assorting CSAF documents by criteria like
 document category, languages or values of the branch category within
-the product tree, ROLIE category values can be configured. This can either
+the product tree, ROLIE category values can be configured in `categories`.
+This can either
 be done using an array of strings taken literally or, by prepending `"expr:"`. 
 The latter is evaluated as JSONPath and the result will be added into the 
 categories document. For a more detailed explanation and examples,
 [refer to the provider config](csaf_provider.md#provider-options).
+
 
 #### Example config file
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
