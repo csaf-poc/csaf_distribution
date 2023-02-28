@@ -21,7 +21,9 @@ Usage example for a single run, to test if the config is good:
 ```
 
 Once the config is good, you can run the aggregator periodically
-in two modes. For instance using `cron` on Ubuntu and after placing
+in two modes: full and interim.
+
+Here is a complete example using `cron` on Ubuntu: After placing
 the config file in `/etc/csaf_aggregator.toml` and making sure
 its permissions only allow the user `www-data` to read it:
 
@@ -40,7 +42,7 @@ crontab -u www-data -l
 crontab -u www-data -e
 ```
 
-Crontab example, running the full mode one a day and updating
+Here is a crontab that runs the full mode once a day and updating
 interim advisories every 60 minutes:
 
 ```crontab
@@ -56,14 +58,15 @@ SHELL=/bin/bash
 
 Serve the paths where the aggregator writes its `html/` output
 by means of a webserver.
-In the config example below place is configured by the path given for `web`.
+In the config example below the place in the filesystem
+is configured by the path given for `web`.
 
 The user running the aggregator has to be able to write there
 and the web server must be able to read the files.
 
-If you are using nginx, the setup instructions for the provider provide
-and example. You can leave out the cgi-bin part,
-potentially commend out the TLS client parts and
+If you are using nginx, the setup instructions for the provider give
+a template. For the aggregator the difference is that you can leave out
+the cgi-bin part, potentially commend out the TLS client parts and
 adjust the `root` path accordingly.
 
 
