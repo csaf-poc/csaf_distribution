@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/PaesslerAG/gval v1.2.2
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/ProtonMail/gopenpgp/v2 v2.4.8
+	github.com/ProtonMail/gopenpgp/v2 v2.5.2
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/gofrs/flock v0.8.1
 	github.com/jessevdk/go-flags v1.5.0
@@ -19,9 +19,10 @@ require (
 )
 
 require (
-	github.com/ProtonMail/go-crypto v0.0.0-20220711121315-1fde58898e96 // indirect
-	github.com/ProtonMail/go-mime v0.0.0-20220429130430-2192574d760f // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230124153114-0acdc8ae009b // indirect
+	github.com/ProtonMail/go-mime v0.0.0-20221031134845-8fd9bc37cf08 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	golang.org/x/net v0.7.0 // indirect
