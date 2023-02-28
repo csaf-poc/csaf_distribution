@@ -72,14 +72,16 @@ adjust the `root` path accordingly.
 
 ### config options
 
-The following options can be used in the config file in TOML format:
+The config file is written in [TOML](https://toml.io/en/v1.0.0).
+Each _key_ in the following table is optional and
+can be used directly in the file. If given it overrides the internal default.
 
 ```go
 workers               // number of parallel workers to start (default 10)
-folder                // target folder on disc for writing the downloaded documents
-web                   // directory to be served by the webserver
-domain                // base url where the contents will be reachable from outside
-rate                  // overall downloading limit per worker
+folder                // target folder on disc for writing the downloaded documents (default "/var/www")
+web                   // directory to be served by the webserver (default "/var/www/html")
+domain                // base url where the contents will be reachable from outside (default "https://example.com")
+rate                  // overall downloading limit per worker (default: no limiting)
 insecure              // do not check validity of TLS certificates
 write_indices         // write index.txt and changes.csv
 openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
@@ -87,15 +89,24 @@ openpgp_private_key   // OpenPGP private key (must have no passphrase set, if
 openpgp_public_key    // OpenPGP public key
 passphrase            // passphrase of the OpenPGP key
 lock_file             // path to lockfile, to stop other instances if one is not done
-interim_years         // limiting the years for which interim documents are searched
+interim_years         // limiting the years for which interim documents are searched (default 0)
 verbose               // print more diagnostic output, e.g. https request
 allow_single_provider // debugging option
-remote_validator      // use remote validation checker
+```
+
+Next we have two TOML _tables_:
+
+```
+remote_validator      // table use remote validation checker
 aggregator            // table with basic infos for the aggregator object
+```
+
+and a TOML _array of tables_:
+```
 providers             // array of tables, each entry to be mirrored or listed
 ```
 
-At least 2 providers have to be configured. The other options are optional.
+At least 2 providers have to be configured.
 
 Rates are specified as floats in HTTPS operations per second.
 0 means no limit. The rates can be specified per provider. Any provider
@@ -121,7 +132,7 @@ in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
 Otherwise it is recommended to not set `category` for entries.
 
-If a provider's domain starts with `https://` it is considered a publisher.
+If a provider's `domain` starts with `https://` it is considered a publisher.
 These publishers are added to the `csaf_publishers` list, written
 to the resulting `aggregator.json`.
 Each publisher must announce an `update_interval` there.
