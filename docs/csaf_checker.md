@@ -28,7 +28,7 @@ Help Options:
 
 The checker attempts to check each given _target_.
 
-If a _target_ start with `https://` it is considered
+If a _target_ starts with `https://` it is considered
 a direct URL to the `provider-metadata.json`.
 
 Else it will be treated as a _domain_ for which the
