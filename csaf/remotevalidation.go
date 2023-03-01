@@ -55,9 +55,37 @@ type outDocument struct {
 	Document any    `json:"document"`
 }
 
+// rtest is the result of the remote tests
+// recieved by the remote validation service.
+type rtest struct{
+	Valid bool `json:"isValid"`
+        Warning []rwarnings `json:"warnings"`
+	Error []rerrors `json:"errors"`
+	Info []rinfos `json:"infos"`
+}
+
+// Any warning given by a remote validator test.
+type rwarnings struct{
+	Message string `json:"message"`
+	InstancePath string `json:"instancePath"`
+}
+
+// Any informational output given by a remote validator test.
+type rinfos struct{
+	Message string `json:"message"`
+	InstancePath string `json:"instancePath"`
+}
+
+// Any error given by a remote validator test.
+type rerrors struct {
+	Message string `json:"message"`
+	InstancePath string `json:"instancePath"`
+}
+
 // inDocument is the document recieved from the remote validation service.
 type inDocument struct {
 	Valid bool `json:"isValid"`
+	Tests []rtest `json:"tests"`
 }
 
 var errNotFound = errors.New("not found")
@@ -263,7 +291,8 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 	valid, err := func() (bool, error) {
 		defer resp.Body.Close()
 		var in inDocument
-		return in.Valid, json.NewDecoder(resp.Body).Decode(&in)
+		err := json.NewDecoder(resp.Body).Decode(&in)
+		return in.Valid, err
 	}()
 
 	if err != nil {
