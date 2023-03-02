@@ -58,34 +58,34 @@ type outDocument struct {
 // rtest is the result of the remote tests
 // recieved by the remote validation service.
 type rtest struct{
-	Valid bool `json:"isValid"`
-        Warning []rwarnings `json:"warnings"`
-	Error []rerrors `json:"errors"`
-	Info []rinfos `json:"infos"`
+	Valid	bool		`json:"isValid"`
+        Warning	[]rwarnings	`json:"warnings"`
+	Error	[]rerrors	`json:"errors"`
+	Info	[]rinfos	`json:"infos"`
 }
 
 // Any warning given by a remote validator test.
 type rwarnings struct{
-	Message string `json:"message"`
-	InstancePath string `json:"instancePath"`
+	Message		string	`json:"message"`
+	InstancePath	string	`json:"instancePath"`
 }
 
 // Any informational output given by a remote validator test.
 type rinfos struct{
-	Message string `json:"message"`
-	InstancePath string `json:"instancePath"`
+	Message		string	`json:"message"`
+	InstancePath	string	`json:"instancePath"`
 }
 
 // Any error given by a remote validator test.
 type rerrors struct {
-	Message string `json:"message"`
-	InstancePath string `json:"instancePath"`
+	Message		string	`json:"message"`
+	InstancePath	string	`json:"instancePath"`
 }
 
 // inDocument is the document recieved from the remote validation service.
 type inDocument struct {
-	Valid bool `json:"isValid"`
-	Tests []rtest `json:"tests"`
+	Valid bool	`json:"isValid"`
+	Tests []rtest	`json:"tests"`
 }
 
 var errNotFound = errors.New("not found")
