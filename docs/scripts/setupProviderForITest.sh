@@ -72,8 +72,7 @@ pushd ../..
 
 export PATH=$PATH:/usr/local/go/bin
 git version
-git describe
-git describe --tags
+git describe --always
 git describe --tags --always --debug
 make --trace testsemver
 make --trace build_linux
