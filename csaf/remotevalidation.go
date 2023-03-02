@@ -37,7 +37,7 @@ var (
 )
 
 // RemoteValidatorOptions are the configuation options
-// the remote validation service.
+// of the remote validation service.
 type RemoteValidatorOptions struct {
 	URL     string   `json:"url" toml:"url"`
 	Presets []string `json:"presets" toml:"presets"`
@@ -111,10 +111,10 @@ func SynchronizedRemoteValidator(validator RemoteValidator) RemoteValidator {
 
 // remoteValidator is an implementation of an RemoteValidator.
 type remoteValidator struct {
-	url   string
-	tests []test
-	cache cache
-        verbose bool
+	url     string
+	tests   []test
+	cache   cache
+	verbose bool
 }
 
 // syncedRemoteValidator is a serialized variant of a remote validator.
@@ -219,9 +219,9 @@ func (rvo *RemoteValidatorOptions) Open() (RemoteValidator, error) {
 		return nil, err
 	}
 	return &remoteValidator{
-		url:   prepareURL(rvo.URL),
-		tests: prepareTests(rvo.Presets),
-		cache: cache,
+		url:     prepareURL(rvo.URL),
+		tests:   prepareTests(rvo.Presets),
+		cache:   cache,
 		verbose: rvo.Verbose,
 	}, nil
 }
