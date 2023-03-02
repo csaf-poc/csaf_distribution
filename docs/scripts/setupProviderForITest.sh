@@ -71,6 +71,7 @@ sudo systemctl reload nginx
 pushd ../..
 
 export PATH=$PATH:/usr/local/go/bin
+make --trace testsemver
 make --trace build_linux
 # Place the binary under the corresponding path.
 sudo mkdir -p /usr/lib/cgi-bin/
