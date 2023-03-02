@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env -S bash -x
 #
 # This file is Free Software under the MIT License
 # without warranty, see README.md and LICENSES/MIT.txt for details.
