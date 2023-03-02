@@ -71,6 +71,10 @@ sudo systemctl reload nginx
 pushd ../..
 
 export PATH=$PATH:/usr/local/go/bin
+git version
+git describe
+git describe --tags
+git describe --tags --always --debug
 make --trace testsemver
 make --trace build_linux
 # Place the binary under the corresponding path.
