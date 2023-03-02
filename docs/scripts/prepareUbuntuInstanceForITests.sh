@@ -5,7 +5,7 @@ set -e
 # for the csaf_distribution integration tests
 # by installing the required packages.
 
-
+apt update
 apt install -y make bash sed tar git nginx fcgiwrap gnutls-bin
 
 # Install Go from binary distribution
