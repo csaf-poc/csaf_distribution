@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -x
+#!/usr/bin/env bash
 #
 # This file is Free Software under the MIT License
 # without warranty, see README.md and LICENSES/MIT.txt for details.
@@ -71,7 +71,7 @@ sudo systemctl reload nginx
 pushd ../..
 
 export PATH=$PATH:/usr/local/go/bin
-make build_linux
+make --trace build_linux
 # Place the binary under the corresponding path.
 sudo mkdir -p /usr/lib/cgi-bin/
 sudo chgrp www-data /usr/lib/cgi-bin/
