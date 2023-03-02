@@ -21,7 +21,7 @@ jobs:
 
       - name: Execute the scripts
         run: |
-          sudo apt install -y make nginx fcgiwrap gnutls-bin
+          sudo apt update && apt install -y make nginx fcgiwrap gnutls-bin
           cp -r $GITHUB_WORKSPACE ~
           cd ~
           cd csaf_distribution/docs/scripts/
