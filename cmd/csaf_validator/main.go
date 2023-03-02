@@ -26,6 +26,7 @@ type options struct {
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
 	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
+	Verbose                bool     `long:"verbose" description:"Display detailed results from the remote validator"`
 }
 
 func main() {
@@ -59,6 +60,7 @@ func run(opts *options, files []string) error {
 			URL:     opts.RemoteValidator,
 			Presets: opts.RemoteValidatorPresets,
 			Cache:   opts.RemoteValidatorCache,
+			Verbose: opts.Verbose,
 		}
 		var err error
 		if validator, err = validatorOptions.Open(); err != nil {
