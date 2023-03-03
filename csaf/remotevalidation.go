@@ -59,10 +59,11 @@ type outDocument struct {
 // rtest is the result of the remote tests
 // recieved by the remote validation service.
 type rtest struct {
-	Valid   bool        `json:"isValid"`
-	Warning []rwarnings `json:"warnings"`
 	Error   []rerrors   `json:"errors"`
 	Info    []rinfos    `json:"infos"`
+	Warning []rwarnings `json:"warnings"`
+	Valid   bool        `json:"isValid"`
+	Name    string      `json:"name"`
 }
 
 // Any warning given by a remote validator test.
