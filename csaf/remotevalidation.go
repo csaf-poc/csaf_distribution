@@ -42,7 +42,7 @@ type RemoteValidatorOptions struct {
 	URL     string   `json:"url" toml:"url"`
 	Presets []string `json:"presets" toml:"presets"`
 	Cache   string   `json:"cache" toml:"cache"`
-	Verbose bool     `json:"verbose" toml:"verbose"`
+	Output  bool     `json:"output" toml:"output"`
 }
 
 type test struct {
@@ -115,7 +115,7 @@ type remoteValidator struct {
 	url     string
 	tests   []test
 	cache   cache
-	verbose bool
+	output bool
 }
 
 // syncedRemoteValidator is a serialized variant of a remote validator.
@@ -223,7 +223,7 @@ func (rvo *RemoteValidatorOptions) Open() (RemoteValidator, error) {
 		url:     prepareURL(rvo.URL),
 		tests:   prepareTests(rvo.Presets),
 		cache:   cache,
-		verbose: rvo.Verbose,
+		output:  rvo.Output,
 	}, nil
 }
 
@@ -296,12 +296,12 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 		defer resp.Body.Close()
 		var in inDocument
 		err := json.NewDecoder(resp.Body).Decode(&in)
-		if v.verbose {
-			verbose, verr := json.MarshalIndent(in, "", "    ")
-			if verr != nil {
+		if v.Output {
+			output, oerr := json.MarshalIndent(in, "", "    ")
+			if oerr != nil {
 				fmt.Println("Failed to display remote validator result.")
 			} else {
-				fmt.Println(string(verbose))
+				fmt.Println(string(output))
 			}
 		}
 		return in.Valid, err
