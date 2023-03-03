@@ -296,7 +296,7 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 		defer resp.Body.Close()
 		var in inDocument
 		err := json.NewDecoder(resp.Body).Decode(&in)
-		if v.Output {
+		if v.output {
 			output, oerr := json.MarshalIndent(in, "", "    ")
 			if oerr != nil {
 				fmt.Println("Failed to display remote validator result.")
