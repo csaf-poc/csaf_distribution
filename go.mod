@@ -11,7 +11,7 @@ require (
 	github.com/gofrs/flock v0.8.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.1.1
 	go.etcd.io/bbolt v1.3.7
 	golang.org/x/crypto v0.6.0
 	golang.org/x/term v0.5.0
