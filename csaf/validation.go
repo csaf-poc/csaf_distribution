@@ -11,6 +11,7 @@ package csaf
 import (
 	"bytes"
 	_ "embed" // Used for embedding.
+	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -85,11 +86,13 @@ func (cs *compiledSchema) compiler(sds []schemaData) {
 	}
 	cs.compile = func() {
 		c := jsonschema.NewCompiler()
-		for _, s := range sds {
-			if cs.err = c.AddResource(
-				s.url, bytes.NewReader(s.data)); cs.err != nil {
-				return
+		c.LoadURL = func(s string) (io.ReadCloser, error) {
+			for i := range sds {
+				if sds[i].url == s {
+					return io.NopCloser(bytes.NewReader(sds[i].data)), nil
+				}
 			}
+			return jsonschema.LoadURL(s)
 		}
 		cs.compiled, cs.err = c.Compile(sds[0].url)
 	}
