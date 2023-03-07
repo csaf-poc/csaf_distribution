@@ -42,7 +42,6 @@ type RemoteValidatorOptions struct {
 	URL     string   `json:"url" toml:"url"`
 	Presets []string `json:"presets" toml:"presets"`
 	Cache   string   `json:"cache" toml:"cache"`
-	Output  bool     `json:"output" toml:"output"`
 }
 
 type test struct {
@@ -59,27 +58,15 @@ type outDocument struct {
 // rtest is the result of the remote tests
 // recieved by the remote validation service.
 type rtest struct {
-	Error   []rerrors   `json:"errors"`
-	Info    []rinfos    `json:"infos"`
-	Warning []rwarnings `json:"warnings"`
-	Valid   bool        `json:"isValid"`
-	Name    string      `json:"name"`
+	Error   []remoteResults `json:"errors"`
+	Info    []remoteResults `json:"infos"`
+	Warning []remoteResults `json:"warnings"`
+	Valid   bool            `json:"isValid"`
+	Name    string          `json:"name"`
 }
 
-// Any warning given by a remote validator test.
-type rwarnings struct {
-	Message      string `json:"message"`
-	InstancePath string `json:"instancePath"`
-}
-
-// Any informational output given by a remote validator test.
-type rinfos struct {
-	Message      string `json:"message"`
-	InstancePath string `json:"instancePath"`
-}
-
-// Any error given by a remote validator test.
-type rerrors struct {
+// Any singular rtest given by a remote validator test.
+type remoteResults struct {
 	Message      string `json:"message"`
 	InstancePath string `json:"instancePath"`
 }
@@ -115,7 +102,6 @@ type remoteValidator struct {
 	url    string
 	tests  []test
 	cache  cache
-	output bool
 }
 
 // syncedRemoteValidator is a serialized variant of a remote validator.
@@ -223,7 +209,6 @@ func (rvo *RemoteValidatorOptions) Open() (RemoteValidator, error) {
 		url:    prepareURL(rvo.URL),
 		tests:  prepareTests(rvo.Presets),
 		cache:  cache,
-		output: rvo.Output,
 	}, nil
 }
 
@@ -296,13 +281,13 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 		defer resp.Body.Close()
 		var in inDocument
 		err := json.NewDecoder(resp.Body).Decode(&in)
-		if v.output {
-			output, oerr := json.MarshalIndent(in, "", "    ")
-			if oerr != nil {
-				fmt.Println("Failed to display remote validator result.")
-			} else {
-				fmt.Println(string(output))
-			}
+//		if v.output {
+//			output, oerr := json.MarshalIndent(in, "", "    ")
+//			if oerr != nil {
+//				fmt.Println("Failed to display remote validator result.")
+//			} else {
+//				fmt.Println(string(output))
+//			}
 		}
 		return in.Valid, err
 	}()
