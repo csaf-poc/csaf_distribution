@@ -40,61 +40,60 @@ var aggregatorSchema []byte
 //go:embed schema/ROLIE_feed_json_schema.json
 var rolieSchema []byte
 
-var (
-	compiledCSAFSchema       compiledSchema
-	compiledProviderSchema   compiledSchema
-	compiledAggregatorSchema compiledSchema
-	compiledRolieSchema      compiledSchema
+type compiledSchema struct {
+	url      string
+	once     sync.Once
+	err      error
+	compiled *jsonschema.Schema
+}
+
+const (
+	csafSchemaURL       = "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json"
+	providerSchemaURL   = "https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json"
+	aggregatorSchemaURL = "https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json"
+	cvss20SchemaURL     = "https://www.first.org/cvss/cvss-v2.0.json"
+	cvss30SchemaURL     = "https://www.first.org/cvss/cvss-v3.0.json"
+	cvss31SchemaURL     = "https://www.first.org/cvss/cvss-v3.1.json"
+	rolieSchemaURL      = "https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json"
 )
 
+var (
+	compiledCSAFSchema       = compiledSchema{url: csafSchemaURL}
+	compiledProviderSchema   = compiledSchema{url: providerSchemaURL}
+	compiledAggregatorSchema = compiledSchema{url: aggregatorSchemaURL}
+	compiledRolieSchema      = compiledSchema{url: rolieSchemaURL}
+)
+
+// loadURL loads the content of an URL from embedded data or
+// falls back to the global loader function of the jsonschema package.
 func loadURL(s string) (io.ReadCloser, error) {
 	loader := func(data []byte) (io.ReadCloser, error) {
 		return io.NopCloser(bytes.NewReader(data)), nil
 	}
 	switch s {
-	case "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":
+	case csafSchemaURL:
 		return loader(csafSchema)
-	case "https://www.first.org/cvss/cvss-v2.0.json":
+	case cvss20SchemaURL:
 		return loader(cvss20)
-	case "https://www.first.org/cvss/cvss-v3.0.json":
+	case cvss30SchemaURL:
 		return loader(cvss30)
-	case "https://www.first.org/cvss/cvss-v3.1.json":
+	case cvss31SchemaURL:
 		return loader(cvss31)
-	case "https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json":
+	case providerSchemaURL:
 		return loader(providerSchema)
-	case "https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json":
+	case aggregatorSchemaURL:
 		return loader(aggregatorSchema)
-	case "https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json":
+	case rolieSchemaURL:
 		return loader(rolieSchema)
 	default:
 		return jsonschema.LoadURL(s)
 	}
 }
 
-func init() {
-	compiledCSAFSchema.compiler(
-		"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json")
-	compiledProviderSchema.compiler(
-		"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json")
-	compiledAggregatorSchema.compiler(
-		"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json")
-	compiledRolieSchema.compiler(
-		"https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json")
-}
-
-type compiledSchema struct {
-	once     sync.Once
-	compile  func()
-	err      error
-	compiled *jsonschema.Schema
-}
-
-func (cs *compiledSchema) compiler(url string) {
-	cs.compile = func() {
-		c := jsonschema.NewCompiler()
-		c.LoadURL = loadURL
-		cs.compiled, cs.err = c.Compile(url)
-	}
+func (cs *compiledSchema) compile() {
+	c := jsonschema.NewCompiler()
+	c.LoadURL = loadURL
+	cs.compiled, cs.err = c.Compile(cs.url)
 }
 
 func (cs *compiledSchema) validate(doc any) ([]string, error) {
