@@ -21,10 +21,6 @@ echo '
 remote_validator= { "url" = "http://localhost:8082", "presets" = ["mandatory"], "cache" = "/var/lib/csaf/validations.db" }
 ' | sudo tee --append /etc/csaf/config.toml
 
-# Install nodejs
-curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
 npm install pm2 -g
 
 pushd ~

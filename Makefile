@@ -44,6 +44,9 @@ tag_checked_out:
 # Note we need `--tags` because github release only creates lightweight tags
 #   (see feature request https://github.com/github/feedback/discussions/4924).
 #   We use `--always` in case of being run as github action with shallow clone.
+#   In this case we might in some situations see an error like
+#   `/bin/bash: line 1: 2b55bbb: value too great for base (error token is "2b55bbb")`
+#   which can be ignored.
 GITDESC := $(shell git describe --tags --always)
 GITDESCPATCH := $(shell echo '$(GITDESC)' | sed -E 's/v?[0-9]+\.[0-9]+\.([0-9]+)[-+]?.*/\1/')
 SEMVERPATCH := $(shell echo $$(( $(GITDESCPATCH) + 1 )))
