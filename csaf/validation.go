@@ -47,30 +47,39 @@ var (
 	compiledRolieSchema      compiledSchema
 )
 
-func init() {
-	compiledCSAFSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-		{"https://www.first.org/cvss/cvss-v2.0.json", cvss20},
-		{"https://www.first.org/cvss/cvss-v3.0.json", cvss30},
-		{"https://www.first.org/cvss/cvss-v3.1.json", cvss31},
-	})
-	compiledProviderSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-	})
-	compiledAggregatorSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json", aggregatorSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-	})
-	compiledRolieSchema.compiler([]schemaData{
-		{"https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json", rolieSchema},
-	})
+func loadURL(s string) (io.ReadCloser, error) {
+	loader := func(data []byte) (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(data)), nil
+	}
+	switch s {
+	case "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json":
+		return loader(csafSchema)
+	case "https://www.first.org/cvss/cvss-v2.0.json":
+		return loader(cvss20)
+	case "https://www.first.org/cvss/cvss-v3.0.json":
+		return loader(cvss30)
+	case "https://www.first.org/cvss/cvss-v3.1.json":
+		return loader(cvss31)
+	case "https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json":
+		return loader(providerSchema)
+	case "https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json":
+		return loader(aggregatorSchema)
+	case "https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json":
+		return loader(rolieSchema)
+	default:
+		return jsonschema.LoadURL(s)
+	}
 }
 
-type schemaData struct {
-	url  string
-	data []byte
+func init() {
+	compiledCSAFSchema.compiler(
+		"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json")
+	compiledProviderSchema.compiler(
+		"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json")
+	compiledAggregatorSchema.compiler(
+		"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json")
+	compiledRolieSchema.compiler(
+		"https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json")
 }
 
 type compiledSchema struct {
@@ -80,21 +89,11 @@ type compiledSchema struct {
 	compiled *jsonschema.Schema
 }
 
-func (cs *compiledSchema) compiler(sds []schemaData) {
-	if len(sds) == 0 {
-		panic("missing schema data")
-	}
+func (cs *compiledSchema) compiler(url string) {
 	cs.compile = func() {
 		c := jsonschema.NewCompiler()
-		c.LoadURL = func(s string) (io.ReadCloser, error) {
-			for i := range sds {
-				if sds[i].url == s {
-					return io.NopCloser(bytes.NewReader(sds[i].data)), nil
-				}
-			}
-			return jsonschema.LoadURL(s)
-		}
-		cs.compiled, cs.err = c.Compile(sds[0].url)
+		c.LoadURL = loadURL
+		cs.compiled, cs.err = c.Compile(url)
 	}
 }
 
