@@ -32,8 +32,6 @@ var defaultPresets = []string{"mandatory"}
 
 var (
 	validationsBucket = []byte("validations")
-	validFalse        = []byte{0}
-	validTrue         = []byte{1}
 	versionOfBucket   = []byte("1")
 )
 
