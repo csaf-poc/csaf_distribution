@@ -56,7 +56,7 @@ type outDocument struct {
 	Document any    `json:"document"`
 }
 
-// Rtest is the result of the remote tests
+// RemoteTest is the result of the remote tests
 // recieved by the remote validation service.
 type RemoteTest struct {
 	Error   []RemoteTestResults `json:"errors"`

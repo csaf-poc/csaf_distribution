@@ -516,7 +516,7 @@ func (p *processor) integrity(
 		if p.validator != nil {
 			if ok, err := p.validator.Validate(doc); err != nil {
 				p.invalidAdvisories.error("Calling remote validator on %s failed: %v", u, err)
-			} else if !ok {
+			} else if !ok.Valid {
 				p.invalidAdvisories.error("Remote validation of %s failed.", u)
 			}
 		}

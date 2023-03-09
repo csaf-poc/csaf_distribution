@@ -183,7 +183,7 @@ func (c *controller) upload(r *http.Request) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !valid {
+		if !valid.Valid {
 			return nil, errors.New("does not validate against remote validator")
 		}
 	}
