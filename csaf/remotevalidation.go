@@ -158,22 +158,19 @@ func prepareCache(config string) (cache, error) {
 	if err := db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(validationsBucket)
 		v := b.Get([]byte("version"))
-
 		// if version is wrong or nonexistent, delete old cache
-		if bytes.Equal(v, versionOfBucket) {
-			err := b.DeleteBucket(validationsBucket)
+		if !bytes.Equal(v, versionOfBucket) {
+			err := tx.DeleteBucket(validationsBucket)
 			if err != nil {
 				return err
 			}
-
 			// create new cache
-			c, err := tx.CreateBucket(validationsBucket)
+			b, err := tx.CreateBucket(validationsBucket)
 			if err != nil {
 				return err
 			}
-
 			// version it
-			err = c.Put([]byte("version"), versionOfBucket)
+			err = b.Put([]byte("version"), versionOfBucket)
 			if err != nil {
 				return err
 			}
