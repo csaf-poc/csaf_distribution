@@ -139,8 +139,9 @@ func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error)
 	case "important":
 		var important csaf.RemoteValidationResult
 		important.Valid = in.Valid
+		important.Tests = []csaf.RemoteTest{}
 		for _, test := range in.Tests {
-			if test.Info != nil || test.Error != nil || test.Warning != nil {
+			if len(test.Info) > 0 || len(test.Error) > 0 || len(test.Warning) > 0 {
 				important.Tests = append(important.Tests, test)
 			}
 		}
@@ -150,18 +151,22 @@ func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error)
 		}
 	case "short":
 		var short ShortTest
+		short.Valid = in.Valid
+		short.Info = []csaf.RemoteTestResults{}
+		short.Warning = []csaf.RemoteTestResults{}
+		short.Error = []csaf.RemoteTestResults{}
 		for _, test := range in.Tests {
-			if test.Info != nil {
+			if len(test.Info) > 0 {
 				for _, in := range test.Info {
 					short.Info = append(short.Info, in)
 				}
 			}
-			if test.Error != nil {
+			if len(test.Error) > 0 {
 				for _, er := range test.Error {
 					short.Error = append(short.Error, er)
 				}
 			}
-			if test.Warning != nil {
+			if len(test.Warning) > 0 {
 				for _, wa := range test.Warning {
 					short.Warning = append(short.Warning, wa)
 				}
