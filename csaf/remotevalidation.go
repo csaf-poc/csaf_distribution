@@ -34,6 +34,7 @@ var (
 	validationsBucket = []byte("validations")
 	validFalse        = []byte{0}
 	validTrue         = []byte{1}
+	versionOfBucket   = []byte("1")
 )
 
 // RemoteValidatorOptions are the configuation options
@@ -55,39 +56,39 @@ type outDocument struct {
 	Document any    `json:"document"`
 }
 
-// rtest is the result of the remote tests
+// Rtest is the result of the remote tests
 // recieved by the remote validation service.
-type rtest struct {
-	Error   []remoteResults `json:"errors"`
-	Info    []remoteResults `json:"infos"`
-	Warning []remoteResults `json:"warnings"`
-	Valid   bool            `json:"isValid"`
-	Name    string          `json:"name"`
+type RemoteTest struct {
+	Error   []RemoteTestResults `json:"errors"`
+	Warning []RemoteTestResults `json:"warnings"`
+	Info    []RemoteTestResults `json:"infos"`
+	Valid   bool                `json:"isValid"`
+	Name    string              `json:"name"`
 }
 
-// Any singular rtest given by a remote validator test.
-type remoteResults struct {
+// Any singular Rtest given by a remote validator test.
+type RemoteTestResults struct {
 	Message      string `json:"message"`
 	InstancePath string `json:"instancePath"`
 }
 
-// inDocument is the document recieved from the remote validation service.
-type inDocument struct {
-	Valid bool    `json:"isValid"`
-	Tests []rtest `json:"tests"`
+// RemoteValidationResult is the document recieved from the remote validation service.
+type RemoteValidationResult struct {
+	Valid bool         `json:"isValid"`
+	Tests []RemoteTest `json:"tests"`
 }
 
 var errNotFound = errors.New("not found")
 
 type cache interface {
-	get(key []byte) (bool, error)
-	set(key []byte, valid bool) error
+	get(key []byte) (RemoteValidationResult, error)
+	set(key []byte, valid RemoteValidationResult) error
 	Close() error
 }
 
 // RemoteValidator validates an advisory document remotely.
 type RemoteValidator interface {
-	Validate(doc any) (bool, error)
+	Validate(doc any) (RemoteValidationResult, error)
 	Close() error
 }
 
@@ -111,7 +112,7 @@ type syncedRemoteValidator struct {
 }
 
 // Validate implements the validation part of the RemoteValidator interface.
-func (srv *syncedRemoteValidator) Validate(doc any) (bool, error) {
+func (srv *syncedRemoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 	srv.Lock()
 	defer srv.Unlock()
 	return srv.RemoteValidator.Validate(doc)
@@ -157,7 +158,28 @@ func prepareCache(config string) (cache, error) {
 
 	// Create the bucket.
 	if err := db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(validationsBucket)
+		b, err := tx.CreateBucketIfNotExists(validationsBucket)
+		v := b.Get([]byte("version"))
+
+		// if version is wrong or nonexistent, delete old cache
+		if bytes.Equal(v, versionOfBucket) {
+			err := b.DeleteBucket(validationsBucket)
+			if err != nil {
+				return err
+			}
+
+			// create new cache
+			c, err := tx.CreateBucket(validationsBucket)
+			if err != nil {
+				return err
+			}
+
+			// version it
+			err = c.Put([]byte("version"), versionOfBucket)
+			if err != nil {
+				return err
+			}
+		}
 		return err
 	}); err != nil {
 		db.Close()
@@ -167,18 +189,22 @@ func prepareCache(config string) (cache, error) {
 	return boltCache{db}, nil
 }
 
+
 // boltCache is cache implementation based on the bolt datastore.
 type boltCache struct{ *bolt.DB }
 
 // get implements the fetch part of the cache interface.
-func (bc boltCache) get(key []byte) (valid bool, err error) {
+func (bc boltCache) get(key []byte) (valid RemoteValidationResult, err error) {
 	err2 := bc.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(validationsBucket)
 		v := b.Get(key)
 		if v == nil {
 			err = errNotFound
 		} else {
-			valid = v[0] != 0
+			err3 := json.Unmarshal(v, &valid)
+			if err3 != nil {
+				err = err3
+			}
 		}
 		return nil
 	})
@@ -188,14 +214,15 @@ func (bc boltCache) get(key []byte) (valid bool, err error) {
 	return
 }
 
-// get implements the store part of the cache interface.
-func (bc boltCache) set(key []byte, valid bool) error {
+// set implements the store part of the cache interface.
+func (bc boltCache) set(key []byte, valid RemoteValidationResult) error {
 	return bc.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(validationsBucket)
-		if valid {
-			return b.Put(key, validTrue)
+		validByte, err := json.Marshal(valid)
+		if err != nil {
+			return err
 		}
-		return b.Put(key, validFalse)
+		return b.Put(key, validByte)
 	})
 }
 
@@ -235,19 +262,22 @@ func (v *remoteValidator) key(doc any) ([]byte, error) {
 }
 
 // Validate executes a remote validation of an advisory.
-func (v *remoteValidator) Validate(doc any) (bool, error) {
+func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 
 	var key []byte
+
+	var dummy RemoteValidationResult
+	dummy.Valid = false
 
 	if v.cache != nil {
 		var err error
 		if key, err = v.key(doc); err != nil {
-			return false, err
+			return dummy, err
 		}
 		valid, err := v.cache.get(key)
 		if err != errNotFound {
 			if err != nil {
-				return false, err
+				return dummy, err
 			}
 			return valid, nil
 		}
@@ -260,7 +290,7 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&o); err != nil {
-		return false, err
+		return dummy, err
 	}
 
 	resp, err := http.Post(
@@ -269,31 +299,23 @@ func (v *remoteValidator) Validate(doc any) (bool, error) {
 		bytes.NewReader(buf.Bytes()))
 
 	if err != nil {
-		return false, err
+		return dummy, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return false, fmt.Errorf(
+		return dummy, fmt.Errorf(
 			"POST failed: %s (%d)", resp.Status, resp.StatusCode)
 	}
 
-	valid, err := func() (bool, error) {
+	valid, err := func() (RemoteValidationResult, error) {
 		defer resp.Body.Close()
-		var in inDocument
+		var in RemoteValidationResult
 		err := json.NewDecoder(resp.Body).Decode(&in)
-//		if v.output {
-//			output, oerr := json.MarshalIndent(in, "", "    ")
-//			if oerr != nil {
-//				fmt.Println("Failed to display remote validator result.")
-//			} else {
-//				fmt.Println(string(output))
-//			}
-		}
-		return in.Valid, err
+		return in, err
 	}()
 
 	if err != nil {
-		return false, err
+		return dummy, err
 	}
 
 	if key != nil {
