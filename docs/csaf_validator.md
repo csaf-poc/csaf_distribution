@@ -17,7 +17,7 @@ Application Options:
 AMOUNT:
  all: Print the entire JSON output
  important: Print the entire JSON output but omit all tests without errors, warnings and infos.
- short: Print only errors, warnings and infos.
+ short: Print only the result, errors, warnings and infos.
 
 Help Options:
   -h, --help                   Show this help message
