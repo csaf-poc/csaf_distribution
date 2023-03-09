@@ -66,7 +66,7 @@ type RemoteTest struct {
 	Name    string              `json:"name"`
 }
 
-// Any singular Rtest given by a remote validator test.
+// RemoteTestResults are any given test-result by a remote validator test.
 type RemoteTestResults struct {
 	Message      string `json:"message"`
 	InstancePath string `json:"instancePath"`

@@ -174,10 +174,9 @@ func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error)
 		}
 		output, err := json.MarshalIndent(short, "", "    ")
 		if err != nil {
-			return false, fmt.Errorf("Error while displaying remote validator result.")
-		} else {
-			fmt.Println(string(output))
+			return false, fmt.Errorf("error while displaying remote validator result")
 		}
+		fmt.Println(string(output))
 	}
 	return in.Valid, nil
 }
@@ -185,10 +184,9 @@ func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error)
 func printRemoteValidationResult(in csaf.RemoteValidationResult) error {
 	output, err := json.MarshalIndent(in, "", "    ")
 	if err != nil {
-		return fmt.Errorf("Error while displaying remote validator result.")
-	} else {
-		fmt.Println(string(output))
+		return fmt.Errorf("error while displaying remote validator result")
 	}
+	fmt.Println(string(output))
 	return nil
 }
 
