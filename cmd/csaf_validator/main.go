@@ -34,9 +34,9 @@ type options struct {
 // collapsed into minimal form.
 type ShortTest struct {
 	Valid   bool                     `json:"isValid"`
-        Error   []csaf.RemoteTestResults `json:"errors"`
-        Warning []csaf.RemoteTestResults `json:"warnings"`
-        Info    []csaf.RemoteTestResults `json:"infos"`
+	Error   []csaf.RemoteTestResults `json:"errors"`
+	Warning []csaf.RemoteTestResults `json:"warnings"`
+	Info    []csaf.RemoteTestResults `json:"infos"`
 }
 
 func main() {
@@ -157,7 +157,7 @@ func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error)
 				}
 			}
 			if test.Error != nil {
-				for _, er  := range test.Error {
+				for _, er := range test.Error {
 					short.Error = append(short.Error, er)
 				}
 			}
@@ -182,7 +182,7 @@ func printRemoteValidationResult(in csaf.RemoteValidationResult) error {
 	if err != nil {
 		return fmt.Errorf("Error while displaying remote validator result.")
 	} else {
- 		fmt.Println(string(output))
+		fmt.Println(string(output))
 	}
 	return nil
 }
