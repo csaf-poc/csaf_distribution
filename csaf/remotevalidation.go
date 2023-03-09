@@ -100,9 +100,9 @@ func SynchronizedRemoteValidator(validator RemoteValidator) RemoteValidator {
 
 // remoteValidator is an implementation of an RemoteValidator.
 type remoteValidator struct {
-	url    string
-	tests  []test
-	cache  cache
+	url   string
+	tests []test
+	cache cache
 }
 
 // syncedRemoteValidator is a serialized variant of a remote validator.
@@ -189,7 +189,6 @@ func prepareCache(config string) (cache, error) {
 	return boltCache{db}, nil
 }
 
-
 // boltCache is cache implementation based on the bolt datastore.
 type boltCache struct{ *bolt.DB }
 
@@ -233,9 +232,9 @@ func (rvo *RemoteValidatorOptions) Open() (RemoteValidator, error) {
 		return nil, err
 	}
 	return &remoteValidator{
-		url:    prepareURL(rvo.URL),
-		tests:  prepareTests(rvo.Presets),
-		cache:  cache,
+		url:   prepareURL(rvo.URL),
+		tests: prepareTests(rvo.Presets),
+		cache: cache,
 	}, nil
 }
 
