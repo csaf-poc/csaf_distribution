@@ -260,18 +260,18 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 
 	var key []byte
 
-	var dummy RemoteValidationResult
-	dummy.Valid = false
+	var errorOutput RemoteValidationResult
+	errorOutput.Valid = false
 
 	if v.cache != nil {
 		var err error
 		if key, err = v.key(doc); err != nil {
-			return dummy, err
+			return errorOutput, err
 		}
 		valid, err := v.cache.get(key)
 		if err != errNotFound {
 			if err != nil {
-				return dummy, err
+				return errorOutput, err
 			}
 			return valid, nil
 		}
@@ -284,7 +284,7 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&o); err != nil {
-		return dummy, err
+		return errorOutput, err
 	}
 
 	resp, err := http.Post(
@@ -293,11 +293,11 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 		bytes.NewReader(buf.Bytes()))
 
 	if err != nil {
-		return dummy, err
+		return errorOutput, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return dummy, fmt.Errorf(
+		return errorOutput, fmt.Errorf(
 			"POST failed: %s (%d)", resp.Status, resp.StatusCode)
 	}
 
@@ -309,7 +309,7 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 	}()
 
 	if err != nil {
-		return dummy, err
+		return errorOutput, err
 	}
 
 	if key != nil {
