@@ -183,8 +183,8 @@ func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
 	if err != nil {
 		return fmt.Errorf("error while displaying remote validator result")
 	}
-	fmt.Println(string(output))
-	return nil
+	_, err = fmt.Println(string(output))
+	return err
 }
 
 func errCheck(err error) {
