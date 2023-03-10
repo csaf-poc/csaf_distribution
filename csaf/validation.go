@@ -11,6 +11,7 @@ package csaf
 import (
 	"bytes"
 	_ "embed" // Used for embedding.
+	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -39,60 +40,60 @@ var aggregatorSchema []byte
 //go:embed schema/ROLIE_feed_json_schema.json
 var rolieSchema []byte
 
-var (
-	compiledCSAFSchema       compiledSchema
-	compiledProviderSchema   compiledSchema
-	compiledAggregatorSchema compiledSchema
-	compiledRolieSchema      compiledSchema
-)
-
-func init() {
-	compiledCSAFSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-		{"https://www.first.org/cvss/cvss-v2.0.json", cvss20},
-		{"https://www.first.org/cvss/cvss-v3.0.json", cvss30},
-		{"https://www.first.org/cvss/cvss-v3.1.json", cvss31},
-	})
-	compiledProviderSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-	})
-	compiledAggregatorSchema.compiler([]schemaData{
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json", aggregatorSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json", providerSchema},
-		{"https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json", csafSchema},
-	})
-	compiledRolieSchema.compiler([]schemaData{
-		{"https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json", rolieSchema},
-	})
-}
-
-type schemaData struct {
-	url  string
-	data []byte
-}
-
 type compiledSchema struct {
+	url      string
 	once     sync.Once
-	compile  func()
 	err      error
 	compiled *jsonschema.Schema
 }
 
-func (cs *compiledSchema) compiler(sds []schemaData) {
-	if len(sds) == 0 {
-		panic("missing schema data")
+const (
+	csafSchemaURL       = "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json"
+	providerSchemaURL   = "https://docs.oasis-open.org/csaf/csaf/v2.0/provider_json_schema.json"
+	aggregatorSchemaURL = "https://docs.oasis-open.org/csaf/csaf/v2.0/aggregator_json_schema.json"
+	cvss20SchemaURL     = "https://www.first.org/cvss/cvss-v2.0.json"
+	cvss30SchemaURL     = "https://www.first.org/cvss/cvss-v3.0.json"
+	cvss31SchemaURL     = "https://www.first.org/cvss/cvss-v3.1.json"
+	rolieSchemaURL      = "https://raw.githubusercontent.com/tschmidtb51/csaf/ROLIE-schema/csaf_2.0/json_schema/ROLIE_feed_json_schema.json"
+)
+
+var (
+	compiledCSAFSchema       = compiledSchema{url: csafSchemaURL}
+	compiledProviderSchema   = compiledSchema{url: providerSchemaURL}
+	compiledAggregatorSchema = compiledSchema{url: aggregatorSchemaURL}
+	compiledRolieSchema      = compiledSchema{url: rolieSchemaURL}
+)
+
+// loadURL loads the content of an URL from embedded data or
+// falls back to the global loader function of the jsonschema package.
+func loadURL(s string) (io.ReadCloser, error) {
+	loader := func(data []byte) (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(data)), nil
 	}
-	cs.compile = func() {
-		c := jsonschema.NewCompiler()
-		for _, s := range sds {
-			if cs.err = c.AddResource(
-				s.url, bytes.NewReader(s.data)); cs.err != nil {
-				return
-			}
-		}
-		cs.compiled, cs.err = c.Compile(sds[0].url)
+	switch s {
+	case csafSchemaURL:
+		return loader(csafSchema)
+	case cvss20SchemaURL:
+		return loader(cvss20)
+	case cvss30SchemaURL:
+		return loader(cvss30)
+	case cvss31SchemaURL:
+		return loader(cvss31)
+	case providerSchemaURL:
+		return loader(providerSchema)
+	case aggregatorSchemaURL:
+		return loader(aggregatorSchema)
+	case rolieSchemaURL:
+		return loader(rolieSchema)
+	default:
+		return jsonschema.LoadURL(s)
 	}
+}
+
+func (cs *compiledSchema) compile() {
+	c := jsonschema.NewCompiler()
+	c.LoadURL = loadURL
+	cs.compiled, cs.err = c.Compile(cs.url)
 }
 
 func (cs *compiledSchema) validate(doc any) ([]string, error) {
