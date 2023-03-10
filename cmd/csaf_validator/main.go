@@ -88,6 +88,8 @@ func run(opts *options, files []string) error {
 		printResult = printShort
 	case "important":
 		printResult = printImportant
+	case "":
+		printResult = noPrint
 	default:
 		return fmt.Errorf("unknown output amount %q", opts.Output)
 	}
@@ -140,6 +142,8 @@ func run(opts *options, files []string) error {
 
 	return nil
 }
+
+func noPrint(*csaf.RemoteValidationResult) error { return nil }
 
 func printShort(rvr *csaf.RemoteValidationResult) error {
 	short := ShortTest{
