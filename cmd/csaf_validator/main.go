@@ -33,10 +33,10 @@ type options struct {
 // recieved by the remote validation service
 // collapsed into minimal form.
 type ShortTest struct {
-	Valid   bool                     `json:"isValid"`
-	Error   []csaf.RemoteTestResults `json:"errors"`
-	Warning []csaf.RemoteTestResults `json:"warnings"`
-	Info    []csaf.RemoteTestResults `json:"infos"`
+	Valid   bool                    `json:"isValid"`
+	Error   []csaf.RemoteTestResult `json:"errors"`
+	Warning []csaf.RemoteTestResult `json:"warnings"`
+	Info    []csaf.RemoteTestResult `json:"infos"`
 }
 
 func main() {
@@ -79,6 +79,19 @@ func run(opts *options, files []string) error {
 		defer validator.Close()
 	}
 
+	// Select amount level of output for remote validation.
+	var printResult func(*csaf.RemoteValidationResult) error
+	switch opts.Output {
+	case "all":
+		printResult = printRemoteValidationResult
+	case "short":
+		printResult = printShort
+	case "important":
+		printResult = printImportant
+	default:
+		return fmt.Errorf("unknown output amount %q", opts.Output)
+	}
+
 	for _, file := range files {
 		// Check if the file name is valid.
 		if !util.ConformingFileName(filepath.Base(file)) {
@@ -106,18 +119,17 @@ func run(opts *options, files []string) error {
 		}
 		// Validate against remote validator.
 		if validator != nil {
-			in, err := validator.Validate(doc)
+			rvr, err := validator.Validate(doc)
 			if err != nil {
 				return fmt.Errorf("remote validation of %q failed: %w",
 					file, err)
 			}
-			validate, err := printDocuments(in, opts.Output)
-			if err != nil {
+			if err := printResult(rvr); err != nil {
 				return fmt.Errorf("remote validation of %q failed: %w",
 					file, err)
 			}
 			var passes string
-			if validate {
+			if rvr.Valid {
 				passes = "passes"
 			} else {
 				passes = "does not pass"
@@ -129,59 +141,40 @@ func run(opts *options, files []string) error {
 	return nil
 }
 
-func printDocuments(in csaf.RemoteValidationResult, output string) (bool, error) {
-	switch output {
-	case "all":
-		err := printRemoteValidationResult(in)
-		if err != nil {
-			return false, err
-		}
-	case "important":
-		var important csaf.RemoteValidationResult
-		important.Valid = in.Valid
-		important.Tests = []csaf.RemoteTest{}
-		for _, test := range in.Tests {
-			if len(test.Info) > 0 || len(test.Error) > 0 || len(test.Warning) > 0 {
-				important.Tests = append(important.Tests, test)
-			}
-		}
-		err := printRemoteValidationResult(important)
-		if err != nil {
-			return false, err
-		}
-	case "short":
-		var short ShortTest
-		short.Valid = in.Valid
-		short.Info = []csaf.RemoteTestResults{}
-		short.Warning = []csaf.RemoteTestResults{}
-		short.Error = []csaf.RemoteTestResults{}
-		for _, test := range in.Tests {
-			if len(test.Info) > 0 {
-				for _, in := range test.Info {
-					short.Info = append(short.Info, in)
-				}
-			}
-			if len(test.Error) > 0 {
-				for _, er := range test.Error {
-					short.Error = append(short.Error, er)
-				}
-			}
-			if len(test.Warning) > 0 {
-				for _, wa := range test.Warning {
-					short.Warning = append(short.Warning, wa)
-				}
-			}
-		}
-		output, err := json.MarshalIndent(short, "", "    ")
-		if err != nil {
-			return false, fmt.Errorf("error while displaying remote validator result")
-		}
-		fmt.Println(string(output))
+func printShort(rvr *csaf.RemoteValidationResult) error {
+	short := ShortTest{
+		Valid:   rvr.Valid,
+		Info:    []csaf.RemoteTestResult{},
+		Warning: []csaf.RemoteTestResult{},
+		Error:   []csaf.RemoteTestResult{},
 	}
-	return in.Valid, nil
+	for _, test := range rvr.Tests {
+		short.Info = append(short.Info, test.Info...)
+		short.Error = append(short.Error, test.Error...)
+		short.Warning = append(short.Warning, test.Warning...)
+	}
+	output, err := json.MarshalIndent(short, "", "    ")
+	if err != nil {
+		return fmt.Errorf("error while displaying remote validator result")
+	}
+	_, err = fmt.Println(string(output))
+	return err
 }
 
-func printRemoteValidationResult(in csaf.RemoteValidationResult) error {
+func printImportant(rvr *csaf.RemoteValidationResult) error {
+	important := csaf.RemoteValidationResult{
+		Valid: rvr.Valid,
+		Tests: []csaf.RemoteTest{},
+	}
+	for _, test := range rvr.Tests {
+		if len(test.Info) > 0 || len(test.Error) > 0 || len(test.Warning) > 0 {
+			important.Tests = append(important.Tests, test)
+		}
+	}
+	return printRemoteValidationResult(&important)
+}
+
+func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
 	output, err := json.MarshalIndent(in, "", "    ")
 	if err != nil {
 		return fmt.Errorf("error while displaying remote validator result")

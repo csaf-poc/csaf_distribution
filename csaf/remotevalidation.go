@@ -10,10 +10,11 @@ package csaf
 
 import (
 	"bytes"
+	"compress/zlib"
 	"crypto/sha256"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 
@@ -32,7 +33,8 @@ var defaultPresets = []string{"mandatory"}
 
 var (
 	validationsBucket = []byte("validations")
-	versionOfBucket   = []byte("1")
+	cacheVersionKey   = []byte("version")
+	cacheVersion      = []byte("1")
 )
 
 // RemoteValidatorOptions are the configuation options
@@ -54,20 +56,20 @@ type outDocument struct {
 	Document any    `json:"document"`
 }
 
+// RemoteTestResult are any given test-result by a remote validator test.
+type RemoteTestResult struct {
+	Message      string `json:"message"`
+	InstancePath string `json:"instancePath"`
+}
+
 // RemoteTest is the result of the remote tests
 // recieved by the remote validation service.
 type RemoteTest struct {
-	Error   []RemoteTestResults `json:"errors"`
-	Warning []RemoteTestResults `json:"warnings"`
-	Info    []RemoteTestResults `json:"infos"`
-	Valid   bool                `json:"isValid"`
-	Name    string              `json:"name"`
-}
-
-// RemoteTestResults are any given test-result by a remote validator test.
-type RemoteTestResults struct {
-	Message      string `json:"message"`
-	InstancePath string `json:"instancePath"`
+	Name    string             `json:"name"`
+	Valid   bool               `json:"isValid"`
+	Error   []RemoteTestResult `json:"errors"`
+	Warning []RemoteTestResult `json:"warnings"`
+	Info    []RemoteTestResult `json:"infos"`
 }
 
 // RemoteValidationResult is the document recieved from the remote validation service.
@@ -76,17 +78,15 @@ type RemoteValidationResult struct {
 	Tests []RemoteTest `json:"tests"`
 }
 
-var errNotFound = errors.New("not found")
-
 type cache interface {
-	get(key []byte) (RemoteValidationResult, error)
-	set(key []byte, valid RemoteValidationResult) error
+	get(key []byte) ([]byte, error)
+	set(key []byte, value []byte) error
 	Close() error
 }
 
 // RemoteValidator validates an advisory document remotely.
 type RemoteValidator interface {
-	Validate(doc any) (RemoteValidationResult, error)
+	Validate(doc any) (*RemoteValidationResult, error)
 	Close() error
 }
 
@@ -110,7 +110,7 @@ type syncedRemoteValidator struct {
 }
 
 // Validate implements the validation part of the RemoteValidator interface.
-func (srv *syncedRemoteValidator) Validate(doc any) (RemoteValidationResult, error) {
+func (srv *syncedRemoteValidator) Validate(doc any) (*RemoteValidationResult, error) {
 	srv.Lock()
 	defer srv.Unlock()
 	return srv.RemoteValidator.Validate(doc)
@@ -138,7 +138,7 @@ func prepareTests(presets []string) []test {
 // prepareURL prepares the URL to be called for validation.
 func prepareURL(url string) string {
 	if url == "" {
-		return defaultURL + validationPath
+		url = defaultURL
 	}
 	return url + validationPath
 }
@@ -156,26 +156,34 @@ func prepareCache(config string) (cache, error) {
 
 	// Create the bucket.
 	if err := db.Update(func(tx *bolt.Tx) error {
-		b, err := tx.CreateBucketIfNotExists(validationsBucket)
-		v := b.Get([]byte("version"))
-		// if version is wrong or nonexistent, delete old cache
-		if !bytes.Equal(v, versionOfBucket) {
-			err := tx.DeleteBucket(validationsBucket)
-			if err != nil {
-				return err
-			}
-			// create new cache
+
+		// Create a new bucket with version set.
+		create := func() error {
 			b, err := tx.CreateBucket(validationsBucket)
 			if err != nil {
 				return err
 			}
-			// version it
-			err = b.Put([]byte("version"), versionOfBucket)
-			if err != nil {
+			if err := b.Put(cacheVersionKey, cacheVersion); err != nil {
 				return err
 			}
+			return nil
 		}
-		return err
+
+		b := tx.Bucket(validationsBucket)
+
+		if b == nil { // Bucket does not exists -> create.
+			return create()
+		}
+		// Bucket exists.
+		if v := b.Get(cacheVersionKey); !bytes.Equal(v, cacheVersion) {
+			// version mismatch -> delete and re-create.
+			if err := tx.DeleteBucket(validationsBucket); err != nil {
+				return err
+			}
+			return create()
+		}
+		return nil
+
 	}); err != nil {
 		db.Close()
 		return nil, err
@@ -188,35 +196,23 @@ func prepareCache(config string) (cache, error) {
 type boltCache struct{ *bolt.DB }
 
 // get implements the fetch part of the cache interface.
-func (bc boltCache) get(key []byte) (valid RemoteValidationResult, err error) {
-	err2 := bc.View(func(tx *bolt.Tx) error {
+func (bc boltCache) get(key []byte) ([]byte, error) {
+	var value []byte
+	if err := bc.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(validationsBucket)
-		v := b.Get(key)
-		if v == nil {
-			err = errNotFound
-		} else {
-			err3 := json.Unmarshal(v, &valid)
-			if err3 != nil {
-				err = err3
-			}
-		}
+		value = b.Get(key)
 		return nil
-	})
-	if err2 != nil {
-		err = err2
+	}); err != nil {
+		return nil, err
 	}
-	return
+	return value, nil
 }
 
 // set implements the store part of the cache interface.
-func (bc boltCache) set(key []byte, valid RemoteValidationResult) error {
+func (bc boltCache) set(key, value []byte) error {
 	return bc.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(validationsBucket)
-		validByte, err := json.Marshal(valid)
-		if err != nil {
-			return err
-		}
-		return b.Put(key, validByte)
+		return b.Put(key, value)
 	})
 }
 
@@ -255,25 +251,37 @@ func (v *remoteValidator) key(doc any) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+// deserialize revives a remote validation result from a cache value.
+func deserialize(value []byte) (*RemoteValidationResult, error) {
+	r, err := zlib.NewReader(bytes.NewReader(value))
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	var rvr RemoteValidationResult
+	if err := json.NewDecoder(r).Decode(&rvr); err != nil {
+		return nil, err
+	}
+	return &rvr, nil
+}
+
 // Validate executes a remote validation of an advisory.
-func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
+func (v *remoteValidator) Validate(doc any) (*RemoteValidationResult, error) {
 
 	var key []byte
 
-	var errorOutput RemoteValidationResult
-	errorOutput.Valid = false
-
+	// First look into cache.
 	if v.cache != nil {
 		var err error
 		if key, err = v.key(doc); err != nil {
-			return errorOutput, err
+			return nil, err
 		}
-		valid, err := v.cache.get(key)
-		if err != errNotFound {
-			if err != nil {
-				return errorOutput, err
-			}
-			return valid, nil
+		value, err := v.cache.get(key)
+		if err != nil {
+			return nil, err
+		}
+		if value != nil {
+			return deserialize(value)
 		}
 	}
 
@@ -284,7 +292,7 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&o); err != nil {
-		return errorOutput, err
+		return nil, err
 	}
 
 	resp, err := http.Post(
@@ -293,31 +301,46 @@ func (v *remoteValidator) Validate(doc any) (RemoteValidationResult, error) {
 		bytes.NewReader(buf.Bytes()))
 
 	if err != nil {
-		return errorOutput, err
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return errorOutput, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"POST failed: %s (%d)", resp.Status, resp.StatusCode)
 	}
 
-	valid, err := func() (RemoteValidationResult, error) {
-		defer resp.Body.Close()
-		var in RemoteValidationResult
-		err := json.NewDecoder(resp.Body).Decode(&in)
-		return in, err
-	}()
+	var (
+		zout *zlib.Writer
+		rvr  RemoteValidationResult
+	)
 
-	if err != nil {
-		return errorOutput, err
+	if err := func() error {
+		defer resp.Body.Close()
+		var in io.Reader
+		// If we are caching record the incoming data and compress it.
+		if key != nil {
+			buf.Reset() // reuse the out buffer.
+			zout = zlib.NewWriter(&buf)
+			in = io.TeeReader(resp.Body, zout)
+		} else {
+			// no cache -> process directly.
+			in = resp.Body
+		}
+		return json.NewDecoder(in).Decode(&rvr)
+	}(); err != nil {
+		return nil, err
 	}
 
+	// Store in cache
 	if key != nil {
-		// store in cache
-		if err := v.cache.set(key, valid); err != nil {
-			return valid, err
+		if err := zout.Close(); err != nil {
+			return nil, err
+		}
+		// The document is now compressed in the buffer.
+		if err := v.cache.set(key, buf.Bytes()); err != nil {
+			return nil, err
 		}
 	}
 
-	return valid, nil
+	return &rvr, nil
 }
