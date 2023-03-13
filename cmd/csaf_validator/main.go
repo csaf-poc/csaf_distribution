@@ -178,13 +178,61 @@ func printImportant(rvr *csaf.RemoteValidationResult) error {
 	return printRemoteValidationResult(&important)
 }
 
-func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
-	output, err := json.MarshalIndent(in, "", "    ")
-	if err != nil {
-		return fmt.Errorf("error while displaying remote validator result")
+func printInstanceAndMessages(me []csaf.RemoteTestResult) error{
+	for in, test := range me {
+		fmt.Println("      {")
+		fmt.Printf("        \"instancePath\": \"%s\",\n", test.InstancePath)
+		fmt.Printf("        \"message\": \"%s\"\n", test.Message)
+		fmt.Printf("      }")
+		if in < len(me)-1{
+			fmt.Println(",")
+		} else {
+			fmt.Println("")
+		}
 	}
-	_, err = fmt.Println(string(output))
-	return err
+	return nil
+}
+
+func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
+
+	fmt.Println("\"isValid\":", in.Valid)
+	if len(in.Tests) == 0 {
+		fmt.Println("\"tests\": []")
+		return nil
+	}
+	fmt.Println("\"tests\": [")
+	for i, test := range in.Tests {
+		fmt.Println("  {")
+		if len(test.Error) == 0 {
+			fmt.Println("    \"errors\":[],")
+		} else {
+			fmt.Println("    \"errors\": [")
+			printInstanceAndMessages(test.Error)
+			fmt.Println("    ],")
+		}
+		if len(test.Info) == 0 {
+			fmt.Println("    \"infos\":[],")
+		} else {
+			fmt.Println("    \"infos\": [")
+			printInstanceAndMessages(test.Info)
+			fmt.Println("    ],")
+		}
+		if len(test.Warning) == 0 {
+			fmt.Println("    \"warnings\":[],")
+		} else {
+			fmt.Println("    \"warnings\": [")
+			printInstanceAndMessages(test.Warning)
+			fmt.Println("    ],")
+		}
+		fmt.Printf("    \"isValid\": %t,\n", test.Valid)
+		fmt.Printf("    \"name\": \"%s\"\n", test.Name)
+		if i < len(in.Tests)-1 {
+			fmt.Println("  },")
+		}
+	}
+	fmt.Println("  }")
+	fmt.Println("]")
+	return nil
 }
 
 func errCheck(err error) {
