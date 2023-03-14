@@ -133,8 +133,10 @@ func run(opts *options, files []string) error {
 	return nil
 }
 
+// noPrint prints nothing to the console
 func noPrint(*csaf.RemoteValidationResult) error { return nil }
 
+// printShort prints a short version of the RemoteValidationResults to the console
 func printShort(rvr *csaf.RemoteValidationResult) error {
 
 	fmt.Printf("isValid: %t\n", rvr.Valid)
@@ -165,6 +167,10 @@ func printShort(rvr *csaf.RemoteValidationResult) error {
 	return nil
 }
 
+// printImportant creates a new csaf.RemoteValidationResult
+// which only contains tests with non-empty info, error or warning.
+// It then calls printRemoteValidationResult with the new struct to
+// print it to the console.
 func printImportant(rvr *csaf.RemoteValidationResult) error {
 	important := csaf.RemoteValidationResult{
 		Valid: rvr.Valid,
@@ -178,6 +184,8 @@ func printImportant(rvr *csaf.RemoteValidationResult) error {
 	return printRemoteValidationResult(&important)
 }
 
+// printInstanceAndMessages prints the InstancePath and Messages of
+// a RemoteTestResult Array to the console.
 func printInstanceAndMessages(rtr *[]csaf.RemoteTestResult) error {
 	for i, test := range *rtr {
 		fmt.Printf("    instancePath: %s,\n", test.InstancePath)
@@ -191,6 +199,8 @@ func printInstanceAndMessages(rtr *[]csaf.RemoteTestResult) error {
 	return nil
 }
 
+// printRemoteValidationResult prints the contents of a RemoteValidationResult
+// to the console
 func printRemoteValidationResult(rvr *csaf.RemoteValidationResult) error {
 
 	fmt.Printf("isValid: %t\n", rvr.Valid)
