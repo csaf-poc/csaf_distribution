@@ -73,7 +73,7 @@ func run(opts *options, files []string) error {
 	var printResult func(*csaf.RemoteValidationResult) error
 	switch opts.Output {
 	case "all":
-		printResult = printRemoteValidationResult
+		printResult = printAll
 	case "short":
 		printResult = printShort
 	case "important":
@@ -135,78 +135,121 @@ func run(opts *options, files []string) error {
 
 func noPrint(*csaf.RemoteValidationResult) error { return nil }
 
+type messageInstancePaths struct {
+	message string
+	paths   []string
+}
+
+type messageInstancePathsList []messageInstancePaths
+
+func (mipl *messageInstancePathsList) addAll(rtrs []csaf.RemoteTestResult) {
+	for _, rtr := range rtrs {
+		mipl.add(rtr)
+	}
+}
+
+func (mipl *messageInstancePathsList) add(rtr csaf.RemoteTestResult) {
+	for i := range *mipl {
+		m := &(*mipl)[i]
+		// Already have this message?
+		if m.message == rtr.Message {
+			for _, path := range m.paths {
+				// Avoid dupes.
+				if path == rtr.InstancePath {
+					return
+				}
+			}
+			m.paths = append(m.paths, rtr.InstancePath)
+			return
+		}
+	}
+	*mipl = append(*mipl, messageInstancePaths{
+		message: rtr.Message,
+		paths:   []string{rtr.InstancePath},
+	})
+}
+
+func (mipl messageInstancePathsList) print(info string) {
+	if len(mipl) == 0 {
+		return
+	}
+	fmt.Println(info)
+	for i := range mipl {
+		mip := &mipl[i]
+		fmt.Printf("  message: %s\n", mip.message)
+		fmt.Println("  instance path(s):")
+		for _, path := range mip.paths {
+			fmt.Printf("    %s\n", path)
+		}
+	}
+}
+
 func printShort(rvr *csaf.RemoteValidationResult) error {
 
+	var errors, warnings, infos messageInstancePathsList
+
+	for i := range rvr.Tests {
+		test := &rvr.Tests[i]
+		errors.addAll(test.Error)
+		warnings.addAll(test.Warning)
+		infos.addAll(test.Info)
+	}
+
 	fmt.Printf("isValid: %t\n", rvr.Valid)
-	fmt.Println("errors:")
-	for _, test := range rvr.Tests {
-		for _, er := range test.Error {
-			fmt.Printf("  instancePath:%s\n", er.InstancePath)
-			fmt.Printf("  message:%s\n\n", er.Message)
-		}
-	}
-
-	fmt.Println("warnings:")
-	for _, test := range rvr.Tests {
-		for _, wa := range test.Warning {
-			fmt.Printf("  instancePath:%s\n", wa.InstancePath)
-			fmt.Printf("  message:%s\n\n", wa.Message)
-		}
-	}
-
-	fmt.Println("infos:")
-	for _, test := range rvr.Tests {
-		for _, in := range test.Info {
-			fmt.Printf("  instancePath:%s\n", in.InstancePath)
-			fmt.Printf("  message:%s\n\n", in.Message)
-		}
-	}
+	errors.print("errors:")
+	warnings.print("warnings:")
+	infos.print("infos:")
 
 	return nil
 }
 
 func printImportant(rvr *csaf.RemoteValidationResult) error {
-	important := csaf.RemoteValidationResult{
-		Valid: rvr.Valid,
-		Tests: []csaf.RemoteTest{},
-	}
-	for _, test := range rvr.Tests {
-		if len(test.Info) > 0 || len(test.Error) > 0 || len(test.Warning) > 0 {
-			important.Tests = append(important.Tests, test)
-		}
-	}
-	return printRemoteValidationResult(&important)
+	return printRemoteValidationResult(rvr, func(rt *csaf.RemoteTest) bool {
+		return len(rt.Info) > 0 || len(rt.Error) > 0 || len(rt.Warning) > 0
+	})
 }
 
-func printInstanceAndMessages(me []csaf.RemoteTestResult) error {
-	for in, test := range me {
-		fmt.Printf("    instancePath: %s,\n", test.InstancePath)
-		fmt.Printf("    message: %s", test.Message)
-		if in < len(me)-1 {
-			fmt.Println(",")
-		} else {
-			fmt.Println("")
-		}
+func printAll(rvr *csaf.RemoteValidationResult) error {
+	return printRemoteValidationResult(rvr, func(*csaf.RemoteTest) bool {
+		return true
+	})
+}
+
+func printInstanceAndMessages(info string, me []csaf.RemoteTestResult) error {
+	if len(me) == 0 {
+		return nil
+	}
+	fmt.Printf("  %s\n", info)
+	for _, test := range me {
+		fmt.Printf("    instance path: %s\n", test.InstancePath)
+		fmt.Printf("    message: %s\n", test.Message)
 	}
 	return nil
 }
 
-func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
+func printRemoteValidationResult(
+	rvr *csaf.RemoteValidationResult,
+	accept func(*csaf.RemoteTest) bool,
+) error {
 
-	fmt.Printf("isValid: %t\n", in.Valid)
-	fmt.Printf("tests:\n")
-	for _, test := range in.Tests {
-		fmt.Println("  errors:")
-		printInstanceAndMessages(test.Error)
-
-		fmt.Println("  infos:")
-		printInstanceAndMessages(test.Info)
-
-		fmt.Println("  warnings:")
-		printInstanceAndMessages(test.Warning)
-
-		fmt.Printf("  isValid: %t,\n", test.Valid)
-		fmt.Printf("  name: %s\n\n", test.Name)
+	fmt.Printf("isValid: %t\n", rvr.Valid)
+	fmt.Println("tests:")
+	nl := false
+	for i := range rvr.Tests {
+		test := &rvr.Tests[i]
+		if !accept(test) {
+			continue
+		}
+		if nl {
+			fmt.Println()
+		} else {
+			nl = true
+		}
+		fmt.Printf("  name: %s\n", test.Name)
+		fmt.Printf("  isValid: %t\n", test.Valid)
+		printInstanceAndMessages("errors:", test.Error)
+		printInstanceAndMessages("warnings:", test.Warning)
+		printInstanceAndMessages("infos:", test.Info)
 	}
 	return nil
 }
