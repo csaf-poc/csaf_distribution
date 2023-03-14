@@ -178,11 +178,11 @@ func printImportant(rvr *csaf.RemoteValidationResult) error {
 	return printRemoteValidationResult(&important)
 }
 
-func printInstanceAndMessages(me *[]csaf.RemoteTestResult) error {
-	for in, test := range *me {
+func printInstanceAndMessages(rtr *[]csaf.RemoteTestResult) error {
+	for i, test := range *rtr {
 		fmt.Printf("    instancePath: %s,\n", test.InstancePath)
 		fmt.Printf("    message: %s", test.Message)
-		if in < len(*me)-1 {
+		if i < len(*rtr)-1 {
 			fmt.Println(",")
 		} else {
 			fmt.Println("")
@@ -191,11 +191,11 @@ func printInstanceAndMessages(me *[]csaf.RemoteTestResult) error {
 	return nil
 }
 
-func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
+func printRemoteValidationResult(rvr *csaf.RemoteValidationResult) error {
 
-	fmt.Printf("isValid: %t\n", in.Valid)
+	fmt.Printf("isValid: %t\n", rvr.Valid)
 	fmt.Printf("tests:\n")
-	for _, test := range in.Tests {
+	for _, test := range rvr.Tests {
 		fmt.Println("  errors:")
 		printInstanceAndMessages(&test.Error)
 
