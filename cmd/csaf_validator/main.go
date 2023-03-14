@@ -153,7 +153,7 @@ func (mipl *messageInstancePathsList) addAll(rtrs []csaf.RemoteTestResult) {
 	}
 }
 
-// add adds a test result by avoiding duplicates.
+// add adds a test result unless it is a duplicate.
 func (mipl *messageInstancePathsList) add(rtr csaf.RemoteTestResult) {
 	for i := range *mipl {
 		m := &(*mipl)[i]
