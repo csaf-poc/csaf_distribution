@@ -29,16 +29,6 @@ type options struct {
 	Output                 string   `short:"o" long:"output" description:"If a remote validator was used, display AMOUNT ('all', 'important' or 'short') results" value-name:"AMOUNT"`
 }
 
-// ShortTest is the result of the remote tests
-// recieved by the remote validation service
-// collapsed into minimal form.
-type ShortTest struct {
-	Valid   bool                    `json:"isValid"`
-	Error   []csaf.RemoteTestResult `json:"errors"`
-	Warning []csaf.RemoteTestResult `json:"warnings"`
-	Info    []csaf.RemoteTestResult `json:"infos"`
-}
-
 func main() {
 	opts := new(options)
 
@@ -146,23 +136,33 @@ func run(opts *options, files []string) error {
 func noPrint(*csaf.RemoteValidationResult) error { return nil }
 
 func printShort(rvr *csaf.RemoteValidationResult) error {
-	short := ShortTest{
-		Valid:   rvr.Valid,
-		Info:    []csaf.RemoteTestResult{},
-		Warning: []csaf.RemoteTestResult{},
-		Error:   []csaf.RemoteTestResult{},
-	}
+
+	fmt.Printf("isValid: %t\n", rvr.Valid)
+	fmt.Println("errors:")
 	for _, test := range rvr.Tests {
-		short.Info = append(short.Info, test.Info...)
-		short.Error = append(short.Error, test.Error...)
-		short.Warning = append(short.Warning, test.Warning...)
+		for _, er := range test.Error {
+			fmt.Printf("  instancePath:%s\n", er.InstancePath)
+			fmt.Printf("  message:%s\n\n", er.Message)
+		}
 	}
-	output, err := json.MarshalIndent(short, "", "    ")
-	if err != nil {
-		return fmt.Errorf("error while displaying remote validator result")
+
+	fmt.Println("warnings:")
+	for _, test := range rvr.Tests {
+		for _, wa := range test.Warning {
+			fmt.Printf("  instancePath:%s\n", wa.InstancePath)
+			fmt.Printf("  message:%s\n\n", wa.Message)
+		}
 	}
-	_, err = fmt.Println(string(output))
-	return err
+
+	fmt.Println("infos:")
+	for _, test := range rvr.Tests {
+		for _, in := range test.Info {
+			fmt.Printf("  instancePath:%s\n", in.InstancePath)
+			fmt.Printf("  message:%s\n\n", in.Message)
+		}
+	}
+
+	return nil
 }
 
 func printImportant(rvr *csaf.RemoteValidationResult) error {
@@ -178,13 +178,11 @@ func printImportant(rvr *csaf.RemoteValidationResult) error {
 	return printRemoteValidationResult(&important)
 }
 
-func printInstanceAndMessages(me []csaf.RemoteTestResult) error{
+func printInstanceAndMessages(me []csaf.RemoteTestResult) error {
 	for in, test := range me {
-		fmt.Println("      {")
-		fmt.Printf("        \"instancePath\": \"%s\",\n", test.InstancePath)
-		fmt.Printf("        \"message\": \"%s\"\n", test.Message)
-		fmt.Printf("      }")
-		if in < len(me)-1{
+		fmt.Printf("    instancePath: %s,\n", test.InstancePath)
+		fmt.Printf("    message: %s", test.Message)
+		if in < len(me)-1 {
 			fmt.Println(",")
 		} else {
 			fmt.Println("")
@@ -195,43 +193,21 @@ func printInstanceAndMessages(me []csaf.RemoteTestResult) error{
 
 func printRemoteValidationResult(in *csaf.RemoteValidationResult) error {
 
-	fmt.Println("\"isValid\":", in.Valid)
-	if len(in.Tests) == 0 {
-		fmt.Println("\"tests\": []")
-		return nil
+	fmt.Printf("isValid: %t\n", in.Valid)
+	fmt.Printf("tests:\n")
+	for _, test := range in.Tests {
+		fmt.Println("  errors:")
+		printInstanceAndMessages(test.Error)
+
+		fmt.Println("  infos:")
+		printInstanceAndMessages(test.Info)
+
+		fmt.Println("  warnings:")
+		printInstanceAndMessages(test.Warning)
+
+		fmt.Printf("  isValid: %t,\n", test.Valid)
+		fmt.Printf("  name: %s\n\n", test.Name)
 	}
-	fmt.Println("\"tests\": [")
-	for i, test := range in.Tests {
-		fmt.Println("  {")
-		if len(test.Error) == 0 {
-			fmt.Println("    \"errors\":[],")
-		} else {
-			fmt.Println("    \"errors\": [")
-			printInstanceAndMessages(test.Error)
-			fmt.Println("    ],")
-		}
-		if len(test.Info) == 0 {
-			fmt.Println("    \"infos\":[],")
-		} else {
-			fmt.Println("    \"infos\": [")
-			printInstanceAndMessages(test.Info)
-			fmt.Println("    ],")
-		}
-		if len(test.Warning) == 0 {
-			fmt.Println("    \"warnings\":[],")
-		} else {
-			fmt.Println("    \"warnings\": [")
-			printInstanceAndMessages(test.Warning)
-			fmt.Println("    ],")
-		}
-		fmt.Printf("    \"isValid\": %t,\n", test.Valid)
-		fmt.Printf("    \"name\": \"%s\"\n", test.Name)
-		if i < len(in.Tests)-1 {
-			fmt.Println("  },")
-		}
-	}
-	fmt.Println("  }")
-	fmt.Println("]")
 	return nil
 }
 
