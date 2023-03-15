@@ -539,12 +539,12 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 
 		// Check against remote validator.
 		if rmv := w.processor.remoteValidator; rmv != nil {
-			valid, err := rmv.Validate(advisory)
+			rvr, err := rmv.Validate(advisory)
 			if err != nil {
 				log.Printf("Calling remote validator failed: %s\n", err)
 				continue
 			}
-			if !valid {
+			if !rvr.Valid {
 				log.Printf(
 					"CSAF file %s does not validate remotely.\n", file)
 				continue

@@ -370,13 +370,13 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 
 		// Validate against remote validator
 		if d.validator != nil {
-			ok, err := d.validator.Validate(doc)
+			rvr, err := d.validator.Validate(doc)
 			if err != nil {
 				return fmt.Errorf(
 					"calling remote validator on %q failed: %w",
 					file.URL(), err)
 			}
-			if !ok {
+			if !rvr.Valid {
 				log.Printf("Remote validation of %q failed\n", file.URL())
 			}
 		}

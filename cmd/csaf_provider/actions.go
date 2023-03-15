@@ -179,11 +179,11 @@ func (c *controller) upload(r *http.Request) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		valid, err := validator.Validate(content)
+		rvr, err := validator.Validate(content)
 		if err != nil {
 			return nil, err
 		}
-		if !valid {
+		if !rvr.Valid {
 			return nil, errors.New("does not validate against remote validator")
 		}
 	}
