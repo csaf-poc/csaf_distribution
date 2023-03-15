@@ -70,7 +70,7 @@ func run(opts *options, files []string) error {
 	}
 
 	// Select amount level of output for remote validation.
-	var printResult func(*csaf.RemoteValidationResult) error
+	var printResult func(*csaf.RemoteValidationResult)
 	switch opts.Output {
 	case "all":
 		printResult = printAll
@@ -116,10 +116,7 @@ func run(opts *options, files []string) error {
 				return fmt.Errorf("remote validation of %q failed: %w",
 					file, err)
 			}
-			if err := printResult(rvr); err != nil {
-				return fmt.Errorf("remote validation of %q failed: %w",
-					file, err)
-			}
+			printResult(rvr)
 			var passes string
 			if rvr.Valid {
 				passes = "passes"
@@ -134,7 +131,7 @@ func run(opts *options, files []string) error {
 }
 
 // noPrint suppresses the output of the validation result.
-func noPrint(*csaf.RemoteValidationResult) error { return nil }
+func noPrint(*csaf.RemoteValidationResult) {}
 
 // messageInstancePaths aggregates errors, warnings and infos by their
 // message.
@@ -192,7 +189,7 @@ func (mipl messageInstancePathsList) print(info string) {
 }
 
 // printShort outputs the validation result in an aggregated version.
-func printShort(rvr *csaf.RemoteValidationResult) error {
+func printShort(rvr *csaf.RemoteValidationResult) {
 
 	var errors, warnings, infos messageInstancePathsList
 
@@ -207,44 +204,41 @@ func printShort(rvr *csaf.RemoteValidationResult) error {
 	errors.print("errors:")
 	warnings.print("warnings:")
 	infos.print("infos:")
-
-	return nil
 }
 
 // printImportant displays only the test results which are really relevant.
-func printImportant(rvr *csaf.RemoteValidationResult) error {
-	return printRemoteValidationResult(rvr, func(rt *csaf.RemoteTest) bool {
+func printImportant(rvr *csaf.RemoteValidationResult) {
+	printRemoteValidationResult(rvr, func(rt *csaf.RemoteTest) bool {
 		return !rt.Valid ||
 			len(rt.Info) > 0 || len(rt.Error) > 0 || len(rt.Warning) > 0
 	})
 }
 
 // printAll displays all test results.
-func printAll(rvr *csaf.RemoteValidationResult) error {
-	return printRemoteValidationResult(rvr, func(*csaf.RemoteTest) bool {
+func printAll(rvr *csaf.RemoteValidationResult) {
+	printRemoteValidationResult(rvr, func(*csaf.RemoteTest) bool {
 		return true
 	})
 }
 
 // printInstanceAndMessages prints the message and the instance path of
 // a test result.
-func printInstanceAndMessages(info string, me []csaf.RemoteTestResult) error {
+func printInstanceAndMessages(info string, me []csaf.RemoteTestResult) {
 	if len(me) == 0 {
-		return nil
+		return
 	}
 	fmt.Printf("  %s\n", info)
 	for _, test := range me {
 		fmt.Printf("    instance path: %s\n", test.InstancePath)
 		fmt.Printf("    message: %s\n", test.Message)
 	}
-	return nil
 }
 
 // printRemoteValidationResult prints a filtered output of the remote validation result.
 func printRemoteValidationResult(
 	rvr *csaf.RemoteValidationResult,
 	accept func(*csaf.RemoteTest) bool,
-) error {
+) {
 
 	fmt.Printf("isValid: %t\n", rvr.Valid)
 	fmt.Println("tests:")
@@ -265,7 +259,6 @@ func printRemoteValidationResult(
 		printInstanceAndMessages("warnings:", test.Warning)
 		printInstanceAndMessages("infos:", test.Info)
 	}
-	return nil
 }
 
 func errCheck(err error) {
