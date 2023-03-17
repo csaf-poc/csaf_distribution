@@ -34,6 +34,10 @@ const (
 	defaultUpdateInterval = "on best effort"
 )
 
+var (
+	defaultLockFile       = "/var/csaf_aggregator/run.lock"
+)
+
 type provider struct {
 	Name   string `toml:"name"`
 	Domain string `toml:"domain"`
@@ -71,6 +75,7 @@ type config struct {
 
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
+	NoLock   bool    `toml:"no_lock"`
 
 	// Interim performs an interim scan.
 	Interim bool `toml:"interim"`
@@ -260,6 +265,10 @@ func (c *config) setDefaults() {
 
 	if c.Domain == "" {
 		c.Domain = defaultDomain
+	}
+
+	if !c.NoLock && c.LockFile == nil {
+		c.LockFile = &defaultLockFile
 	}
 
 	if c.Workers <= 0 {

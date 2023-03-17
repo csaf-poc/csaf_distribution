@@ -1,6 +1,7 @@
 workers = 2
 folder = "/var/csaf_aggregator"
 lock_file = "/var/csaf_aggregator/run.lock"
+#no_lock = false
 web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
