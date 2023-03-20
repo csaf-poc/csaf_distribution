@@ -267,8 +267,10 @@ func (c *config) setDefaults() {
 		c.Domain = defaultDomain
 	}
 
-	if !c.NoLock && c.LockFile == nil {
-		c.LockFile = &defaultLockFile
+	if c.NoLock {
+		c.LockFile = nil
+	} else if c.LockFile == nil {
+		c.LockFile = &defautLockFile
 	}
 
 	if c.Workers <= 0 {
