@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	defaultLockFile       = "/var/csaf_aggregator/run.lock"
+	defaultLockFile = "/var/csaf_aggregator/run.lock"
 )
 
 type provider struct {
