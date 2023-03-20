@@ -270,7 +270,7 @@ func (c *config) setDefaults() {
 	if c.NoLock {
 		c.LockFile = nil
 	} else if c.LockFile == nil {
-		c.LockFile = &defautLockFile
+		c.LockFile = &defaultLockFile
 	}
 
 	if c.Workers <= 0 {
