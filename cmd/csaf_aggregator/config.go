@@ -75,7 +75,6 @@ type config struct {
 
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
-	NoLock   bool    `toml:"no_lock"`
 
 	// Interim performs an interim scan.
 	Interim bool `toml:"interim"`
@@ -267,10 +266,12 @@ func (c *config) setDefaults() {
 		c.Domain = defaultDomain
 	}
 
-	if c.NoLock {
-		c.LockFile = nil
-	} else if c.LockFile == nil {
+	if c.LockFile == nil {
 		c.LockFile = &defaultLockFile
+	}
+
+	if c.LockFile == "" {
+		c.LockFile = nil
 	}
 
 	if c.Workers <= 0 {
