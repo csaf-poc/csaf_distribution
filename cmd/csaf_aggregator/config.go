@@ -32,10 +32,7 @@ const (
 	defaultWeb            = "/var/www/html"
 	defaultDomain         = "https://example.com"
 	defaultUpdateInterval = "on best effort"
-)
-
-var (
-	defaultLockFile = "/var/csaf_aggregator/run.lock"
+	defaultLockFile       = "/var/csaf_aggregator/run.lock"
 )
 
 type provider struct {
@@ -266,11 +263,11 @@ func (c *config) setDefaults() {
 		c.Domain = defaultDomain
 	}
 
-	if c.LockFile == nil {
-		c.LockFile = &defaultLockFile
-	}
-
-	if *c.LockFile == "" {
+	switch {
+	case c.LockFile == nil:
+		lockFile := defaultLockFile
+		c.LockFile = &lockFile
+	case *c.LockFile == "":
 		c.LockFile = nil
 	}
 
