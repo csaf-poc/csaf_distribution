@@ -53,16 +53,16 @@ func defaultLogging(
 	}
 }
 
-// LoadProviderMetadataFromURL loads a provider metadata from a given URL.
+// loadProviderMetadataFromURL loads a provider metadata from a given URL.
 // Returns nil if the document was not found.
-func LoadProviderMetadataFromURL(
+func loadProviderMetadataFromURL(
 	client util.Client,
 	url string,
 	already map[string]*LoadedProviderMetadata,
 	logging func(format string, args ...any),
 ) *LoadedProviderMetadata {
 
-	logging = defaultLogging(logging, "LoadProviderMetadataFromURL: ", "\n")
+	logging = defaultLogging(logging, "loadProviderMetadataFromURL: ", "\n")
 
 	res, err := client.Get(url)
 	if err != nil {
@@ -136,17 +136,17 @@ func LoadProviderMetadataFromURL(
 	return &result
 }
 
-// LoadProviderMetadatasFromSecurity loads a secturity.txt,
+// loadProviderMetadatasFromSecurity loads a secturity.txt,
 // extracts and the CSAF urls from the document.
 // Returns nil if no url was successfully found.
-func LoadProviderMetadatasFromSecurity(
+func loadProviderMetadatasFromSecurity(
 	client util.Client,
 	path string,
 	already map[string]*LoadedProviderMetadata,
 	logging func(format string, args ...any),
 ) []*LoadedProviderMetadata {
 
-	logging = defaultLogging(logging, "LoadProviderMetadataFromSecurity: ", "\n")
+	logging = defaultLogging(logging, "loadProviderMetadataFromSecurity: ", "\n")
 
 	res, err := client.Get(path)
 	if err != nil {
@@ -173,7 +173,7 @@ func LoadProviderMetadatasFromSecurity(
 
 	// Load the URLs
 	for _, url := range urls {
-		if result := LoadProviderMetadataFromURL(
+		if result := loadProviderMetadataFromURL(
 			client, url, already, logging,
 		); result.Valid() {
 			results = append(results, result)
@@ -219,7 +219,7 @@ func LoadProviderMetadataForDomain(
 
 	// check direct path
 	if strings.HasPrefix(domain, "https://") {
-		result := LoadProviderMetadataFromURL(
+		result := loadProviderMetadataFromURL(
 			client, domain, already, logging)
 		lg(result, domain)
 		return result
@@ -230,7 +230,7 @@ func LoadProviderMetadataForDomain(
 
 	// First try the well-known path.
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
-	wellknownResult := LoadProviderMetadataFromURL(
+	wellknownResult := loadProviderMetadataFromURL(
 		client, wellknownURL, already, logging)
 	lg(wellknownResult, wellknownURL)
 
@@ -241,7 +241,7 @@ func LoadProviderMetadataForDomain(
 
 	// Next load the PMDs from security.txt
 	secURL := "https://" + domain + "/.well-known/security.txt"
-	secResults := LoadProviderMetadatasFromSecurity(
+	secResults := loadProviderMetadatasFromSecurity(
 		client, secURL, already, logging)
 
 	if len(secResults) == 0 {
@@ -297,7 +297,7 @@ func LoadProviderMetadataForDomain(
 
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
-	dnsResult := LoadProviderMetadataFromURL(
+	dnsResult := loadProviderMetadataFromURL(
 		client, dnsURL, already, logging)
 	lg(dnsResult, dnsURL)
 	return dnsResult
