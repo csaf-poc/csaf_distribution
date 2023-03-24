@@ -22,23 +22,6 @@ import (
 	"github.com/csaf-poc/csaf_distribution/util"
 )
 
-// LoadedProviderMetadata represents a loaded provider metadata.
-type LoadedProviderMetadata struct {
-	// URL is location where the document was found.
-	URL string
-	// Document is the de-serialized JSON document.
-	Document any
-	// Hash is a SHA256 sum over the document.
-	Hash []byte
-	// Messages are the error message happened while loading.
-	Messages []string
-}
-
-// Valid returns true if the loaded document is valid.
-func (lpm *LoadedProviderMetadata) Valid() bool {
-	return lpm != nil && lpm.Document != nil && lpm.Hash != nil
-}
-
 // defaultLogging generates a logging function if given is nil.
 func defaultLogging(
 	logging func(format string, args ...any),
