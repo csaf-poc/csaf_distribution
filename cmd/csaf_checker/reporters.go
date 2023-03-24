@@ -49,12 +49,12 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 func (r *validReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if p.validator == nil {
-		req.message(InfoType, "No remote validator configured")
+		req.message(WarnType, "No remote validator configured")
 	}
 	if !p.invalidAdvisories.used() {
 		req.message(InfoType, "No validations performed")
 	} else if len(p.invalidAdvisories) == 0 {
-		req.message(InfoType, "All advisories validated fine.")
+		req.message(InfoType, "All advisories validated fine against the schema.")
 	} else {
 		req.Append(p.invalidAdvisories)
 	}
