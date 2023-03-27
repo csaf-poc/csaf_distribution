@@ -32,7 +32,7 @@ const (
 	defaultWeb            = "/var/www/html"
 	defaultDomain         = "https://example.com"
 	defaultUpdateInterval = "on best effort"
-	defaultLockFile       = "/var/csaf_aggregator/run.lock"
+	defaultLockFile       = "/var/lock/csaf_aggregator/lock"
 )
 
 type provider struct {
