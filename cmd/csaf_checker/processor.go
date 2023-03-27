@@ -916,7 +916,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
 
-func (p *processor) processROLIEFeeds(domain string, feeds [][]csaf.Feed) error {
+func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	base, err := url.Parse(p.pmdURL)
 	if err != nil {
@@ -953,7 +953,7 @@ func empty(arr []string) bool {
 	return true
 }
 
-func (p *processor) checkCSAFs(domain string) error {
+func (p *processor) checkCSAFs(_ string) error {
 	// Check for ROLIE
 	rolie, err := p.expr.Eval("$.distributions[*].rolie.feeds", p.pmd)
 	if err != nil {
@@ -967,7 +967,7 @@ func (p *processor) checkCSAFs(domain string) error {
 		var feeds [][]csaf.Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
 			p.badProviderMetadata.error("ROLIE feeds are not compatible: %v.", err)
-		} else if err := p.processROLIEFeeds(domain, feeds); err != nil {
+		} else if err := p.processROLIEFeeds(feeds); err != nil {
 			if err != errContinue {
 				return err
 			}
@@ -1299,7 +1299,7 @@ func (p *processor) checkWellknownSecurityDNS(domain string) error {
 // the the remotely keys and compares the fingerprints.
 // As a result of these a respective error messages are passed to badPGP method
 // in case of errors. It returns nil if all checks are passed.
-func (p *processor) checkPGPKeys(domain string) error {
+func (p *processor) checkPGPKeys(_ string) error {
 
 	p.badPGPs.use()
 

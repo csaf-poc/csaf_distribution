@@ -83,7 +83,7 @@ func (hc *HeaderClient) Head(url string) (*http.Response, error) {
 
 // Post implements the respective method of the [Client] interface.
 func (hc *HeaderClient) Post(url, contentType string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}

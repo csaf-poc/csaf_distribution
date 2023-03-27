@@ -298,10 +298,7 @@ func (acp *AggregatorCSAFProvider) Validate() error {
 	if acp == nil {
 		return errors.New("aggregator.csaf_providers[] not allowed to be nil")
 	}
-	if err := acp.Metadata.Validate(); err != nil {
-		return err
-	}
-	return nil
+	return acp.Metadata.Validate()
 }
 
 // Validate validates the current state of the Aggregator.
