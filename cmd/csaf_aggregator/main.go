@@ -53,7 +53,7 @@ func lock(lockFile *string, fn func() error) error {
 	}
 
 	if !locked {
-		return fmt.Errorf("cannot aquire file lock at %s. Maybe the CSAF aggregator is already running?", *lockFile)
+		return fmt.Errorf("cannot acquire file lock at %s. Maybe the CSAF aggregator is already running?", *lockFile)
 	}
 	defer fl.Unlock()
 	return fn()
