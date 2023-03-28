@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/gofrs/flock"
@@ -39,6 +40,12 @@ func lock(lockFile *string, fn func() error) error {
 		// No locking configured.
 		return fn()
 	}
+
+	err := os.MkdirAll(filepath.Dir(*lockFile), 0700)
+	if err != nil {
+		return fmt.Errorf("file locking failed: %v", err)
+	}
+
 	fl := flock.New(*lockFile)
 	locked, err := fl.TryLock()
 	if err != nil {
@@ -46,7 +53,7 @@ func lock(lockFile *string, fn func() error) error {
 	}
 
 	if !locked {
-		return fmt.Errorf("cannot lock to file %s", *lockFile)
+		return fmt.Errorf("cannot acquire file lock at %s. Maybe the CSAF aggregator is already running?", *lockFile)
 	}
 	defer fl.Unlock()
 	return fn()
