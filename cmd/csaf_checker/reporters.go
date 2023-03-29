@@ -46,7 +46,7 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 }
 
 // contains returns whether an array of strings contains a given string.
-func contains(o [] string, p string) bool {
+func contains(o []string, p string) bool {
 	for _, option := range o {
 		if option == p {
 			return true
@@ -68,7 +68,7 @@ func (r *validReporter) report(p *processor, domain *Domain) {
 			req.message(InfoType, "All advisories validated fine.")
 		} else {
 			req.message(InfoType, "All advisories validated fine against the schema.")
-			}
+		}
 	} else {
 		req.Append(p.invalidAdvisories)
 	}
