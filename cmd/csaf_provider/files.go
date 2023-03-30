@@ -30,8 +30,5 @@ func writeHashedFile(fname, name string, data []byte, armored string) error {
 		return err
 	}
 	// Write signature.
-	if err := os.WriteFile(fname+".asc", []byte(armored), 0644); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(fname+".asc", []byte(armored), 0644)
 }

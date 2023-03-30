@@ -91,7 +91,7 @@ openpgp_private_key     // OpenPGP private key (must have no passphrase set, if
                         // you want to be able to run unattended, e.g. via cron.)
 openpgp_public_key      // OpenPGP public key
 passphrase              // passphrase of the OpenPGP key
-lock_file               // path to lockfile, to stop other instances if one is not done (default no locking)
+lock_file               // path to lockfile, to stop other instances if one is not done (default:/var/lock/csaf_aggregator/lock, disable by setting it to "")
 interim_years           // limiting the years for which interim documents are searched (default 0)
 verbose                 // print more diagnostic output, e.g. https requests (default false)
 allow_single_provider   // debugging option (default false)

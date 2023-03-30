@@ -147,7 +147,7 @@ func (c *controller) failed(rw http.ResponseWriter, tmpl string, err error) {
 }
 
 // index calls the "render" function and passes the "index.html" and c.cfg to it.
-func (c *controller) index(rw http.ResponseWriter, r *http.Request) {
+func (c *controller) index(rw http.ResponseWriter, _ *http.Request) {
 	c.render(rw, "index.html", map[string]any{
 		"Config": c.cfg,
 	})

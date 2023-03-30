@@ -163,10 +163,7 @@ func prepareCache(config string) (cache, error) {
 			if err != nil {
 				return err
 			}
-			if err := b.Put(cacheVersionKey, cacheVersion); err != nil {
-				return err
-			}
-			return nil
+			return b.Put(cacheVersionKey, cacheVersion)
 		}
 
 		b := tx.Bucket(validationsBucket)
