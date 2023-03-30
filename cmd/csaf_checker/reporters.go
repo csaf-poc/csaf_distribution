@@ -45,17 +45,35 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	return req
 }
 
+// contains returns whether any of vs is present in s.
+func containsAny[E comparable](s []E, vs ...E) bool {
+	for _, e := range s {
+		for _, v := range vs {
+			if e == v {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // report reports if there where any invalid filenames,
 func (r *validReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if p.validator == nil {
-		req.message(InfoType, "No remote validator configured")
+		req.message(WarnType, "No remote validator configured")
 	}
-	if !p.invalidAdvisories.used() {
+	switch {
+	case !p.invalidAdvisories.used():
 		req.message(InfoType, "No validations performed")
-	} else if len(p.invalidAdvisories) == 0 {
-		req.message(InfoType, "All advisories validated fine.")
-	} else {
+	case len(p.invalidAdvisories) == 0:
+		if p.validator != nil && containsAny(p.opts.RemoteValidatorPresets,
+			"basic", "mandatory", "extended", "full") {
+			req.message(InfoType, "All advisories validated fine.")
+		} else {
+			req.message(InfoType, "All advisories validated fine against the schema.")
+		}
+	default:
 		req.Append(p.invalidAdvisories)
 	}
 }
