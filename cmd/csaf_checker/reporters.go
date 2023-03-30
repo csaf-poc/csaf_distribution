@@ -45,11 +45,13 @@ func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	return req
 }
 
-// contains returns whether an array of strings contains a given string.
-func contains(o []string, p string) bool {
-	for _, option := range o {
-		if option == p {
-			return true
+// contains returns whether any of vs is present in s.
+func containsAny[E comparable](s []E, vs ...E) bool {
+	for _, e := range s {
+		for _, v := range vs {
+			if e == v {
+				return true
+			}
 		}
 	}
 	return false
@@ -61,15 +63,17 @@ func (r *validReporter) report(p *processor, domain *Domain) {
 	if p.validator == nil {
 		req.message(WarnType, "No remote validator configured")
 	}
-	if !p.invalidAdvisories.used() {
+	switch {
+	case !p.invalidAdvisories.used():
 		req.message(InfoType, "No validations performed")
-	} else if len(p.invalidAdvisories) == 0 {
-		if (p.validator != nil) && (contains(p.opts.RemoteValidatorPresets, "mandatory") || contains(p.opts.RemoteValidatorPresets, "basic") || contains(p.opts.RemoteValidatorPresets, "extended") || contains(p.opts.RemoteValidatorPresets, "full")) {
+	case len(p.invalidAdvisories) == 0:
+		if p.validator != nil && containsAny(p.opts.RemoteValidatorPresets,
+			"basic", "mandatory", "extended", "full") {
 			req.message(InfoType, "All advisories validated fine.")
 		} else {
 			req.message(InfoType, "All advisories validated fine against the schema.")
 		}
-	} else {
+	default:
 		req.Append(p.invalidAdvisories)
 	}
 }
