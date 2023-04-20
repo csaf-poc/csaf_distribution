@@ -157,6 +157,52 @@ func (w *worker) writeIndex(label string, summaries []summary) error {
 	return err2
 }
 
+func (w *worker) writeROLIENoSummaries(label string) error {
+
+        labelFolder := strings.ToLower(label)
+
+        fname := "csaf-feed-tlp-" + labelFolder + ".json"
+
+        feedURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
+                w.provider.Name + "/" + labelFolder + "/" + fname
+
+        entries := make([]*csaf.Entry, 0)
+
+        links := []csaf.Link{{
+		Rel:  "self",
+		HRef: feedURL,
+        }}
+
+        if w.provider.serviceDocument(w.processor.cfg) {
+                links = append(links, csaf.Link{
+                        Rel: "service",
+                        HRef: w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
+                                w.provider.Name + "/service.json",
+                })
+        }
+
+        rolie := &csaf.ROLIEFeed{
+                Feed: csaf.FeedData{
+                        ID:    "csaf-feed-tlp-" + strings.ToLower(label),
+                        Title: "CSAF feed (TLP:" + strings.ToUpper(label) + ")",
+                        Link:  links,
+                        Category: []csaf.ROLIECategory{{
+                                Scheme: "urn:ietf:params:rolie:category:information-type",
+                                Term:   "csaf",
+                        }},
+                        Updated: csaf.TimeStamp(time.Now().UTC()),
+                        Entry:   entries,
+                },
+        }
+
+        // Sort by descending updated order.
+        rolie.SortEntriesByUpdated()
+
+        path := filepath.Join(w.dir, labelFolder, fname)
+        return util.WriteToFile(path, rolie)
+}
+
+
 func (w *worker) writeROLIE(label string, summaries []summary) error {
 
 	labelFolder := strings.ToLower(label)
@@ -311,6 +357,7 @@ func (w *worker) writeService() error {
 func (w *worker) writeIndices() error {
 
 	if len(w.summaries) == 0 || w.dir == "" {
+		w.writeROLIENoSummaries("empty")
 		return nil
 	}
 
