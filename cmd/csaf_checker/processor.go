@@ -677,9 +677,20 @@ func (p *processor) processROLIEFeed(feed string) error {
 		return err
 	}
 	if len(errors) > 0 {
-		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
-		for _, msg := range errors {
-			p.badProviderMetadata.error(strings.ReplaceAll(msg, `%`, `%%`))
+		lengthError := false
+		for _, lerr := range errors {
+			if lerr == "/feed/entry: minimum 1 items required, but found 0 items" {
+				p.badProviderMetadata.warn(lerr)
+				lengthError = true
+			}
+		}
+		if !(lengthError && len(errors) == 2) {
+			p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
+			for _, msg := range errors {
+				if msg != "/feed/entry: minimum 1 items required, but found 0 items" {
+					p.badProviderMetadata.error(strings.ReplaceAll(msg, `%`, `%%`))
+				}
+			}
 		}
 	}
 
