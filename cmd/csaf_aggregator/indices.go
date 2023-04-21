@@ -166,8 +166,6 @@ func (w *worker) writeROLIENoSummaries(label string) error {
 	feedURL := w.processor.cfg.Domain + "/.well-known/csaf-aggregator/" +
 		w.provider.Name + "/" + labelFolder + "/" + fname
 
-	entries := make([]*csaf.Entry, 0)
-
 	links := []csaf.Link{{
 		Rel:  "self",
 		HRef: feedURL,
@@ -191,7 +189,7 @@ func (w *worker) writeROLIENoSummaries(label string) error {
 				Term:   "csaf",
 			}},
 			Updated: csaf.TimeStamp(time.Now().UTC()),
-			Entry:   entries,
+			Entry:   []*csaf.Entry{},
 		},
 	}
 
