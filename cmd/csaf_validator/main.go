@@ -54,6 +54,7 @@ func main() {
 func run(opts *options, files []string) error {
 
 	var validator csaf.RemoteValidator
+	eval := util.NewPathEval()
 
 	if opts.RemoteValidator != "" {
 		validatorOptions := csaf.RemoteValidatorOptions{
@@ -109,6 +110,13 @@ func run(opts *options, files []string) error {
 		} else {
 			fmt.Printf("%q passes the schema validation.\n", file)
 		}
+
+		// Check filename agains ID
+		if err := util.IDMatchesFilename(eval, doc, filepath.Base(file)); err != nil {
+			log.Printf("%s: %s.\n", file, err)
+			continue
+		}
+
 		// Validate against remote validator.
 		if validator != nil {
 			rvr, err := validator.Validate(doc)
