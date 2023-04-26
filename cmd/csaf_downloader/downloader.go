@@ -37,7 +37,7 @@ type downloader struct {
 	client    util.Client
 	opts      *options
 	directory string
-	keys      []*crypto.KeyRing
+	keys      *crypto.KeyRing
 	eval      *util.PathEval
 	validator csaf.RemoteValidator
 }
@@ -213,12 +213,15 @@ func (d *downloader) loadOpenPGPKeys(
 				"Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
-		keyring, err := crypto.NewKeyRing(ckey)
-		if err != nil {
-			log.Printf("Creating store for public OpenPGP key %s failed: %v.", u, err)
-			continue
+		if d.keys == nil {
+			if keyring, err := crypto.NewKeyRing(ckey); err != nil {
+				log.Printf("Creating store for public OpenPGP key %s failed: %v.", u, err)
+			} else {
+				d.keys = keyring
+			}
+		} else {
+			d.keys.AddKey(ckey)
 		}
-		d.keys = append(d.keys, keyring)
 	}
 	return nil
 }
@@ -345,7 +348,7 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 		}
 
 		// Only check signature if we have loaded keys.
-		if len(d.keys) > 0 {
+		if d.keys != nil {
 			var sign *crypto.PGPSignature
 			sign, signData, err = d.loadSignature(file.SignURL())
 			if err != nil {
@@ -355,8 +358,8 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 				}
 			}
 			if sign != nil {
-				if !d.checkSignature(data.Bytes(), sign) {
-					log.Printf("Cannot verify signature for %s\n", file.URL())
+				if err := d.checkSignature(data.Bytes(), sign); err != nil {
+					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
 					continue
 				}
 			}
@@ -428,15 +431,10 @@ func (d *downloader) downloadFiles(label csaf.TLPLabel, files []csaf.AdvisoryFil
 	return nil
 }
 
-func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) bool {
+func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) error {
 	pm := crypto.NewPlainMessage(data)
 	t := crypto.GetUnixTime()
-	for _, key := range d.keys {
-		if err := key.VerifyDetached(pm, sign, t); err == nil {
-			return true
-		}
-	}
-	return false
+	return d.keys.VerifyDetached(pm, sign, t)
 }
 
 func (d *downloader) loadSignature(p string) (*crypto.PGPSignature, []byte, error) {
