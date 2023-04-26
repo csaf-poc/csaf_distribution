@@ -10,14 +10,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 
 	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 )
+
+const defaultWorker = 1
 
 type options struct {
 	Directory *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR"`
@@ -25,6 +29,7 @@ type options struct {
 	Version   bool     `long:"version" description:"Display version of the binary"`
 	Verbose   bool     `long:"verbose" short:"v" description:"Verbose output"`
 	Rate      *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second"`
+	Worker    int      `long:"worker" short:"w" description:"Number of concurrent downloads" default:"1"`
 
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
 
@@ -48,12 +53,20 @@ func run(opts *options, domains []string) error {
 		return err
 	}
 	defer d.close()
-	return d.run(domains)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+	defer stop()
+
+	return d.run(ctx, domains)
 }
 
 func main() {
 
-	opts := new(options)
+	opts := &options{
+		Worker: defaultWorker,
+	}
 
 	parser := flags.NewParser(opts, flags.Default)
 	parser.Usage = "[OPTIONS] domain..."

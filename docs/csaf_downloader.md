@@ -12,6 +12,7 @@ Application Options:
       --version                Display version of the binary
   -v, --verbose                Verbose output
   -r, --rate=                  The average upper limit of https operations per second
+  -w, --worker=                Number of concurrent downloads (default: 1)
   -H, --header=                One or more extra HTTP header fields
       --validator=URL          URL to validate documents remotely
       --validatorcache=FILE    FILE to cache remote validations
