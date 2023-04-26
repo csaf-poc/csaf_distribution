@@ -14,7 +14,7 @@ Application Options:
       --client-key=KEY-FILE      TLS client private key file (PEM encoded data)
       --version                  Display version of the binary
   -v, --verbose                  Verbose output
-  -r, --rate=                    The average upper limit of https operations per second
+  -r, --rate=                    The average upper limit of https operations per second (default: 1)
   -y, --years=YEARS              Number of years to look back from now
   -H, --header=                  One or more extra HTTP header fields
       --validator=URL            URL to validate documents remotely
