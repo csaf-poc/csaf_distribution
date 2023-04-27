@@ -25,7 +25,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -178,7 +177,7 @@ func (d *downloader) downloadFiles(
 
 	var n int
 	if n = d.opts.Worker; n < 1 {
-		n = runtime.NumCPU()
+		n = 1
 	}
 
 	for i := 0; i < n; i++ {
@@ -427,7 +426,9 @@ nextAdvisory:
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
 					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
-					continue
+					if !d.opts.IgnoreSignatureCheck {
+						continue
+					}
 				}
 			}
 		}
@@ -500,9 +501,6 @@ func (d *downloader) mkdirAll(path string, perm os.FileMode) error {
 }
 
 func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) error {
-	if d.opts.Insecure {
-		return nil
-	}
 	pm := crypto.NewPlainMessage(data)
 	t := crypto.GetUnixTime()
 	return d.keys.VerifyDetached(pm, sign, t)
