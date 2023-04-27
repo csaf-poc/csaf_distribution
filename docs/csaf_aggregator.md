@@ -81,7 +81,7 @@ workers                 // number of parallel workers to start (default 10)
 folder                  // target folder on disc for writing the downloaded documents (default "/var/www")
 web                     // directory to be served by the webserver (default "/var/www/html")
 domain                  // base url where the contents will be reachable from outside (default "https://example.com")
-rate                    // downloading limit per worker in HTTPS req/s (default: no limiting)
+rate                    // downloading limit per worker in HTTPS req/s (defaults to unlimited)
 insecure                // do not check validity of TLS certificates
 write_indices           // write index.txt and changes.csv
 update_interval         // to indicate the collection interval for a provider (default ""on best effort")
