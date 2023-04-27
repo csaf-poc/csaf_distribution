@@ -274,8 +274,12 @@ func (d *downloader) downloadFiles(
 
 		for {
 			var file csaf.AdvisoryFile
+			var ok bool
 			select {
-			case file = <-filesCh:
+			case file, ok = <-filesCh:
+				if !ok {
+					return
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -469,6 +473,7 @@ allFiles:
 			break allFiles
 		}
 	}
+	close(filesCh)
 	wg.Wait()
 	return errors.Join(exitErrs...)
 }
