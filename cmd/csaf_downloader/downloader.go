@@ -154,6 +154,55 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 	})
 }
 
+func (d *downloader) downloadFiles(
+	ctx context.Context,
+	label csaf.TLPLabel,
+	files []csaf.AdvisoryFile,
+) error {
+
+	var (
+		advisoryCh = make(chan csaf.AdvisoryFile)
+		errorCh    = make(chan error)
+		errDone    = make(chan struct{})
+		errs       []error
+		wg         sync.WaitGroup
+	)
+
+	// collect errors
+	go func() {
+		defer close(errDone)
+		for err := range errorCh {
+			errs = append(errs, err)
+		}
+	}()
+
+	var n int
+	if n = d.opts.Worker; n < 1 {
+		n = runtime.NumCPU()
+	}
+
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go d.downloadWorker(ctx, &wg, label, advisoryCh, errorCh)
+	}
+
+allFiles:
+	for _, file := range files {
+		select {
+		case advisoryCh <- file:
+		case <-ctx.Done():
+			break allFiles
+		}
+	}
+
+	close(advisoryCh)
+	wg.Wait()
+	close(errorCh)
+	<-errDone
+
+	return errors.Join(errs...)
+}
+
 func (d *downloader) loadOpenPGPKeys(
 	client util.Client,
 	doc any,
@@ -246,242 +295,208 @@ func (d *downloader) logValidationIssues(url string, errors []string, err error)
 	}
 }
 
-func (d *downloader) downloadFiles(
+func (d *downloader) downloadWorker(
 	ctx context.Context,
+	wg *sync.WaitGroup,
 	label csaf.TLPLabel,
-	files []csaf.AdvisoryFile,
-) error {
+	files <-chan csaf.AdvisoryFile,
+	errorCh chan<- error,
+) {
+	defer wg.Done()
 
 	var (
-		filesCh  = make(chan csaf.AdvisoryFile)
-		wg       sync.WaitGroup
-		exitErrs []error
+		client             = d.httpClient()
+		data               bytes.Buffer
+		lastDir            string
+		initialReleaseDate time.Time
+		dateExtract        = util.TimeMatcher(&initialReleaseDate, time.RFC3339)
+		lower              = strings.ToLower(string(label))
 	)
 
-	worker := func(count int) {
-		defer wg.Done()
-		client := d.httpClient()
-
-		var data bytes.Buffer
-
-		var lastDir string
-
-		lower := strings.ToLower(string(label))
-
-		var initialReleaseDate time.Time
-
-		dateExtract := util.TimeMatcher(&initialReleaseDate, time.RFC3339)
-
-		for {
-			var file csaf.AdvisoryFile
-			var ok bool
-			select {
-			case file, ok = <-filesCh:
-				if !ok {
-					return
-				}
-			case <-ctx.Done():
+nextAdvisory:
+	for {
+		var file csaf.AdvisoryFile
+		var ok bool
+		select {
+		case file, ok = <-files:
+			if !ok {
 				return
 			}
-
-			u, err := url.Parse(file.URL())
-			if err != nil {
-				log.Printf("Ignoring invalid URL: %s: %v\n", file.URL(), err)
-				continue
-			}
-
-			// Ignore not conforming filenames.
-			filename := filepath.Base(u.Path)
-			if !util.ConformingFileName(filename) {
-				log.Printf("Not conforming filename %q. Ignoring.\n", filename)
-				continue
-			}
-
-			resp, err := client.Get(file.URL())
-			if err != nil {
-				log.Printf("WARN: cannot get '%s': %v\n", file.URL(), err)
-				continue
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				log.Printf("WARN: cannot load %s: %s (%d)\n",
-					file.URL(), resp.Status, resp.StatusCode)
-				continue
-			}
-
-			// Warn if we do not get JSON.
-			if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-				log.Printf(
-					"WARN: The content type of %s should be 'application/json' but is '%s'\n",
-					file.URL(), ct)
-			}
-
-			var (
-				writers                    []io.Writer
-				s256, s512                 hash.Hash
-				s256Data, s512Data         []byte
-				remoteSHA256, remoteSHA512 []byte
-				signData                   []byte
-			)
-
-			// Only hash when we have a remote counter part we can compare it with.
-			if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-				if d.opts.Verbose {
-					log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
-				}
-			} else {
-				s256 = sha256.New()
-				writers = append(writers, s256)
-			}
-
-			if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-				if d.opts.Verbose {
-					log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
-				}
-			} else {
-				s512 = sha512.New()
-				writers = append(writers, s512)
-			}
-
-			// Remember the data as we need to store it to file later.
-			data.Reset()
-			writers = append(writers, &data)
-
-			// Download the advisory and hash it.
-			hasher := io.MultiWriter(writers...)
-
-			var doc any
-
-			if err := func() error {
-				defer resp.Body.Close()
-				tee := io.TeeReader(resp.Body, hasher)
-				return json.NewDecoder(tee).Decode(&doc)
-			}(); err != nil {
-				log.Printf("Downloading %s failed: %v", file.URL(), err)
-				continue
-			}
-
-			// Compare the checksums.
-			if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
-				log.Printf("SHA256 checksum of %s does not match.\n", file.URL())
-				continue
-			}
-
-			if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
-				log.Printf("SHA512 checksum of %s does not match.\n", file.URL())
-				continue
-			}
-
-			// Only check signature if we have loaded keys.
-			if d.keys != nil {
-				var sign *crypto.PGPSignature
-				sign, signData, err = loadSignature(client, file.SignURL())
-				if err != nil {
-					if d.opts.Verbose {
-						log.Printf("downloading signature '%s' failed: %v\n",
-							file.SignURL(), err)
-					}
-				}
-				if sign != nil {
-					if err := d.checkSignature(data.Bytes(), sign); err != nil {
-						log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
-						continue
-					}
-				}
-			}
-
-			// Validate against CSAF schema.
-			if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
-				d.logValidationIssues(file.URL(), errors, err)
-				continue
-			}
-
-			// Validate against remote validator
-			if d.validator != nil {
-				rvr, err := d.validator.Validate(doc)
-				if err != nil {
-					exitErrs[count] = fmt.Errorf(
-						"calling remote validator on %q failed: %w",
-						file.URL(), err)
-					return
-				}
-				if !rvr.Valid {
-					log.Printf("Remote validation of %q failed\n", file.URL())
-				}
-			}
-
-			if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {
-				log.Printf("Cannot extract initial_release_date from advisory '%s'\n", file.URL())
-				initialReleaseDate = time.Now()
-			}
-			initialReleaseDate = initialReleaseDate.UTC()
-
-			// Write advisory to file
-
-			newDir := path.Join(d.directory, lower, strconv.Itoa(initialReleaseDate.Year()))
-			if newDir != lastDir {
-				if err := d.mkdirAll(newDir, 0755); err != nil {
-					exitErrs[count] = err
-					return
-				}
-				lastDir = newDir
-			}
-
-			path := filepath.Join(lastDir, filename)
-
-			// Write data to disk.
-			for _, x := range []struct {
-				p string
-				d []byte
-			}{
-				{path, data.Bytes()},
-				{path + ".sha256", s256Data},
-				{path + ".sha512", s512Data},
-				{path + ".asc", signData},
-			} {
-				if x.d != nil {
-					if err := os.WriteFile(x.p, x.d, 0644); err != nil {
-						exitErrs[count] = err
-						return
-					}
-				}
-			}
-
-			log.Printf("Written advisory '%s'.\n", path)
-		}
-	}
-
-	var n int
-	if d.opts.Worker > 0 {
-		n = d.opts.Worker
-	} else {
-		n = runtime.NumCPU()
-	}
-
-	exitErrs = make([]error, n)
-
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go worker(i)
-	}
-
-allFiles:
-	for _, file := range files {
-		select {
-		case filesCh <- file:
 		case <-ctx.Done():
-			break allFiles
+			return
 		}
+
+		u, err := url.Parse(file.URL())
+		if err != nil {
+			log.Printf("Ignoring invalid URL: %s: %v\n", file.URL(), err)
+			continue
+		}
+
+		// Ignore not conforming filenames.
+		filename := filepath.Base(u.Path)
+		if !util.ConformingFileName(filename) {
+			log.Printf("Not conforming filename %q. Ignoring.\n", filename)
+			continue
+		}
+
+		resp, err := client.Get(file.URL())
+		if err != nil {
+			log.Printf("WARN: cannot get '%s': %v\n", file.URL(), err)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			log.Printf("WARN: cannot load %s: %s (%d)\n",
+				file.URL(), resp.Status, resp.StatusCode)
+			continue
+		}
+
+		// Warn if we do not get JSON.
+		if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
+			log.Printf(
+				"WARN: The content type of %s should be 'application/json' but is '%s'\n",
+				file.URL(), ct)
+		}
+
+		var (
+			writers                    []io.Writer
+			s256, s512                 hash.Hash
+			s256Data, s512Data         []byte
+			remoteSHA256, remoteSHA512 []byte
+			signData                   []byte
+		)
+
+		// Only hash when we have a remote counter part we can compare it with.
+		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
+			if d.opts.Verbose {
+				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
+			}
+		} else {
+			s256 = sha256.New()
+			writers = append(writers, s256)
+		}
+
+		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
+			if d.opts.Verbose {
+				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
+			}
+		} else {
+			s512 = sha512.New()
+			writers = append(writers, s512)
+		}
+
+		// Remember the data as we need to store it to file later.
+		data.Reset()
+		writers = append(writers, &data)
+
+		// Download the advisory and hash it.
+		hasher := io.MultiWriter(writers...)
+
+		var doc any
+
+		if err := func() error {
+			defer resp.Body.Close()
+			tee := io.TeeReader(resp.Body, hasher)
+			return json.NewDecoder(tee).Decode(&doc)
+		}(); err != nil {
+			log.Printf("Downloading %s failed: %v", file.URL(), err)
+			continue
+		}
+
+		// Compare the checksums.
+		if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
+			log.Printf("SHA256 checksum of %s does not match.\n", file.URL())
+			continue
+		}
+
+		if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
+			log.Printf("SHA512 checksum of %s does not match.\n", file.URL())
+			continue
+		}
+
+		// Only check signature if we have loaded keys.
+		if d.keys != nil {
+			var sign *crypto.PGPSignature
+			sign, signData, err = loadSignature(client, file.SignURL())
+			if err != nil {
+				if d.opts.Verbose {
+					log.Printf("downloading signature '%s' failed: %v\n",
+						file.SignURL(), err)
+				}
+			}
+			if sign != nil {
+				if err := d.checkSignature(data.Bytes(), sign); err != nil {
+					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
+					continue
+				}
+			}
+		}
+
+		// Validate against CSAF schema.
+		if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
+			d.logValidationIssues(file.URL(), errors, err)
+			continue
+		}
+
+		// Validate against remote validator
+		if d.validator != nil {
+			rvr, err := d.validator.Validate(doc)
+			if err != nil {
+				errorCh <- fmt.Errorf(
+					"calling remote validator on %q failed: %w",
+					file.URL(), err)
+				continue
+			}
+			if !rvr.Valid {
+				log.Printf("Remote validation of %q failed\n", file.URL())
+			}
+		}
+
+		if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {
+			log.Printf("Cannot extract initial_release_date from advisory '%s'\n", file.URL())
+			initialReleaseDate = time.Now()
+		}
+		initialReleaseDate = initialReleaseDate.UTC()
+
+		// Write advisory to file
+
+		newDir := path.Join(d.directory, lower, strconv.Itoa(initialReleaseDate.Year()))
+		if newDir != lastDir {
+			if err := d.mkdirAll(newDir, 0755); err != nil {
+				errorCh <- err
+				continue
+			}
+			lastDir = newDir
+		}
+
+		path := filepath.Join(lastDir, filename)
+
+		// Write data to disk.
+		for _, x := range []struct {
+			p string
+			d []byte
+		}{
+			{path, data.Bytes()},
+			{path + ".sha256", s256Data},
+			{path + ".sha512", s512Data},
+			{path + ".asc", signData},
+		} {
+			if x.d != nil {
+				if err := os.WriteFile(x.p, x.d, 0644); err != nil {
+					errorCh <- err
+					continue nextAdvisory
+				}
+			}
+		}
+
+		log.Printf("Written advisory '%s'.\n", path)
 	}
-	close(filesCh)
-	wg.Wait()
-	return errors.Join(exitErrs...)
 }
 
 func (d *downloader) mkdirAll(path string, perm os.FileMode) error {
 	d.mkdirMu.Lock()
 	defer d.mkdirMu.Unlock()
-	return os.MkdirAll(path, 0755)
+	return os.MkdirAll(path, perm)
 }
 
 func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) error {
