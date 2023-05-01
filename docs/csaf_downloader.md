@@ -12,7 +12,7 @@ Application Options:
       --ignoresigcheck         Ignore signature check results, just warn on mismatch
       --version                Display version of the binary
   -v, --verbose                Verbose output
-  -r, --rate=                  The average upper limit of https operations per second
+  -r, --rate=                  The average upper limit of https operations per second (defaults to unlimited)
   -w, --worker=NUM             NUMber of concurrent downloads (default: 1)
   -H, --header=                One or more extra HTTP header fields
       --validator=URL          URL to validate documents remotely
