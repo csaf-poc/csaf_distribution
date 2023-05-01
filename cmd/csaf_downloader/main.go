@@ -21,7 +21,7 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-const defaultWorker = 1
+const defaultWorker = 2
 
 type options struct {
 	Directory            *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR"`
