@@ -458,7 +458,7 @@ func (p *processor) integrity(
 			// Check if we are in checking time interval.
 			if p.ageAccept != nil && !p.ageAccept(
 				time.Date(
-					year, 12, 31, // Assume last day og year.
+					year, 12, 31, // Assume last day of year.
 					23, 59, 59, 0, // 23:59:59
 					time.UTC)) {
 				continue
@@ -1373,7 +1373,7 @@ func (p *processor) checkPGPKeys(_ string) error {
 		}
 	}
 
-	if p.keys != nil {
+	if p.keys == nil {
 		p.badPGPs.info("No OpenPGP keys loaded.")
 	}
 	return nil
