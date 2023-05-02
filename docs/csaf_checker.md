@@ -14,7 +14,7 @@ Application Options:
       --client-key=KEY-FILE      TLS client private key file (PEM encoded data)
       --version                  Display version of the binary
   -v, --verbose                  Verbose output
-  -r, --rate=                    The average upper limit of https operations per second
+  -r, --rate=                    The average upper limit of https operations per second (defaults to unlimited)
   -y, --years=YEARS              Number of years to look back from now
   -H, --header=                  One or more extra HTTP header fields
       --validator=URL            URL to validate documents remotely
@@ -28,7 +28,7 @@ Help Options:
 
 Will check all given _domains_, by trying each as a CSAF provider.
 
-If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and checking procedes from there.
+If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and checking proceeds from there.
 
 
 Usage example:
