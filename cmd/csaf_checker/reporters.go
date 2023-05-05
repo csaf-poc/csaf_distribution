@@ -301,7 +301,8 @@ func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 		return
 	}
 	req.Messages = p.badPGPs
-	if len(p.keys) > 0 {
-		req.message(InfoType, fmt.Sprintf("%d public OpenPGP key(s) loaded.", len(p.keys)))
+	if p.keys != nil {
+		req.message(InfoType, fmt.Sprintf("%d public OpenPGP key(s) loaded.",
+			p.keys.CountEntities()))
 	}
 }

@@ -51,7 +51,7 @@ type processor struct {
 	pmdURL         string
 	pmd256         []byte
 	pmd            any
-	keys           []*crypto.KeyRing
+	keys           *crypto.KeyRing
 
 	invalidAdvisories    topicMessages
 	badFilenames         topicMessages
@@ -458,7 +458,7 @@ func (p *processor) integrity(
 			// Check if we are in checking time interval.
 			if p.ageAccept != nil && !p.ageAccept(
 				time.Date(
-					year, 12, 31, // Assume last day og year.
+					year, 12, 31, // Assume last day of year.
 					23, 59, 59, 0, // 23:59:59
 					time.UTC)) {
 				continue
@@ -621,18 +621,11 @@ func (p *processor) integrity(
 			continue
 		}
 
-		if len(p.keys) > 0 {
+		if p.keys != nil {
 			pm := crypto.NewPlainMessage(data.Bytes())
 			t := crypto.GetUnixTime()
-			var verified bool
-			for _, key := range p.keys {
-				if err := key.VerifyDetached(pm, sig, t); err == nil {
-					verified = true
-					break
-				}
-			}
-			if !verified {
-				p.badSignatures.error("Signature of %s could not be verified.", u)
+			if err := p.keys.VerifyDetached(pm, sig, t); err != nil {
+				p.badSignatures.error("Signature of %s could not be verified: %v.", u, err)
 			}
 		}
 	}
@@ -1369,15 +1362,18 @@ func (p *processor) checkPGPKeys(_ string) error {
 			p.badPGPs.error("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
 			continue
 		}
-		keyring, err := crypto.NewKeyRing(ckey)
-		if err != nil {
-			p.badPGPs.error("Creating store for public OpenPGP key %s failed: %v.", u, err)
-			continue
+		if p.keys == nil {
+			if keyring, err := crypto.NewKeyRing(ckey); err != nil {
+				p.badPGPs.error("Creating store for public OpenPGP key %s failed: %v.", u, err)
+			} else {
+				p.keys = keyring
+			}
+		} else {
+			p.keys.AddKey(ckey)
 		}
-		p.keys = append(p.keys, keyring)
 	}
 
-	if len(p.keys) == 0 {
+	if p.keys == nil {
 		p.badPGPs.info("No OpenPGP keys loaded.")
 	}
 	return nil
