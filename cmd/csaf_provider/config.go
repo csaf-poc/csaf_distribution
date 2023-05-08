@@ -227,7 +227,7 @@ func loadConfig() (*config, error) {
 
 	// Preset defaults
 	cfg := config{
-		NoWebUI: defaultNoWebUI,
+		NoWebUI:         defaultNoWebUI,
 		ServiceDocument: defaultServiceDocument,
 	}
 
