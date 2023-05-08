@@ -351,7 +351,7 @@ func (w *worker) writeService() error {
 func (w *worker) writeIndices() error {
 
 	if len(w.summaries) == 0 || w.dir == "" {
-		w.writeROLIENoSummaries("empty")
+		w.writeROLIENoSummaries("undefined")
 		return nil
 	}
 
