@@ -100,7 +100,7 @@ The following example file documents all available configuration options:
 #tlps = ["csaf", "white", "amber", "green", "red"]
 
 # Make the provider create a ROLIE service document.
-#create_service_document = false
+#create_service_document = true
 
 # Make the provider create a ROLIE category document from a list of strings.
 # If a list item starts with `expr:`
