@@ -196,6 +196,11 @@ func (c *controller) upload(r *http.Request) (any, error) {
 		return nil, err
 	}
 
+	if util.CleanFileName(ex.ID) != newCSAF {
+		return nil, fmt.Errorf("ID %q does not match filename %s",
+			ex.ID, newCSAF)
+	}
+
 	// Check if we have to search for dynamic categories.
 	var dynamicCategories []string
 	if catExprs := c.cfg.DynamicCategories(); len(catExprs) > 0 {
