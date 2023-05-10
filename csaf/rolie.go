@@ -239,6 +239,7 @@ func (rf *ROLIEFeed) SortEntriesByUpdated() {
 	})
 }
 
+// CountEntries returns the number of entries within the feed
 func (rf *ROLIEFeed) CountEntries() int {
 	return len(rf.Feed.Entry)
 }
