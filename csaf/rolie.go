@@ -238,3 +238,7 @@ func (rf *ROLIEFeed) SortEntriesByUpdated() {
 		return time.Time(entries[j].Updated).Before(time.Time(entries[i].Updated))
 	})
 }
+
+func (rf *ROLIEFeed) CountEntries() int {
+	return len(rf.Feed.Entry)
+}

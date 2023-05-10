@@ -672,6 +672,11 @@ func (p *processor) processROLIEFeed(feed string) error {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
 		return errContinue
 	}
+
+	if rfeed.CountEntries() == 0 {
+		p.badProviderMetadata.warn("No entries in %s", feed)
+	}
+
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
 		return err
