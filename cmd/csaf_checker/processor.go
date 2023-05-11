@@ -423,7 +423,6 @@ func (p *processor) integrity(
 	client := p.httpClient()
 
 	var data bytes.Buffer
-	eval := util.NewPathEval()
 
 	makeAbs := func(u *url.URL) *url.URL {
 		if u.IsAbs() {
@@ -513,8 +512,7 @@ func (p *processor) integrity(
 			p.invalidAdvisories.error("CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
-		if err := util.IDMatchesFilename(eval, doc, filepath.Base(u)); err != nil {
-
+		if err := util.IDMatchesFilename(p.expr, doc, filepath.Base(u)); err != nil {
 			p.invalidAdvisories.error("%s: %v\n", u, err)
 			continue
 
