@@ -243,6 +243,11 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 			writeStrings("Errors:", errs)
 			return nil, errors.New("local schema check failed")
 		}
+
+		eval := util.NewPathEval()
+		if err := util.IDMatchesFilename(eval, doc, filepath.Base(filename)); err != nil {
+			return nil, err
+		}
 	}
 
 	body := new(bytes.Buffer)
