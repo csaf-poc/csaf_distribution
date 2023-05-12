@@ -93,21 +93,31 @@ func loadProviderMetadataFromURL(
 
 	// We have loaded it the first time.
 	if err != nil {
-		result.Messages = []string{fmt.Sprintf("%s: Decoding JSON failed: %v", url, err)}
+		result.Messages = []ProviderMetadataLoadMessage{{
+			Type:    JSONDecodingFailed,
+			Message: fmt.Sprintf("%s: Decoding JSON failed: %v", url, err),
+		}}
 		storeLoaded()
 		return &result
 	}
 
 	switch errors, err := ValidateProviderMetadata(doc); {
 	case err != nil:
-		result.Messages = []string{
-			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
+		result.Messages = []ProviderMetadataLoadMessage{{
+			Type:    SchemaValidationFailed,
+			Message: fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err),
+		}}
 
 	case len(errors) > 0:
-		result.Messages = []string{
-			fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err)}
+		result.Messages = []ProviderMetadataLoadMessage{{
+			Type:    SchemaValidationFailed,
+			Message: fmt.Sprintf("%s: Validating against JSON schema failed: %v", url, err),
+		}}
 		for _, msg := range errors {
-			result.Messages = append(result.Messages, strings.ReplaceAll(msg, `%`, `%%`))
+			result.Messages = append(result.Messages, ProviderMetadataLoadMessage{
+				Type:    SchemaValidationFailedDetail,
+				Message: strings.ReplaceAll(msg, `%`, `%%`),
+			})
 		}
 	default:
 		// Only store in result if validation passed.
@@ -193,7 +203,7 @@ func LoadProviderMetadataForDomain(
 		}
 		alreadyLogged[result] = url
 		for _, msg := range result.Messages {
-			logging(msg)
+			logging(msg.Message)
 		}
 	}
 

@@ -23,6 +23,25 @@ type ProviderMetadataLoader struct {
 	logging func(string, ...any)
 }
 
+// ProviderMetadataLoadMessageType is the type of the message.
+type ProviderMetadataLoadMessageType int
+
+const (
+	//JSONDecodingFailed indicates problems with JSON decoding
+	JSONDecodingFailed ProviderMetadataLoadMessageType = iota
+	// SchemaValidationFailed indicates a general problem with schema validation.
+	SchemaValidationFailed
+	// SchemaValidationFailedDetail is a failure detail in schema validation.
+	SchemaValidationFailedDetail
+)
+
+// ProviderMetadataLoadMessage is a message generated while loading
+// a provider meta data file.
+type ProviderMetadataLoadMessage struct {
+	Type    ProviderMetadataLoadMessageType
+	Message string
+}
+
 // LoadedProviderMetadata represents a loaded provider metadata.
 type LoadedProviderMetadata struct {
 	// URL is location where the document was found.
@@ -32,7 +51,7 @@ type LoadedProviderMetadata struct {
 	// Hash is a SHA256 sum over the document.
 	Hash []byte
 	// Messages are the error message happened while loading.
-	Messages []string
+	Messages []ProviderMetadataLoadMessage
 }
 
 // Valid returns true if the loaded document is valid.
