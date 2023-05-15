@@ -22,6 +22,8 @@ type (
 	validReporter             struct{ baseReporter }
 	filenameReporter          struct{ baseReporter }
 	tlsReporter               struct{ baseReporter }
+	tlpWhiteReporter          struct{ baseReporter }
+	tlpAmberRedReporter       struct{ baseReporter }
 	redirectsReporter         struct{ baseReporter }
 	providerMetadataReport    struct{ baseReporter }
 	securityReporter          struct{ baseReporter }
@@ -31,9 +33,15 @@ type (
 	indexReporter             struct{ baseReporter }
 	changesReporter           struct{ baseReporter }
 	directoryListingsReporter struct{ baseReporter }
+	rolieFeedReporter         struct{ baseReporter }
+	rolieServiceReporter      struct{ baseReporter }
+	rolieCategoryReporter     struct{ baseReporter }
 	integrityReporter         struct{ baseReporter }
 	signaturesReporter        struct{ baseReporter }
 	publicPGPKeyReporter      struct{ baseReporter }
+	listReporter              struct{ baseReporter }
+	hasTwoReporter            struct{ baseReporter }
+	mirrorReporter            struct{ baseReporter }
 )
 
 func (bc *baseReporter) requirement(domain *Domain) *Requirement {
@@ -113,6 +121,21 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 	sort.Strings(urls)
 	req.message(ErrorType, "Following non-HTTPS URLs were used:")
 	req.message(ErrorType, urls...)
+}
+
+// report tests if a document labeled TLP:WHITE
+// is freely accessible and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
+// report tests if a document labeled TLP:AMBER
+// or TLP:RED is access protected
+// and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *tlpAmberRedReporter) report(p *processor, domain *Domain) {
+	// TODO
 }
 
 // report tests if redirects are used and sets the "message" field value
@@ -269,6 +292,31 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badDirListings
 }
 
+// report checks whether there is only a single ROLIE feed for a
+// given TLP level and whether any of the TLP levels
+// TLP:WHITE, TLP:GREEN or unlabeled exists and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
+// report tests whether a ROLIE service document is used and if so,
+// whether it is a [RFC8322] conform JSON file that lists the
+// ROLIE feed documents and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
+// report tests whether a ROLIE category document is used and if so,
+// whether it is a [RFC8322] conform JSON file and is used to dissect
+// documents by certain criteria
+// and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
 func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badIntegrities.used() {
@@ -305,4 +353,26 @@ func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 		req.message(InfoType, fmt.Sprintf("%d public OpenPGP key(s) loaded.",
 			p.keys.CountEntities()))
 	}
+}
+
+// report tests whether a CSAF aggregator JSON schema conform
+// aggregator.json exists without being adjacent to a
+// provider-metadata.json
+func (r *listReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
+// report tests whether the aggregator.json lists at least
+// two disjoint issuing parties. TODO: reevaluate phrasing (Req 7.1.22)
+func (r *hasTwoReporter) report(p *processor, domain *Domain) {
+	// TODO
+}
+
+// report tests whether the CSAF documents of each issuing mirrored party
+// is in a different folder, which are adjacent to the aggregator.json and
+// if the folder name is retrieved from the name of the issuing authority.
+// It also tests whether each folder has a provider-metadata.json for their
+// party and provides ROLIE feed documents.
+func (r *mirrorReporter) report(p *processor, domain *Domain) {
+	// TODO
 }
