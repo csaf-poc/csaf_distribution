@@ -115,21 +115,13 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 
 	// Check direct path
 	if strings.HasPrefix(domain, "https://") {
-		lpmd, err := pmdl.loadFromURL(domain)
-		if err != nil {
-			lpmd = new(LoadedProviderMetadata)
-			lpmd.Messages.Add(HTTPFailed, err.Error())
-		}
-		return lpmd
+		return pmdl.loadFromURL(domain)
 	}
 
 	// First try the well-known path.
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
 
-	wellknownResult, err := pmdl.loadFromURL(wellknownURL)
-	if err != nil {
-		pmdl.messages.Add(HTTPFailed, err.Error())
-	}
+	wellknownResult := pmdl.loadFromURL(wellknownURL)
 
 	// Valid provider metadata under well-known.
 	var wellknownGood *LoadedProviderMetadata
@@ -203,16 +195,7 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
-
-	dnsResult, err := pmdl.loadFromURL(dnsURL)
-	if err != nil {
-		dnsResult = new(LoadedProviderMetadata)
-		pmdl.messages.Add(
-			HTTPFailed,
-			err.Error())
-	}
-	dnsResult.Messages.AppendUnique(pmdl.messages)
-	return dnsResult
+	return pmdl.loadFromURL(dnsURL)
 }
 
 // loadFromSecurity loads the PMDs mentioned in the security.txt.
@@ -250,12 +233,10 @@ func (pmdl *ProviderMetadataLoader) loadFromSecurity(path string) []*LoadedProvi
 	// Load the URLs
 nextURL:
 	for _, url := range urls {
-		lpmd, err := pmdl.loadFromURL(url)
+		lpmd := pmdl.loadFromURL(url)
 		// If loading failed note it down.
-		if err != nil {
-			pmdl.messages.Add(
-				HTTPFailed,
-				fmt.Sprintf("Loading %q failed: %v", url, err))
+		if !lpmd.Valid() {
+			pmdl.messages.AppendUnique(lpmd.Messages)
 			continue
 		}
 		// Check for duplicates
@@ -271,14 +252,22 @@ nextURL:
 }
 
 // loadFromURL loads a provider metadata from a given URL.
-func (pmdl *ProviderMetadataLoader) loadFromURL(path string) (*LoadedProviderMetadata, error) {
+func (pmdl *ProviderMetadataLoader) loadFromURL(path string) *LoadedProviderMetadata {
+
+	result := LoadedProviderMetadata{URL: path}
 
 	res, err := pmdl.client.Get(path)
 	if err != nil {
-		return nil, fmt.Errorf("fetching %q failed: %v", path, err)
+		result.Messages.Add(
+			HTTPFailed,
+			fmt.Sprintf("fetching %q failed: %v", path, err))
+		return &result
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching %q failed: %s (%d)", path, res.Status, res.StatusCode)
+		result.Messages.Add(
+			HTTPFailed,
+			fmt.Sprintf("fetching %q failed: %s (%d)", path, res.Status, res.StatusCode))
+		return &result
 	}
 
 	// TODO: Check for application/json and log it.
@@ -288,14 +277,15 @@ func (pmdl *ProviderMetadataLoader) loadFromURL(path string) (*LoadedProviderMet
 	// Calculate checksum for later comparison.
 	hash := sha256.New()
 
-	result := LoadedProviderMetadata{URL: path}
-
 	tee := io.TeeReader(res.Body, hash)
 
 	var doc any
 
 	if err := json.NewDecoder(tee).Decode(&doc); err != nil {
-		return nil, fmt.Errorf("JSON decoding failed: %w", err)
+		result.Messages.Add(
+			JSONDecodingFailed,
+			fmt.Sprintf("JSON decoding failed: %v", err))
+		return &result
 	}
 
 	// Before checking the err lets check if we had the same
@@ -306,17 +296,16 @@ func (pmdl *ProviderMetadataLoader) loadFromURL(path string) (*LoadedProviderMet
 
 	// If we already have loaded it return the cached result.
 	if r := pmdl.already[key]; r != nil {
-		return r, nil
+		return r
 	}
 
 	// write it back as loaded
 
 	switch errors, err := ValidateProviderMetadata(doc); {
 	case err != nil:
-		result.Messages = []ProviderMetadataLoadMessage{{
-			Type:    SchemaValidationFailed,
-			Message: fmt.Sprintf("%s: Validating against JSON schema failed: %v", path, err),
-		}}
+		result.Messages.Add(
+			SchemaValidationFailed,
+			fmt.Sprintf("%s: Validating against JSON schema failed: %v", path, err))
 
 	case len(errors) > 0:
 		result.Messages = []ProviderMetadataLoadMessage{{
@@ -324,10 +313,9 @@ func (pmdl *ProviderMetadataLoader) loadFromURL(path string) (*LoadedProviderMet
 			Message: fmt.Sprintf("%s: Validating against JSON schema failed: %v", path, err),
 		}}
 		for _, msg := range errors {
-			result.Messages = append(result.Messages, ProviderMetadataLoadMessage{
-				Type:    SchemaValidationFailedDetail,
-				Message: strings.ReplaceAll(msg, `%`, `%%`),
-			})
+			result.Messages.Add(
+				SchemaValidationFailedDetail,
+				strings.ReplaceAll(msg, `%`, `%%`))
 		}
 	default:
 		// Only store in result if validation passed.
@@ -336,5 +324,5 @@ func (pmdl *ProviderMetadataLoader) loadFromURL(path string) (*LoadedProviderMet
 	}
 
 	pmdl.already[key] = &result
-	return &result, nil
+	return &result
 }
