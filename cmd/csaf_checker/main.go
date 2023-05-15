@@ -146,8 +146,8 @@ var reporters = [23]reporter{
 	&validReporter{baseReporter{num: 1, description: "Valid CSAF documents"}},
 	&filenameReporter{baseReporter{num: 2, description: "Filename"}},
 	&tlsReporter{baseReporter{num: 3, description: "TLS"}},
-	nil, // TODO: Add 4: TLP:WHITE
-	nil, // TODO: Add 5: TLP:AMBER and TLP:RED
+	&tlpWhiteReporter{baseReporter{num: 4, description: "TLP:WHITE"}},
+	&tlpAmberRedReporter{baseReporter{num: 5, description: "TLP:AMBER and TLP:RED"}},
 	&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
 	&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
 	&securityReporter{baseReporter{num: 8, description: "security.txt"}},
@@ -157,15 +157,15 @@ var reporters = [23]reporter{
 	&indexReporter{baseReporter{num: 12, description: "index.txt"}},
 	&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
 	&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
-	nil, // TODO: Add 15: ROLIE feed
-	nil, // TODO: Add 16: ROLIE service document
-	nil, // TODO: Add 17: ROLIE category document
+	&rolieFeedReporter{baseReporter{num: 15, description: "ROLIE feed"}},
+	&rolieServiceReporter{baseReporter{num: 16, description: "ROLIE service document"}},
+	&rolieCategoryReporter{baseReporter{num: 17, description: "ROLIE category document"}},
 	&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
 	&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
 	&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
-	nil, // TODO: Add 21: List of CSAF providers
-	nil, // TODO: Add 22: Two disjoint issuing parties
-	nil, // TODO: Add 23: Mirror
+	&listReporter{baseReporter{num: 21, description: "List of CSAF providers"}},
+	&hasTwoReporter{baseReporter{num: 22, description: "Two disjoint issuing parties"}},
+	&mirrorReporter{baseReporter{num: 23, description: "Mirror"}},
 }
 
 var roleImplies = map[csaf.MetadataRole][]csaf.MetadataRole{
