@@ -126,7 +126,7 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 // report tests if a document labeled TLP:WHITE
 // is freely accessible and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
+func (r *tlpWhiteReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -134,7 +134,7 @@ func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
 // or TLP:RED is access protected
 // and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *tlpAmberRedReporter) report(p *processor, domain *Domain) {
+func (r *tlpAmberRedReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -296,7 +296,7 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 // given TLP level and whether any of the TLP levels
 // TLP:WHITE, TLP:GREEN or unlabeled exists and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
+func (r *rolieFeedReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -304,7 +304,7 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 // whether it is a [RFC8322] conform JSON file that lists the
 // ROLIE feed documents and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
+func (r *rolieServiceReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -313,7 +313,7 @@ func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 // documents by certain criteria
 // and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
+func (r *rolieCategoryReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -358,13 +358,13 @@ func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 // report tests whether a CSAF aggregator JSON schema conform
 // aggregator.json exists without being adjacent to a
 // provider-metadata.json
-func (r *listReporter) report(p *processor, domain *Domain) {
+func (r *listReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
 // report tests whether the aggregator.json lists at least
 // two disjoint issuing parties. TODO: reevaluate phrasing (Req 7.1.22)
-func (r *hasTwoReporter) report(p *processor, domain *Domain) {
+func (r *hasTwoReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
 
@@ -373,6 +373,6 @@ func (r *hasTwoReporter) report(p *processor, domain *Domain) {
 // if the folder name is retrieved from the name of the issuing authority.
 // It also tests whether each folder has a provider-metadata.json for their
 // party and provides ROLIE feed documents.
-func (r *mirrorReporter) report(p *processor, domain *Domain) {
+func (r *mirrorReporter) report(_ *processor, _ *Domain) {
 	// TODO
 }
