@@ -1121,7 +1121,10 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 
 	lpmd := loader.Load(domain)
 
-	// TODO: Sort results into reports.
+	for i := range lpmd.Messages {
+		// TODO: Filter depending on the role.
+		p.badProviderMetadata.error(lpmd.Messages[i].Message)
+	}
 
 	if !lpmd.Valid() {
 		p.badProviderMetadata.error("No valid provider-metadata.json found.")
