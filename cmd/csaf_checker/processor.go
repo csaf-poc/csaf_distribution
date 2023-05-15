@@ -1114,7 +1114,11 @@ func (p *processor) checkProviderMetadata(domain string) error {
 
 	client := p.httpClient()
 
-	lpmd := csaf.LoadProviderMetadataForDomain(client, domain, p.badProviderMetadata.warn)
+	loader := csaf.NewProviderMetadataLoader(client)
+
+	lpmd := loader.Load(domain)
+
+	// TODO: Sort results into reports.
 
 	if !lpmd.Valid() {
 		p.badProviderMetadata.error("No valid provider-metadata.json found.")
