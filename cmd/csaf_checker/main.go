@@ -21,9 +21,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 
-	"github.com/csaf-poc/csaf_distribution/csaf"
 	"github.com/csaf-poc/csaf_distribution/util"
 	"github.com/jessevdk/go-flags"
 )
@@ -140,72 +138,6 @@ func writeReport(report *Report, opts *options) error {
 	}
 
 	return writer(report, w)
-}
-
-var reporters = [23]reporter{
-	&validReporter{baseReporter{num: 1, description: "Valid CSAF documents"}},
-	&filenameReporter{baseReporter{num: 2, description: "Filename"}},
-	&tlsReporter{baseReporter{num: 3, description: "TLS"}},
-	&tlpWhiteReporter{baseReporter{num: 4, description: "TLP:WHITE"}},
-	&tlpAmberRedReporter{baseReporter{num: 5, description: "TLP:AMBER and TLP:RED"}},
-	&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
-	&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
-	&securityReporter{baseReporter{num: 8, description: "security.txt"}},
-	&wellknownMetadataReporter{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
-	&dnsPathReporter{baseReporter{num: 10, description: "DNS path"}},
-	&oneFolderPerYearReport{baseReporter{num: 11, description: "One folder per year"}},
-	&indexReporter{baseReporter{num: 12, description: "index.txt"}},
-	&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
-	&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
-	&rolieFeedReporter{baseReporter{num: 15, description: "ROLIE feed"}},
-	&rolieServiceReporter{baseReporter{num: 16, description: "ROLIE service document"}},
-	&rolieCategoryReporter{baseReporter{num: 17, description: "ROLIE category document"}},
-	&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
-	&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
-	&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
-	&listReporter{baseReporter{num: 21, description: "List of CSAF providers"}},
-	&hasTwoReporter{baseReporter{num: 22, description: "Two disjoint issuing parties"}},
-	&mirrorReporter{baseReporter{num: 23, description: "Mirror"}},
-}
-
-var roleImplies = map[csaf.MetadataRole][]csaf.MetadataRole{
-	csaf.MetadataRoleProvider:        {csaf.MetadataRolePublisher},
-	csaf.MetadataRoleTrustedProvider: {csaf.MetadataRoleProvider},
-}
-
-func requirements(role csaf.MetadataRole) [][2]int {
-	var own [][2]int
-	switch role {
-	case csaf.MetadataRoleTrustedProvider:
-		own = [][2]int{{18, 20}}
-	case csaf.MetadataRoleProvider:
-		// TODO: use commented numbers when TLPs should be checked.
-		own = [][2]int{{6 /* 5 */, 7}, {8, 10}, {11, 14}, {15, 17}}
-	case csaf.MetadataRolePublisher:
-		own = [][2]int{{1, 3 /* 4 */}}
-	}
-	for _, base := range roleImplies[role] {
-		own = append(own, requirements(base)...)
-	}
-	return own
-}
-
-// buildReporters initializes each report by assigning a number and description to it.
-// It returns an array of the reporter interface type.
-func buildReporters(role csaf.MetadataRole) []reporter {
-	var reps []reporter
-	reqs := requirements(role)
-	// sort to have them ordered by there number.
-	sort.Slice(reqs, func(i, j int) bool { return reqs[i][0] < reqs[j][0] })
-	for _, req := range reqs {
-		from, to := req[0]-1, req[1]-1
-		for i := from; i <= to; i++ {
-			if rep := reporters[i]; rep != nil {
-				reps = append(reps, rep)
-			}
-		}
-	}
-	return reps
 }
 
 // run uses a processor to check all the given domains or direct urls
