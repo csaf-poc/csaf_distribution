@@ -179,9 +179,10 @@ func requirements(role csaf.MetadataRole) [][2]int {
 	case csaf.MetadataRoleTrustedProvider:
 		own = [][2]int{{18, 20}}
 	case csaf.MetadataRoleProvider:
-		own = [][2]int{{5, 7}, {8, 10}, {11, 14}, {15, 17}}
+		// TODO: use commented numbers when TLPs should be checked.
+		own = [][2]int{{6 /* 5 */, 7}, {8, 10}, {11, 14}, {15, 17}}
 	case csaf.MetadataRolePublisher:
-		own = [][2]int{{1, 4}}
+		own = [][2]int{{1, 3 /* 4 */}}
 	}
 	for _, base := range roleImplies[role] {
 		own = append(own, requirements(base)...)
