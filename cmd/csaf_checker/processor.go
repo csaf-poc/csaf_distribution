@@ -512,6 +512,12 @@ func (p *processor) integrity(
 			p.invalidAdvisories.error("CSAF file %s has %d validation errors.", u, len(errors))
 		}
 
+		if err := util.IDMatchesFilename(p.expr, doc, filepath.Base(u)); err != nil {
+			p.invalidAdvisories.error("%s: %v\n", u, err)
+			continue
+
+		}
+
 		// Validate against remote validator.
 		if p.validator != nil {
 			if rvr, err := p.validator.Validate(doc); err != nil {

@@ -9,6 +9,7 @@
 package util
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -36,6 +37,23 @@ func CleanFileName(s string) string {
 // ConformingFileName checks if the given filename conforms to the standard.
 func ConformingFileName(fname string) bool {
 	return fname == CleanFileName(fname)
+}
+
+// IDMatchesFilename checks that filename can be derived from the value
+// of document/tracking/id extracted from doc using eval.
+// https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html#51-filename
+func IDMatchesFilename(eval *PathEval, doc any, filename string) error {
+	var id string
+	if err := eval.Extract(`$.document.tracking.id`, StringMatcher(&id), false, doc); err != nil {
+		return fmt.Errorf("check that ID matches filename: %v", err)
+	}
+
+	if CleanFileName(id) != filename {
+		return fmt.Errorf("document/tracking/id %q does not match filename %s",
+			id, filename)
+	}
+
+	return nil
 }
 
 // PathExists returns true if path exits.

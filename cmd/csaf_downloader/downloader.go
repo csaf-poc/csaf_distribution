@@ -439,6 +439,11 @@ nextAdvisory:
 			continue
 		}
 
+		if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
+			log.Printf("Ignoring %s: %s.\n", file.URL(), err)
+			continue
+		}
+
 		// Validate against remote validator
 		if d.validator != nil {
 			rvr, err := d.validator.Validate(doc)

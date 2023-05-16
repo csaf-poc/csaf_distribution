@@ -557,6 +557,11 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 			continue
 		}
 
+		if util.CleanFileName(sum.ID) != filename {
+			log.Printf("ID %q does not match filename %s",
+				sum.ID, filename)
+		}
+
 		if err := w.extractCategories(label, advisory); err != nil {
 			log.Printf("error: %s: %v\n", file, err)
 			continue
