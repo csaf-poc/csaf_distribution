@@ -140,28 +140,6 @@ func writeReport(report *Report, opts *options) error {
 	return writer(report, w)
 }
 
-// buildReporters initializes each report by assigning a number and description to it.
-// It returns an array of the reporter interface type.
-func buildReporters() []reporter {
-	return []reporter{
-		&validReporter{baseReporter{num: 1, description: "Valid CSAF documents"}},
-		&filenameReporter{baseReporter{num: 2, description: "Filename"}},
-		&tlsReporter{baseReporter{num: 3, description: "TLS"}},
-		&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
-		&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
-		&securityReporter{baseReporter{num: 8, description: "security.txt"}},
-		&wellknownMetadataReporter{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
-		&dnsPathReporter{baseReporter{num: 10, description: "DNS path"}},
-		&oneFolderPerYearReport{baseReporter{num: 11, description: "One folder per year"}},
-		&indexReporter{baseReporter{num: 12, description: "index.txt"}},
-		&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
-		&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
-		&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
-		&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
-		&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
-	}
-}
-
 // run uses a processor to check all the given domains or direct urls
 // and generates a report.
 func run(opts *options, domains []string) (*Report, error) {
@@ -170,7 +148,7 @@ func run(opts *options, domains []string) (*Report, error) {
 		return nil, err
 	}
 	defer p.close()
-	return p.run(buildReporters(), domains)
+	return p.run(domains)
 }
 
 func main() {

@@ -223,7 +223,7 @@ func (p *processor) clean() {
 // run calls checkDomain function for each domain in the given "domains" parameter.
 // Then it calls the report method on each report from the given "reporters" parameter for each domain.
 // It returns a pointer to the report and nil, otherwise an error.
-func (p *processor) run(reporters []reporter, domains []string) (*Report, error) {
+func (p *processor) run(domains []string) (*Report, error) {
 
 	report := Report{
 		Date:    ReportTime{Time: time.Now().UTC()},
@@ -231,19 +231,24 @@ func (p *processor) run(reporters []reporter, domains []string) (*Report, error)
 	}
 
 	for _, d := range domains {
-		if err := p.checkDomain(d); err != nil {
-			if err == errContinue || err == errStop {
-				continue
+		if p.checkProviderMetadata(d) {
+			if err := p.checkDomain(d); err != nil {
+				if err == errContinue || err == errStop {
+					continue
+				}
+				return nil, err
 			}
-			return nil, err
 		}
 		domain := &Domain{Name: d}
-		for _, r := range reporters {
-			r.report(p, domain)
-		}
 
 		if err := p.fillMeta(domain); err != nil {
 			log.Printf("Filling meta data failed: %v\n", err)
+			// reporters depend on role.
+			continue
+		}
+
+		for _, r := range buildReporters(*domain.Role) {
+			r.report(p, domain)
 		}
 
 		report.Domains = append(report.Domains, domain)
@@ -287,7 +292,6 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	direct := strings.HasPrefix(domain, "https://")
 
 	checks := []func(*processor, string) error{
-		(*processor).checkProviderMetadata,
 		(*processor).checkPGPKeys,
 	}
 
@@ -1113,26 +1117,32 @@ func (p *processor) checkListing(string) error {
 // decodes, and validates against the JSON schema.
 // According to the result, the respective error messages added to
 // badProviderMetadata.
-// It returns nil if all checks are passed.
-func (p *processor) checkProviderMetadata(domain string) error {
+func (p *processor) checkProviderMetadata(domain string) bool {
 
 	p.badProviderMetadata.use()
 
 	client := p.httpClient()
 
-	lpmd := csaf.LoadProviderMetadataForDomain(client, domain, p.badProviderMetadata.warn)
+	loader := csaf.NewProviderMetadataLoader(client)
+
+	lpmd := loader.Load(domain)
+
+	for i := range lpmd.Messages {
+		// TODO: Filter depending on the role.
+		p.badProviderMetadata.error(lpmd.Messages[i].Message)
+	}
 
 	if !lpmd.Valid() {
 		p.badProviderMetadata.error("No valid provider-metadata.json found.")
 		p.badProviderMetadata.error("STOPPING here - cannot perform other checks.")
-		return errStop
+		return false
 	}
 
 	p.pmdURL = lpmd.URL
 	p.pmd256 = lpmd.Hash
 	p.pmd = lpmd.Document
 
-	return nil
+	return true
 }
 
 // checkSecurity checks the security.txt file by making HTTP request to fetch it.

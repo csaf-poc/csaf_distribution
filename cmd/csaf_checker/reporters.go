@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/csaf-poc/csaf_distribution/csaf"
 )
 
 type (
@@ -22,6 +24,8 @@ type (
 	validReporter             struct{ baseReporter }
 	filenameReporter          struct{ baseReporter }
 	tlsReporter               struct{ baseReporter }
+	tlpWhiteReporter          struct{ baseReporter }
+	tlpAmberRedReporter       struct{ baseReporter }
 	redirectsReporter         struct{ baseReporter }
 	providerMetadataReport    struct{ baseReporter }
 	securityReporter          struct{ baseReporter }
@@ -31,10 +35,82 @@ type (
 	indexReporter             struct{ baseReporter }
 	changesReporter           struct{ baseReporter }
 	directoryListingsReporter struct{ baseReporter }
+	rolieFeedReporter         struct{ baseReporter }
+	rolieServiceReporter      struct{ baseReporter }
+	rolieCategoryReporter     struct{ baseReporter }
 	integrityReporter         struct{ baseReporter }
 	signaturesReporter        struct{ baseReporter }
 	publicPGPKeyReporter      struct{ baseReporter }
+	listReporter              struct{ baseReporter }
+	hasTwoReporter            struct{ baseReporter }
+	mirrorReporter            struct{ baseReporter }
 )
+
+var reporters = [23]reporter{
+	&validReporter{baseReporter{num: 1, description: "Valid CSAF documents"}},
+	&filenameReporter{baseReporter{num: 2, description: "Filename"}},
+	&tlsReporter{baseReporter{num: 3, description: "TLS"}},
+	&tlpWhiteReporter{baseReporter{num: 4, description: "TLP:WHITE"}},
+	&tlpAmberRedReporter{baseReporter{num: 5, description: "TLP:AMBER and TLP:RED"}},
+	&redirectsReporter{baseReporter{num: 6, description: "Redirects"}},
+	&providerMetadataReport{baseReporter{num: 7, description: "provider-metadata.json"}},
+	&securityReporter{baseReporter{num: 8, description: "security.txt"}},
+	&wellknownMetadataReporter{baseReporter{num: 9, description: "/.well-known/csaf/provider-metadata.json"}},
+	&dnsPathReporter{baseReporter{num: 10, description: "DNS path"}},
+	&oneFolderPerYearReport{baseReporter{num: 11, description: "One folder per year"}},
+	&indexReporter{baseReporter{num: 12, description: "index.txt"}},
+	&changesReporter{baseReporter{num: 13, description: "changes.csv"}},
+	&directoryListingsReporter{baseReporter{num: 14, description: "Directory listings"}},
+	&rolieFeedReporter{baseReporter{num: 15, description: "ROLIE feed"}},
+	&rolieServiceReporter{baseReporter{num: 16, description: "ROLIE service document"}},
+	&rolieCategoryReporter{baseReporter{num: 17, description: "ROLIE category document"}},
+	&integrityReporter{baseReporter{num: 18, description: "Integrity"}},
+	&signaturesReporter{baseReporter{num: 19, description: "Signatures"}},
+	&publicPGPKeyReporter{baseReporter{num: 20, description: "Public OpenPGP Key"}},
+	&listReporter{baseReporter{num: 21, description: "List of CSAF providers"}},
+	&hasTwoReporter{baseReporter{num: 22, description: "Two disjoint issuing parties"}},
+	&mirrorReporter{baseReporter{num: 23, description: "Mirror"}},
+}
+
+var roleImplies = map[csaf.MetadataRole][]csaf.MetadataRole{
+	csaf.MetadataRoleProvider:        {csaf.MetadataRolePublisher},
+	csaf.MetadataRoleTrustedProvider: {csaf.MetadataRoleProvider},
+}
+
+func requirements(role csaf.MetadataRole) [][2]int {
+	var own [][2]int
+	switch role {
+	case csaf.MetadataRoleTrustedProvider:
+		own = [][2]int{{18, 20}}
+	case csaf.MetadataRoleProvider:
+		// TODO: use commented numbers when TLPs should be checked.
+		own = [][2]int{{6 /* 5 */, 7}, {8, 10}, {11, 14}, {15, 17}}
+	case csaf.MetadataRolePublisher:
+		own = [][2]int{{1, 3 /* 4 */}}
+	}
+	for _, base := range roleImplies[role] {
+		own = append(own, requirements(base)...)
+	}
+	return own
+}
+
+// buildReporters initializes each report by assigning a number and description to it.
+// It returns an array of the reporter interface type.
+func buildReporters(role csaf.MetadataRole) []reporter {
+	var reps []reporter
+	reqs := requirements(role)
+	// sort to have them ordered by there number.
+	sort.Slice(reqs, func(i, j int) bool { return reqs[i][0] < reqs[j][0] })
+	for _, req := range reqs {
+		from, to := req[0]-1, req[1]-1
+		for i := from; i <= to; i++ {
+			if rep := reporters[i]; rep != nil {
+				reps = append(reps, rep)
+			}
+		}
+	}
+	return reps
+}
 
 func (bc *baseReporter) requirement(domain *Domain) *Requirement {
 	req := &Requirement{
@@ -113,6 +189,21 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 	sort.Strings(urls)
 	req.message(ErrorType, "Following non-HTTPS URLs were used:")
 	req.message(ErrorType, urls...)
+}
+
+// report tests if a document labeled TLP:WHITE
+// is freely accessible and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *tlpWhiteReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
+// report tests if a document labeled TLP:AMBER
+// or TLP:RED is access protected
+// and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *tlpAmberRedReporter) report(_ *processor, _ *Domain) {
+	// TODO
 }
 
 // report tests if redirects are used and sets the "message" field value
@@ -269,6 +360,31 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 	req.Messages = p.badDirListings
 }
 
+// report checks whether there is only a single ROLIE feed for a
+// given TLP level and whether any of the TLP levels
+// TLP:WHITE, TLP:GREEN or unlabeled exists and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieFeedReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
+// report tests whether a ROLIE service document is used and if so,
+// whether it is a [RFC8322] conform JSON file that lists the
+// ROLIE feed documents and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieServiceReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
+// report tests whether a ROLIE category document is used and if so,
+// whether it is a [RFC8322] conform JSON file and is used to dissect
+// documents by certain criteria
+// and sets the "message" field value
+// of the "Requirement" struct as a result of that.
+func (r *rolieCategoryReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
 func (r *integrityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badIntegrities.used() {
@@ -305,4 +421,26 @@ func (r *publicPGPKeyReporter) report(p *processor, domain *Domain) {
 		req.message(InfoType, fmt.Sprintf("%d public OpenPGP key(s) loaded.",
 			p.keys.CountEntities()))
 	}
+}
+
+// report tests whether a CSAF aggregator JSON schema conform
+// aggregator.json exists without being adjacent to a
+// provider-metadata.json
+func (r *listReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
+// report tests whether the aggregator.json lists at least
+// two disjoint issuing parties. TODO: reevaluate phrasing (Req 7.1.22)
+func (r *hasTwoReporter) report(_ *processor, _ *Domain) {
+	// TODO
+}
+
+// report tests whether the CSAF documents of each issuing mirrored party
+// is in a different folder, which are adjacent to the aggregator.json and
+// if the folder name is retrieved from the name of the issuing authority.
+// It also tests whether each folder has a provider-metadata.json for their
+// party and provides ROLIE feed documents.
+func (r *mirrorReporter) report(_ *processor, _ *Domain) {
+	// TODO
 }
