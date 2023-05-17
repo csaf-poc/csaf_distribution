@@ -66,6 +66,7 @@ type processor struct {
 	badWellknownMetadata topicMessages
 	badDNSPath           topicMessages
 	badDirListings       topicMessages
+	badROLIEfeed         topicMessages
 
 	expr *util.PathEval
 }
