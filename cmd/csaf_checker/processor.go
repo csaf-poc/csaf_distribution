@@ -928,7 +928,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		return err
 	}
 	p.badROLIEfeed.use()
-	tlpUsed = make(map[string]bool)
+	tlpUsed := make(map[string]bool)
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
@@ -947,7 +947,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 		}
 	}
-	if !(tlpUsed["WHITE"] | tlpUsed["GREEN"] | tlpUsed["Unlabeled"]){
+	if !(tlpUsed["WHITE"] || tlpUsed["GREEN"] || tlpUsed["Unlabeled"]){
 		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
 	return nil
