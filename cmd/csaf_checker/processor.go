@@ -219,6 +219,7 @@ func (p *processor) clean() {
 	p.badWellknownMetadata.reset()
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
+	p.badROLIEfeed.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -926,6 +927,8 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	if err != nil {
 		return err
 	}
+	p.badROLIEfeed.use()
+	tlpUsed = make(map[string]bool)
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
@@ -943,6 +946,9 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				return err
 			}
 		}
+	}
+	if !(tlpUsed["WHITE"] | tlpUsed["GREEN"] | tlpUsed["Unlabeled"]){
+		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
 	return nil
 }
