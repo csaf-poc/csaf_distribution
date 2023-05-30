@@ -81,12 +81,13 @@ type completion struct {
 }
 
 // When going through all feeds, the summary feed is determined after going through all feeds.
-// As such, save all mismatched non-error feeds here to easily determine whether to put this information 
+// As such, save all mismatched non-error feeds here to easily determine whether to put this information
 // into info or warning.
 type matches struct {
-	feed string
+	feed  string
 	entry string
 }
+
 // tlpls holds all ROLIE feeds of a given tlp level that contain all entries of their given level
 // as well as all entries of that level, meaning for a given tlpls all entries in feeds contain all entries
 // in entries
@@ -954,7 +955,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	p.badROLIEfeed.use()
 	// mark which ROLIE feed tlp levels have been used
 	tlpUsed := make(map[string]bool)
-//	var ca completion
+	//	var ca completion
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
@@ -984,7 +985,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	return nil
 }
 
-func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string){
+func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string) {
 
 	// Assign int to tlp levels for easy comparison
 	var tlpfn int
@@ -1002,17 +1003,17 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 		tlpfn = 0
 	}
 	switch tlpe {
-        case "WHITE":
-                tlpen = 1
-        case "GREEN":
-                tlpen = 2
-        case "AMBER":
-                tlpen = 3
-        case "RED":
-                tlpen = 4
-        default:
-                tlpen = 0
-        }
+	case "WHITE":
+		tlpen = 1
+	case "GREEN":
+		tlpen = 2
+	case "AMBER":
+		tlpen = 3
+	case "RED":
+		tlpen = 4
+	default:
+		tlpen = 0
+	}
 
 	// If entry shows up in feed of higher tlp level, save the combi to evaluate it when we know if feed
 	// is summary feed or not
@@ -1024,7 +1025,7 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 	}
 	// Must not happen, give error
 	if tlpen > tlpfn {
-		p.badROLIEfeed.error("%s of TLP level %s must not be listed in feed %s of TLP level %s", entryName, tlpe, feedName, tlpf) 
+		p.badROLIEfeed.error("%s of TLP level %s must not be listed in feed %s of TLP level %s", entryName, tlpe, feedName, tlpf)
 	}
 
 }
