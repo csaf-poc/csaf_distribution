@@ -77,8 +77,16 @@ type completion struct {
 	green     tlpls
 	amber     tlpls
 	red       tlpls
+	mismatch  []matches
 }
 
+// When going through all feeds, the summary feed is determined after going through all feeds.
+// As such, save all mismatched non-error feeds here to easily determine whether to put this information 
+// into info or warning.
+type matches struct {
+	feed string
+	entry string
+}
 // tlpls holds all ROLIE feeds of a given tlp level that contain all entries of their given level
 // as well as all entries of that level, meaning for a given tlpls all entries in feeds contain all entries
 // in entries
@@ -974,6 +982,51 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
 	return nil
+}
+
+func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string){
+
+	// Assign int to tlp levels for easy comparison
+	var tlpfn int
+	var tlpen int
+	switch tlpf {
+	case "WHITE":
+		tlpfn = 1
+	case "GREEN":
+		tlpfn = 2
+	case "AMBER":
+		tlpfn = 3
+	case "RED":
+		tlpfn = 4
+	default:
+		tlpfn = 0
+	}
+	switch tlpe {
+        case "WHITE":
+                tlpen = 1
+        case "GREEN":
+                tlpen = 2
+        case "AMBER":
+                tlpen = 3
+        case "RED":
+                tlpen = 4
+        default:
+                tlpen = 0
+        }
+
+	// If entry shows up in feed of higher tlp level, save the combi to evaluate it when we know if feed
+	// is summary feed or not
+	if tlpen < tlpfn {
+		var match matches
+		match.feed = feedName
+		match.entry = entryName
+		ca.mismatch = append(ca.mismatch, match)
+	}
+	// Must not happen, give error
+	if tlpen > tlpfn {
+		p.badROLIEfeed.error("%s of TLP level %s must not be listed in feed %s of TLP level %s", entryName, tlpe, feedName, tlpf) 
+	}
+
 }
 
 // empty checks if list of strings contains at least one none empty string.
