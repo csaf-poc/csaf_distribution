@@ -71,6 +71,22 @@ type processor struct {
 	expr *util.PathEval
 }
 
+type completion struct {
+	unlabeled tlpls
+	white     tlpls
+	green     tlpls
+	amber     tlpls
+	red       tlpls
+}
+
+// tlpls holds all ROLIE feeds of a given tlp level that contain all entries of their given level
+// as well as all entries of that level, meaning for a given tlpls all entries in feeds contain all entries
+// in entries
+type tlpls struct {
+	feeds   []string
+	entries []string
+}
+
 // reporter is implemented by any value that has a report method.
 // The implementation of the report controls how to test
 // the respective requirement and generate the report.
@@ -928,10 +944,17 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		return err
 	}
 	p.badROLIEfeed.use()
+	// mark which ROLIE feed tlp levels have been used
 	tlpUsed := make(map[string]bool)
+//	var ca completion
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
+			if feed.TLPLabel == nil {
+				tlpUsed["unlabeled"] = true
+			} else {
+				tlpUsed[string(*feed.TLPLabel)] = true
+			}
 			if feed.URL == nil {
 				continue
 			}
