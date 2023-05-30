@@ -990,30 +990,35 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 	// Assign int to tlp levels for easy comparison
 	var tlpfn int
 	var tlpen int
-	switch tlpf {
-	case "WHITE":
-		tlpfn = 1
-	case "GREEN":
-		tlpfn = 2
-	case "AMBER":
-		tlpfn = 3
-	case "RED":
-		tlpfn = 4
-	default:
-		tlpfn = 0
-	}
 	switch tlpe {
 	case "WHITE":
 		tlpen = 1
+		containsEntry(ca.white, entryName)
 	case "GREEN":
 		tlpen = 2
+                containsEntry(ca.green, entryName)
 	case "AMBER":
 		tlpen = 3
+                containsEntry(ca.amber, entryName)
 	case "RED":
 		tlpen = 4
+                containsEntry(ca.red, entryName)
 	default:
 		tlpen = 0
+                containsEntry(ca.unlabeled, entryName)
 	}
+        switch tlpf {
+        case "WHITE":
+                tlpfn = 1
+        case "GREEN":
+                tlpfn = 2
+        case "AMBER":
+                tlpfn = 3
+        case "RED":
+                tlpfn = 4
+        default:
+                tlpfn = 0
+        }
 
 	// If entry shows up in feed of higher tlp level, save the combi to evaluate it when we know if feed
 	// is summary feed or not
@@ -1030,6 +1035,16 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 
 }
 
+// check if entry is already in tlpls
+func containsEntry (tlpl tlpls, entry string) {
+	for _, en := range tlpl.entries {
+		if entry == en {
+			return
+		}
+	}
+	tlpl.entries = append(tlpl.entries, entry)
+	tlpl.feeds = nil
+}
 // empty checks if list of strings contains at least one none empty string.
 func empty(arr []string) bool {
 	for _, s := range arr {
