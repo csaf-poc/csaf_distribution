@@ -1057,7 +1057,7 @@ func (p *processor) integrityTLP(
 	return ca, nil
 }
 
-// check if string is in slice of strings1
+// check if string is in slice of strings
 func checkContains(s string, l []string) bool {
 	for _, c := range l {
 		if s == c {
