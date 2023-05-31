@@ -370,7 +370,7 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 		req.message(InfoType, "No checks on the validity of ROLIE feeds performed.")
 		return
 	}
-	if len(p.badProviderMetadata) == 0 {
+	if len(p.badROLIEfeed) == 0 {
 		req.message(InfoType, "All ROLIE feeds were complete.")
 		return
 	}
