@@ -364,8 +364,17 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 // given TLP level and whether any of the TLP levels
 // TLP:WHITE, TLP:GREEN or unlabeled exists and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieFeedReporter) report(_ *processor, _ *Domain) {
-	// TODO
+func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badROLIEfeed.used() {
+		req.message(InfoType, "No checks on the validity of ROLIE feeds performed.")
+		return
+	}
+	if len(p.badProviderMetadata) == 0 {
+		req.message(InfoType, "All ROLIE feeds were complete.")
+		return
+	}
+	req.Messages = p.badROLIEfeed
 }
 
 // report tests whether a ROLIE service document is used and if so,
