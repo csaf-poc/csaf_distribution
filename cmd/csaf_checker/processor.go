@@ -672,18 +672,18 @@ func (p *processor) integrity(
 	return nil
 }
 
-func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (error, completion) {
+func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (completion, error) {
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
-		return errContinue, ca
+		return ca, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
-		return errContinue, ca
+		return ca, errContinue
 	}
 
 	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
@@ -703,11 +703,11 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (e
 	}()
 	if err != nil {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
-		return errContinue, ca
+		return ca, errContinue
 	}
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
-		return err, ca
+		return ca, err
 	}
 	if len(errors) > 0 {
 		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
@@ -719,13 +719,13 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (e
 	feedURL, err := url.Parse(feed)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue, ca
+		return ca, errContinue
 	}
 
 	base, err := util.BaseURL(feedURL)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue, ca
+		return ca, errContinue
 	}
 
 	// Extract the CSAF files from feed.
@@ -796,14 +796,14 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (e
 
 		files = append(files, file)
 	})
-	if err, completion := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil {
+	if completion, err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil {
 		if err != errContinue {
-			return err, ca
+			return ca, err
 		}
 	} else {
 		ca = completion
 	}
-	return nil, ca
+	return ca, nil
 }
 
 func (p *processor) integrityTLP(
@@ -815,10 +815,10 @@ func (p *processor) integrityTLP(
 	feed string,
 	feedHashes []string,
 	feedSignatures []string,
-) (error, completion) {
+) (completion, error) {
 	b, err := url.Parse(base)
 	if err != nil {
-		return err, ca
+		return ca, err
 	}
 	client := p.httpClient()
 
@@ -1054,7 +1054,7 @@ func (p *processor) integrityTLP(
 	// Now that entries have been handled, check if current feed qualifies as summary feed for their tlp level.
 	ca = p.readySummary(ca, tlpf, files, feed)
 
-	return nil, ca
+	return ca, nil
 }
 
 // check if string is in slice of strings1
@@ -1278,7 +1278,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if err, completion := p.processROLIEFeed(feedURL, ca, string(*feed.TLPLabel)); err != nil {
+			if completion, err := p.processROLIEFeed(feedURL, ca, string(*feed.TLPLabel)); err != nil {
 				if err != errContinue {
 					return err
 				}
