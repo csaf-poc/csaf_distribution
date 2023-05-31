@@ -731,6 +731,10 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 	// Extract the CSAF files from feed.
 	var files []csaf.AdvisoryFile
 
+	// Save Hashes and Signatures to compare
+	var feedHashes     []string
+	var feedSignatures []string
+
 	rfeed.Entries(func(entry *csaf.Entry) {
 
 		// Filter if we have date checking.
@@ -741,7 +745,6 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 		}
 
 		var url, sha256, sha512, sign string
-
 		for i := range entry.Link {
 			link := &entry.Link[i]
 			lower := strings.ToLower(link.HRef)
@@ -760,12 +763,15 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 						link.HRef, feed)
 				}
 				sign = link.HRef
+				feedSignatures = append(feedSignatures, sign)
 			case "hash":
 				switch {
 				case strings.HasSuffix(lower, "sha256"):
 					sha256 = link.HRef
+					feedHashes = append(feedHashes, sha256)
 				case strings.HasSuffix(lower, "sha512"):
 					sha512 = link.HRef
+					feedHashes = append(feedHashes, sha512)
 				default:
 					p.badProviderMetadata.warn(
 						`ROLIE feed entry link %s in %s with "rel": "hash" has unsupported file extension.`,
@@ -790,7 +796,7 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 
 		files = append(files, file)
 	})
-	if err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed); err != nil &&
+	if err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil &&
 		err != errContinue {
 		return err
 	}
@@ -805,6 +811,8 @@ func (p *processor) integrityTLP(
 	ca completion,
 	tlpf string,
 	feed string,
+	feedHashes []string,
+	feedSignatures []string,
 ) error {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -961,6 +969,10 @@ func (p *processor) integrityTLP(
 			}
 			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
+			if !checkContains(hashFile, feedHashes) {
+				p.badROLIEfeed.error("Hash file %s of %s not listed in %s", hashFile, u, feed)
+			}
+
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
 				p.badIntegrities.error("Fetching %s failed: %v.", hashFile, err)
@@ -997,6 +1009,10 @@ func (p *processor) integrityTLP(
 		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
+                if !checkContains(sigFile, feedSignatures) {
+	                p.badROLIEfeed.error("Hash file %s of %s not listed in %s", sigFile, u, feed)
+                }
+
 
 		p.badSignatures.use()
 
@@ -1036,6 +1052,16 @@ func (p *processor) integrityTLP(
 	p.readySummary(ca, tlpf, files, feed)
 
 	return nil
+}
+
+// check if string is in slice of strings1
+func checkContains (s string, l []string) bool {
+	for _, c := range l {
+		if s == c {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *processor) readySummary(ca completion, tlpf string, entrylist []csaf.AdvisoryFile, feed string) {
