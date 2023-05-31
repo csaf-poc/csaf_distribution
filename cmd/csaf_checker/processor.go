@@ -672,18 +672,18 @@ func (p *processor) integrity(
 	return nil
 }
 
-func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) error {
+func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (error, completion) {
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
-		return errContinue
+		return errContinue, ca
 	}
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
-		return errContinue
+		return errContinue, ca
 	}
 
 	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
@@ -703,11 +703,11 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 	}()
 	if err != nil {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
-		return errContinue
+		return errContinue, ca
 	}
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
-		return err
+		return err, ca
 	}
 	if len(errors) > 0 {
 		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
@@ -719,13 +719,13 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 	feedURL, err := url.Parse(feed)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
+		return errContinue, ca
 	}
 
 	base, err := util.BaseURL(feedURL)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
+		return errContinue, ca
 	}
 
 	// Extract the CSAF files from feed.
@@ -796,12 +796,14 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 
 		files = append(files, file)
 	})
-	if err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil &&
-		err != errContinue {
-		return err
+	if err, completion := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil {
+		if err != errContinue {
+			return err, ca
+		}
+	} else {
+		ca = completion
 	}
-
-	return nil
+	return nil, ca
 }
 
 func (p *processor) integrityTLP(
@@ -813,10 +815,10 @@ func (p *processor) integrityTLP(
 	feed string,
 	feedHashes []string,
 	feedSignatures []string,
-) error {
+) (error, completion) {
 	b, err := url.Parse(base)
 	if err != nil {
-		return err
+		return err, ca
 	}
 	client := p.httpClient()
 
@@ -930,7 +932,7 @@ func (p *processor) integrityTLP(
 				"Extracting 'tlp level' from %s failed: %v", u, err)
 		} else {
 			// check if current feed has correct or all of their tlp levels entries.
-			p.checkCompletion(ca, tlpf, tlpe.(string), feed, u)
+			ca = p.checkCompletion(ca, tlpf, tlpe.(string), feed, u)
 		}
 
 		// Check if file is in the right folder.
@@ -969,6 +971,7 @@ func (p *processor) integrityTLP(
 			}
 			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
+			// Todo: The hashes are read from ROLIE feed, so this test is redundant
 			if !checkContains(hashFile, feedHashes) {
 				p.badROLIEfeed.error("Hash file %s of %s not listed in %s", hashFile, u, feed)
 			}
@@ -1009,8 +1012,9 @@ func (p *processor) integrityTLP(
 		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
+		// Todo : sigFile reads from ROLIE feed, so this test is redundant
 		if !checkContains(sigFile, feedSignatures) {
-			p.badROLIEfeed.error("Hash file %s of %s not listed in %s", sigFile, u, feed)
+			p.badROLIEfeed.error("Signature file %s of %s not listed in %s", sigFile, u, feed)
 		}
 
 		p.badSignatures.use()
@@ -1048,9 +1052,9 @@ func (p *processor) integrityTLP(
 		}
 	}
 	// Now that entries have been handled, check if current feed qualifies as summary feed for their tlp level.
-	p.readySummary(ca, tlpf, files, feed)
+	ca = p.readySummary(ca, tlpf, files, feed)
 
-	return nil
+	return nil, ca
 }
 
 // check if string is in slice of strings1
@@ -1063,7 +1067,7 @@ func checkContains(s string, l []string) bool {
 	return false
 }
 
-func (p *processor) readySummary(ca completion, tlpf string, entrylist []csaf.AdvisoryFile, feed string) {
+func (p *processor) readySummary(ca completion, tlpf string, entrylist []csaf.AdvisoryFile, feed string) completion {
 	switch tlpf {
 	case "WHITE":
 		if p.checkSummary(ca.white, entrylist) {
@@ -1092,6 +1096,7 @@ func (p *processor) readySummary(ca completion, tlpf string, entrylist []csaf.Ad
 			ca.unlabeled.feeds = append(ca.unlabeled.feeds, feed)
 		}
 	}
+	return ca
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
@@ -1273,8 +1278,12 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if err := p.processROLIEFeed(feedURL, ca, string(*feed.TLPLabel)); err != nil && err != errContinue {
-				return err
+			if err, completion := p.processROLIEFeed(feedURL, ca, string(*feed.TLPLabel)); err != nil {
+				if err != errContinue {
+					return err
+				}
+			} else {
+				ca = completion
 			}
 		}
 	}
@@ -1340,7 +1349,7 @@ func (p *processor) evaluateCompletion(ca completion) {
 	}
 }
 
-func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string) {
+func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string) completion {
 
 	// Assign int to tlp levels for easy comparison
 	var tlpfn int
@@ -1348,19 +1357,19 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 	switch tlpe {
 	case "WHITE":
 		tlpen = 1
-		containsEntry(ca.white, entryName)
+		ca.white = containsEntry(ca.white, entryName)
 	case "GREEN":
 		tlpen = 2
-		containsEntry(ca.green, entryName)
+		ca.green = containsEntry(ca.green, entryName)
 	case "AMBER":
 		tlpen = 3
-		containsEntry(ca.amber, entryName)
+		ca.amber = containsEntry(ca.amber, entryName)
 	case "RED":
 		tlpen = 4
-		containsEntry(ca.red, entryName)
+		ca.red = containsEntry(ca.red, entryName)
 	default:
 		tlpen = 0
-		containsEntry(ca.unlabeled, entryName)
+		ca.unlabeled = containsEntry(ca.unlabeled, entryName)
 	}
 	switch tlpf {
 	case "WHITE":
@@ -1389,7 +1398,7 @@ func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, fee
 	if tlpen > tlpfn {
 		p.badROLIEfeed.error("%s of TLP level %s must not be listed in feed %s of TLP level %s", entryName, tlpe, feedName, tlpf)
 	}
-
+	return ca
 }
 
 // checks if all entries of a given tlp level (thus far) appear in the current feeds list.
@@ -1410,14 +1419,15 @@ func (p *processor) checkSummary(catlp tlpls, entrylist []csaf.AdvisoryFile) boo
 }
 
 // check if entry is already in tlpls
-func containsEntry(tlpl tlpls, entry string) {
+func containsEntry(tlpl tlpls, entry string) tlpls {
 	for _, en := range tlpl.entries {
 		if entry == en {
-			return
+			return tlpl
 		}
 	}
 	tlpl.entries = append(tlpl.entries, entry)
 	tlpl.feeds = nil
+	return tlpl
 }
 
 // empty checks if list of strings contains at least one none empty string.
