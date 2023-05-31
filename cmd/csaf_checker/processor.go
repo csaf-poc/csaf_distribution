@@ -732,7 +732,7 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) er
 	var files []csaf.AdvisoryFile
 
 	// Save Hashes and Signatures to compare
-	var feedHashes     []string
+	var feedHashes []string
 	var feedSignatures []string
 
 	rfeed.Entries(func(entry *csaf.Entry) {
@@ -1009,10 +1009,9 @@ func (p *processor) integrityTLP(
 		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
-                if !checkContains(sigFile, feedSignatures) {
-	                p.badROLIEfeed.error("Hash file %s of %s not listed in %s", sigFile, u, feed)
-                }
-
+		if !checkContains(sigFile, feedSignatures) {
+			p.badROLIEfeed.error("Hash file %s of %s not listed in %s", sigFile, u, feed)
+		}
 
 		p.badSignatures.use()
 
@@ -1055,7 +1054,7 @@ func (p *processor) integrityTLP(
 }
 
 // check if string is in slice of strings1
-func checkContains (s string, l []string) bool {
+func checkContains(s string, l []string) bool {
 	for _, c := range l {
 		if s == c {
 			return true
