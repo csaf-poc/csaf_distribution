@@ -45,13 +45,14 @@ type processor struct {
 	client    util.Client
 	ageAccept func(time.Time) bool
 
-	redirects      map[string][]string
-	noneTLS        map[string]struct{}
-	alreadyChecked map[string]whereType
-	pmdURL         string
-	pmd256         []byte
-	pmd            any
-	keys           *crypto.KeyRing
+	redirects       map[string][]string
+	noneTLS         map[string]struct{}
+	alreadyChecked  map[string]whereType
+	pmdURL          string
+	pmd256          []byte
+	pmd             any
+	keys            *crypto.KeyRing
+	rolieCompletion rolieCompletion
 
 	invalidAdvisories    topicMessages
 	badFilenames         topicMessages
@@ -69,34 +70,6 @@ type processor struct {
 	badROLIEfeed         topicMessages
 
 	expr *util.PathEval
-}
-
-type completion struct {
-	unlabeled  tlpls
-	wunlabeled tlpls
-	white      tlpls
-	green      tlpls
-	amber      tlpls
-	red        tlpls
-	mismatch   []matches
-}
-
-// When going through all feeds, the summary feed is determined after going through all feeds.
-// As such, save all mismatched non-error feeds here to easily determine whether to put this information
-// into info or warning.
-type matches struct {
-	feed  string
-	entry string
-	tlpe  string
-	tlpf  string
-}
-
-// tlpls holds all ROLIE feeds of a given tlp level that contain all entries of their given level
-// as well as all entries of that level, meaning for a given tlpls all entries in feeds contain all entries
-// in entries
-type tlpls struct {
-	feeds   []string
-	entries []string
 }
 
 // reporter is implemented by any value that has a report method.
@@ -248,6 +221,7 @@ func (p *processor) clean() {
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
 	p.badROLIEfeed.reset()
+	p.rolieCompletion.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -444,246 +418,18 @@ func (p *processor) httpClient() util.Client {
 
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
-func (p *processor) integrity(
-	files []csaf.AdvisoryFile,
-	base string,
-	mask whereType,
-	lg func(MessageType, string, ...any),
-) error {
-	b, err := url.Parse(base)
-	if err != nil {
-		return err
-	}
-	client := p.httpClient()
-
-	var data bytes.Buffer
-
-	makeAbs := func(u *url.URL) *url.URL {
-		if u.IsAbs() {
-			return u
-		}
-		return b.JoinPath(u.String())
-	}
-
-	for _, f := range files {
-		fp, err := url.Parse(f.URL())
-		if err != nil {
-			lg(ErrorType, "Bad URL %s: %v", f, err)
-			continue
-		}
-		fp = makeAbs(fp)
-
-		u := b.ResolveReference(fp).String()
-		if p.markChecked(u, mask) {
-			continue
-		}
-		p.checkTLS(u)
-
-		// Check if the filename is conforming.
-		p.badFilenames.use()
-		if !util.ConformingFileName(filepath.Base(u)) {
-			p.badFilenames.error("%s does not have a conforming filename.", u)
-		}
-
-		var folderYear *int
-
-		if m := yearFromURL.FindStringSubmatch(u); m != nil {
-			year, _ := strconv.Atoi(m[1])
-			// Check if we are in checking time interval.
-			if p.ageAccept != nil && !p.ageAccept(
-				time.Date(
-					year, 12, 31, // Assume last day of year.
-					23, 59, 59, 0, // 23:59:59
-					time.UTC)) {
-				continue
-			}
-			folderYear = &year
-		}
-
-		res, err := client.Get(u)
-		if err != nil {
-			lg(ErrorType, "Fetching %s failed: %v.", u, err)
-			continue
-		}
-		if res.StatusCode != http.StatusOK {
-			lg(ErrorType, "Fetching %s failed: Status code %d (%s)",
-				u, res.StatusCode, res.Status)
-			continue
-		}
-
-		// Warn if we do not get JSON.
-		if ct := res.Header.Get("Content-Type"); ct != "application/json" {
-			lg(WarnType,
-				"The content type of %s should be 'application/json' but is '%s'",
-				u, ct)
-		}
-
-		s256 := sha256.New()
-		s512 := sha512.New()
-		data.Reset()
-		hasher := io.MultiWriter(s256, s512, &data)
-
-		var doc any
-
-		if err := func() error {
-			defer res.Body.Close()
-			tee := io.TeeReader(res.Body, hasher)
-			return json.NewDecoder(tee).Decode(&doc)
-		}(); err != nil {
-			lg(ErrorType, "Reading %s failed: %v", u, err)
-			continue
-		}
-
-		p.invalidAdvisories.use()
-
-		// Validate against JSON schema.
-		errors, err := csaf.ValidateCSAF(doc)
-		if err != nil {
-			p.invalidAdvisories.error("Failed to validate %s: %v", u, err)
-			continue
-		}
-		if len(errors) > 0 {
-			p.invalidAdvisories.error("CSAF file %s has %d validation errors.", u, len(errors))
-		}
-
-		if err := util.IDMatchesFilename(p.expr, doc, filepath.Base(u)); err != nil {
-			p.invalidAdvisories.error("%s: %v\n", u, err)
-			continue
-
-		}
-
-		// Validate against remote validator.
-		if p.validator != nil {
-			if rvr, err := p.validator.Validate(doc); err != nil {
-				p.invalidAdvisories.error("Calling remote validator on %s failed: %v", u, err)
-			} else if !rvr.Valid {
-				p.invalidAdvisories.error("Remote validation of %s failed.", u)
-			}
-		}
-
-		// Check if file is in the right folder.
-		p.badFolders.use()
-
-		if date, err := p.expr.Eval(
-			`$.document.tracking.initial_release_date`, doc); err != nil {
-			p.badFolders.error(
-				"Extracting 'initial_release_date' from %s failed: %v", u, err)
-		} else if text, ok := date.(string); !ok {
-			p.badFolders.error("'initial_release_date' is not a string in %s", u)
-		} else if d, err := time.Parse(time.RFC3339, text); err != nil {
-			p.badFolders.error(
-				"Parsing 'initial_release_date' as RFC3339 failed in %s: %v", u, err)
-		} else if folderYear == nil {
-			p.badFolders.error("No year folder found in %s", u)
-		} else if d.UTC().Year() != *folderYear {
-			p.badFolders.error("%s should be in folder %d", u, d.UTC().Year())
-		}
-
-		// Check hashes
-		p.badIntegrities.use()
-
-		for _, x := range []struct {
-			ext  string
-			url  func() string
-			hash []byte
-		}{
-			{"SHA256", f.SHA256URL, s256.Sum(nil)},
-			{"SHA512", f.SHA512URL, s512.Sum(nil)},
-		} {
-			hu, err := url.Parse(x.url())
-			if err != nil {
-				lg(ErrorType, "Bad URL %s: %v", x.url(), err)
-				continue
-			}
-			hu = makeAbs(hu)
-			hashFile := b.ResolveReference(hu).String()
-			p.checkTLS(hashFile)
-			if res, err = client.Get(hashFile); err != nil {
-				p.badIntegrities.error("Fetching %s failed: %v.", hashFile, err)
-				continue
-			}
-			if res.StatusCode != http.StatusOK {
-				p.badIntegrities.error("Fetching %s failed: Status code %d (%s)",
-					hashFile, res.StatusCode, res.Status)
-				continue
-			}
-			h, err := func() ([]byte, error) {
-				defer res.Body.Close()
-				return util.HashFromReader(res.Body)
-			}()
-			if err != nil {
-				p.badIntegrities.error("Reading %s failed: %v.", hashFile, err)
-				continue
-			}
-			if len(h) == 0 {
-				p.badIntegrities.error("No hash found in %s.", hashFile)
-				continue
-			}
-			if !bytes.Equal(h, x.hash) {
-				p.badIntegrities.error("%s hash of %s does not match %s.",
-					x.ext, u, hashFile)
-			}
-		}
-
-		// Check signature
-		su, err := url.Parse(f.SignURL())
-		if err != nil {
-			lg(ErrorType, "Bad URL %s: %v", f.SignURL(), err)
-			continue
-		}
-		su = makeAbs(su)
-		sigFile := b.ResolveReference(su).String()
-		p.checkTLS(sigFile)
-
-		p.badSignatures.use()
-
-		if res, err = client.Get(sigFile); err != nil {
-			p.badSignatures.error("Fetching %s failed: %v.", sigFile, err)
-			continue
-		}
-		if res.StatusCode != http.StatusOK {
-			p.badSignatures.error("Fetching %s failed: status code %d (%s)",
-				sigFile, res.StatusCode, res.Status)
-			continue
-		}
-
-		sig, err := func() (*crypto.PGPSignature, error) {
-			defer res.Body.Close()
-			all, err := io.ReadAll(res.Body)
-			if err != nil {
-				return nil, err
-			}
-			return crypto.NewPGPSignatureFromArmored(string(all))
-		}()
-		if err != nil {
-			p.badSignatures.error("Loading signature from %s failed: %v.",
-				sigFile, err)
-			continue
-		}
-
-		if p.keys != nil {
-			pm := crypto.NewPlainMessage(data.Bytes())
-			t := crypto.GetUnixTime()
-			if err := p.keys.VerifyDetached(pm, sig, t); err != nil {
-				p.badSignatures.error("Signature of %s could not be verified: %v.", u, err)
-			}
-		}
-	}
-	return nil
-}
-
-func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (completion, error) {
+func (p *processor) processROLIEFeed(feed string, tlpf csaf.TLPLabel) error {
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
-		return ca, errContinue
+		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
-		return ca, errContinue
+		return errContinue
 	}
 
 	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
@@ -703,11 +449,11 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 	}()
 	if err != nil {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
-		return ca, errContinue
+		return errContinue
 	}
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
-		return ca, err
+		return err
 	}
 	if len(errors) > 0 {
 		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
@@ -719,13 +465,13 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 	feedURL, err := url.Parse(feed)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return ca, errContinue
+		return errContinue
 	}
 
 	base, err := util.BaseURL(feedURL)
 	if err != nil {
 		p.badProviderMetadata.error("Bad base path: %v", err)
-		return ca, errContinue
+		return errContinue
 	}
 
 	// Extract the CSAF files from feed.
@@ -789,27 +535,27 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 
 		files = append(files, file)
 	})
-	if completion, err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed); err != nil {
+
+	// Transport current feed to rolie checks.
+	p.rolieCompletion.currentFeed = feed
+	p.rolieCompletion.currentFeedLevel = tlpf
+
+	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil {
 		if err != errContinue {
-			return ca, err
+			return err
 		}
-	} else {
-		ca = completion
 	}
-	return ca, nil
+	return nil
 }
 
-func (p *processor) integrityTLP(
+func (p *processor) integrity(
 	files []csaf.AdvisoryFile,
 	base string, mask whereType,
 	lg func(MessageType, string, ...any),
-	ca completion,
-	tlpf string,
-	feed string,
-) (completion, error) {
+) error {
 	b, err := url.Parse(base)
 	if err != nil {
-		return ca, err
+		return err
 	}
 	client := p.httpClient()
 
@@ -924,7 +670,7 @@ func (p *processor) integrityTLP(
 		} else {
 			tlpe := extractTLP(tlpa)
 			// check if current feed has correct or all of their tlp levels entries.
-			ca = p.checkCompletion(ca, tlpf, tlpe, feed, u)
+			p.rolieCompletion.checkCompletion(p, tlpe, u)
 		}
 
 		// Check if file is in the right folder.
@@ -1035,66 +781,25 @@ func (p *processor) integrityTLP(
 			}
 		}
 	}
-	// Now that entries have been handled, check if current feed qualifies as summary feed for their tlp level.
-	ca = p.readySummary(ca, tlpf, files, feed)
+	// Now that entries have been handled,
+	// check if current feed qualifies as summary feed for their tlp level.
+	p.rolieCompletion.readySummary(files)
 
-	return ca, nil
+	return nil
 }
 
 // extractTLP tries to extract a valid TLP label from an advisory
 // Returns "unlabeled" if it does not exist, the label otherwise
-func extractTLP(tlpa any) string {
-	if distribution, ok := tlpa.(map[string]interface{}); ok {
+func extractTLP(tlpa any) csaf.TLPLabel {
+	if distribution, ok := tlpa.(map[string]any); ok {
 		if tlp, ok := distribution["tlp"]; ok {
-			if label, ok := tlp.(map[string]interface{}); ok {
-				return label["label"].(string)
+			if label, ok := tlp.(map[string]any); ok {
+				return csaf.TLPLabel(label["label"].(string))
 			}
 		}
 	}
 	return "unlabeled"
 
-}
-
-// check if string is in slice of strings
-func checkContains(s string, l []string) bool {
-	for _, c := range l {
-		if s == c {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *processor) readySummary(ca completion, tlpf string, entrylist []csaf.AdvisoryFile, feed string) completion {
-	switch tlpf {
-	case "WHITE":
-		if p.checkSummary(ca.white, entrylist) {
-			ca.white.feeds = append(ca.white.feeds, feed)
-		}
-		// wunlabeled holds all white feeds qualifying for summary feed of unlabeled if no unlabeled feed exists
-		if p.checkSummary(ca.unlabeled, entrylist) {
-			ca.wunlabeled.feeds = append(ca.wunlabeled.feeds, feed)
-		}
-	case "GREEN":
-		if p.checkSummary(ca.green, entrylist) {
-			ca.green.feeds = append(ca.green.feeds, feed)
-		}
-	case "AMBER":
-		if p.checkSummary(ca.amber, entrylist) {
-			ca.amber.feeds = append(ca.amber.feeds, feed)
-		}
-	case "RED":
-		if p.checkSummary(ca.red, entrylist) {
-			ca.red.feeds = append(ca.red.feeds, feed)
-		}
-	default:
-		// if an unlabeled feed exists increment the entries of wunlabeled to mark it as unsuitable
-		ca.wunlabeled.entries = append(ca.wunlabeled.entries, feed)
-		if p.checkSummary(ca.unlabeled, entrylist) {
-			ca.unlabeled.feeds = append(ca.unlabeled.feeds, feed)
-		}
-	}
-	return ca
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
@@ -1152,6 +857,10 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	if len(files) == 0 {
 		p.badIntegrities.warn("index.txt contains no URLs")
 	}
+
+	// Block rolie checks.
+	// TODO: Do better
+	p.rolieCompletion.currentFeed = ""
 
 	return p.integrity(files, base, mask, p.badIndices.add)
 }
@@ -1245,6 +954,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		p.badChanges.error("%s is not sorted in descending order", changes)
 	}
 
+	// Block rolie checks.
+	// TODO: Do better
+	p.rolieCompletion.currentFeed = ""
+
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
 
@@ -1257,7 +970,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	p.badROLIEfeed.use()
 	// mark which ROLIE feed tlp levels have been used
 	tlpUsed := make(map[string]bool)
-	var ca completion
+
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
@@ -1276,156 +989,18 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if completion, err := p.processROLIEFeed(feedURL, ca, string(*feed.TLPLabel)); err != nil {
+			if err := p.processROLIEFeed(feedURL, *feed.TLPLabel); err != nil {
 				if err != errContinue {
 					return err
 				}
-			} else {
-				ca = completion
 			}
 		}
 	}
 	if !(tlpUsed["WHITE"] || tlpUsed["GREEN"] || tlpUsed["Unlabeled"]) {
 		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
-	p.evaluateCompletion(ca)
+	p.rolieCompletion.evaluate(p)
 	return nil
-}
-
-func (p *processor) evaluateCompletion(ca completion) {
-	if len(ca.red.entries) > 0 && len(ca.red.feeds) == 0 {
-		p.badROLIEfeed.error("Missing ROLIE feed containing all entries with TLP:RED")
-	}
-	if len(ca.amber.entries) > 0 && len(ca.amber.feeds) == 0 {
-		p.badROLIEfeed.error("Missing ROLIE feed containing all entries with TLP:AMBER")
-	}
-	if len(ca.green.entries) > 0 && len(ca.green.feeds) == 0 {
-		p.badROLIEfeed.error("Missing ROLIE feed containing all entries with TLP:GREEN")
-	}
-	if len(ca.white.entries) > 0 && len(ca.white.feeds) == 0 {
-		p.badROLIEfeed.error("Missing ROLIE feed containing all entries with TLP:WHITE")
-	}
-	if len(ca.unlabeled.entries) > 0 && len(ca.unlabeled.feeds) == 0 {
-		if len(ca.wunlabeled.feeds) == 0 || len(ca.wunlabeled.entries) > 0 {
-			p.badROLIEfeed.error("Missing ROLIE feed containing all entries without a TLP level")
-		}
-	}
-	for _, mismatch := range ca.mismatch {
-		var summary bool
-		switch mismatch.tlpf {
-		case "WHITE":
-			for _, summaries := range ca.white.feeds {
-				if summaries == mismatch.feed {
-					summary = true
-				}
-			}
-		case "GREEN":
-			for _, summaries := range ca.green.feeds {
-				if summaries == mismatch.feed {
-					summary = true
-				}
-			}
-		case "AMBER":
-			for _, summaries := range ca.amber.feeds {
-				if summaries == mismatch.feed {
-					summary = true
-				}
-			}
-
-		case "RED":
-			for _, summaries := range ca.red.feeds {
-				if summaries == mismatch.feed {
-					summary = true
-				}
-			}
-		}
-		if summary {
-			p.badROLIEfeed.warn("Advisory %s with TLP level %s appeared in ROLIE feed %s with TLP level %s", mismatch.entry, mismatch.tlpe, mismatch.feed, mismatch.tlpf)
-		} else {
-			p.badROLIEfeed.info("Advisory %s with TLP level %s appeared in ROLIE feed %s with TLP level %s", mismatch.entry, mismatch.tlpe, mismatch.feed, mismatch.tlpf)
-		}
-	}
-}
-
-func (p *processor) checkCompletion(ca completion, tlpf string, tlpe string, feedName string, entryName string) completion {
-
-	// Assign int to tlp levels for easy comparison
-	var tlpfn int
-	var tlpen int
-	switch tlpe {
-	case "WHITE":
-		tlpen = 1
-		ca.white = containsEntry(ca.white, entryName)
-	case "GREEN":
-		tlpen = 2
-		ca.green = containsEntry(ca.green, entryName)
-	case "AMBER":
-		tlpen = 3
-		ca.amber = containsEntry(ca.amber, entryName)
-	case "RED":
-		tlpen = 4
-		ca.red = containsEntry(ca.red, entryName)
-	default:
-		tlpen = 0
-		ca.unlabeled = containsEntry(ca.unlabeled, entryName)
-	}
-	switch tlpf {
-	case "WHITE":
-		tlpfn = 1
-	case "GREEN":
-		tlpfn = 2
-	case "AMBER":
-		tlpfn = 3
-	case "RED":
-		tlpfn = 4
-	default:
-		tlpfn = 0
-	}
-
-	// If entry shows up in feed of higher tlp level, save the combi to evaluate it when we know if feed
-	// is summary feed or not
-	if tlpen < tlpfn {
-		var match matches
-		match.feed = feedName
-		match.entry = entryName
-		match.tlpf = tlpf
-		match.tlpe = tlpe
-		ca.mismatch = append(ca.mismatch, match)
-	}
-	// Must not happen, give error
-	if tlpen > tlpfn {
-		p.badROLIEfeed.error("%s of TLP level %s must not be listed in feed %s of TLP level %s", entryName, tlpe, feedName, tlpf)
-	}
-	return ca
-}
-
-// checks if all entries of a given tlp level (thus far) appear in the current feeds list.
-func (p *processor) checkSummary(catlp tlpls, entrylist []csaf.AdvisoryFile) bool {
-	var found bool
-	for _, e := range catlp.entries {
-		for _, s := range entrylist {
-			if e == s.URL() {
-				found = true
-			}
-		}
-		if found {
-			continue
-		}
-		return false
-	}
-	return true
-}
-
-// check if entry is already in tlpls
-func containsEntry(tlpl tlpls, entry string) tlpls {
-	for _, en := range tlpl.entries {
-		if entry == en {
-			return tlpl
-		}
-	}
-	tlpl.entries = append(tlpl.entries, entry)
-	tlpl.feeds = nil
-	return tlpl
 }
 
 // empty checks if list of strings contains at least one none empty string.
