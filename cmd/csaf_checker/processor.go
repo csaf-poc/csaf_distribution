@@ -1043,7 +1043,7 @@ func (p *processor) integrityTLP(
 
 // extractTLP tries to extract a valid TLP label from an advisory
 // Returns "unlabeled" if it does not exist, the label otherwise
-func extractTLP(tlpa any) string{
+func extractTLP(tlpa any) string {
 	if distribution, ok := tlpa.(map[string]interface{}); ok {
 		if tlp, ok := distribution["tlp"]; ok {
 			if label, ok := tlp.(map[string]interface{}); ok {
