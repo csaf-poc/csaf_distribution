@@ -416,20 +416,19 @@ func (p *processor) httpClient() util.Client {
 	return p.client
 }
 
-var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
+func (p *processor) rolieFeedEntries(feed string, tlpf csaf.TLPLabel) ([]csaf.AdvisoryFile, error) {
 
-func (p *processor) processROLIEFeed(feed string, tlpf csaf.TLPLabel) error {
 	client := p.httpClient()
 	res, err := client.Get(feed)
 	p.badDirListings.use()
 	if err != nil {
 		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
-		return errContinue
+		return nil, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
-		return errContinue
+		return nil, errContinue
 	}
 
 	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
@@ -449,29 +448,17 @@ func (p *processor) processROLIEFeed(feed string, tlpf csaf.TLPLabel) error {
 	}()
 	if err != nil {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
-		return errContinue
+		return nil, errContinue
 	}
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(errors) > 0 {
 		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
 		for _, msg := range errors {
 			p.badProviderMetadata.error(strings.ReplaceAll(msg, `%`, `%%`))
 		}
-	}
-
-	feedURL, err := url.Parse(feed)
-	if err != nil {
-		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
-	}
-
-	base, err := util.BaseURL(feedURL)
-	if err != nil {
-		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
 	}
 
 	// Extract the CSAF files from feed.
@@ -536,17 +523,10 @@ func (p *processor) processROLIEFeed(feed string, tlpf csaf.TLPLabel) error {
 		files = append(files, file)
 	})
 
-	// Transport current feed to rolie checks.
-	p.rolieCompletion.currentFeed = feed
-	p.rolieCompletion.currentFeedLevel = tlpf
-
-	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil {
-		if err != errContinue {
-			return err
-		}
-	}
-	return nil
+	return files, nil
 }
+
+var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
 func (p *processor) integrity(
 	files []csaf.AdvisoryFile,
@@ -781,15 +761,12 @@ func (p *processor) integrity(
 			}
 		}
 	}
-	// Now that entries have been handled,
-	// check if current feed qualifies as summary feed for their tlp level.
-	p.rolieCompletion.readySummary(files)
 
 	return nil
 }
 
 // extractTLP tries to extract a valid TLP label from an advisory
-// Returns "unlabeled" if it does not exist, the label otherwise
+// Returns "UNLABELED" if it does not exist, the label otherwise
 func extractTLP(tlpa any) csaf.TLPLabel {
 	if distribution, ok := tlpa.(map[string]any); ok {
 		if tlp, ok := distribution["tlp"]; ok {
@@ -798,8 +775,7 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 			}
 		}
 	}
-	return "unlabeled"
-
+	return csaf.TLPLabelWhite
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
@@ -961,6 +937,13 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
 
+func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
+	if label != nil {
+		return *label
+	}
+	return csaf.TLPLabelUnlabeled
+}
+
 func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	base, err := url.Parse(p.pmdURL)
@@ -968,17 +951,17 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		return err
 	}
 	p.badROLIEfeed.use()
-	// mark which ROLIE feed tlp levels have been used
-	tlpUsed := make(map[string]bool)
+
+	// Phase 1
+
+	// collect all advisories per color.
+	all := map[csaf.TLPLabel]map[string]struct{}{}
+
+	advisories := map[*csaf.Feed][]csaf.AdvisoryFile{}
 
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
-			if feed.TLPLabel == nil {
-				tlpUsed["unlabeled"] = true
-			} else {
-				tlpUsed[string(*feed.TLPLabel)] = true
-			}
 			if feed.URL == nil {
 				continue
 			}
@@ -989,18 +972,92 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 			feedURL := base.ResolveReference(up).String()
 			p.checkTLS(feedURL)
-			if err := p.processROLIEFeed(feedURL, *feed.TLPLabel); err != nil {
+
+			advs, err := p.rolieFeedEntries(feedURL, *feed.TLPLabel)
+			if err != nil {
+				if err != errContinue {
+					return err
+				}
+				continue
+			}
+
+			label := tlpLabel(feed.TLPLabel)
+
+			urls := all[label]
+			if urls == nil {
+				urls = map[string]struct{}{}
+				all[label] = urls
+			}
+			for _, adv := range advs {
+				urls[adv.URL()] = struct{}{}
+			}
+
+			advisories[feed] = advs
+		}
+	}
+
+	// Phase 2:
+
+	var summaryFeeds []*csaf.Feed
+
+	for _, fs := range feeds {
+		for i := range fs {
+			feed := &fs[i]
+			if feed.URL == nil {
+				continue
+			}
+			files := advisories[feed]
+			if files == nil {
+				continue
+			}
+
+			up, err := url.Parse(string(*feed.URL))
+			if err != nil {
+				p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
+				continue
+			}
+
+			feedURL := base.ResolveReference(up)
+			p.checkTLS(feedURL.String())
+			feedBase, err := util.BaseURL(feedURL)
+			if err != nil {
+				p.badProviderMetadata.error("Bad base path: %v", err)
+				return errContinue
+			}
+
+			label := tlpLabel(feed.TLPLabel)
+
+			p.rolieCompletion.currentFeed = feedURL.String()
+			p.rolieCompletion.currentFeedLevel = label
+			p.rolieCompletion.remain = clone(all[label])
+
+			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
 					return err
 				}
 			}
+
+			if len(p.rolieCompletion.remain) == 0 {
+				summaryFeeds = append(summaryFeeds, feed)
+			}
 		}
 	}
-	if !(tlpUsed["WHITE"] || tlpUsed["GREEN"] || tlpUsed["Unlabeled"]) {
+	_, hasWhite := all[csaf.TLPLabelWhite]
+	_, hasGreen := all[csaf.TLPLabelGreen]
+
+	if !hasWhite && !hasGreen {
 		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
 	p.rolieCompletion.evaluate(p)
 	return nil
+}
+
+func clone[K comparable, V any](m map[K]V) map[K]V {
+	c := make(map[K]V)
+	for k, v := range m {
+		c[k] = v
+	}
+	return c
 }
 
 // empty checks if list of strings contains at least one none empty string.
