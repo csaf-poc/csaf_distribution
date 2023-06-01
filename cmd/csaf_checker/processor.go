@@ -917,13 +917,14 @@ func (p *processor) integrityTLP(
 		}
 
 		// Extract the tlp level of the entry
-		if tlpe, err := p.expr.Eval(
-			`$.document.distribution.tlp.label`, doc); err != nil {
+		if tlpa, err := p.expr.Eval(
+			`$.document.distribution`, doc); err != nil {
 			p.badROLIEfeed.error(
 				"Extracting 'tlp level' from %s failed: %v", u, err)
 		} else {
+			tlpe := extractTLP(tlpa)
 			// check if current feed has correct or all of their tlp levels entries.
-			ca = p.checkCompletion(ca, tlpf, tlpe.(string), feed, u)
+			ca = p.checkCompletion(ca, tlpf, tlpe, feed, u)
 		}
 
 		// Check if file is in the right folder.
@@ -1038,6 +1039,20 @@ func (p *processor) integrityTLP(
 	ca = p.readySummary(ca, tlpf, files, feed)
 
 	return ca, nil
+}
+
+// extractTLP tries to extract a valid TLP label from an advisory
+// Returns "unlabeled" if it does not exist, the label otherwise
+func extractTLP(tlpa any) string{
+	if distribution, ok := tlpa.(map[string]interface{}); ok {
+		if tlp, ok := distribution["tlp"]; ok {
+			if label, ok := tlp.(map[string]interface{}); ok {
+				return label["label"].(string)
+			}
+		}
+	}
+	return "unlabeled"
+
 }
 
 // check if string is in slice of strings
