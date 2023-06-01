@@ -416,7 +416,8 @@ func (p *processor) httpClient() util.Client {
 	return p.client
 }
 
-func (p *processor) rolieFeedEntries(feed string, tlpf csaf.TLPLabel) ([]csaf.AdvisoryFile, error) {
+// rolieFeedEntries loads the references to the advisory files for a given feed.
+func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 
 	client := p.httpClient()
 	res, err := client.Get(feed)
@@ -526,6 +527,18 @@ func (p *processor) rolieFeedEntries(feed string, tlpf csaf.TLPLabel) ([]csaf.Ad
 	return files, nil
 }
 
+// makeAbsolute returns a function that checks if a given
+// URL is absolute or not. If not it returns an
+// absolute URL based on a given base URL.
+func makeAbsolute(base *url.URL) func(*url.URL) *url.URL {
+	return func(u *url.URL) *url.URL {
+		if u.IsAbs() {
+			return u
+		}
+		return base.JoinPath(u.String())
+	}
+}
+
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
 func (p *processor) integrity(
@@ -537,16 +550,10 @@ func (p *processor) integrity(
 	if err != nil {
 		return err
 	}
+	makeAbs := makeAbsolute(b)
 	client := p.httpClient()
 
 	var data bytes.Buffer
-
-	makeAbs := func(u *url.URL) *url.URL {
-		if u.IsAbs() {
-			return u
-		}
-		return b.JoinPath(u.String())
-	}
 
 	for _, f := range files {
 		fp, err := url.Parse(f.URL())
@@ -970,16 +977,20 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
 				continue
 			}
-			feedURL := base.ResolveReference(up).String()
+			feedBase := base.ResolveReference(up)
+			feedURL := feedBase.String()
+
 			p.checkTLS(feedURL)
 
-			advs, err := p.rolieFeedEntries(feedURL, *feed.TLPLabel)
+			advs, err := p.rolieFeedEntries(feedURL)
 			if err != nil {
 				if err != errContinue {
 					return err
 				}
 				continue
 			}
+
+			makeAbs := makeAbsolute(feedBase)
 
 			label := tlpLabel(feed.TLPLabel)
 
@@ -989,7 +1000,12 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				all[label] = urls
 			}
 			for _, adv := range advs {
-				urls[adv.URL()] = struct{}{}
+				advURL, err := url.Parse(adv.URL())
+				if err != nil {
+					// The real error handling is done in phase 2.
+					continue
+				}
+				urls[makeAbs(advURL).String()] = struct{}{}
 			}
 
 			advisories[feed] = advs
@@ -998,7 +1014,8 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	// Phase 2:
 
-	var summaryFeeds []*csaf.Feed
+	// Indicates if there is a complete feed for a given label.
+	hasSummary := map[csaf.TLPLabel]bool{}
 
 	for _, fs := range feeds {
 		for i := range fs {
@@ -1028,7 +1045,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			label := tlpLabel(feed.TLPLabel)
 
 			p.rolieCompletion.currentFeed = feedURL.String()
-			p.rolieCompletion.currentFeedLevel = label
+			p.rolieCompletion.currentLabel = label
 			p.rolieCompletion.remain = clone(all[label])
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
@@ -1038,7 +1055,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 
 			if len(p.rolieCompletion.remain) == 0 {
-				summaryFeeds = append(summaryFeeds, feed)
+				hasSummary[label] = true
 			}
 		}
 	}
@@ -1046,12 +1063,28 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	_, hasGreen := all[csaf.TLPLabelGreen]
 
 	if !hasWhite && !hasGreen {
-		p.badROLIEfeed.error("One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
+		p.badROLIEfeed.error(
+			"One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
-	p.rolieCompletion.evaluate(p)
+
+	// Every TLP level with data should have at least on summary feed.
+	for _, label := range []csaf.TLPLabel{
+		csaf.TLPLabelUnlabeled,
+		csaf.TLPLabelWhite,
+		csaf.TLPLabelGreen,
+		csaf.TLPLabelAmber,
+	} {
+		if all[label] != nil && !hasSummary[label] {
+			p.badROLIEfeed.warn(
+				"ROLIE feed for TLP:%s has no feed covering all advisories.",
+				label)
+		}
+	}
+
 	return nil
 }
 
+// clone returns a copy of a map.
 func clone[K comparable, V any](m map[K]V) map[K]V {
 	c := make(map[K]V)
 	for k, v := range m {
