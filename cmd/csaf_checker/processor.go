@@ -731,10 +731,6 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 	// Extract the CSAF files from feed.
 	var files []csaf.AdvisoryFile
 
-	// Save Hashes and Signatures to compare
-	var feedHashes []string
-	var feedSignatures []string
-
 	rfeed.Entries(func(entry *csaf.Entry) {
 
 		// Filter if we have date checking.
@@ -763,15 +759,12 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 						link.HRef, feed)
 				}
 				sign = link.HRef
-				feedSignatures = append(feedSignatures, sign)
 			case "hash":
 				switch {
 				case strings.HasSuffix(lower, "sha256"):
 					sha256 = link.HRef
-					feedHashes = append(feedHashes, sha256)
 				case strings.HasSuffix(lower, "sha512"):
 					sha512 = link.HRef
-					feedHashes = append(feedHashes, sha512)
 				default:
 					p.badProviderMetadata.warn(
 						`ROLIE feed entry link %s in %s with "rel": "hash" has unsupported file extension.`,
@@ -796,7 +789,7 @@ func (p *processor) processROLIEFeed(feed string, ca completion, tlpf string) (c
 
 		files = append(files, file)
 	})
-	if completion, err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed, feedHashes, feedSignatures); err != nil {
+	if completion, err := p.integrityTLP(files, base, rolieMask, p.badProviderMetadata.add, ca, tlpf, feed); err != nil {
 		if err != errContinue {
 			return ca, err
 		}
@@ -813,8 +806,6 @@ func (p *processor) integrityTLP(
 	ca completion,
 	tlpf string,
 	feed string,
-	feedHashes []string,
-	feedSignatures []string,
 ) (completion, error) {
 	b, err := url.Parse(base)
 	if err != nil {
@@ -971,10 +962,6 @@ func (p *processor) integrityTLP(
 			}
 			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
-			// Todo: The hashes are read from ROLIE feed, so this test is redundant
-			if !checkContains(hashFile, feedHashes) {
-				p.badROLIEfeed.error("Hash file %s of %s not listed in %s", hashFile, u, feed)
-			}
 
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
@@ -1012,10 +999,6 @@ func (p *processor) integrityTLP(
 		su = makeAbs(su)
 		sigFile := b.ResolveReference(su).String()
 		p.checkTLS(sigFile)
-		// Todo : sigFile reads from ROLIE feed, so this test is redundant
-		if !checkContains(sigFile, feedSignatures) {
-			p.badROLIEfeed.error("Signature file %s of %s not listed in %s", sigFile, u, feed)
-		}
 
 		p.badSignatures.use()
 

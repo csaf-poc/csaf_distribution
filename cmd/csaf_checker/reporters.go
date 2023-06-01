@@ -371,7 +371,7 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 		return
 	}
 	if len(p.badROLIEfeed) == 0 {
-		req.message(InfoType, "All ROLIE feeds were complete.")
+		req.message(InfoType, "All checked ROLIE feeds validated fine.")
 		return
 	}
 	req.Messages = p.badROLIEfeed
