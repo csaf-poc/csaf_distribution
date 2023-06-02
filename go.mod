@@ -1,4 +1,4 @@
-module github.com/csaf-poc/csaf_distribution
+module github.com/csaf-poc/csaf_distribution/v2
 
 go 1.20
 

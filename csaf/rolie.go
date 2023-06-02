@@ -14,7 +14,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 // ROLIEServiceWorkspaceCollectionCategoriesCategory is a category in a ROLIE service collection.

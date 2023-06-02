@@ -16,7 +16,7 @@ import (
 	"net/http/cgi"
 	"os"
 
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
 )
 
