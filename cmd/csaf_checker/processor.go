@@ -781,7 +781,9 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 	if distribution, ok := tlpa.(map[string]any); ok {
 		if tlp, ok := distribution["tlp"]; ok {
 			if label, ok := tlp.(map[string]any); ok {
-				return csaf.TLPLabel(label["label"].(string))
+				if labelstring, ok := label["label"].(string); ok {
+					return csaf.TLPLabel(labelstring)
+				}
 			}
 		}
 	}
