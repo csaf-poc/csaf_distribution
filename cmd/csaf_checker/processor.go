@@ -785,7 +785,7 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 			}
 		}
 	}
-	return csaf.TLPLabelWhite
+	return csaf.TLPLabelUnlabeled
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
