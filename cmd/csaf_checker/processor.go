@@ -45,14 +45,14 @@ type processor struct {
 	client    util.Client
 	ageAccept func(time.Time) bool
 
-	redirects       map[string][]string
-	noneTLS         map[string]struct{}
-	alreadyChecked  map[string]whereType
-	pmdURL          string
-	pmd256          []byte
-	pmd             any
-	keys            *crypto.KeyRing
-	rolieCompletion rolieCompletion
+	redirects      map[string][]string
+	noneTLS        map[string]struct{}
+	alreadyChecked map[string]whereType
+	pmdURL         string
+	pmd256         []byte
+	pmd            any
+	keys           *crypto.KeyRing
+	labelChecker   *rolieLabelChecker
 
 	invalidAdvisories    topicMessages
 	badFilenames         topicMessages
@@ -221,7 +221,7 @@ func (p *processor) clean() {
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
 	p.badROLIEfeed.reset()
-	p.rolieCompletion.reset()
+	p.labelChecker = nil
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -543,7 +543,8 @@ var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
 func (p *processor) integrity(
 	files []csaf.AdvisoryFile,
-	base string, mask whereType,
+	base string,
+	mask whereType,
 	lg func(MessageType, string, ...any),
 ) error {
 	b, err := url.Parse(base)
@@ -657,7 +658,9 @@ func (p *processor) integrity(
 		} else {
 			tlpe := extractTLP(tlpa)
 			// check if current feed has correct or all of their tlp levels entries.
-			p.rolieCompletion.checkCompletion(p, tlpe, u)
+			if p.labelChecker != nil {
+				p.labelChecker.check(p, tlpe, u)
+			}
 		}
 
 		// Check if file is in the right folder.
@@ -842,8 +845,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	// TODO: Do better
-	p.rolieCompletion.currentFeed = ""
+	p.labelChecker = nil
 
 	return p.integrity(files, base, mask, p.badIndices.add)
 }
@@ -938,8 +940,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	// TODO: Do better
-	p.rolieCompletion.currentFeed = ""
+	p.labelChecker = nil
 
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
@@ -959,9 +960,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	}
 	p.badROLIEfeed.use()
 
-	// Phase 1
-
-	// collect all advisories per color.
+	// Phase 1: collect all advisories per color.
 	all := map[csaf.TLPLabel]map[string]struct{}{}
 
 	advisories := map[*csaf.Feed][]csaf.AdvisoryFile{}
@@ -1044,9 +1043,11 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			label := tlpLabel(feed.TLPLabel)
 
-			p.rolieCompletion.currentFeed = feedURL.String()
-			p.rolieCompletion.currentLabel = label
-			p.rolieCompletion.remain = clone(all[label])
+			p.labelChecker = &rolieLabelChecker{
+				feedURL:   feedURL.String(),
+				feedLabel: label,
+				remain:    clone(all[label]),
+			}
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
@@ -1054,7 +1055,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				}
 			}
 
-			if len(p.rolieCompletion.remain) == 0 {
+			if len(p.labelChecker.remain) == 0 {
 				hasSummary[label] = true
 			}
 		}
