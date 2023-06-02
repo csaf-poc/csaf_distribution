@@ -233,7 +233,7 @@ func (p *processor) run(domains []string) (*Report, error) {
 	for _, d := range domains {
 		if !p.checkProviderMetadata(d) {
 			// We cannot build a report if the provider metadata cannot be parsed.
-			log.Printf("Could not parse the Provider-Metadata.json of %s", d)
+			log.Printf("Could not parse the Provider-Metadata.json of: %s\n", d)
 			continue
 		}
 		if err := p.checkDomain(d); err != nil {
