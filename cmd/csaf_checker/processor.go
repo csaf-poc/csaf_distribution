@@ -1076,6 +1076,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		csaf.TLPLabelWhite,
 		csaf.TLPLabelGreen,
 		csaf.TLPLabelAmber,
+		csaf.TLPLabelRed,
 	} {
 		if all[label] != nil && !hasSummary[label] {
 			p.badROLIEfeed.warn(
