@@ -13,7 +13,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 var errNotFound = errors.New("not found")
