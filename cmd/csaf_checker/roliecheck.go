@@ -42,9 +42,6 @@ func (ca *rolieLabelChecker) check(
 	advisoryLabel csaf.TLPLabel,
 	advisory string,
 ) {
-	// If this is empty all adivisories of a color were found.
-	delete(ca.remain, advisory)
-
 	// Assign int to tlp levels for easy comparison
 	var (
 		advisoryRank = tlpLevel(advisoryLabel)
@@ -71,5 +68,9 @@ func (ca *rolieLabelChecker) check(
 		p.badROLIEfeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
+
+	default:
+		// If this is empty all adivisories of a color were found.
+		delete(ca.remain, advisory)
 	}
 }
