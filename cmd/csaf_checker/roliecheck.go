@@ -62,6 +62,7 @@ func (ca *rolieLabelChecker) check(
 				advisory, advisoryLabel,
 				ca.feedURL, ca.feedLabel)
 		}
+		delete(ca.remain, advisory)
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
