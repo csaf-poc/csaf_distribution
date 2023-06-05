@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/csaf-poc/csaf_distribution/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 )
 
 type (
