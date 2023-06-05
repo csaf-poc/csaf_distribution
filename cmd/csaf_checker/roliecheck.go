@@ -8,7 +8,7 @@
 
 package main
 
-import "github.com/csaf-poc/csaf_distribution/csaf"
+import "github.com/csaf-poc/csaf_distribution/v2/csaf"
 
 // rolieLabelChecker helps to check id advisories in ROLIE feeds
 // are in there right TLP color.
