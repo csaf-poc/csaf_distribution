@@ -1075,17 +1075,18 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				hasGreen = true
 			}
 
-			advisories := clone(p.labelChecker.advisories[label])
+			reference := p.labelChecker.advisories[label]
+			advisories := make(map[string]struct{}, len(reference))
+
 			for _, adv := range files {
 				u, err := url.Parse(adv.URL())
 				if err != nil {
 					p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
 					continue
 				}
-				advURL := makeAbs(u)
-				delete(advisories, advURL.String())
+				advisories[makeAbs(u).String()] = struct{}{}
 			}
-			if len(advisories) == 0 {
+			if containsAllKeys(reference, advisories) {
 				hasSummary[label] = struct{}{}
 			}
 		}
@@ -1114,13 +1115,14 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	return nil
 }
 
-// clone returns a copy of a map.
-func clone[K comparable, V any](m map[K]V) map[K]V {
-	c := make(map[K]V)
-	for k, v := range m {
-		c[k] = v
+// containsAllKeys returns if m2 contains all keys of m1.
+func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
+	for k := range m1 {
+		if _, ok := m2[k]; !ok {
+			return false
+		}
 	}
-	return c
+	return true
 }
 
 // empty checks if list of strings contains at least one none empty string.
