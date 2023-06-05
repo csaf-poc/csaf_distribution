@@ -1107,7 +1107,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	} {
 		if _, ok := hasSummary[label]; !ok && len(p.labelChecker.advisories[label]) > 0 {
 			p.badROLIEfeed.warn(
-				"ROLIE feed for TLP:%s has no feed covering all advisories.",
+				"ROLIE feed for TLP:%s has no accessible listed feed covering all advisories.",
 				label)
 		}
 	}
