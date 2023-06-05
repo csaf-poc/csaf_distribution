@@ -48,8 +48,8 @@ func (ca *rolieLabelChecker) check(
 		feedRank     = tlpLevel(ca.feedLabel)
 	)
 
-	// If entry shows up in feed of higher tlp level, save the combi
-	// to evaluate it when we know if feed is summary feed or not
+	// If entry shows up in feed of higher tlp level,
+	// give out info or warning
 	switch {
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
