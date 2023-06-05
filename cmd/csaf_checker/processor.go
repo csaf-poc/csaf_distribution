@@ -962,8 +962,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	}
 	p.badROLIEfeed.use()
 
-	// Phase 1: collect all advisories per color.
-	all := map[csaf.TLPLabel]map[string]struct{}{}
+	// Phase 1: load all advisories urls.
 
 	advisories := map[*csaf.Feed][]csaf.AdvisoryFile{}
 
@@ -980,7 +979,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 			feedBase := base.ResolveReference(up)
 			feedURL := feedBase.String()
-
 			p.checkTLS(feedURL)
 
 			advs, err := p.rolieFeedEntries(feedURL)
@@ -990,25 +988,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				}
 				continue
 			}
-
-			makeAbs := makeAbsolute(feedBase)
-
-			label := tlpLabel(feed.TLPLabel)
-
-			urls := all[label]
-			if urls == nil {
-				urls = map[string]struct{}{}
-				all[label] = urls
-			}
-			for _, adv := range advs {
-				advURL, err := url.Parse(adv.URL())
-				if err != nil {
-					// The real error handling is done in phase 2.
-					continue
-				}
-				urls[makeAbs(advURL).String()] = struct{}{}
-			}
-
 			advisories[feed] = advs
 		}
 	}
@@ -1016,8 +995,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	// Phase 2:
 
 	// Indicates if there is a complete feed for a given label.
-	hasSummary := map[csaf.TLPLabel]bool{}
-
 	for _, fs := range feeds {
 		for i := range fs {
 			feed := &fs[i]
@@ -1036,19 +1013,18 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 
 			feedURL := base.ResolveReference(up)
-			p.checkTLS(feedURL.String())
 			feedBase, err := util.BaseURL(feedURL)
 			if err != nil {
 				p.badProviderMetadata.error("Bad base path: %v", err)
-				return errContinue
+				continue
 			}
 
 			label := tlpLabel(feed.TLPLabel)
 
 			p.labelChecker = &rolieLabelChecker{
-				feedURL:   feedURL.String(),
-				feedLabel: label,
-				remain:    clone(all[label]),
+				feedURL:    feedURL.String(),
+				feedLabel:  label,
+				advisories: map[csaf.TLPLabel]map[string]struct{}{},
 			}
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
@@ -1056,16 +1032,66 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 					return err
 				}
 			}
+		}
+	}
 
-			if len(p.labelChecker.remain) == 0 {
-				hasSummary[label] = true
+	// Phase 3: Check for completeness.
+
+	hasSummary := map[csaf.TLPLabel]struct{}{}
+
+	var (
+		hasUnlabeled = false
+		hasWhite     = false
+		hasGreen     = false
+	)
+
+	for _, fs := range feeds {
+		for i := range fs {
+			feed := &fs[i]
+			if feed.URL == nil {
+				continue
+			}
+			files := advisories[feed]
+			if files == nil {
+				continue
+			}
+
+			up, err := url.Parse(string(*feed.URL))
+			if err != nil {
+				p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
+				continue
+			}
+
+			feedBase := base.ResolveReference(up)
+			makeAbs := makeAbsolute(feedBase)
+			label := tlpLabel(feed.TLPLabel)
+
+			switch label {
+			case csaf.TLPLabelUnlabeled:
+				hasUnlabeled = true
+			case csaf.TLPLabelWhite:
+				hasWhite = true
+			case csaf.TLPLabelGreen:
+				hasGreen = true
+			}
+
+			advisories := clone(p.labelChecker.advisories[label])
+			for _, adv := range files {
+				u, err := url.Parse(adv.URL())
+				if err != nil {
+					p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
+					continue
+				}
+				advURL := makeAbs(u)
+				delete(advisories, advURL.String())
+			}
+			if len(advisories) == 0 {
+				hasSummary[label] = struct{}{}
 			}
 		}
 	}
-	_, hasWhite := all[csaf.TLPLabelWhite]
-	_, hasGreen := all[csaf.TLPLabelGreen]
 
-	if !hasWhite && !hasGreen {
+	if !hasWhite && !hasGreen && !hasUnlabeled {
 		p.badROLIEfeed.error(
 			"One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, but none were found.")
 	}
@@ -1078,7 +1104,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		csaf.TLPLabelAmber,
 		csaf.TLPLabelRed,
 	} {
-		if all[label] != nil && !hasSummary[label] {
+		if _, ok := hasSummary[label]; !ok && len(p.labelChecker.advisories[label]) > 0 {
 			p.badROLIEfeed.warn(
 				"ROLIE feed for TLP:%s has no feed covering all advisories.",
 				label)

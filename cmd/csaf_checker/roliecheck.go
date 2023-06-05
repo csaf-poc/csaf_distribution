@@ -16,7 +16,7 @@ type rolieLabelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	remain map[string]struct{}
+	advisories map[csaf.TLPLabel]map[string]struct{}
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -48,6 +48,14 @@ func (ca *rolieLabelChecker) check(
 		feedRank     = tlpLevel(ca.feedLabel)
 	)
 
+	// Associate advisory label to urls.
+	advs := ca.advisories[advisoryLabel]
+	if advs == nil {
+		advs = make(map[string]struct{})
+		ca.advisories[advisoryLabel] = advs
+	}
+	advs[advisory] = struct{}{}
+
 	// If entry shows up in feed of higher tlp level,
 	// give out info or warning
 	switch {
@@ -62,16 +70,11 @@ func (ca *rolieLabelChecker) check(
 				advisory, advisoryLabel,
 				ca.feedURL, ca.feedLabel)
 		}
-		delete(ca.remain, advisory)
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
 		p.badROLIEfeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
-
-	default:
-		// If this is empty all adivisories of a color were found.
-		delete(ca.remain, advisory)
 	}
 }
