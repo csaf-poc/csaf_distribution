@@ -270,7 +270,7 @@ func (r *providerMetadataReport) report(p *processor, domain *Domain) {
 func (r *securityReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badSecurity.used() {
-		req.message(InfoType, "Performed no in-depth test of security.txt.")
+		req.message(WarnType, "Performed no in-depth test of security.txt.")
 		return
 	}
 	if len(p.badSecurity) == 0 {
@@ -284,7 +284,7 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWellknownMetadata.used() {
-		req.message(InfoType, "Since no valid provider-metadata.json was found, no extended check was performed.")
+		req.message(WarnType, "Since no valid provider-metadata.json was found, no extended check was performed.")
 		return
 	}
 	if len(p.badWellknownMetadata) == 0 {
@@ -298,7 +298,7 @@ func (r *wellknownMetadataReporter) report(p *processor, domain *Domain) {
 func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDNSPath.used() {
-		req.message(InfoType, "No check about contents from https://csaf.data.security.DOMAIN performed.")
+		req.message(WarnType, "No check about contents from https://csaf.data.security.DOMAIN performed.")
 		return
 	}
 	if len(p.badDNSPath) == 0 {
