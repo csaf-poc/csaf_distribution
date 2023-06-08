@@ -52,6 +52,7 @@ type processor struct {
 	pmd256         []byte
 	pmd            any
 	keys           *crypto.KeyRing
+	labelChecker   *rolieLabelChecker
 
 	invalidAdvisories    topicMessages
 	badFilenames         topicMessages
@@ -66,6 +67,7 @@ type processor struct {
 	badWellknownMetadata topicMessages
 	badDNSPath           topicMessages
 	badDirListings       topicMessages
+	badROLIEfeed         topicMessages
 
 	expr *util.PathEval
 }
@@ -218,6 +220,8 @@ func (p *processor) clean() {
 	p.badWellknownMetadata.reset()
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
+	p.badROLIEfeed.reset()
+	p.labelChecker = nil
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -412,6 +416,129 @@ func (p *processor) httpClient() util.Client {
 	return p.client
 }
 
+// rolieFeedEntries loads the references to the advisory files for a given feed.
+func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
+
+	client := p.httpClient()
+	res, err := client.Get(feed)
+	p.badDirListings.use()
+	if err != nil {
+		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
+		return nil, errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
+			feed, res.StatusCode, res.Status)
+		return nil, errContinue
+	}
+
+	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
+		defer res.Body.Close()
+		all, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, nil, err
+		}
+		rfeed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: %v", feed, err)
+		}
+		var rolieDoc any
+		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
+		return rfeed, rolieDoc, err
+
+	}()
+	if err != nil {
+		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
+		return nil, errContinue
+	}
+	errors, err := csaf.ValidateROLIE(rolieDoc)
+	if err != nil {
+		return nil, err
+	}
+	if len(errors) > 0 {
+		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
+		for _, msg := range errors {
+			p.badProviderMetadata.error(strings.ReplaceAll(msg, `%`, `%%`))
+		}
+	}
+
+	// Extract the CSAF files from feed.
+	var files []csaf.AdvisoryFile
+
+	rfeed.Entries(func(entry *csaf.Entry) {
+
+		// Filter if we have date checking.
+		if p.ageAccept != nil {
+			if pub := time.Time(entry.Published); !pub.IsZero() && !p.ageAccept(pub) {
+				return
+			}
+		}
+
+		var url, sha256, sha512, sign string
+		for i := range entry.Link {
+			link := &entry.Link[i]
+			lower := strings.ToLower(link.HRef)
+			switch link.Rel {
+			case "self":
+				if !strings.HasSuffix(lower, ".json") {
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "self" has unexpected file extension.`,
+						link.HRef, feed)
+				}
+				url = link.HRef
+			case "signature":
+				if !strings.HasSuffix(lower, ".asc") {
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "signature" has unexpected file extension.`,
+						link.HRef, feed)
+				}
+				sign = link.HRef
+			case "hash":
+				switch {
+				case strings.HasSuffix(lower, "sha256"):
+					sha256 = link.HRef
+				case strings.HasSuffix(lower, "sha512"):
+					sha512 = link.HRef
+				default:
+					p.badProviderMetadata.warn(
+						`ROLIE feed entry link %s in %s with "rel": "hash" has unsupported file extension.`,
+						link.HRef, feed)
+				}
+			}
+		}
+
+		if url == "" {
+			p.badProviderMetadata.warn(
+				`ROLIE feed %s contains entry link with no "self" URL.`, feed)
+			return
+		}
+
+		var file csaf.AdvisoryFile
+
+		if sha256 != "" || sha512 != "" || sign != "" {
+			file = csaf.HashedAdvisoryFile{url, sha256, sha512, sign}
+		} else {
+			file = csaf.PlainAdvisoryFile(url)
+		}
+
+		files = append(files, file)
+	})
+
+	return files, nil
+}
+
+// makeAbsolute returns a function that checks if a given
+// URL is absolute or not. If not it returns an
+// absolute URL based on a given base URL.
+func makeAbsolute(base *url.URL) func(*url.URL) *url.URL {
+	return func(u *url.URL) *url.URL {
+		if u.IsAbs() {
+			return u
+		}
+		return base.JoinPath(u.String())
+	}
+}
+
 var yearFromURL = regexp.MustCompile(`.*/(\d{4})/[^/]+$`)
 
 func (p *processor) integrity(
@@ -424,16 +551,10 @@ func (p *processor) integrity(
 	if err != nil {
 		return err
 	}
+	makeAbs := makeAbsolute(b)
 	client := p.httpClient()
 
 	var data bytes.Buffer
-
-	makeAbs := func(u *url.URL) *url.URL {
-		if u.IsAbs() {
-			return u
-		}
-		return b.JoinPath(u.String())
-	}
 
 	for _, f := range files {
 		fp, err := url.Parse(f.URL())
@@ -456,7 +577,6 @@ func (p *processor) integrity(
 		}
 
 		var folderYear *int
-
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
 			// Check if we are in checking time interval.
@@ -521,13 +641,25 @@ func (p *processor) integrity(
 			continue
 
 		}
-
 		// Validate against remote validator.
 		if p.validator != nil {
 			if rvr, err := p.validator.Validate(doc); err != nil {
 				p.invalidAdvisories.error("Calling remote validator on %s failed: %v", u, err)
 			} else if !rvr.Valid {
 				p.invalidAdvisories.error("Remote validation of %s failed.", u)
+			}
+		}
+
+		// Extract the tlp level of the entry
+		if tlpa, err := p.expr.Eval(
+			`$.document.distribution`, doc); err != nil {
+			p.badROLIEfeed.error(
+				"Extracting 'tlp level' from %s failed: %v", u, err)
+		} else {
+			tlpe := extractTLP(tlpa)
+			// check if current feed has correct or all of their tlp levels entries.
+			if p.labelChecker != nil {
+				p.labelChecker.check(p, tlpe, u)
 			}
 		}
 
@@ -567,6 +699,7 @@ func (p *processor) integrity(
 			}
 			hu = makeAbs(hu)
 			hashFile := b.ResolveReference(hu).String()
+
 			p.checkTLS(hashFile)
 			if res, err = client.Get(hashFile); err != nil {
 				p.badIntegrities.error("Fetching %s failed: %v.", hashFile, err)
@@ -594,7 +727,6 @@ func (p *processor) integrity(
 					x.ext, u, hashFile)
 			}
 		}
-
 		// Check signature
 		su, err := url.Parse(f.SignURL())
 		if err != nil {
@@ -639,133 +771,23 @@ func (p *processor) integrity(
 			}
 		}
 	}
+
 	return nil
 }
 
-func (p *processor) processROLIEFeed(feed string) error {
-	client := p.httpClient()
-	res, err := client.Get(feed)
-	p.badDirListings.use()
-	if err != nil {
-		p.badProviderMetadata.error("Cannot fetch feed %s: %v", feed, err)
-		return errContinue
-	}
-	if res.StatusCode != http.StatusOK {
-		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
-			feed, res.StatusCode, res.Status)
-		return errContinue
-	}
-
-	rfeed, rolieDoc, err := func() (*csaf.ROLIEFeed, any, error) {
-		defer res.Body.Close()
-		all, err := io.ReadAll(res.Body)
-		if err != nil {
-			return nil, nil, err
-		}
-		rfeed, err := csaf.LoadROLIEFeed(bytes.NewReader(all))
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: %v", feed, err)
-		}
-		var rolieDoc any
-		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
-		return rfeed, rolieDoc, err
-
-	}()
-	if err != nil {
-		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
-		return errContinue
-	}
-	errors, err := csaf.ValidateROLIE(rolieDoc)
-	if err != nil {
-		return err
-	}
-	if len(errors) > 0 {
-		p.badProviderMetadata.error("%s: Validating against JSON schema failed:", feed)
-		for _, msg := range errors {
-			p.badProviderMetadata.error(strings.ReplaceAll(msg, `%`, `%%`))
-		}
-	}
-
-	feedURL, err := url.Parse(feed)
-	if err != nil {
-		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
-	}
-
-	base, err := util.BaseURL(feedURL)
-	if err != nil {
-		p.badProviderMetadata.error("Bad base path: %v", err)
-		return errContinue
-	}
-
-	// Extract the CSAF files from feed.
-	var files []csaf.AdvisoryFile
-
-	rfeed.Entries(func(entry *csaf.Entry) {
-
-		// Filter if we have date checking.
-		if p.ageAccept != nil {
-			if pub := time.Time(entry.Published); !pub.IsZero() && !p.ageAccept(pub) {
-				return
-			}
-		}
-
-		var url, sha256, sha512, sign string
-
-		for i := range entry.Link {
-			link := &entry.Link[i]
-			lower := strings.ToLower(link.HRef)
-			switch link.Rel {
-			case "self":
-				if !strings.HasSuffix(lower, ".json") {
-					p.badProviderMetadata.warn(
-						`ROLIE feed entry link %s in %s with "rel": "self" has unexpected file extension.`,
-						link.HRef, feed)
-				}
-				url = link.HRef
-			case "signature":
-				if !strings.HasSuffix(lower, ".asc") {
-					p.badProviderMetadata.warn(
-						`ROLIE feed entry link %s in %s with "rel": "signature" has unexpected file extension.`,
-						link.HRef, feed)
-				}
-				sign = link.HRef
-			case "hash":
-				switch {
-				case strings.HasSuffix(lower, "sha256"):
-					sha256 = link.HRef
-				case strings.HasSuffix(lower, "sha512"):
-					sha512 = link.HRef
-				default:
-					p.badProviderMetadata.warn(
-						`ROLIE feed entry link %s in %s with "rel": "hash" has unsupported file extension.`,
-						link.HRef, feed)
+// extractTLP tries to extract a valid TLP label from an advisory
+// Returns "UNLABELED" if it does not exist, the label otherwise
+func extractTLP(tlpa any) csaf.TLPLabel {
+	if distribution, ok := tlpa.(map[string]any); ok {
+		if tlp, ok := distribution["tlp"]; ok {
+			if label, ok := tlp.(map[string]any); ok {
+				if labelstring, ok := label["label"].(string); ok {
+					return csaf.TLPLabel(labelstring)
 				}
 			}
 		}
-
-		if url == "" {
-			p.badProviderMetadata.warn(
-				`ROLIE feed %s contains entry link with no "self" URL.`, feed)
-			return
-		}
-
-		var file csaf.AdvisoryFile
-
-		if sha256 != "" || sha512 != "" || sign != "" {
-			file = csaf.HashedAdvisoryFile{url, sha256, sha512, sign}
-		} else {
-			file = csaf.PlainAdvisoryFile(url)
-		}
-
-		files = append(files, file)
-	})
-	if err := p.integrity(files, base, rolieMask, p.badProviderMetadata.add); err != nil &&
-		err != errContinue {
-		return err
 	}
-
-	return nil
+	return csaf.TLPLabelUnlabeled
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
@@ -823,6 +845,9 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	if len(files) == 0 {
 		p.badIntegrities.warn("index.txt contains no URLs")
 	}
+
+	// Block rolie checks.
+	p.labelChecker = nil
 
 	return p.integrity(files, base, mask, p.badIndices.add)
 }
@@ -916,34 +941,10 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 		p.badChanges.error("%s is not sorted in descending order", changes)
 	}
 
+	// Block rolie checks.
+	p.labelChecker = nil
+
 	return p.integrity(files, base, mask, p.badChanges.add)
-}
-
-func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
-
-	base, err := url.Parse(p.pmdURL)
-	if err != nil {
-		return err
-	}
-	for _, fs := range feeds {
-		for i := range fs {
-			feed := &fs[i]
-			if feed.URL == nil {
-				continue
-			}
-			up, err := url.Parse(string(*feed.URL))
-			if err != nil {
-				p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
-				continue
-			}
-			feedURL := base.ResolveReference(up).String()
-			p.checkTLS(feedURL)
-			if err := p.processROLIEFeed(feedURL); err != nil && err != errContinue {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // empty checks if list of strings contains at least one none empty string.
