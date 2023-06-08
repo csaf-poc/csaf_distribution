@@ -30,8 +30,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 
-	"github.com/csaf-poc/csaf_distribution/csaf"
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 // mirrorAllowed checks if mirroring is allowed.
@@ -555,6 +555,11 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 		if err != nil {
 			log.Printf("error: %s: %v\n", file, err)
 			continue
+		}
+
+		if util.CleanFileName(sum.ID) != filename {
+			log.Printf("ID %q does not match filename %s",
+				sum.ID, filename)
 		}
 
 		if err := w.extractCategories(label, advisory); err != nil {

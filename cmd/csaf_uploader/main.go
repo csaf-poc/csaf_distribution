@@ -27,8 +27,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/armor"
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/csaf"
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/bcrypt"
@@ -242,6 +242,11 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 		if len(errs) > 0 {
 			writeStrings("Errors:", errs)
 			return nil, errors.New("local schema check failed")
+		}
+
+		eval := util.NewPathEval()
+		if err := util.IDMatchesFilename(eval, doc, filepath.Base(filename)); err != nil {
+			return nil, err
 		}
 	}
 

@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/csaf"
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 type processor struct {
@@ -79,11 +79,17 @@ func (w *worker) createDir() (string, error) {
 
 func (w *worker) locateProviderMetadata(domain string) error {
 
-	lpmd := csaf.LoadProviderMetadataForDomain(
-		w.client, domain, func(format string, args ...any) {
+	loader := csaf.NewProviderMetadataLoader(w.client)
+
+	lpmd := loader.Load(domain)
+
+	if w.processor.cfg.Verbose {
+		for i := range lpmd.Messages {
 			log.Printf(
-				"Looking for provider-metadata.json of '"+domain+"': "+format+"\n", args...)
-		})
+				"Loading provider-metadata.json of %q: %s\n",
+				domain, lpmd.Messages[i].Message)
+		}
+	}
 
 	if !lpmd.Valid() {
 		return fmt.Errorf("no valid provider-metadata.json found for '%s'", domain)

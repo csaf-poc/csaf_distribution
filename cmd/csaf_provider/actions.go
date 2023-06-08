@@ -25,8 +25,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/armor"
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/csaf"
-	"github.com/csaf-poc/csaf_distribution/util"
+	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 const dateFormat = time.RFC3339
@@ -194,6 +194,11 @@ func (c *controller) upload(r *http.Request) (any, error) {
 	ex, err := csaf.NewAdvisorySummary(pe, content)
 	if err != nil {
 		return nil, err
+	}
+
+	if util.CleanFileName(ex.ID) != newCSAF {
+		return nil, fmt.Errorf("ID %q does not match filename %s",
+			ex.ID, newCSAF)
 	}
 
 	// Check if we have to search for dynamic categories.
