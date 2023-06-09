@@ -91,6 +91,22 @@ func (w *worker) writeInterims(label string, summaries []summary) error {
 
 func (w *worker) writeCSV(label string, summaries []summary) error {
 
+	fname := filepath.Join(w.dir, label, changesCSV)
+
+	// If we don't have any entries remove existing file.
+	if len(summaries) == 0 {
+		// Does it really exist?
+		if err := os.RemoveAll(fname); err != nil {
+			return fmt.Errorf("unable to remove %q: %w", fname, err)
+		}
+		return nil
+	}
+
+	f, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+
 	// Do not sort in-place.
 	ss := make([]summary, len(summaries))
 	copy(ss, summaries)
@@ -100,11 +116,6 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 			ss[j].summary.CurrentReleaseDate)
 	})
 
-	fname := filepath.Join(w.dir, label, changesCSV)
-	f, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
 	out := util.NewFullyQuotedCSWWriter(f)
 
 	record := make([]string, 2)
@@ -137,6 +148,16 @@ func (w *worker) writeCSV(label string, summaries []summary) error {
 func (w *worker) writeIndex(label string, summaries []summary) error {
 
 	fname := filepath.Join(w.dir, label, indexTXT)
+
+	// If we don't have any entries remove existing file.
+	if len(summaries) == 0 {
+		// Does it really exist?
+		if err := os.RemoveAll(fname); err != nil {
+			return fmt.Errorf("unable to remove %q: %w", fname, err)
+		}
+		return nil
+	}
+
 	f, err := os.Create(fname)
 	if err != nil {
 		return err
