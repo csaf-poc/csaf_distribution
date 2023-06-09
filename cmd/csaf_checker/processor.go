@@ -235,13 +235,16 @@ func (p *processor) run(domains []string) (*Report, error) {
 	}
 
 	for _, d := range domains {
-		if p.checkProviderMetadata(d) {
-			if err := p.checkDomain(d); err != nil {
-				if err == errContinue || err == errStop {
-					continue
-				}
-				return nil, err
+		if !p.checkProviderMetadata(d) {
+			// We cannot build a report if the provider metadata cannot be parsed.
+			log.Printf("Could not parse the Provider-Metadata.json of: %s\n", d)
+			continue
+		}
+		if err := p.checkDomain(d); err != nil {
+			if err == errContinue || err == errStop {
+				continue
 			}
+			return nil, err
 		}
 		domain := &Domain{Name: d}
 
