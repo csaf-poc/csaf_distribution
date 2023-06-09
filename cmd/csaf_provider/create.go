@@ -195,10 +195,9 @@ func createROLIEfeed(c *config, t tlp, folder string) error {
 				Scheme: "urn:ietf:params:rolie:category:information-type",
 				Term:   "csaf",
 			}},
+			Updated: csaf.TimeStamp(time.Now().UTC()),
 		},
 	}
-
-	rolie.Feed.Updated = csaf.TimeStamp(time.Now().UTC())
 
 	return util.WriteToFile(feed, rolie)
 
