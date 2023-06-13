@@ -152,6 +152,7 @@ func (rules *requirementRules) eval(p *processor) bool {
 	return recurse(rules)
 }
 
+// eval evalutes the processing state for a given requirement.
 func (p *processor) eval(requirement int) bool {
 
 	switch requirement {
@@ -188,6 +189,6 @@ func (p *processor) eval(requirement int) bool {
 		return true
 
 	default:
-		panic(fmt.Sprintf("testing unexpected requirement %d", requirement))
+		panic(fmt.Sprintf("evaluating unexpected requirement %d", requirement))
 	}
 }
