@@ -254,7 +254,16 @@ func (p *processor) run(domains []string) (*Report, error) {
 			continue
 		}
 
-		for _, r := range buildReporters(*domain.Role) {
+		rules := roleRequirements(*domain.Role)
+		// TODO: store error base on rules eval in report.
+		if rules == nil {
+			log.Printf(
+				"WARN: Cannot find requirement rules for role %q. Assuming trusted provider.\n",
+				*domain.Role)
+			rules = trustedProviderRules
+		}
+
+		for _, r := range rules.reporters() {
 			r.report(p, domain)
 		}
 

@@ -12,8 +12,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 )
 
 type (
@@ -70,46 +68,6 @@ var reporters = [23]reporter{
 	&listReporter{baseReporter{num: 21, description: "List of CSAF providers"}},
 	&hasTwoReporter{baseReporter{num: 22, description: "Two disjoint issuing parties"}},
 	&mirrorReporter{baseReporter{num: 23, description: "Mirror"}},
-}
-
-var roleImplies = map[csaf.MetadataRole][]csaf.MetadataRole{
-	csaf.MetadataRoleProvider:        {csaf.MetadataRolePublisher},
-	csaf.MetadataRoleTrustedProvider: {csaf.MetadataRoleProvider},
-}
-
-func requirements(role csaf.MetadataRole) [][2]int {
-	var own [][2]int
-	switch role {
-	case csaf.MetadataRoleTrustedProvider:
-		own = [][2]int{{18, 20}}
-	case csaf.MetadataRoleProvider:
-		// TODO: use commented numbers when TLPs should be checked.
-		own = [][2]int{{6 /* 5 */, 7}, {8, 10}, {11, 14}, {15, 17}}
-	case csaf.MetadataRolePublisher:
-		own = [][2]int{{1, 3 /* 4 */}}
-	}
-	for _, base := range roleImplies[role] {
-		own = append(own, requirements(base)...)
-	}
-	return own
-}
-
-// buildReporters initializes each report by assigning a number and description to it.
-// It returns an array of the reporter interface type.
-func buildReporters(role csaf.MetadataRole) []reporter {
-	var reps []reporter
-	reqs := requirements(role)
-	// sort to have them ordered by there number.
-	sort.Slice(reqs, func(i, j int) bool { return reqs[i][0] < reqs[j][0] })
-	for _, req := range reqs {
-		from, to := req[0]-1, req[1]-1
-		for i := from; i <= to; i++ {
-			if rep := reporters[i]; rep != nil {
-				reps = append(reps, rep)
-			}
-		}
-	}
-	return reps
 }
 
 func (bc *baseReporter) requirement(domain *Domain) *Requirement {
