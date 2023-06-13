@@ -9,6 +9,7 @@
 package main
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
@@ -54,6 +55,22 @@ var (
 	}
 )
 
+// roleRequirements returns the rules for the given role.
+func roleRequirements(role csaf.MetadataRole) *requirementRules {
+	switch role {
+	case csaf.MetadataRoleTrustedProvider:
+		return trustedProviderRules
+	case csaf.MetadataRoleProvider:
+		return providerRules
+	case csaf.MetadataRolePublisher:
+		return publisherRules
+	default:
+		return nil
+	}
+}
+
+// ruleAtoms is a helper function to build the leaves of
+// a rules tree.
 func ruleAtoms(nums ...int) []*requirementRules {
 	rules := make([]*requirementRules, len(nums))
 	for i, num := range nums {
@@ -65,16 +82,17 @@ func ruleAtoms(nums ...int) []*requirementRules {
 	return rules
 }
 
-func (rules *requirementRules) reporters() []reporter {
+// reporters assembles a list of reporters needed for a given set
+// of rules. The given nums are mandatory.
+func (rules *requirementRules) reporters(nums []int) []reporter {
 	if rules == nil {
 		return nil
 	}
-	var nums []int
 
 	var recurse func(*requirementRules)
 	recurse = func(rules *requirementRules) {
 		if rules.satisfies != 0 {
-			// There should not be any dupes
+			// There should not be any dupes.
 			for _, n := range nums {
 				if n == rules.satisfies {
 					goto doRecurse
@@ -99,16 +117,77 @@ func (rules *requirementRules) reporters() []reporter {
 	return reps
 }
 
-// roleRequirements returns the rules for the given role.
-func roleRequirements(role csaf.MetadataRole) *requirementRules {
-	switch role {
-	case csaf.MetadataRoleTrustedProvider:
-		return trustedProviderRules
-	case csaf.MetadataRoleProvider:
-		return providerRules
-	case csaf.MetadataRolePublisher:
-		return publisherRules
+// eval evalutes a set of rules given a given processor state.
+func (rules *requirementRules) eval(p *processor) bool {
+	if rules == nil {
+		return false
+	}
+
+	var recurse func(*requirementRules) bool
+
+	recurse = func(rules *requirementRules) bool {
+		if rules.satisfies != 0 {
+			return p.eval(rules.satisfies)
+		}
+		switch rules.cond {
+		case condAll:
+			for _, sub := range rules.subs {
+				if !recurse(sub) {
+					return false
+				}
+			}
+			return true
+		case condOneOf:
+			for _, sub := range rules.subs {
+				if recurse(sub) {
+					return true
+				}
+			}
+			return false
+		default:
+			panic(fmt.Sprintf("unexpected cond %v in eval", rules.cond))
+		}
+	}
+
+	return recurse(rules)
+}
+
+func (p *processor) eval(requirement int) bool {
+
+	switch requirement {
+	case 1:
+		return !p.invalidAdvisories.hasErrors()
+	case 2:
+		return !p.badFilenames.hasErrors()
+	case 3:
+		return len(p.noneTLS) == 0
+
+	case 8:
+		return !p.badSecurity.hasErrors()
+	case 9:
+		return !p.badWellknownMetadata.hasErrors()
+	case 10:
+		return !p.badDNSPath.hasErrors()
+
+	case 11:
+		return !p.badFolders.hasErrors()
+	case 12:
+		return !p.badIndices.hasErrors()
+	case 13:
+		return !p.badChanges.hasErrors()
+	case 14:
+		return !p.badDirListings.hasErrors()
+
+	case 15:
+		return !p.badROLIEfeed.hasErrors()
+	case 16:
+		// TODO: Implement me!
+		return true
+	case 17:
+		// TODO: Implement me!
+		return true
+
 	default:
-		return nil
+		panic(fmt.Sprintf("testing unexpected requirement %d", requirement))
 	}
 }

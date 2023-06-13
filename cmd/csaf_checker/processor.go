@@ -149,6 +149,19 @@ func (m *topicMessages) reset() { *m = nil }
 // used returns true if we have used this topic.
 func (m *topicMessages) used() bool { return *m != nil }
 
+// hasErrors checks if there are any error messages.
+func (m *topicMessages) hasErrors() bool {
+	if !m.used() {
+		return false
+	}
+	for _, msg := range *m {
+		if msg.Type == ErrorType {
+			return true
+		}
+	}
+	return false
+}
+
 // newProcessor returns a processor structure after assigning the given options to the opts attribute
 // and initializing the "alreadyChecked" and "expr" fields.
 func newProcessor(opts *options) (*processor, error) {
@@ -263,9 +276,12 @@ func (p *processor) run(domains []string) (*Report, error) {
 			rules = trustedProviderRules
 		}
 
-		for _, r := range rules.reporters() {
+		// 18, 19, 20 should always be checked.
+		for _, r := range rules.reporters([]int{18, 19, 20}) {
 			r.report(p, domain)
 		}
+
+		domain.Passed = rules.eval(p)
 
 		report.Domains = append(report.Domains, domain)
 		p.clean()
