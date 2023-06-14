@@ -68,6 +68,7 @@ type processor struct {
 	badDNSPath           topicMessages
 	badDirListings       topicMessages
 	badROLIEfeed         topicMessages
+	badROLIEservice      topicMessages
 
 	expr *util.PathEval
 }
@@ -234,6 +235,7 @@ func (p *processor) clean() {
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
 	p.badROLIEfeed.reset()
+	p.badROLIEservice.reset()
 	p.labelChecker = nil
 }
 
