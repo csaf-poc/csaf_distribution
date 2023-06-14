@@ -9,7 +9,12 @@
 package main
 
 import (
+	"bytes"
+	"io"
+	"net/http"
 	"net/url"
+
+	"encoding/json"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
@@ -262,4 +267,45 @@ func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
 		}
 	}
 	return true
+}
+
+func (p *processor) serviceCheck(url string, feeds [][]csaf.Feed) error {
+	// load service document
+	p.badROLIEservice.use()
+	if url == "" {
+		p.badROLIEservice.warn("No ROLIE service document found.")
+		return nil
+	}
+
+	client := p.httpClient()
+	res, err := client.Get(url)
+	if err != nil {
+		p.badROLIEservice.error("Cannot fetch rolie service document %s: %v", url, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badROLIEservice.warn("Fetching %s failed. Status code %d (%s)",
+			url, res.StatusCode, res.Status)
+		return errContinue
+	}
+
+	_, err = func() (any, error) {
+		defer res.Body.Close()
+		all, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, err
+		}
+		var rolieService any
+		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieService)
+		return rolieService, err
+
+	}()
+	if err != nil {
+		p.badROLIEservice.error("Loading ROLIE service document failed: %v.", err)
+		return errContinue
+	}
+
+	return nil
+	//Todo: Check conformity with RFC8322
+
 }
