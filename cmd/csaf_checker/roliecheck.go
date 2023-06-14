@@ -265,23 +265,30 @@ func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
 	return true
 }
 
-func (p *processor) serviceCheck(url string, feeds [][]csaf.Feed) error {
+func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
+	// service category document should be next to the pmd
+	pmdURL, err := url.Parse(p.pmdURL)
+	if err != nil {
+		return err
+	}
+	baseURL, err := util.BaseURL(pmdURL)
+	if err != nil {
+		return err
+	}
+	urls := baseURL + "service.json"
+
 	// load service document
 	p.badROLIEservice.use()
-	if url == "" {
-		p.badROLIEservice.warn("No ROLIE service document found.")
-		return nil
-	}
 
 	client := p.httpClient()
-	res, err := client.Get(url)
+	res, err := client.Get(urls)
 	if err != nil {
-		p.badROLIEservice.error("Cannot fetch rolie service document %s: %v", url, err)
+		p.badROLIEservice.error("Cannot fetch rolie service document %s: %v", urls, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		p.badROLIEservice.warn("Fetching %s failed. Status code %d (%s)",
-			url, res.StatusCode, res.Status)
+			urls, res.StatusCode, res.Status)
 		return errContinue
 	}
 

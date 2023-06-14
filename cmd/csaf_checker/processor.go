@@ -1006,6 +1006,8 @@ func (p *processor) checkCSAFs(_ string) error {
 				return err
 			}
 		}
+		// check for service category document
+		p.serviceCheck(feeds)
 	}
 
 	// No rolie feeds -> try directory_urls.
