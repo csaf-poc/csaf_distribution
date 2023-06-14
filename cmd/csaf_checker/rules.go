@@ -187,7 +187,12 @@ func (p *processor) eval(requirement int) bool {
 	case 17:
 		// TODO: Implement me!
 		return true
-
+	case 18:
+		return !p.badIntegrities.hasErrors()
+	case 19:
+		return !p.badSignatures.hasErrors()
+	case 20:
+		return !p.badPGPs.hasErrors()
 	default:
 		panic(fmt.Sprintf("evaluating unexpected requirement %d", requirement))
 	}
