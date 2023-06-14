@@ -9,12 +9,8 @@
 package main
 
 import (
-	"bytes"
-	"io"
 	"net/http"
 	"net/url"
-
-	"encoding/json"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
@@ -289,23 +285,21 @@ func (p *processor) serviceCheck(url string, feeds [][]csaf.Feed) error {
 		return errContinue
 	}
 
-	_, err = func() (any, error) {
+	rolieService, err := func() (any, error) {
 		defer res.Body.Close()
-		all, err := io.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-		var rolieService any
-		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieService)
-		return rolieService, err
-
+		return csaf.LoadROLIEServiceDocument(res.Body)
 	}()
+
 	if err != nil {
 		p.badROLIEservice.error("Loading ROLIE service document failed: %v.", err)
 		return errContinue
 	}
 
+	// TODO: Use me!
+	_ = rolieService
+	_ = feeds
+
 	return nil
-	//Todo: Check conformity with RFC8322
+	// TODO: Check conformity with RFC8322
 
 }
