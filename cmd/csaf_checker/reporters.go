@@ -339,8 +339,18 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 // whether it is a [RFC8322] conform JSON file that lists the
 // ROLIE feed documents and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieServiceReporter) report(_ *processor, _ *Domain) {
-	// TODO
+func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badROLIEservice.used() {
+		req.message(InfoType, "ROLIE service document was not checked.")
+		return
+	}
+	if len(p.badROLIEservice) == 0 {
+		req.message(InfoType, "ROLIE service document validated fine.")
+		return
+	}
+	req.Messages = p.badROLIEservice
+
 }
 
 // report tests whether a ROLIE category document is used and if so,
