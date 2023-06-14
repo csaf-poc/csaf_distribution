@@ -93,8 +93,8 @@ func (ca *rolieLabelChecker) check(
 	}
 }
 
-// processROLIEFeeds goes through all ROLIE feeds and checks there
-// integriry and completeness.
+// processROLIEFeeds goes through all ROLIE feeds and checks their
+// integrity and completeness.
 func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	base, err := url.Parse(p.pmdURL)
