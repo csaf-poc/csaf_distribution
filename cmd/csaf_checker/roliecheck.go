@@ -24,7 +24,7 @@ type rolieLabelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	advisories map[csaf.TLPLabel]map[string]struct{}
+	advisories map[csaf.TLPLabel]util.Set[string]
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -68,10 +68,10 @@ func (ca *rolieLabelChecker) check(
 	// Associate advisory label to urls.
 	advs := ca.advisories[advisoryLabel]
 	if advs == nil {
-		advs = make(map[string]struct{})
+		advs = util.Set[string]{}
 		ca.advisories[advisoryLabel] = advs
 	}
-	advs[advisory] = struct{}{}
+	advs.Add(advisory)
 
 	// If entry shows up in feed of higher tlp level,
 	// give out info or warning
@@ -170,7 +170,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			p.labelChecker = &rolieLabelChecker{
 				feedURL:    feedURL.String(),
 				feedLabel:  label,
-				advisories: map[csaf.TLPLabel]map[string]struct{}{},
+				advisories: map[csaf.TLPLabel]util.Set[string]{},
 			}
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
@@ -183,7 +183,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	// Phase 3: Check for completeness.
 
-	hasSummary := map[csaf.TLPLabel]struct{}{}
+	hasSummary := util.Set[csaf.TLPLabel]{}
 
 	var (
 		hasUnlabeled = false
@@ -222,18 +222,19 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 
 			reference := p.labelChecker.advisories[label]
-			advisories := make(map[string]struct{}, len(reference))
+			advisories := make(util.Set[string], len(reference))
 
 			for _, adv := range files {
 				u, err := url.Parse(adv.URL())
 				if err != nil {
-					p.badProviderMetadata.error("Invalid URL %s in feed: %v.", *feed.URL, err)
+					p.badProviderMetadata.error(
+						"Invalid URL %s in feed: %v.", *feed.URL, err)
 					continue
 				}
 				advisories[makeAbs(u).String()] = struct{}{}
 			}
-			if containsAllKeys(reference, advisories) {
-				hasSummary[label] = struct{}{}
+			if advisories.ContainsAll(reference) {
+				hasSummary.Add(label)
 			}
 		}
 	}
@@ -252,7 +253,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		csaf.TLPLabelAmber,
 		csaf.TLPLabelRed,
 	} {
-		if _, ok := hasSummary[label]; !ok && len(p.labelChecker.advisories[label]) > 0 {
+		if hasSummary.Contains(label) && len(p.labelChecker.advisories[label]) > 0 {
 			p.badROLIEFeed.warn(
 				"ROLIE feed for TLP:%s has no accessible listed feed covering all advisories.",
 				label)
@@ -260,16 +261,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	}
 
 	return nil
-}
-
-// containsAllKeys returns if m2 contains all keys of m1.
-func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
-	for k := range m1 {
-		if _, ok := m2[k]; !ok {
-			return false
-		}
-	}
-	return true
 }
 
 // categoryCheck checks for the existence of a feeds ROLIE category document and if it does,

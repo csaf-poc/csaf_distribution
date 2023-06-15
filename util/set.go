@@ -41,3 +41,13 @@ func (s Set[K]) Difference(t Set[K]) Set[K] {
 	}
 	return d
 }
+
+// ContainsAll returns true if all keys of a given set are in this set.
+func (s Set[K]) ContainsAll(t Set[K]) bool {
+	for k := range t {
+		if !s.Contains(k) {
+			return false
+		}
+	}
+	return true
+}
