@@ -69,6 +69,7 @@ type processor struct {
 	badDirListings       topicMessages
 	badROLIEfeed         topicMessages
 	badROLIEservice      topicMessages
+	badROLIEcategory     topicMessages
 
 	expr *util.PathEval
 }
@@ -236,6 +237,7 @@ func (p *processor) clean() {
 	p.badDirListings.reset()
 	p.badROLIEfeed.reset()
 	p.badROLIEservice.reset()
+	p.badROLIEcategory.reset()
 	p.labelChecker = nil
 }
 

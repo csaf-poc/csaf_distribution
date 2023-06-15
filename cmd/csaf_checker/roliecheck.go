@@ -11,6 +11,7 @@ package main
 import (
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
@@ -159,6 +160,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 
 			label := tlpLabel(feed.TLPLabel)
+			p.categoryCheck(feedBase, label)
 
 			p.labelChecker = &rolieLabelChecker{
 				feedURL:    feedURL.String(),
@@ -263,6 +265,26 @@ func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
 		}
 	}
 	return true
+}
+
+func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
+	labelname := strings.ToLower(string(label))
+	urlrc := folderURL + "category-" + labelname + ".json"
+
+	p.badROLIEcategory.use()
+	client := p.httpClient()
+	res, err := client.Get(urlrc)
+	if err != nil {
+		p.badROLIEcategory.error("Cannot fetch rolie category document %s: %v", urlrc, err)
+		return errContinue
+	}
+	if res.StatusCode != http.StatusOK {
+		p.badROLIEcategory.warn("Fetching %s failed. Status code %d (%s)",
+			urlrc, res.StatusCode, res.Status)
+		return errContinue
+	}
+
+	return nil
 }
 
 func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {

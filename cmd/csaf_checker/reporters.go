@@ -358,8 +358,18 @@ func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 // documents by certain criteria
 // and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *rolieCategoryReporter) report(_ *processor, _ *Domain) {
-	// TODO
+func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badROLIEcategory.used() {
+		req.message(InfoType, "No checks on the existence of ROLIE category documents performed.")
+		return
+	}
+	if len(p.badROLIEcategory) == 0 {
+		req.message(InfoType, "All checked ROLIE category documents exist.")
+		return
+	}
+	req.Messages = p.badROLIEcategory
+
 }
 
 func (r *integrityReporter) report(p *processor, domain *Domain) {
