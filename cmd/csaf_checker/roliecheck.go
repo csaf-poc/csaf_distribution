@@ -273,7 +273,8 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 	client := p.httpClient()
 	res, err := client.Get(urlrc)
 	if err != nil {
-		p.badROLIECategory.error("Cannot fetch rolie category document %s: %v", urlrc, err)
+		p.badROLIECategory.error(
+			"Cannot fetch rolie category document %s: %v", urlrc, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
@@ -287,11 +288,13 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 	}()
 
 	if err != nil {
-		p.badROLIECategory.error("Loading ROLIE category document failed: %v.", err)
+		p.badROLIECategory.error(
+			"Loading ROLIE category document failed: %v.", err)
 		return errContinue
 	}
 	if len(rolieCategory.Categories.Category) == 0 {
-		p.badROLIECategory.warn("No distinguishing categories in ROLIE category document: %s", urlrc)
+		p.badROLIECategory.warn(
+			"No distinguishing categories in ROLIE category document: %s", urlrc)
 	}
 	return nil
 }
@@ -316,7 +319,8 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	client := p.httpClient()
 	res, err := client.Get(urls)
 	if err != nil {
-		p.badROLIEService.error("Cannot fetch rolie service document %s: %v", urls, err)
+		p.badROLIEService.error(
+			"Cannot fetch rolie service document %s: %v", urls, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
@@ -331,13 +335,16 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	}()
 
 	if err != nil {
-		p.badROLIEService.error("Loading ROLIE service document failed: %v.", err)
+		p.badROLIEService.error(
+			"Loading ROLIE service document failed: %v.", err)
 		return errContinue
 	}
 
 	// Build lists of all feeds in feeds and in the Service Document
-	sfeeds := util.Set[string]{}
-	ffeeds := util.Set[string]{}
+	var (
+		sfeeds = util.Set[string]{}
+		ffeeds = util.Set[string]{}
+	)
 	for _, col := range rolieService.Service.Workspace {
 		for _, fd := range col.Collection {
 			sfeeds.Add(fd.HRef)
@@ -352,11 +359,13 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	// Check if ROLIE Service Document contains exactly all ROLIE feeds
 	if m1 := sfeeds.Difference(ffeeds).Keys(); len(m1) != 0 {
 		sort.Strings(m1)
-		p.badROLIEService.error("The ROLIE service document contains nonexistent feed entries: %v", m1)
+		p.badROLIEService.error(
+			"The ROLIE service document contains nonexistent feed entries: %v", m1)
 	}
 	if m2 := ffeeds.Difference(sfeeds).Keys(); len(m2) != 0 {
 		sort.Strings(m2)
-		p.badROLIEService.error("The ROLIE service document is missing feed entries: %v", m2)
+		p.badROLIEService.error(
+			"The ROLIE service document is missing feed entries: %v", m2)
 	}
 
 	// TODO: Check conformity with RFC8322
