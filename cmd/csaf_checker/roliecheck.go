@@ -78,11 +78,11 @@ func (ca *rolieLabelChecker) check(
 	switch {
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
-			p.badROLIEfeed.info(
+			p.badROLIEFeed.info(
 				"Found unlabeled advisory %q in feed %q.",
 				advisory, ca.feedURL)
 		} else {
-			p.badROLIEfeed.warn(
+			p.badROLIEFeed.warn(
 				"Found advisory %q labled TLP:%s in feed %q (TLP:%s).",
 				advisory, advisoryLabel,
 				ca.feedURL, ca.feedLabel)
@@ -90,7 +90,7 @@ func (ca *rolieLabelChecker) check(
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
-		p.badROLIEfeed.error(
+		p.badROLIEFeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
 	}
@@ -104,7 +104,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	if err != nil {
 		return err
 	}
-	p.badROLIEfeed.use()
+	p.badROLIEFeed.use()
 
 	advisories := map[*csaf.Feed][]csaf.AdvisoryFile{}
 
@@ -239,7 +239,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	}
 
 	if !hasWhite && !hasGreen && !hasUnlabeled {
-		p.badROLIEfeed.error(
+		p.badROLIEFeed.error(
 			"One ROLIE feed with a TLP:WHITE, TLP:GREEN or unlabeled tlp must exist, " +
 				"but none were found.")
 	}
@@ -253,7 +253,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		csaf.TLPLabelRed,
 	} {
 		if _, ok := hasSummary[label]; !ok && len(p.labelChecker.advisories[label]) > 0 {
-			p.badROLIEfeed.warn(
+			p.badROLIEFeed.warn(
 				"ROLIE feed for TLP:%s has no accessible listed feed covering all advisories.",
 				label)
 		}
@@ -278,15 +278,15 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 	labelname := strings.ToLower(string(label))
 	urlrc := folderURL + "category-" + labelname + ".json"
 
-	p.badROLIEcategory.use()
+	p.badROLIECategory.use()
 	client := p.httpClient()
 	res, err := client.Get(urlrc)
 	if err != nil {
-		p.badROLIEcategory.error("Cannot fetch rolie category document %s: %v", urlrc, err)
+		p.badROLIECategory.error("Cannot fetch rolie category document %s: %v", urlrc, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badROLIEcategory.warn("Fetching %s failed. Status code %d (%s)",
+		p.badROLIECategory.warn("Fetching %s failed. Status code %d (%s)",
 			urlrc, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -296,11 +296,11 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 	}()
 
 	if err != nil {
-		p.badROLIEcategory.error("Loading ROLIE category document failed: %v.", err)
+		p.badROLIECategory.error("Loading ROLIE category document failed: %v.", err)
 		return errContinue
 	}
 	if len(rolieCategory.Categories.Category) == 0 {
-		p.badROLIEcategory.warn("No distinguishing categories in ROLIE category document: %s", urlrc)
+		p.badROLIECategory.warn("No distinguishing categories in ROLIE category document: %s", urlrc)
 	}
 	return nil
 }
@@ -320,16 +320,16 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	urls := baseURL + "service.json"
 
 	// load service document
-	p.badROLIEservice.use()
+	p.badROLIEService.use()
 
 	client := p.httpClient()
 	res, err := client.Get(urls)
 	if err != nil {
-		p.badROLIEservice.error("Cannot fetch rolie service document %s: %v", urls, err)
+		p.badROLIEService.error("Cannot fetch rolie service document %s: %v", urls, err)
 		return errContinue
 	}
 	if res.StatusCode != http.StatusOK {
-		p.badROLIEservice.warn("Fetching %s failed. Status code %d (%s)",
+		p.badROLIEService.warn("Fetching %s failed. Status code %d (%s)",
 			urls, res.StatusCode, res.Status)
 		return errContinue
 	}
@@ -340,7 +340,7 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	}()
 
 	if err != nil {
-		p.badROLIEservice.error("Loading ROLIE service document failed: %v.", err)
+		p.badROLIEService.error("Loading ROLIE service document failed: %v.", err)
 		return errContinue
 	}
 
@@ -361,11 +361,11 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	// Check if ROLIE Service Document contains exactly all ROLIE feeds
 	if m1 := sfeeds.Difference(ffeeds).Keys(); len(m1) != 0 {
 		sort.Strings(m1)
-		p.badROLIEservice.error("The ROLIE service document contains nonexistent feed entries: %v", m1)
+		p.badROLIEService.error("The ROLIE service document contains nonexistent feed entries: %v", m1)
 	}
 	if m2 := ffeeds.Difference(sfeeds).Keys(); len(m2) != 0 {
 		sort.Strings(m2)
-		p.badROLIEservice.error("The ROLIE service document is missing feed entries: %v", m2)
+		p.badROLIEService.error("The ROLIE service document is missing feed entries: %v", m2)
 	}
 
 	// TODO: Check conformity with RFC8322

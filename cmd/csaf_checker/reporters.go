@@ -324,15 +324,15 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 // of the "Requirement" struct as a result of that.
 func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badROLIEfeed.used() {
+	if !p.badROLIEFeed.used() {
 		req.message(InfoType, "No checks on the validity of ROLIE feeds performed.")
 		return
 	}
-	if len(p.badROLIEfeed) == 0 {
+	if len(p.badROLIEFeed) == 0 {
 		req.message(InfoType, "All checked ROLIE feeds validated fine.")
 		return
 	}
-	req.Messages = p.badROLIEfeed
+	req.Messages = p.badROLIEFeed
 }
 
 // report tests whether a ROLIE service document is used and if so,
@@ -341,15 +341,15 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 // of the "Requirement" struct as a result of that.
 func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badROLIEservice.used() {
+	if !p.badROLIEService.used() {
 		req.message(InfoType, "ROLIE service document was not checked.")
 		return
 	}
-	if len(p.badROLIEservice) == 0 {
+	if len(p.badROLIEService) == 0 {
 		req.message(InfoType, "ROLIE service document validated fine.")
 		return
 	}
-	req.Messages = p.badROLIEservice
+	req.Messages = p.badROLIEService
 
 }
 
@@ -360,15 +360,15 @@ func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 // of the "Requirement" struct as a result of that.
 func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badROLIEcategory.used() {
+	if !p.badROLIECategory.used() {
 		req.message(InfoType, "No checks on the existence of ROLIE category documents performed.")
 		return
 	}
-	if len(p.badROLIEcategory) == 0 {
+	if len(p.badROLIECategory) == 0 {
 		req.message(InfoType, "All checked ROLIE category documents exist.")
 		return
 	}
-	req.Messages = p.badROLIEcategory
+	req.Messages = p.badROLIECategory
 
 }
 

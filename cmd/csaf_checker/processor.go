@@ -67,9 +67,9 @@ type processor struct {
 	badWellknownMetadata topicMessages
 	badDNSPath           topicMessages
 	badDirListings       topicMessages
-	badROLIEfeed         topicMessages
-	badROLIEservice      topicMessages
-	badROLIEcategory     topicMessages
+	badROLIEFeed         topicMessages
+	badROLIEService      topicMessages
+	badROLIECategory     topicMessages
 
 	expr *util.PathEval
 }
@@ -235,9 +235,9 @@ func (p *processor) clean() {
 	p.badWellknownMetadata.reset()
 	p.badDNSPath.reset()
 	p.badDirListings.reset()
-	p.badROLIEfeed.reset()
-	p.badROLIEservice.reset()
-	p.badROLIEcategory.reset()
+	p.badROLIEFeed.reset()
+	p.badROLIEService.reset()
+	p.badROLIECategory.reset()
 	p.labelChecker = nil
 }
 
@@ -685,7 +685,7 @@ func (p *processor) integrity(
 		// Extract the tlp level of the entry
 		if tlpa, err := p.expr.Eval(
 			`$.document.distribution`, doc); err != nil {
-			p.badROLIEfeed.error(
+			p.badROLIEFeed.error(
 				"Extracting 'tlp level' from %s failed: %v", u, err)
 		} else {
 			tlpe := extractTLP(tlpa)

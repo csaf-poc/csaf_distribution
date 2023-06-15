@@ -180,11 +180,11 @@ func (p *processor) eval(requirement int) bool {
 		return !p.badDirListings.hasErrors()
 
 	case 15:
-		return !p.badROLIEfeed.hasErrors()
+		return !p.badROLIEFeed.hasErrors()
 	case 16:
-		return !p.badROLIEservice.hasErrors()
+		return !p.badROLIEService.hasErrors()
 	case 17:
-		return !p.badROLIEcategory.hasErrors()
+		return !p.badROLIECategory.hasErrors()
 
 	case 18:
 		return !p.badIntegrities.hasErrors()
