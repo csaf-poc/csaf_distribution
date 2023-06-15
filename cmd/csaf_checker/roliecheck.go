@@ -161,7 +161,11 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			}
 
 			label := tlpLabel(feed.TLPLabel)
-			p.categoryCheck(feedBase, label)
+			if err := p.categoryCheck(feedBase, label); err != nil {
+				if err != errContinue {
+					return err
+				}
+			}
 
 			p.labelChecker = &rolieLabelChecker{
 				feedURL:    feedURL.String(),
