@@ -182,11 +182,10 @@ func (p *processor) eval(requirement int) bool {
 	case 15:
 		return !p.badROLIEfeed.hasErrors()
 	case 16:
-		// TODO: Implement me!
-		return true
+		return !p.badROLIEservice.hasErrors()
 	case 17:
-		// TODO: Implement me!
-		return true
+		return !p.badROLIEcategory.hasErrors()
+
 	case 18:
 		return !p.badIntegrities.hasErrors()
 	case 19:
