@@ -289,7 +289,7 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 
 	if err != nil {
 		p.badROLIECategory.error(
-			"Loading ROLIE category document failed: %v.", err)
+			"Loading ROLIE category document %s failed: %v.", urlrc, err)
 		return errContinue
 	}
 	if len(rolieCategory.Categories.Category) == 0 {
@@ -336,7 +336,7 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 
 	if err != nil {
 		p.badROLIEService.error(
-			"Loading ROLIE service document failed: %v.", err)
+			"Loading ROLIE service document %s failed: %v.", urls, err)
 		return errContinue
 	}
 
@@ -360,12 +360,12 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	if m1 := sfeeds.Difference(ffeeds).Keys(); len(m1) != 0 {
 		sort.Strings(m1)
 		p.badROLIEService.error(
-			"The ROLIE service document contains nonexistent feed entries: %v", m1)
+			"The ROLIE service document %s contains nonexistent feed entries: %v", urls, m1)
 	}
 	if m2 := ffeeds.Difference(sfeeds).Keys(); len(m2) != 0 {
 		sort.Strings(m2)
 		p.badROLIEService.error(
-			"The ROLIE service document is missing feed entries: %v", m2)
+			"The ROLIE service document %s is missing feed entries: %v", urls, m2)
 	}
 
 	// TODO: Check conformity with RFC8322
