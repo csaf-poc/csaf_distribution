@@ -267,6 +267,8 @@ func containsAllKeys[K comparable, V any](m1, m2 map[K]V) bool {
 	return true
 }
 
+// categoryCheck checks for the existence of a feeds ROLIE category document and if it does,
+// whether the category document contains distinguishing categories
 func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 	labelname := strings.ToLower(string(label))
 	urlrc := folderURL + "category-" + labelname + ".json"
@@ -283,10 +285,23 @@ func (p *processor) categoryCheck(folderURL string, label csaf.TLPLabel) error {
 			urlrc, res.StatusCode, res.Status)
 		return errContinue
 	}
+	rolieCategory, err := func() (*csaf.ROLIECategoryDocument, error) {
+		defer res.Body.Close()
+		return csaf.LoadROLIECategoryDocument(res.Body)
+	}()
 
+	if err != nil {
+		p.badROLIEcategory.error("Loading ROLIE category document failed: %v.", err)
+		return errContinue
+	}
+	if len(rolieCategory.Categories.Category) == 0 {
+		p.badROLIEcategory.warn("No distinguishing categories in ROLIE category document: %s", urlrc)
+	}
 	return nil
 }
 
+// serviceCheck checks if a ROLIE service document exists and if it does,
+// whether it contains all ROLIE feeds.
 func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	// service category document should be next to the pmd
 	pmdURL, err := url.Parse(p.pmdURL)
