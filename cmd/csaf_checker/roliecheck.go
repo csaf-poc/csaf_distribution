@@ -11,6 +11,7 @@ package main
 import (
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
@@ -340,56 +341,29 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	}
 
 	// Build lists of all feeds in feeds and in the Service Document
-	sfeeds := []string{}
-	ffeeds := []string{}
+	sfeeds := util.Set[string]{}
+	ffeeds := util.Set[string]{}
 	for _, col := range rolieService.Service.Workspace {
 		for _, fd := range col.Collection {
-			sfeeds = append(sfeeds, fd.HRef)
+			sfeeds.Add(fd.HRef)
 		}
 	}
 	for _, r := range feeds {
 		for _, s := range r {
-			ffeeds = append(ffeeds, string(*s.URL))
+			ffeeds.Add(string(*s.URL))
 		}
 	}
+
 	// Check if ROLIE Service Document contains exactly all ROLIE feeds
-	m1, m2 := sameContentsSS(sfeeds, ffeeds)
-	if len(m1) != 0 {
+	if m1 := sfeeds.Difference(ffeeds).Keys(); len(m1) != 0 {
+		sort.Strings(m1)
 		p.badROLIEservice.error("The ROLIE service document contains nonexistent feed entries: %v", m1)
 	}
-	if len(m2) != 0 {
+	if m2 := ffeeds.Difference(sfeeds).Keys(); len(m2) != 0 {
+		sort.Strings(m2)
 		p.badROLIEservice.error("The ROLIE service document is missing feed entries: %v", m2)
 	}
 
-	return nil
 	// TODO: Check conformity with RFC8322
-
-}
-
-// sameContents checks if two slices slice1 and slice2 of strings contains the same strings
-// returns two slices of all strings missing in the respective other slice
-func sameContentsSS(slice1 []string, slice2 []string) ([]string, []string) {
-	m1 := []string{}
-	m2 := []string{}
-	for _, e1 := range slice1 {
-		if !containsAllSS(slice2, e1) {
-			m1 = append(m1, e1)
-		}
-	}
-	for _, e2 := range slice2 {
-		if !containsAllSS(slice1, e2) {
-			m2 = append(m2, e2)
-		}
-	}
-	return m1, m2
-}
-
-// containsAllSS checks if a slice of strings contains a string
-func containsAllSS(slice []string, str string) bool {
-	for _, e := range slice {
-		if e == str {
-			return true
-		}
-	}
-	return false
+	return nil
 }
