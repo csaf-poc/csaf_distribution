@@ -684,7 +684,7 @@ func (p *processor) integrity(
 
 		// Extract the tlp level of the entry
 		if tlpa, err := p.expr.Eval(
-			`$.document.distribution`, doc); err != nil {
+			`$.document`, doc); err != nil {
 			p.badROLIEFeed.error(
 				"Extracting 'tlp level' from %s failed: %v", u, err)
 		} else {
@@ -810,11 +810,15 @@ func (p *processor) integrity(
 // extractTLP tries to extract a valid TLP label from an advisory
 // Returns "UNLABELED" if it does not exist, the label otherwise
 func extractTLP(tlpa any) csaf.TLPLabel {
-	if distribution, ok := tlpa.(map[string]any); ok {
-		if tlp, ok := distribution["tlp"]; ok {
-			if label, ok := tlp.(map[string]any); ok {
-				if labelstring, ok := label["label"].(string); ok {
-					return csaf.TLPLabel(labelstring)
+	if document, ok := tlpa.(map[string]any); ok {
+		if distri, ok := document["distribution"]; ok {
+			if distribution, ok := distri.(map[string]any); ok {
+				if tlp, ok := distribution["tlp"]; ok {
+					if label, ok := tlp.(map[string]any); ok {
+						if labelstring, ok := label["label"].(string); ok {
+							return csaf.TLPLabel(labelstring)
+						}
+					}
 				}
 			}
 		}
