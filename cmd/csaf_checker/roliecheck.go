@@ -134,6 +134,9 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			advisories[feed] = advs
 		}
 	}
+	p.labelChecker = &rolieLabelChecker{
+		advisories: map[csaf.TLPLabel]util.Set[string]{},
+	}
 
 	// Phase 2: check for integrity.
 	for _, fs := range feeds {
@@ -167,11 +170,8 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				}
 			}
 
-			p.labelChecker = &rolieLabelChecker{
-				feedURL:    feedURL.String(),
-				feedLabel:  label,
-				advisories: map[csaf.TLPLabel]util.Set[string]{},
-			}
+			p.labelChecker.feedURL = feedURL.String()
+			p.labelChecker.feedLabel = label
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
