@@ -253,7 +253,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		csaf.TLPLabelAmber,
 		csaf.TLPLabelRed,
 	} {
-		if hasSummary.Contains(label) && len(p.labelChecker.advisories[label]) > 0 {
+		if !hasSummary.Contains(label) && len(p.labelChecker.advisories[label]) > 0 {
 			p.badROLIEFeed.warn(
 				"ROLIE feed for TLP:%s has no accessible listed feed covering all advisories.",
 				label)
