@@ -271,6 +271,11 @@ func (p *processor) run(domains []string) (*Report, error) {
 			continue
 		}
 
+		if domain.Role == nil {
+			log.Printf("No role found in meta data. Ignoring domain %q\n", d)
+			continue
+		}
+
 		rules := roleRequirements(*domain.Role)
 		// TODO: store error base on rules eval in report.
 		if rules == nil {
