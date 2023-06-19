@@ -38,6 +38,7 @@ var (
 		cond: condAll,
 		subs: []*requirementRules{
 			publisherRules,
+			{cond: condAll, subs: ruleAtoms(5, 6, 7)},
 			{cond: condOneOf, subs: ruleAtoms(8, 9, 10)},
 			{cond: condOneOf, subs: []*requirementRules{
 				{cond: condAll, subs: ruleAtoms(11, 12, 13, 14)},
@@ -162,6 +163,15 @@ func (p *processor) eval(requirement int) bool {
 		return !p.badFilenames.hasErrors()
 	case 3:
 		return len(p.noneTLS) == 0
+
+	case 5:
+		// TODO: implement me!
+		return true
+	case 6:
+		return len(p.redirects) == 0
+	case 7:
+		// TODO: implement me!
+		return true
 
 	case 8:
 		return !p.badSecurity.hasErrors()
