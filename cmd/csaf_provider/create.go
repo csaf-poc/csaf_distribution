@@ -196,6 +196,7 @@ func createROLIEfeed(c *config, t tlp, folder string) error {
 				Term:   "csaf",
 			}},
 			Updated: csaf.TimeStamp(time.Now().UTC()),
+			Entry:   []*csaf.Entry{},
 		},
 	}
 
