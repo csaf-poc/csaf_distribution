@@ -251,6 +251,11 @@ func (p *processor) run(domains []string) (*Report, error) {
 			continue
 		}
 
+		if domain.Role == nil {
+			log.Printf("No role found in meta data. Ignoring domain %q\n", d)
+			continue
+		}
+
 		for _, r := range buildReporters(*domain.Role) {
 			r.report(p, domain)
 		}
