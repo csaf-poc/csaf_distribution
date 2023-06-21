@@ -109,31 +109,23 @@ func (ca *rolieLabelChecker) check(
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
 	}
 
+	res, err := ca.basicClient.Get(advisory)
 	switch {
 	case advisoryRank == 1:
 		p.badWhitePermissions.use()
-	case advisoryRank > 2:
-		p.badAmberRedPermissions.use()
-	}
-
-	res, err := ca.basicClient.Get(advisory)
-	if err != nil {
-		switch {
-		case advisoryRank == 1:
+		if err != nil {
 			p.badWhitePermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
-		case advisoryRank > 2:
-			p.badAmberRedPermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
-		}
-	}
-	switch res.StatusCode {
-	case http.StatusOK:
-		if advisoryRank > 2 {
-			p.badAmberRedPermissions.error("Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
-		}
-	case http.StatusForbidden:
-		if advisoryRank == 1 {
+		} else if res.StatusCode == http.StatusForbidden {
 			// TODO: Differentiate between error and warning based on whether the advisory appears in a not access protected location as well.
 			p.badWhitePermissions.warn("Advisory %s of TLP level WHITE is access protected.", advisory)
+		}
+	case advisoryRank > 2:
+		p.badAmberRedPermissions.use()
+		if err != nil {
+			p.badAmberRedPermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
+		} else if res.StatusCode == http.StatusOK {
+			p.badAmberRedPermissions.error("Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
+
 		}
 	}
 }
