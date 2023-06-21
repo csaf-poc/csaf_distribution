@@ -165,8 +165,7 @@ func (p *processor) eval(requirement int) bool {
 		return len(p.noneTLS) == 0
 
 	case 5:
-		// TODO: implement me!
-		return true
+		return !p.badAmberRedPermissions.hasErrors()
 	case 6:
 		return len(p.redirects) == 0
 	case 7:
