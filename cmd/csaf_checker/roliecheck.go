@@ -9,6 +9,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"net/http"
 	"net/url"
 	"sort"
@@ -24,10 +25,12 @@ type rolieLabelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	advisories map[csaf.TLPLabel]util.Set[string]
+	advisories  map[csaf.TLPLabel]util.Set[string]
+	basicClient *http.Client
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
+// TODO: Is this the right location to put the p.[...].use()?
 func tlpLevel(label csaf.TLPLabel) int {
 	switch label {
 	case csaf.TLPLabelWhite:
@@ -50,6 +53,17 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 		return *label
 	}
 	return csaf.TLPLabelUnlabeled
+}
+
+// createBasicClient creates and returns a http Client
+func (p *processor) createBasicClient() *http.Client {
+	if p.opts.Insecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		return &http.Client{Transport: tr}
+	}
+	return &http.Client{}
 }
 
 // check tests if in advisory is in the right TLP color of the
@@ -94,6 +108,34 @@ func (ca *rolieLabelChecker) check(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
 	}
+
+	switch {
+	case advisoryRank == 1:
+		p.badWhitePermissions.use()
+	case advisoryRank > 2:
+		p.badAmberRedPermissions.use()
+	}
+
+	res, err := ca.basicClient.Get(advisory)
+	if err != nil {
+		switch {
+		case advisoryRank == 1:
+			p.badWhitePermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
+		case advisoryRank > 2:
+			p.badAmberRedPermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
+		}
+	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		if advisoryRank > 2 {
+			p.badAmberRedPermissions.error("Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
+		}
+	case http.StatusForbidden:
+		if advisoryRank == 1 {
+			// TODO: Differentiate between error and warning based on whether the advisory appears in a not access protected location as well.
+			p.badWhitePermissions.warn("Advisory %s of TLP level WHITE is access protected.", advisory)
+		}
+	}
 }
 
 // processROLIEFeeds goes through all ROLIE feeds and checks their
@@ -135,7 +177,8 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		}
 	}
 	p.labelChecker = &rolieLabelChecker{
-		advisories: map[csaf.TLPLabel]util.Set[string]{},
+		advisories:  map[csaf.TLPLabel]util.Set[string]{},
+		basicClient: p.createBasicClient(),
 	}
 
 	// Phase 2: check for integrity.

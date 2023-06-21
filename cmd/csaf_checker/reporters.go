@@ -152,16 +152,34 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 // report tests if a document labeled TLP:WHITE
 // is freely accessible and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *tlpWhiteReporter) report(_ *processor, _ *Domain) {
-	// TODO
+func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badWhitePermissions.used() {
+		req.message(InfoType, "No advisories labeled TLP:WHITE tested for accessibility.")
+		return
+	}
+	if len(p.badWhitePermissions) == 0 {
+		req.message(InfoType, "All advisories labeled TLP:WHITE were freely accessible.")
+		return
+	}
+	req.Messages = p.badWhitePermissions
 }
 
 // report tests if a document labeled TLP:AMBER
 // or TLP:RED is access protected
 // and sets the "message" field value
 // of the "Requirement" struct as a result of that.
-func (r *tlpAmberRedReporter) report(_ *processor, _ *Domain) {
-	// TODO
+func (r *tlpAmberRedReporter) report(p *processor, domain *Domain) {
+	req := r.requirement(domain)
+	if !p.badAmberRedPermissions.used() {
+		req.message(InfoType, "No advisories labeled TLP:AMBER or TLP:RED tested for accessibility.")
+		return
+	}
+	if len(p.badAmberRedPermissions) == 0 {
+		req.message(InfoType, "All tested advisories labeled TLP:WHITE or TLP:RED were access-protected.")
+		return
+	}
+	req.Messages = p.badAmberRedPermissions
 }
 
 // report tests if redirects are used and sets the "message" field value

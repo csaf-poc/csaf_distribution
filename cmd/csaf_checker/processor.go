@@ -54,22 +54,24 @@ type processor struct {
 	keys           *crypto.KeyRing
 	labelChecker   *rolieLabelChecker
 
-	invalidAdvisories    topicMessages
-	badFilenames         topicMessages
-	badIntegrities       topicMessages
-	badPGPs              topicMessages
-	badSignatures        topicMessages
-	badProviderMetadata  topicMessages
-	badSecurity          topicMessages
-	badIndices           topicMessages
-	badChanges           topicMessages
-	badFolders           topicMessages
-	badWellknownMetadata topicMessages
-	badDNSPath           topicMessages
-	badDirListings       topicMessages
-	badROLIEFeed         topicMessages
-	badROLIEService      topicMessages
-	badROLIECategory     topicMessages
+	invalidAdvisories      topicMessages
+	badFilenames           topicMessages
+	badIntegrities         topicMessages
+	badPGPs                topicMessages
+	badSignatures          topicMessages
+	badProviderMetadata    topicMessages
+	badSecurity            topicMessages
+	badIndices             topicMessages
+	badChanges             topicMessages
+	badFolders             topicMessages
+	badWellknownMetadata   topicMessages
+	badDNSPath             topicMessages
+	badDirListings         topicMessages
+	badROLIEFeed           topicMessages
+	badROLIEService        topicMessages
+	badROLIECategory       topicMessages
+	badWhitePermissions    topicMessages
+	badAmberRedPermissions topicMessages
 
 	expr *util.PathEval
 }
@@ -238,6 +240,8 @@ func (p *processor) clean() {
 	p.badROLIEFeed.reset()
 	p.badROLIEService.reset()
 	p.badROLIECategory.reset()
+	p.badWhitePermissions.reset()
+	p.badAmberRedPermissions.reset()
 	p.labelChecker = nil
 }
 
