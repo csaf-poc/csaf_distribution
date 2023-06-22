@@ -29,7 +29,6 @@ type rolieLabelChecker struct {
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
-// TODO: Is this the right location to put the p.[...].use()?
 func tlpLevel(label csaf.TLPLabel) int {
 	switch label {
 	case csaf.TLPLabelWhite:
