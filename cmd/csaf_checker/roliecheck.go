@@ -9,7 +9,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"net/http"
 	"net/url"
 	"sort"
@@ -25,8 +24,8 @@ type rolieLabelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	advisories  map[csaf.TLPLabel]util.Set[string]
-	basicClient *http.Client
+	advisories map[csaf.TLPLabel]util.Set[string]
+	openClient util.Client
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -53,17 +52,6 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 		return *label
 	}
 	return csaf.TLPLabelUnlabeled
-}
-
-// createBasicClient creates and returns a http Client
-func (p *processor) createBasicClient() *http.Client {
-	if p.opts.Insecure {
-		tr := &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-		return &http.Client{Transport: tr}
-	}
-	return &http.Client{}
 }
 
 // check tests if in advisory is in the right TLP color of the
@@ -109,23 +97,38 @@ func (ca *rolieLabelChecker) check(
 			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
 	}
 
-	res, err := ca.basicClient.Get(advisory)
-	switch {
-	case advisoryRank == 1:
-		p.badWhitePermissions.use()
-		if err != nil {
-			p.badWhitePermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
-		} else if res.StatusCode == http.StatusForbidden {
-			// TODO: Differentiate between error and warning based on whether the advisory appears in a not access protected location as well.
-			p.badWhitePermissions.warn("Advisory %s of TLP level WHITE is access protected.", advisory)
-		}
-	case advisoryRank > 2:
-		p.badAmberRedPermissions.use()
-		if err != nil {
-			p.badAmberRedPermissions.error("Unexpected Error %v when trying to fetch: %s", err, advisory)
-		} else if res.StatusCode == http.StatusOK {
-			p.badAmberRedPermissions.error("Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
+	// If we have an open client then the actual data was downloaded
+	// through an authorizing client.
+	if ca.openClient != nil {
+		switch {
+		// If we are checking WHITE and we have a test client
+		// and we get a status forbidden then the access is not open.
+		case ca.feedLabel == csaf.TLPLabelWhite:
+			p.badWhitePermissions.use()
+			res, err := ca.openClient.Get(advisory)
+			if err != nil {
+				p.badWhitePermissions.error(
+					"Unexpected Error %v when trying to fetch: %s", err, advisory)
+			} else if res.StatusCode == http.StatusForbidden {
+				p.badWhitePermissions.error(
+					"Advisory %s of TLP level WHITE is access protected.", advisory)
+			}
 
+		// If we are checking AMBER or above we need to download
+		// the data again with the open client.
+		// If this does not result in status forbidden the
+		// server may be wrongly configured.
+		case ca.feedLabel >= csaf.TLPLabelAmber:
+			p.badAmberRedPermissions.use()
+			res, err := ca.openClient.Get(advisory)
+			if err != nil {
+				p.badAmberRedPermissions.error(
+					"Unexpected Error %v when trying to fetch: %s", err, advisory)
+			} else if res.StatusCode == http.StatusOK {
+				p.badAmberRedPermissions.error(
+					"Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
+
+			}
 		}
 	}
 }
@@ -168,9 +171,9 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			advisories[feed] = advs
 		}
 	}
+
 	p.labelChecker = &rolieLabelChecker{
-		advisories:  map[csaf.TLPLabel]util.Set[string]{},
-		basicClient: p.createBasicClient(),
+		advisories: map[csaf.TLPLabel]util.Set[string]{},
 	}
 
 	// Phase 2: check for integrity.
@@ -207,6 +210,19 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			p.labelChecker.feedURL = feedURL.String()
 			p.labelChecker.feedLabel = label
+
+			// If we are using an authorizing client
+			// we need a an open client to check
+			// WHITE, AMBER and RED feeds.
+			var openClient util.Client
+			if (label == csaf.TLPLabelWhite || label >= csaf.TLPLabelAmber) &&
+				p.opts.protectedAccess() {
+				openClient = p.basicClient()
+			}
+			p.labelChecker.openClient = openClient
+
+			// TODO: Issue a warning if we want check AMBER+ without an
+			// authorizing client.
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {

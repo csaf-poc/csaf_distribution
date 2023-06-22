@@ -407,12 +407,8 @@ func (p *processor) checkRedirect(r *http.Request, via []*http.Request) error {
 	return nil
 }
 
-func (p *processor) httpClient() util.Client {
-
-	if p.client != nil {
-		return p.client
-	}
-
+// fullClient returns a fully configure HTTP client.
+func (p *processor) fullClient() util.Client {
 	hClient := http.Client{}
 
 	hClient.CheckRedirect = p.checkRedirect
@@ -452,8 +448,29 @@ func (p *processor) httpClient() util.Client {
 			Limiter: rate.NewLimiter(rate.Limit(*p.opts.Rate), 1),
 		}
 	}
+	return client
+}
 
-	p.client = client
+// basicClient returns a http Client w/o certs and headers.
+func (p *processor) basicClient() *http.Client {
+	if p.opts.Insecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		return &http.Client{Transport: tr}
+	}
+	return &http.Client{}
+}
+
+// httpClient returns a cached HTTP client to be used to
+// download remote ressources.
+func (p *processor) httpClient() util.Client {
+
+	if p.client != nil {
+		return p.client
+	}
+
+	p.client = p.fullClient()
 	return p.client
 }
 
