@@ -224,6 +224,8 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			// TODO: Issue a warning if we want check AMBER+ without an
 			// authorizing client.
 
+			// TODO: Complete criteria for requirement 4.
+
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
 					return err
