@@ -169,9 +169,7 @@ func (p *processor) eval(requirement int) bool {
 	case 6:
 		return len(p.redirects) == 0
 	case 7:
-		// TODO: implement me!
-		return true
-
+		return !p.badProviderMetadata.hasErrors()
 	case 8:
 		return !p.badSecurity.hasErrors()
 	case 9:
