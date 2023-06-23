@@ -715,6 +715,11 @@ func (p *processor) integrity(
 				"Extracting 'tlp level' from %s failed: %v", u, err)
 		} else {
 			tlpe := extractTLP(tlpa)
+			// If the client has no authorization it shouldn't be able to access TLP:AMBER or TLP:RED advisories
+			if !p.opts.protectedAccess() && (tlpe == "AMBER" || tlpe == "RED") {
+				p.badAmberRedPermissions.use()
+				p.badAmberRedPermissions.error("Advisory %s of TLP level %v is not access protected.", u, tlpe)
+			}
 			// check if current feed has correct or all of their tlp levels entries.
 			if p.labelChecker != nil {
 				p.labelChecker.check(p, tlpe, u)
