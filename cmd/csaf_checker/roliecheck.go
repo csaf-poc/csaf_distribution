@@ -125,7 +125,8 @@ func (ca *rolieLabelChecker) check(
 					"Unexpected Error %v when trying to fetch: %s", err, advisory)
 			} else if res.StatusCode == http.StatusOK {
 				p.badAmberRedPermissions.error(
-					"Advisory %s of TLP level %v is not properly access protected.", advisory, advisoryLabel)
+					"Advisory %s of TLP level %v is not properly access protected.",
+					advisory, advisoryLabel)
 
 			}
 		}
