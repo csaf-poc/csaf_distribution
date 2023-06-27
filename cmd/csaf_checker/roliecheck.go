@@ -212,7 +212,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 			p.labelChecker.feedLabel = label
 
 			// If we are using an authorizing client
-                        // we need an open client to check
+			// we need an open client to check
 			// WHITE, AMBER and RED feeds.
 			var openClient util.Client
 			if (label == csaf.TLPLabelWhite || label >= csaf.TLPLabelAmber) &&
