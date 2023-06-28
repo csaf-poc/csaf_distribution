@@ -23,7 +23,7 @@ Calling example (as root):
     source ./TLSConfigsForITest.sh
     set +e  # for an interactive shell, reverse set -e done by previous line
     ./TLSClientConfigsForITest.sh
-    ./setupProviderForITest.sh
+    ./setupProviderForITest.sh # calls upon the checker tool, whose output contains the word "ERROR"
     ./testAggregator.sh
     ./testDownloader.sh
 ```
