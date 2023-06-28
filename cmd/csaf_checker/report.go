@@ -46,6 +46,7 @@ type Domain struct {
 	Publisher    *csaf.Publisher    `json:"publisher,omitempty"`
 	Role         *csaf.MetadataRole `json:"role,omitempty"`
 	Requirements []*Requirement     `json:"requirements,omitempty"`
+	Passed       bool               `json:"passed"`
 }
 
 // ReportTime stores the time of the report.
@@ -80,12 +81,7 @@ func (r *Requirement) Append(msgs []Message) {
 
 // HasErrors tells if this domain has errors.
 func (d *Domain) HasErrors() bool {
-	for _, r := range d.Requirements {
-		if r.HasErrors() {
-			return true
-		}
-	}
-	return false
+	return !d.Passed
 }
 
 // String implements fmt.Stringer interface.
