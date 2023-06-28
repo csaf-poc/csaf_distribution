@@ -49,8 +49,8 @@ func IDMatchesFilename(eval *PathEval, doc any, filename string) error {
 	}
 
 	if CleanFileName(id) != filename {
-		return fmt.Errorf("document/tracking/id %q does not match filename %s",
-			id, filename)
+		return fmt.Errorf("filename %s does not match document/tracking/id %q",
+			filename, id)
 	}
 
 	return nil
