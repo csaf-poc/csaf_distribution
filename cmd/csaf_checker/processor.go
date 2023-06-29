@@ -244,6 +244,7 @@ func (p *processor) run(domains []string) (*Report, error) {
 			}
 		} else {
 			log.Printf("Failed to find valid provider-metadata.json for domain %s. Continuing with next domain.", d)
+			continue
 		}
 		domain := &Domain{Name: d}
 
