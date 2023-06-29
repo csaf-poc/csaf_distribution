@@ -242,6 +242,8 @@ func (p *processor) run(domains []string) (*Report, error) {
 				}
 				return nil, err
 			}
+		} else {
+			log.Printf("Failed to find valid provider-metadata.json for domain %s. Continuing with next domain.", d)
 		}
 		domain := &Domain{Name: d}
 
@@ -1142,8 +1144,6 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 	}
 
 	if !lpmd.Valid() {
-		p.badProviderMetadata.error("No valid provider-metadata.json found.")
-		p.badProviderMetadata.error("STOPPING here - cannot perform other checks.")
 		return false
 	}
 
