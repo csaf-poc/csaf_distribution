@@ -20,7 +20,10 @@
           "title": "Link",
           "description": "Specifies the JSON link.",
           "type": "object",
-          "required": ["rel", "href"],
+          "required": [
+            "rel",
+            "href"
+          ],
           "properties": {
             "href": {
               "title": "Hyper reference",
@@ -31,7 +34,9 @@
               "title": "Relationship",
               "description": "Contains the relationship value of the link.",
               "type": "string",
-              "enum": ["self"]
+              "enum": [
+                "self"
+              ]
             }
           }
         }
@@ -42,7 +47,10 @@
         "title": "Link",
         "description": "Specifies a single link.",
         "type": "object",
-        "required": ["rel", "href"],
+        "required": [
+          "rel",
+          "href"
+        ],
         "properties": {
           "href": {
             "title": "Hyper reference",
@@ -61,13 +69,22 @@
     }
   },
   "type": "object",
-  "required": ["feed"],
+  "required": [
+    "feed"
+  ],
   "properties": {
     "feed": {
       "title": "CSAF ROLIE feed",
       "description": "Contains all information of the feed.",
       "type": "object",
-      "required": ["id", "title", "link", "category", "updated", "entry"],
+      "required": [
+        "id",
+        "title",
+        "link",
+        "category",
+        "updated",
+        "entry"
+      ],
       "properties": {
         "id": {
           "title": "ID",
@@ -96,19 +113,26 @@
               "title": "CSAF ROLIE category",
               "description": "Contains the required ROLIE category value.",
               "type": "object",
-              "required": ["scheme", "term"],
+              "required": [
+                "scheme",
+                "term"
+              ],
               "properties": {
                 "scheme": {
                   "title": "Scheme",
                   "description": "Contains the URI of the scheme to use.",
                   "type": "string",
-                  "enum": ["urn:ietf:params:rolie:category:information-type"]
+                  "enum": [
+                    "urn:ietf:params:rolie:category:information-type"
+                  ]
                 },
                 "term": {
                   "title": "Term",
                   "description": "Contains the term that is valid in the context of the scheme.",
                   "type": "string",
-                  "enum": ["csaf"]
+                  "enum": [
+                    "csaf"
+                  ]
                 }
               }
             }
@@ -119,7 +143,10 @@
             "title": "Category",
             "description": "Specifies a single category.",
             "type": "object",
-            "required": ["scheme", "term"],
+            "required": [
+              "scheme",
+              "term"
+            ],
             "properties": {
               "scheme": {
                 "title": "Scheme",
@@ -146,7 +173,6 @@
           "title": "List of Entries",
           "description": "Contains a list of feed entries.",
           "type": "array",
-          "minItems": 1,
           "uniqueItems": true,
           "items": {
             "title": "Entry",
@@ -193,13 +219,13 @@
                 "format": "date-time"
               },
               "summary": {
-                "title": "",
-                "description": "",
+                "title": "Summary",
+                "description": "Contains the summary of the CSAF document.",
                 "type": "object",
                 "properties": {
                   "content": {
-                    "title": "",
-                    "description": "",
+                    "title": "Content",
+                    "description": "Contains the actual text of the summary.",
                     "type": "string",
                     "minLength": 1
                   }
@@ -209,7 +235,10 @@
                 "title": "Content of the entry",
                 "description": "Contains information about the content.",
                 "type": "object",
-                "required": ["type", "src"],
+                "required": [
+                  "type",
+                  "src"
+                ],
                 "properties": {
                   "src": {
                     "title": "Source Code",
@@ -220,15 +249,20 @@
                     "title": "MIME type",
                     "description": "Contains the MIME type of the content.",
                     "type": "string",
-                    "enum": ["application/json"]
+                    "enum": [
+                      "application/json"
+                    ]
                   }
                 }
               },
               "format": {
-                "title": "",
-                "description": "",
+                "title": "Format",
+                "description": "Contains information about the format of the entry.",
                 "type": "object",
-                "required": ["schema", "version"],
+                "required": [
+                  "schema",
+                  "version"
+                ],
                 "properties": {
                   "schema": {
                     "title": "Schema of the entry",
@@ -240,9 +274,11 @@
                   },
                   "version": {
                     "title": "CSAF Version",
-                    "description": "Contains the  CSAF version the document was written in.",
+                    "description": "Contains the CSAF version the document was written in.",
                     "type": "string",
-                    "enum": ["2.0"]
+                    "enum": [
+                      "2.0"
+                    ]
                   }
                 }
               }

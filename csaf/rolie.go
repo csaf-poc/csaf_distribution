@@ -185,7 +185,7 @@ type FeedData struct {
 	Link     []Link          `json:"link,omitempty"`
 	Category []ROLIECategory `json:"category,omitempty"`
 	Updated  TimeStamp       `json:"updated"`
-	Entry    []*Entry        `json:"entry,omitempty"`
+	Entry    []*Entry        `json:"entry"`
 }
 
 // ROLIEFeed is a ROLIE feed.
@@ -237,4 +237,9 @@ func (rf *ROLIEFeed) SortEntriesByUpdated() {
 	sort.Slice(entries, func(i, j int) bool {
 		return time.Time(entries[j].Updated).Before(time.Time(entries[i].Updated))
 	})
+}
+
+// CountEntries returns the number of entries within the feed
+func (rf *ROLIEFeed) CountEntries() int {
+	return len(rf.Feed.Entry)
 }

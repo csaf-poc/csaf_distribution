@@ -17,6 +17,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -153,8 +154,54 @@ func createFeedFolders(c *config, wellknown string) error {
 				return err
 			}
 		}
+		// Create an empty ROLIE feed document
+		if err := createROLIEfeed(c, t, tlpLink); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+// createROLIEfeed creates an empty ROLIE feed
+func createROLIEfeed(c *config, t tlp, folder string) error {
+	ts := string(t)
+	feedName := "csaf-feed-tlp-" + ts + ".json"
+
+	feed := filepath.Join(folder, feedName)
+
+	feedURL := csaf.JSONURL(
+		c.CanonicalURLPrefix +
+			"/.well-known/csaf/" + ts + "/" + feedName)
+
+	tlpLabel := csaf.TLPLabel(strings.ToUpper(ts))
+
+	links := []csaf.Link{{
+		Rel:  "self",
+		HRef: string(feedURL),
+	}}
+	// If we have a service document we need to link it.
+	if c.ServiceDocument {
+		links = append(links, csaf.Link{
+			Rel:  "service",
+			HRef: c.CanonicalURLPrefix + "/.well-known/csaf/service.json",
+		})
+	}
+	rolie := &csaf.ROLIEFeed{
+		Feed: csaf.FeedData{
+			ID:    "csaf-feed-tlp-" + ts,
+			Title: "CSAF feed (TLP:" + string(tlpLabel) + ")",
+			Link:  links,
+			Category: []csaf.ROLIECategory{{
+				Scheme: "urn:ietf:params:rolie:category:information-type",
+				Term:   "csaf",
+			}},
+			Updated: csaf.TimeStamp(time.Now().UTC()),
+			Entry:   []*csaf.Entry{},
+		},
+	}
+
+	return util.WriteToFile(feed, rolie)
+
 }
 
 // createOpenPGPFolder creates an openpgp folder besides

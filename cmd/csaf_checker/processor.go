@@ -86,8 +86,6 @@ type reporter interface {
 var (
 	// errContinue indicates that the current check should continue.
 	errContinue = errors.New("continue")
-	// errStop indicates that the current check should stop.
-	errStop = errors.New("stop")
 )
 
 type whereType byte
@@ -262,10 +260,9 @@ func (p *processor) run(domains []string) (*Report, error) {
 			continue
 		}
 		if err := p.checkDomain(d); err != nil {
-			if err == errContinue || err == errStop {
-				continue
-			}
-			return nil, err
+			log.Printf("Failed to find valid provider-metadata.json for domain %s: %v. "+
+				"Continuing with next domain.", d, err)
+			continue
 		}
 		domain := &Domain{Name: d}
 
@@ -354,17 +351,17 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 	return checks
 }
 
+// checkDomain runs a set of domain specific checks on a given
+// domain.
 func (p *processor) checkDomain(domain string) error {
-
 	for _, check := range p.domainChecks(domain) {
-		if err := check(p, domain); err != nil && err != errContinue {
-			if err == errStop {
-				return nil
+		if err := check(p, domain); err != nil {
+			if err == errContinue {
+				continue
 			}
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -503,11 +500,14 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 		var rolieDoc any
 		err = json.NewDecoder(bytes.NewReader(all)).Decode(&rolieDoc)
 		return rfeed, rolieDoc, err
-
 	}()
 	if err != nil {
 		p.badProviderMetadata.error("Loading ROLIE feed failed: %v.", err)
 		return nil, errContinue
+	}
+
+	if rfeed.CountEntries() == 0 {
+		p.badROLIEFeed.warn("No entries in %s", feed)
 	}
 	errors, err := csaf.ValidateROLIE(rolieDoc)
 	if err != nil {
@@ -1208,8 +1208,6 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 	}
 
 	if !lpmd.Valid() {
-		p.badProviderMetadata.error("No valid provider-metadata.json found.")
-		p.badProviderMetadata.error("STOPPING here - cannot perform other checks.")
 		return false
 	}
 

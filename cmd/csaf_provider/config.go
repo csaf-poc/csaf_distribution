@@ -31,6 +31,7 @@ const (
 	defaultWeb               = "/var/www/html" // Default web path.
 	defaultNoWebUI           = true
 	defaultUploadLimit       = 50 * 1024 * 1024 // Default limit size of the uploaded file.
+	defaultServiceDocument   = true
 )
 
 type providerMetadataConfig struct {
@@ -226,7 +227,8 @@ func loadConfig() (*config, error) {
 
 	// Preset defaults
 	cfg := config{
-		NoWebUI: defaultNoWebUI,
+		NoWebUI:         defaultNoWebUI,
+		ServiceDocument: defaultServiceDocument,
 	}
 
 	md, err := toml.DecodeFile(path, &cfg)
