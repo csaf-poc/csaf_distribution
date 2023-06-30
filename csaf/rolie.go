@@ -90,18 +90,18 @@ func NewROLIECategoryDocument(categories ...string) *ROLIECategoryDocument {
 // Merge merges the given categories into the existing ones.
 // The results indicates if there were changes.
 func (rcd *ROLIECategoryDocument) Merge(categories ...string) bool {
-	index := make(map[string]bool)
+	index := util.Set[string]{}
 	for i := range rcd.Categories.Category {
-		index[rcd.Categories.Category[i].Term] = true
+		index.Add(rcd.Categories.Category[i].Term)
 	}
 
 	oldLen := len(index)
 
 	for _, cat := range categories {
-		if index[cat] {
+		if index.Contains(cat) {
 			continue
 		}
-		index[cat] = true
+		index.Add(cat)
 		rcd.Categories.Category = append(
 			rcd.Categories.Category, ROLIECategory{Term: cat})
 	}
