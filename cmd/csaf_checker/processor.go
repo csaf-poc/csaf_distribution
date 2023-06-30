@@ -46,7 +46,7 @@ type processor struct {
 	ageAccept func(time.Time) bool
 
 	redirects      map[string][]string
-	noneTLS        map[string]struct{}
+	noneTLS        util.Set[string]
 	alreadyChecked map[string]whereType
 	pmdURL         string
 	pmd256         []byte
@@ -369,10 +369,10 @@ func (p *processor) checkDomain(domain string) error {
 // the value of "noneTLS" field if it is not HTTPS.
 func (p *processor) checkTLS(u string) {
 	if p.noneTLS == nil {
-		p.noneTLS = map[string]struct{}{}
+		p.noneTLS = util.Set[string]{}
 	}
 	if x, err := url.Parse(u); err == nil && x.Scheme != "https" {
-		p.noneTLS[u] = struct{}{}
+		p.noneTLS.Add(u)
 	}
 }
 
@@ -1163,7 +1163,7 @@ func (p *processor) checkListing(string) error {
 
 	var unlisted []string
 
-	badDirs := map[string]struct{}{}
+	badDirs := util.Set[string]{}
 
 	if len(p.alreadyChecked) == 0 {
 		p.badDirListings.info("No directory listings found.")

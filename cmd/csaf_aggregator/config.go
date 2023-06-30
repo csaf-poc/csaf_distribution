@@ -219,7 +219,7 @@ func (c *config) checkProviders() error {
 		return errors.New("need at least two providers")
 	}
 
-	already := make(map[string]bool)
+	already := util.Set[string]{}
 
 	for _, p := range c.Providers {
 		if p.Name == "" {
@@ -228,10 +228,10 @@ func (c *config) checkProviders() error {
 		if p.Domain == "" {
 			return errors.New("no domain given for provider")
 		}
-		if already[p.Name] {
+		if already.Contains(p.Name) {
 			return fmt.Errorf("provider '%s' is configured more than once", p.Name)
 		}
-		already[p.Name] = true
+		already.Add(p.Name)
 	}
 	return nil
 }
