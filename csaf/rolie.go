@@ -185,7 +185,7 @@ type FeedData struct {
 	Link     []Link          `json:"link,omitempty"`
 	Category []ROLIECategory `json:"category,omitempty"`
 	Updated  TimeStamp       `json:"updated"`
-	Entry    []*Entry        `json:"entry,omitempty"`
+	Entry    []*Entry        `json:"entry"`
 }
 
 // ROLIEFeed is a ROLIE feed.

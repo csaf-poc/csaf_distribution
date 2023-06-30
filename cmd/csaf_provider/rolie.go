@@ -110,6 +110,7 @@ func (c *controller) extendROLIE(
 					Scheme: "urn:ietf:params:rolie:category:information-type",
 					Term:   "csaf",
 				}},
+				Entry: []*csaf.Entry{},
 			},
 		}
 	}
