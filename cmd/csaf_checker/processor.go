@@ -695,7 +695,7 @@ func (p *processor) integrity(
 		}
 
 		if err := util.IDMatchesFilename(p.expr, doc, filepath.Base(u)); err != nil {
-			p.badFilenames.error("%s: %v\n", u, err)
+                        p.badFilenames.error("%s: %v", u, err)
 			continue
 
 		}
