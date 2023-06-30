@@ -74,6 +74,14 @@ func (o *options) prepare() error {
 	return nil
 }
 
+// protectedAccess returns true if we have client certificates or
+// extra http headers configured.
+// This may be a wrong assumption, because the certs are not checked
+// for their domain and custom headers may have other purposes.
+func (o *options) protectedAccess() bool {
+	return len(o.clientCerts) > 0 || len(o.ExtraHeader) > 0
+}
+
 // writeJSON writes the JSON encoding of the given report to the given stream.
 // It returns nil, otherwise an error.
 func writeJSON(report *Report, w io.WriteCloser) error {

@@ -49,3 +49,8 @@ The checker result is a success if no checks resulted in type 2, and a failure o
 The `role` given in the `provider-metadata.json` is not
 yet considered to change the overall result,
 see https://github.com/csaf-poc/csaf_distribution/issues/221 .
+
+If a provider hosts one or more advisories with a TLP level of AMBER or RED, then these advisories must be access protected.
+To check these advisories, authorization can be given via custom headers or certificates.
+The authorization method chosen needs to grant access to all advisories, as otherwise the
+checker will be unable to check the advisories it doesn't have permission for, falsifying the result.
