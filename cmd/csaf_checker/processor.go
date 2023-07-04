@@ -45,14 +45,15 @@ type processor struct {
 	client    util.Client
 	ageAccept func(time.Time) bool
 
-	redirects      map[string][]string
-	noneTLS        map[string]struct{}
-	alreadyChecked map[string]whereType
-	pmdURL         string
-	pmd256         []byte
-	pmd            any
-	keys           *crypto.KeyRing
-	labelChecker   *rolieLabelChecker
+	redirects       map[string][]string
+	noneTLS         map[string]struct{}
+	alreadyChecked  map[string]whereType
+	pmdURL          string
+	pmd256          []byte
+	pmd             any
+	keys            *crypto.KeyRing
+	labelChecker    *rolieLabelChecker
+	whiteAdvisories *whiteAdvs
 
 	invalidAdvisories      topicMessages
 	badFilenames           topicMessages
@@ -90,6 +91,20 @@ var (
 
 type whereType byte
 
+
+type whiteAdvs struct {
+	free      []identifier
+	protected []identifier
+}
+
+// identifier consist of document/tracking/id and document/publisher/namespace,
+// which in sum are unique for each csaf document and the name of a csaf document
+type identifier struct {
+        id        string
+        namespace string
+	name      string
+}
+
 const (
 	rolieMask = whereType(1) << iota
 	indexMask
@@ -115,6 +130,32 @@ func (wt whereType) String() string {
 			}
 		}
 		return strings.Join(mixed, "|")
+	}
+}
+
+// advisoryEquals determines if two advisories are the same using document/tracking/id (unique for every advisory in each organization)
+// and document/publisher/namespace (unique for every organization)
+func advisoryEquals(adv1 identifier, adv2 identifier) bool {
+        return adv1.id == adv2.id && adv1.namespace == adv2.namespace
+}
+
+// arrayContainsAdvisory checks if an array of identifiers contains a certain advisory-identifier
+func arrayContainsAdvisory(adv identifier, arr []identifier) bool {
+	for _, advisory := range arr {
+		if advisoryEquals(adv, advisory) {
+			return true
+		}
+	}
+	return false
+}
+
+// advisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only avaible within the list of access protected advisories
+func (p *processor) advisoriesOnlyProtected(){
+	for _, protected := range p.whiteAdvisories.protected {
+		if arrayContainsAdvisory(protected, p.whiteAdvisories.free) {
+			continue
+		}
+		p.badWhitePermissions.error("Advisory %s with TLP:WHITE is only avaible access-protected.", protected.name)
 	}
 }
 
@@ -724,12 +765,15 @@ func (p *processor) integrity(
 				p.badAmberRedPermissions.error(
 					"Advisory %s of TLP level %v is not access protected.",
 					u, tlpe)
+			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
+				advisoryidentifier := p.extractAdvisoryIdentifier(doc)
 			}
 			// check if current feed has correct or all of their tlp levels entries.
 			if p.labelChecker != nil {
 				p.labelChecker.check(p, tlpe, u)
 			}
 		}
+
 
 		// Check if file is in the right folder.
 		p.badFolders.use()
@@ -860,6 +904,14 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 		}
 	}
 	return csaf.TLPLabelUnlabeled
+}
+
+func (p *processor) extractAdvisoryIdentifier(doc any) identifier {
+	var identifier identifier
+	identifier.name = "a"
+	identifier.id = "b"
+	identifier.namespace = "c"
+	return identifier
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
