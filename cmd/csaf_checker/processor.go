@@ -766,7 +766,7 @@ func (p *processor) integrity(
 					"Advisory %s of TLP level %v is not access protected.",
 					u, tlpe)
 			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
-				advisoryidentifier := p.extractAdvisoryIdentifier(doc)
+				_ = p.extractAdvisoryIdentifier(doc)
 			}
 			// check if current feed has correct or all of their tlp levels entries.
 			if p.labelChecker != nil {
@@ -908,9 +908,6 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 
 func (p *processor) extractAdvisoryIdentifier(doc any) identifier {
 	var identifier identifier
-	identifier.name = "a"
-	identifier.id = "b"
-	identifier.namespace = "c"
 	return identifier
 }
 
