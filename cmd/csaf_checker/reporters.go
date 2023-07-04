@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
 type (
@@ -211,15 +213,15 @@ func (r *redirectsReporter) report(p *processor, domain *Domain) {
 // keysNotInValues returns a slice of keys which are not in the values
 // of the given map.
 func keysNotInValues(m map[string][]string) []string {
-	values := map[string]bool{}
+	values := util.Set[string]{}
 	for _, vs := range m {
 		for _, v := range vs {
-			values[v] = true
+			values.Add(v)
 		}
 	}
 	keys := make([]string, 0, len(m))
 	for k := range m {
-		if !values[k] {
+		if !values.Contains(k) {
 			keys = append(keys, k)
 		}
 	}

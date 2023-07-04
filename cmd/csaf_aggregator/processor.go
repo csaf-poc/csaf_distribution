@@ -40,13 +40,13 @@ type worker struct {
 	expr     *util.PathEval
 	signRing *crypto.KeyRing
 
-	client           util.Client                // client per provider
-	provider         *provider                  // current provider
-	metadataProvider any                        // current metadata provider
-	loc              string                     // URL of current provider-metadata.json
-	dir              string                     // Directory to store data to.
-	summaries        map[string][]summary       // the summaries of the advisories.
-	categories       map[string]map[string]bool // the categories per label.
+	client           util.Client                 // client per provider
+	provider         *provider                   // current provider
+	metadataProvider any                         // current metadata provider
+	loc              string                      // URL of current provider-metadata.json
+	dir              string                      // Directory to store data to.
+	summaries        map[string][]summary        // the summaries of the advisories.
+	categories       map[string]util.Set[string] // the categories per label.
 }
 
 func newWorker(num int, processor *processor) *worker {
@@ -104,9 +104,9 @@ func (w *worker) locateProviderMetadata(domain string) error {
 // removeOrphans removes the directories that are not in the providers list.
 func (p *processor) removeOrphans() error {
 
-	keep := make(map[string]bool)
+	keep := util.Set[string]{}
 	for _, p := range p.cfg.Providers {
-		keep[p.Name] = true
+		keep.Add(p.Name)
 	}
 
 	path := filepath.Join(p.cfg.Web, ".well-known", "csaf-aggregator")
@@ -134,7 +134,7 @@ func (p *processor) removeOrphans() error {
 	}
 
 	for _, entry := range entries {
-		if keep[entry.Name()] {
+		if keep.Contains(entry.Name()) {
 			continue
 		}
 

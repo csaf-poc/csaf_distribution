@@ -284,7 +284,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 						"Invalid URL %s in feed: %v.", *feed.URL, err)
 					continue
 				}
-				advisories[makeAbs(u).String()] = struct{}{}
+				advisories.Add(makeAbs(u).String())
 			}
 			if advisories.ContainsAll(reference) {
 				hasSummary.Add(label)

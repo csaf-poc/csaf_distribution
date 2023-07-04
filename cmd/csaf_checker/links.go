@@ -20,7 +20,7 @@ import (
 type (
 	pageContent struct {
 		err   error
-		links map[string]struct{}
+		links util.Set[string]
 	}
 	pages map[string]*pageContent
 )
@@ -28,7 +28,7 @@ type (
 func (pgs pages) listed(
 	path string,
 	pro *processor,
-	badDirs map[string]struct{},
+	badDirs util.Set[string],
 ) (bool, error) {
 	pathURL, err := url.Parse(path)
 	if err != nil {
@@ -45,8 +45,7 @@ func (pgs pages) listed(
 		if content.err != nil {
 			return false, nil
 		}
-		_, ok := content.links[path]
-		return ok, nil
+		return content.links.Contains(path), nil
 	}
 
 	baseURL, err := url.Parse(base)
@@ -54,7 +53,7 @@ func (pgs pages) listed(
 		return false, err
 	}
 
-	if _, ok := badDirs[base]; ok {
+	if badDirs.Contains(base) {
 		return false, errContinue
 	}
 
@@ -67,18 +66,18 @@ func (pgs pages) listed(
 
 	if err != nil {
 		pro.badDirListings.error("Fetching %s failed: %v", base, err)
-		badDirs[base] = struct{}{}
+		badDirs.Add(base)
 		return false, errContinue
 	}
 	if res.StatusCode != http.StatusOK {
 		pro.badDirListings.error("Fetching %s failed. Status code %d (%s)",
 			base, res.StatusCode, res.Status)
-		badDirs[base] = struct{}{}
+		badDirs.Add(base)
 		return false, errContinue
 	}
 
 	content = &pageContent{
-		links: map[string]struct{}{},
+		links: util.Set[string]{},
 	}
 
 	pgs[base] = content
@@ -94,15 +93,14 @@ func (pgs pages) listed(
 			}
 			// Links may be relative
 			abs := baseURL.ResolveReference(u).String()
-			content.links[abs] = struct{}{}
+			content.links.Add(abs)
 			return nil
 		})
 	}(); err != nil {
 		return false, errContinue
 	}
 
-	_, ok := content.links[path]
-	return ok, nil
+	return content.links.Contains(path), nil
 }
 
 func linksOnPage(r io.Reader, visit func(string) error) error {

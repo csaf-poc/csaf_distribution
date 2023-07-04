@@ -65,7 +65,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 	w.summaries = make(map[string][]summary)
 
 	// Collecting the categories per label.
-	w.categories = make(map[string]map[string]bool)
+	w.categories = map[string]util.Set[string]{}
 
 	base, err := url.Parse(w.loc)
 	if err != nil {
@@ -447,7 +447,7 @@ func (w *worker) extractCategories(label string, advisory any) error {
 
 	cats := w.categories[label]
 	if cats == nil {
-		cats = make(map[string]bool)
+		cats = util.Set[string]{}
 		w.categories[label] = cats
 	}
 
@@ -468,13 +468,13 @@ func (w *worker) extractCategories(label string, advisory any) error {
 			// Ignore errors here as they result from not matching.
 			w.expr.Extract(expr, matcher, true, advisory)
 		} else { // Normal
-			cats[cat] = true
+			cats.Add(cat)
 		}
 	}
 
 	// Add dynamic categories.
 	for _, cat := range dynamic {
-		cats[cat] = true
+		cats.Add(cat)
 	}
 
 	return nil
