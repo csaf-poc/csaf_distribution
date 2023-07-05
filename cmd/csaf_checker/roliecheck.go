@@ -175,6 +175,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	p.labelChecker = &rolieLabelChecker{
 		advisories: map[csaf.TLPLabel]util.Set[string]{},
 	}
+	p.whiteAdvisories = &whiteAdvs{}
 
 	// Phase 2: check for integrity.
 	for _, fs := range feeds {

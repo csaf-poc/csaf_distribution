@@ -940,6 +940,7 @@ func (p *processor) sortIntoWhiteAdvs(ide identifier) {
 	// freely accessible. TODO: Make viable without labelchecker.
 	if p.labelChecker.openClient == nil {
 		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
+		return
 	}
 	res, err := p.labelChecker.openClient.Get(ide.name)
 	if err != nil {
