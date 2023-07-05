@@ -53,34 +53,34 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 }
 
 // add registers a given url to a label.
-func (ca *rolieLabelChecker) add(label csaf.TLPLabel, url string) {
-	advs := ca.advisories[label]
+func (rlc *rolieLabelChecker) add(label csaf.TLPLabel, url string) {
+	advs := rlc.advisories[label]
 	if advs == nil {
 		advs = util.Set[string]{}
-		ca.advisories[label] = advs
+		rlc.advisories[label] = advs
 	}
 	advs.Add(url)
 }
 
 // check tests if the TLP label of an advisory is used correctly.
-func (ca *rolieLabelChecker) check(
+func (rlc *rolieLabelChecker) check(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
 ) {
 	// Associate advisory label to urls.
-	ca.add(label, url)
+	rlc.add(label, url)
 
 	// If entry shows up in feed of higher tlp level, give out info or warning.
-	ca.checkRank(p, label, url)
+	rlc.checkRank(p, label, url)
 
 	// Issue warnings or errors if the advisory is not protected properly.
-	ca.checkProtection(p, label, url)
+	rlc.checkProtection(p, label, url)
 }
 
 // checkProtection tests if a given advisory has the right level
 // of protection.
-func (ca *rolieLabelChecker) checkProtection(
+func (rlc *rolieLabelChecker) checkProtection(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
@@ -133,30 +133,30 @@ func (ca *rolieLabelChecker) checkProtection(
 
 // checkRank tests if a given advisory is contained by the
 // the right feed color.
-func (ca *rolieLabelChecker) checkRank(
+func (rlc *rolieLabelChecker) checkRank(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
 ) {
-	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(ca.feedLabel); {
+	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
 
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
 			p.badROLIEFeed.info(
 				"Found unlabeled advisory %q in feed %q.",
-				url, ca.feedURL)
+				url, rlc.feedURL)
 		} else {
 			p.badROLIEFeed.warn(
 				"Found advisory %q labled TLP:%s in feed %q (TLP:%s).",
 				url, label,
-				ca.feedURL, ca.feedLabel)
+				rlc.feedURL, rlc.feedLabel)
 		}
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
 		p.badROLIEFeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
-			url, label, ca.feedURL, ca.feedLabel)
+			url, label, rlc.feedURL, rlc.feedLabel)
 	}
 }
 
