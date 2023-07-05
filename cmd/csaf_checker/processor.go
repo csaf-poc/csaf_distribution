@@ -768,10 +768,10 @@ func (p *processor) integrity(
 				// TLP:WHITE advisories, so save them
 			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
 				p.badWhitePermissions.use()
-				identifier := p.extractAdvisoryIdentifier(doc, u)
+				identifier, err := p.extractAdvisoryIdentifier(doc, u)
 				// If there is a valid identifier,
 				// sort it into the processor for later evaluation
-				if identifier.name != "" {
+				if err == nil {
 					p.sortIntoWhiteAdvs(identifier)
 				}
 
@@ -915,25 +915,25 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 
 // Extract document/publisher/namespace and document/tracking/id from advisory
 // and save it in an identifier
-func (p *processor) extractAdvisoryIdentifier(doc any, name string) identifier {
+func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier, error) {
 	var identifier identifier
 	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
 	if err != nil {
 		p.badWhitePermissions.error(
 			"Extracting 'namespace' from %s failed: %v", name, err)
-		return identifier
+		return identifier, err
 	}
 
 	id, err := p.expr.Eval(`$.document.tracking.id`, doc)
 	if err != nil {
 		p.badWhitePermissions.error(
 			"Extracting 'id' from %s failed: %v", name, err)
-		return identifier
+		return identifier, err
 	}
 	identifier.name = name
 	identifier.namespace = namespace.(string)
 	identifier.id = id.(string)
-	return identifier
+	return identifier, nil
 }
 
 func (p *processor) sortIntoWhiteAdvs(ide identifier) {
