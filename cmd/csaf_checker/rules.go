@@ -31,7 +31,7 @@ type requirementRules struct {
 var (
 	publisherRules = &requirementRules{
 		cond: condAll,
-		subs: ruleAtoms(1, 2, 3,  4),
+		subs: ruleAtoms(1, 2, 3, 4),
 	}
 
 	providerRules = &requirementRules{
