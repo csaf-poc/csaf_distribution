@@ -102,7 +102,7 @@ func (ca *rolieLabelChecker) check(
 		switch {
 		// If we are checking WHITE and we have a test client
 		// and we get a status forbidden then the access is not open.
-		case ca.feedLabel == csaf.TLPLabelWhite:
+		case advisoryLabel == csaf.TLPLabelWhite:
 			p.badWhitePermissions.use()
 			res, err := ca.openClient.Get(advisory)
 			if err != nil {
@@ -117,7 +117,7 @@ func (ca *rolieLabelChecker) check(
 		// the data again with the open client.
 		// If this does not result in status forbidden the
 		// server may be wrongly configured.
-		case ca.feedLabel >= csaf.TLPLabelAmber:
+		case advisoryLabel >= csaf.TLPLabelAmber:
 			p.badAmberRedPermissions.use()
 			res, err := ca.openClient.Get(advisory)
 			if err != nil {
