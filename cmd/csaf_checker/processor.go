@@ -148,8 +148,8 @@ func arrayContainsAdvisory(adv identifier, arr []identifier) bool {
 	return false
 }
 
-// advisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only avaible within the list of access protected advisories
-func (p *processor) advisoriesOnlyProtected() {
+// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only avaible within the list of access protected advisories
+func (p *processor) checkAdvisoriesOnlyProtected() {
 	for _, protected := range p.whiteAdvisories.protected {
 		if arrayContainsAdvisory(protected, p.whiteAdvisories.free) {
 			continue
@@ -764,8 +764,16 @@ func (p *processor) integrity(
 				p.badAmberRedPermissions.error(
 					"Advisory %s of TLP level %v is not access protected.",
 					u, tlpe)
+				// If the client has authorization, then there might be access-protected
+				// TLP:WHITE advisories, so save them
 			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
-				_ = p.extractAdvisoryIdentifier(doc)
+				identifier := p.extractAdvisoryIdentifier(doc, u)
+				// If there is a valid identifier,
+				// sort it into the processor for later evaluation
+				if identifier.name != "" {
+					p.sortIntoWhiteAdvs(identifier)
+				}
+
 			}
 			// check if current feed has correct or all of their tlp levels entries.
 			if p.labelChecker != nil {
@@ -904,9 +912,47 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 	return csaf.TLPLabelUnlabeled
 }
 
-func (p *processor) extractAdvisoryIdentifier(doc any) identifier {
+// Extract document/publisher/namespace and document/tracking/id from advisory
+// and save it in an identifier
+func (p *processor) extractAdvisoryIdentifier(doc any, name string) identifier {
 	var identifier identifier
+	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
+	if err != nil {
+		p.badWhitePermissions.error(
+			"Extracting 'namespace' from %s failed: %v", name, err)
+		return identifier
+	}
+
+	id, err := p.expr.Eval(`$.document.tracking.id`, doc)
+	if err != nil {
+		p.badWhitePermissions.error(
+			"Extracting 'id' from %s failed: %v", name, err)
+		return identifier
+	}
+	identifier.name = name
+	identifier.namespace = namespace.(string)
+	identifier.id = id.(string)
 	return identifier
+}
+
+func (p *processor) sortIntoWhiteAdvs(ide identifier) {
+	// Currently, if there is no openClient, this means the advisory was
+	// freely accessible. TODO: Make viable without labelchecker.
+	if p.labelChecker.openClient == nil {
+		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
+	}
+	res, err := p.labelChecker.openClient.Get(ide.name)
+	if err != nil {
+		p.badWhitePermissions.error(
+			"Unexpected Error %v when trying to fetch: %s", err, ide.name)
+	} else if res.StatusCode == http.StatusOK {
+		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
+	} else if res.StatusCode == http.StatusForbidden {
+		p.whiteAdvisories.protected = append(p.whiteAdvisories.protected, ide)
+	} else {
+		p.badWhitePermissions.error(
+			"Unexpected Server response %v when trying to fetch %s", res.StatusCode, ide.name)
+	}
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.

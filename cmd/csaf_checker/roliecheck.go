@@ -236,6 +236,10 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 	// Phase 3: Check for completeness.
 
+	if p.whiteAdvisories != nil && len(p.whiteAdvisories.protected) > 0 {
+		p.checkAdvisoriesOnlyProtected()
+	}
+
 	hasSummary := util.Set[csaf.TLPLabel]{}
 
 	var (
