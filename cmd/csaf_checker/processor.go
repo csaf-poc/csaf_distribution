@@ -148,13 +148,13 @@ func arrayContainsAdvisory(adv identifier, arr []identifier) bool {
 	return false
 }
 
-// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only avaible within the list of access protected advisories
+// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only available within the list of access protected advisories
 func (p *processor) checkAdvisoriesOnlyProtected() {
 	for _, protected := range p.whiteAdvisories.protected {
 		if arrayContainsAdvisory(protected, p.whiteAdvisories.free) {
 			continue
 		}
-		p.badWhitePermissions.error("Advisory %s with TLP:WHITE is only avaible access-protected.", protected.name)
+		p.badWhitePermissions.error("Advisory %s with TLP:WHITE is only available access-protected.", protected.name)
 	}
 }
 
