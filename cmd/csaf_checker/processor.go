@@ -767,6 +767,7 @@ func (p *processor) integrity(
 				// If the client has authorization, then there might be access-protected
 				// TLP:WHITE advisories, so save them
 			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
+				p.badWhitePermissions.use()
 				identifier := p.extractAdvisoryIdentifier(doc, u)
 				// If there is a valid identifier,
 				// sort it into the processor for later evaluation

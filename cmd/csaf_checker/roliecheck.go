@@ -109,7 +109,7 @@ func (ca *rolieLabelChecker) check(
 				p.badWhitePermissions.error(
 					"Unexpected Error %v when trying to fetch: %s", err, advisory)
 			} else if res.StatusCode == http.StatusForbidden {
-				p.badWhitePermissions.error(
+				p.badWhitePermissions.warn(
 					"Advisory %s of TLP level WHITE is access protected.", advisory)
 			}
 
@@ -175,6 +175,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	p.labelChecker = &rolieLabelChecker{
 		advisories: map[csaf.TLPLabel]util.Set[string]{},
 	}
+
 	p.whiteAdvisories = &whiteAdvs{}
 
 	// Phase 2: check for integrity.
