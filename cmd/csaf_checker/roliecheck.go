@@ -107,7 +107,7 @@ func (rlc *rolieLabelChecker) checkProtection(
 	// the data again with the open client.
 	// If this does not result in status forbidden the
 	// server may be wrongly configured.
-	case label >= csaf.TLPLabelAmber:
+	case tlpLevel(label) >= tlpLevel(csaf.TLPLabelAmber):
 		p.badAmberRedPermissions.use()
 		// It is an error if we downloaded the advisory with
 		// an unauthorized client.
