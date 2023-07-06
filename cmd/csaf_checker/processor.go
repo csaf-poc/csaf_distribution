@@ -748,39 +748,7 @@ func (p *processor) integrity(
 			}
 		}
 
-		// Extract the tlp level of the entry
-		if tlpa, err := p.expr.Eval(
-			`$.document`, doc); err != nil {
-			p.badROLIEFeed.error(
-				"Extracting 'tlp level' from %s failed: %v", u, err)
-		} else {
-			tlpe := extractTLP(tlpa)
-			// If the client has no authorization it shouldn't be able
-			// to access TLP:AMBER or TLP:RED advisories
-			if !p.opts.protectedAccess() &&
-				(tlpe == csaf.TLPLabelAmber || tlpe == csaf.TLPLabelRed) {
-
-				p.badAmberRedPermissions.use()
-				p.badAmberRedPermissions.error(
-					"Advisory %s of TLP level %v is not access protected.",
-					u, tlpe)
-				// If the client has authorization, then there might be access-protected
-				// TLP:WHITE advisories, so save them
-			} else if p.opts.protectedAccess() && (tlpe == csaf.TLPLabelWhite) {
-				p.badWhitePermissions.use()
-				identifier, err := p.extractAdvisoryIdentifier(doc, u)
-				// If there is a valid identifier,
-				// sort it into the processor for later evaluation
-				if err == nil {
-					p.sortIntoWhiteAdvs(identifier)
-				}
-
-			}
-			// check if current feed has correct or all of their tlp levels entries.
-			if p.labelChecker != nil {
-				p.labelChecker.check(p, tlpe, u)
-			}
-		}
+		p.evaluateTLP(doc, u)
 
 		// Check if file is in the right folder.
 		p.badFolders.use()
@@ -892,69 +860,6 @@ func (p *processor) integrity(
 	}
 
 	return nil
-}
-
-// extractTLP tries to extract a valid TLP label from an advisory
-// Returns "UNLABELED" if it does not exist, the label otherwise
-func extractTLP(tlpa any) csaf.TLPLabel {
-	if document, ok := tlpa.(map[string]any); ok {
-		if distri, ok := document["distribution"]; ok {
-			if distribution, ok := distri.(map[string]any); ok {
-				if tlp, ok := distribution["tlp"]; ok {
-					if label, ok := tlp.(map[string]any); ok {
-						if labelstring, ok := label["label"].(string); ok {
-							return csaf.TLPLabel(labelstring)
-						}
-					}
-				}
-			}
-		}
-	}
-	return csaf.TLPLabelUnlabeled
-}
-
-// Extract document/publisher/namespace and document/tracking/id from advisory
-// and save it in an identifier
-func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier, error) {
-	var identifier identifier
-	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
-	if err != nil {
-		p.badWhitePermissions.error(
-			"Extracting 'namespace' from %s failed: %v", name, err)
-		return identifier, err
-	}
-
-	id, err := p.expr.Eval(`$.document.tracking.id`, doc)
-	if err != nil {
-		p.badWhitePermissions.error(
-			"Extracting 'id' from %s failed: %v", name, err)
-		return identifier, err
-	}
-	identifier.name = name
-	identifier.namespace = namespace.(string)
-	identifier.id = id.(string)
-	return identifier, nil
-}
-
-func (p *processor) sortIntoWhiteAdvs(ide identifier) {
-	// Currently, if there is no openClient, this means the advisory was
-	// freely accessible. TODO: Make viable without labelchecker.
-	if p.labelChecker.openClient == nil {
-		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
-		return
-	}
-	res, err := p.labelChecker.openClient.Get(ide.name)
-	if err != nil {
-		p.badWhitePermissions.error(
-			"Unexpected Error %v when trying to fetch: %s", err, ide.name)
-	} else if res.StatusCode == http.StatusOK {
-		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
-	} else if res.StatusCode == http.StatusForbidden {
-		p.whiteAdvisories.protected = append(p.whiteAdvisories.protected, ide)
-	} else {
-		p.badWhitePermissions.error(
-			"Unexpected Server response %v when trying to fetch %s", res.StatusCode, ide.name)
-	}
 }
 
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
