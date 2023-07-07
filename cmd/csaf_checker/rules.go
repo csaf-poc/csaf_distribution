@@ -166,9 +166,9 @@ func (p *processor) eval(requirement int) bool {
 
 	case 5:
 		return !p.badAmberRedPermissions.hasErrors()
-	// Currently, only domains using HTTP-Header redirects are checked. 
+	// Currently, only domains using HTTP-Header redirects are checked.
 	// A domain reaching evaluation will only have HTTP-Header redirects if any,
-	// and thus requirement 6 will always be fullfilled. 
+	// and thus requirement 6 will always be fullfilled.
 	case 6:
 		return true
 	case 7:
