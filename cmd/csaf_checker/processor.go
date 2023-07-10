@@ -1052,11 +1052,11 @@ func (p *processor) checkCSAFs(_ string) error {
 	fs, hasRolie := rolie.([]any)
 	hasRolie = hasRolie && len(fs) > 0
 
-        p.labelChecker = &rolieLabelChecker{
-                advisories: map[csaf.TLPLabel]util.Set[string]{},
-        }
+	p.labelChecker = &rolieLabelChecker{
+		advisories: map[csaf.TLPLabel]util.Set[string]{},
+	}
 
-        p.whiteAdvisories = &whiteAdvs{}
+	p.whiteAdvisories = &whiteAdvs{}
 
 	if hasRolie {
 		var feeds [][]csaf.Feed
@@ -1072,8 +1072,8 @@ func (p *processor) checkCSAFs(_ string) error {
 	}
 
 	if p.whiteAdvisories != nil && len(p.whiteAdvisories.protected) > 0 {
-                p.checkAdvisoriesOnlyProtected()
-        }
+		p.checkAdvisoriesOnlyProtected()
+	}
 
 	// No rolie feeds -> try directory_urls.
 	directoryURLs, err := p.expr.Eval(
