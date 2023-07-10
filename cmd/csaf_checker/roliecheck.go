@@ -177,6 +177,9 @@ func (rlc *rolieLabelChecker) checkRank(
 	label csaf.TLPLabel,
 	url string,
 ) {
+	if !p.badROLIEFeed.used() {
+		return
+	}
 	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
 
 	case advisoryRank < feedRank:
@@ -238,12 +241,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		}
 	}
 
-	p.labelChecker = &rolieLabelChecker{
-		advisories: map[csaf.TLPLabel]util.Set[string]{},
-	}
-
-	p.whiteAdvisories = &whiteAdvs{}
-
 	// Phase 2: check for integrity.
 	for _, fs := range feeds {
 		for i := range fs {
@@ -293,10 +290,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 	}
 
 	// Phase 3: Check for completeness.
-
-	if p.whiteAdvisories != nil && len(p.whiteAdvisories.protected) > 0 {
-		p.checkAdvisoriesOnlyProtected()
-	}
 
 	hasSummary := util.Set[csaf.TLPLabel]{}
 
