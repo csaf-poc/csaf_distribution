@@ -25,7 +25,6 @@ type rolieLabelChecker struct {
 	feedLabel csaf.TLPLabel
 
 	advisories map[csaf.TLPLabel]util.Set[string]
-	openClient util.Client
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -70,7 +69,7 @@ func (p *processor) evaluateTLP(doc any, name string) {
 	advisoryLabel := extractTLP(document)
 	// If the client has no authorization it shouldn't be able
 	// to access TLP:AMBER or TLP:RED advisories
-	if p.opts.protectedAccess() &&
+	if !p.opts.protectedAccess() &&
 		(advisoryLabel == csaf.TLPLabelAmber || advisoryLabel == csaf.TLPLabelRed) {
 		p.badAmberRedPermissions.use()
 		p.badAmberRedPermissions.error(
@@ -92,83 +91,111 @@ func (p *processor) evaluateTLP(doc any, name string) {
 	}
 }
 
-// check tests if in advisory is in the right TLP color of the
-// currently tested feed.
-func (ca *rolieLabelChecker) check(
-	p *processor,
-	advisoryLabel csaf.TLPLabel,
-	advisory string,
-) {
-	// Assign int to tlp levels for easy comparison
-	var (
-		advisoryRank = tlpLevel(advisoryLabel)
-		feedRank     = tlpLevel(ca.feedLabel)
-	)
-
-	// Associate advisory label to urls.
-	advs := ca.advisories[advisoryLabel]
+// add registers a given url to a label.
+func (rlc *rolieLabelChecker) add(label csaf.TLPLabel, url string) {
+	advs := rlc.advisories[label]
 	if advs == nil {
 		advs = util.Set[string]{}
-		ca.advisories[advisoryLabel] = advs
+		rlc.advisories[label] = advs
 	}
-	advs.Add(advisory)
+	advs.Add(url)
+}
 
-	// If entry shows up in feed of higher tlp level,
-	// give out info or warning
+// check tests if the TLP label of an advisory is used correctly.
+func (rlc *rolieLabelChecker) check(
+	p *processor,
+	label csaf.TLPLabel,
+	url string,
+) {
+	// Associate advisory label to urls.
+	rlc.add(label, url)
+
+	// If entry shows up in feed of higher tlp level, give out info or warning.
+	rlc.checkRank(p, label, url)
+
+	// Issue warnings or errors if the advisory is not protected properly.
+	rlc.checkProtection(p, label, url)
+}
+
+// checkProtection tests if a given advisory has the right level
+// of protection.
+func (rlc *rolieLabelChecker) checkProtection(
+	p *processor,
+	label csaf.TLPLabel,
+	url string,
+) {
 	switch {
+	// If we are checking WHITE and we have a test client
+	// and we get a status forbidden then the access is not open.
+	case label == csaf.TLPLabelWhite:
+		p.badWhitePermissions.use()
+		// We only need to download it with an unauthorized client
+		// if have not done it yet.
+		if p.usedAuthorizedClient() {
+			res, err := p.unauthorizedClient().Get(url)
+			if err != nil {
+				p.badWhitePermissions.error(
+					"Unexpected Error %v when trying to fetch: %s", err, url)
+			} else if res.StatusCode == http.StatusForbidden {
+				p.badWhitePermissions.warn(
+					"Advisory %s of TLP level WHITE is access protected.", url)
+			}
+		}
+
+	// If we are checking AMBER or above we need to download
+	// the data again with the open client.
+	// If this does not result in status forbidden the
+	// server may be wrongly configured.
+	case tlpLevel(label) >= tlpLevel(csaf.TLPLabelAmber):
+		p.badAmberRedPermissions.use()
+		// It is an error if we downloaded the advisory with
+		// an unauthorized client.
+		if !p.usedAuthorizedClient() {
+			p.badAmberRedPermissions.error(
+				"Advisory %s of TLP level %v is not properly access protected.",
+				url, label)
+		} else {
+			// We came here by an authorized download which is okay.
+			// So its bad if we can download it with an unauthorized client, too.
+			res, err := p.unauthorizedClient().Get(url)
+			if err != nil {
+				p.badAmberRedPermissions.error(
+					"Unexpected Error %v when trying to fetch: %s", err, url)
+			} else if res.StatusCode == http.StatusOK {
+				p.badAmberRedPermissions.error(
+					"Advisory %s of TLP level %v is not properly access protected.",
+					url, label)
+			}
+		}
+	}
+}
+
+// checkRank tests if a given advisory is contained by the
+// the right feed color.
+func (rlc *rolieLabelChecker) checkRank(
+	p *processor,
+	label csaf.TLPLabel,
+	url string,
+) {
+	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
+
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
 			p.badROLIEFeed.info(
 				"Found unlabeled advisory %q in feed %q.",
-				advisory, ca.feedURL)
+				url, rlc.feedURL)
 		} else {
 			p.badROLIEFeed.warn(
 				"Found advisory %q labled TLP:%s in feed %q (TLP:%s).",
-				advisory, advisoryLabel,
-				ca.feedURL, ca.feedLabel)
+				url, label,
+				rlc.feedURL, rlc.feedLabel)
 		}
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
 		p.badROLIEFeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
-			advisory, advisoryLabel, ca.feedURL, ca.feedLabel)
-	}
-
-	// If we have an open client then the actual data was downloaded
-	// through an authorizing client.
-	if ca.openClient != nil {
-		switch {
-		// If we are checking WHITE and we have a test client
-		// and we get a status forbidden then the access is not open.
-		case ca.feedLabel == csaf.TLPLabelWhite:
-			p.badWhitePermissions.use()
-			res, err := ca.openClient.Get(advisory)
-			if err != nil {
-				p.badWhitePermissions.error(
-					"Unexpected Error %v when trying to fetch: %s", err, advisory)
-			} else if res.StatusCode == http.StatusForbidden {
-				p.badWhitePermissions.warn(
-					"Advisory %s of TLP level WHITE is access protected.", advisory)
-			}
-
-		// If we are checking AMBER or above we need to download
-		// the data again with the open client.
-		// If this does not result in status forbidden the
-		// server may be wrongly configured.
-		case ca.feedLabel >= csaf.TLPLabelAmber:
-			p.badAmberRedPermissions.use()
-			res, err := ca.openClient.Get(advisory)
-			if err != nil {
-				p.badAmberRedPermissions.error(
-					"Unexpected Error %v when trying to fetch: %s", err, advisory)
-			} else if res.StatusCode == http.StatusOK {
-				p.badAmberRedPermissions.error(
-					"Advisory %s of TLP level %v is not properly access protected.",
-					advisory, advisoryLabel)
-
-			}
-		}
+			url, label, rlc.feedURL, rlc.feedLabel)
 	}
 }
 
@@ -251,16 +278,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			p.labelChecker.feedURL = feedURL.String()
 			p.labelChecker.feedLabel = label
-
-			// If we are using an authorizing client
-			// we need an open client to check
-			// WHITE, AMBER and RED feeds.
-			var openClient util.Client
-			if (label == csaf.TLPLabelWhite || label >= csaf.TLPLabelAmber) &&
-				p.opts.protectedAccess() {
-				openClient = p.basicClient()
-			}
-			p.labelChecker.openClient = openClient
 
 			// TODO: Issue a warning if we want check AMBER+ without an
 			// authorizing client.
@@ -516,11 +533,11 @@ func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier,
 func (p *processor) sortIntoWhiteAdvs(ide identifier) {
 	// Currently, if there is no openClient, this means the advisory was
 	// freely accessible. TODO: Make viable without labelchecker.
-	if p.labelChecker.openClient == nil {
+	if p.unauthClient == nil {
 		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
 		return
 	}
-	res, err := p.labelChecker.openClient.Get(ide.name)
+	res, err := p.unauthClient.Get(ide.name)
 	if err != nil {
 		p.badWhitePermissions.error(
 			"Unexpected Error %v when trying to fetch: %s", err, ide.name)

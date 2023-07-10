@@ -40,10 +40,11 @@ import (
 type topicMessages []Message
 
 type processor struct {
-	opts      *options
-	validator csaf.RemoteValidator
-	client    util.Client
-	ageAccept func(time.Time) bool
+	opts         *options
+	validator    csaf.RemoteValidator
+	client       util.Client
+	unauthClient util.Client
+	ageAccept    func(time.Time) bool
 
 	redirects       map[string][]string
 	noneTLS         util.Set[string]
@@ -502,13 +503,25 @@ func (p *processor) basicClient() *http.Client {
 // httpClient returns a cached HTTP client to be used to
 // download remote ressources.
 func (p *processor) httpClient() util.Client {
-
-	if p.client != nil {
-		return p.client
+	if p.client == nil {
+		p.client = p.fullClient()
 	}
-
-	p.client = p.fullClient()
 	return p.client
+}
+
+// unauthorizedClient returns a cached HTTP client without
+// authentification.
+func (p *processor) unauthorizedClient() util.Client {
+	if p.unauthClient == nil {
+		p.unauthClient = p.basicClient()
+	}
+	return p.unauthClient
+}
+
+// usedAuthorizedClient tells if an authorized client is used
+// for downloading.
+func (p *processor) usedAuthorizedClient() bool {
+	return p.opts.protectedAccess()
 }
 
 // rolieFeedEntries loads the references to the advisory files for a given feed.
