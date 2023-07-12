@@ -62,38 +62,41 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 // evaluateTLP extracts the TLP label from a given document and
 // calls upon functions further checking for mistakes in access-protection
 // or label assignment between feed and advisory
-func (p *processor) evaluateTLP(doc any, name string) {
+func (p *processor) evaluateTLP(doc any, url string) {
+
+	// TODO: Use eval to extract label directly.
 	// extract document
 	document, err := p.expr.Eval(
 		`$.document`, doc)
 	if err != nil {
-		p.badROLIEFeed.error(
+		p.badROLIEFeed.error( // XXX: Why badROLIEFeed?
 			"Extracting 'tlp level' from %s failed: %v",
-			name, err)
+			url, err)
 		return
 	}
 	// extract advisory TLP label
 	advisoryLabel := extractTLP(document)
 	// If the client has no authorization it shouldn't be able
 	// to access TLP:AMBER or TLP:RED advisories
-	if !p.opts.protectedAccess() &&
+	if !p.usedAuthorizedClient() &&
 		(advisoryLabel == csaf.TLPLabelAmber || advisoryLabel == csaf.TLPLabelRed) {
 		p.badAmberRedPermissions.use()
 		p.badAmberRedPermissions.error(
 			"Advisory %s of TLP level %v is not access protected.",
-			name, advisoryLabel)
+			url, advisoryLabel)
 	}
 
-	if p.opts.protectedAccess() && (advisoryLabel == csaf.TLPLabelWhite) {
+	if p.usedAuthorizedClient() && (advisoryLabel == csaf.TLPLabelWhite) {
 		p.badWhitePermissions.use()
-		identifier, err := p.extractAdvisoryIdentifier(doc, name)
+		identifier, err := p.extractAdvisoryIdentifier(doc, url)
 		// If there is a valid identifier,
 		// sort it into the processor for later evaluation
 		if err == nil {
 			p.sortIntoWhiteAdvs(identifier)
 		}
 	}
-	p.labelChecker.check(p, advisoryLabel, name)
+
+	p.labelChecker.check(p, advisoryLabel, url)
 }
 
 // add registers a given url to a label.
@@ -530,6 +533,8 @@ func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier,
 
 // sortIntoWhiteAdvs sorts identifiers into protected or free within the processor
 func (p *processor) sortIntoWhiteAdvs(ide identifier) {
+	// XXX: usedAuthorizedClient was checked before!
+
 	// Currently, if there is no openClient, this means the advisory was
 	// freely accessible. TODO: Make viable without labelchecker.
 	if p.usedAuthorizedClient() {
