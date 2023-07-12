@@ -351,7 +351,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 		(*processor).checkMissing,
 		(*processor).checkInvalid,
 		(*processor).checkListing,
-		(*processor).checkAdvisoriesOnlyProtected,
+		(*processor).checkWhitePermissions,
 	)
 
 	return checks
@@ -1166,9 +1166,9 @@ func (p *processor) checkListing(string) error {
 	return nil
 }
 
-// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisories are only
-// available within the list of access protected advisories.
-func (p *processor) checkAdvisoriesOnlyProtected(string) error {
+// checkWhitePermissions checks if the TLP:WHITE advisories are
+// available with unprotected access.
+func (p *processor) checkWhitePermissions(string) error {
 
 	var ids []string
 	for id, open := range p.labelChecker.whiteAdvisories {
