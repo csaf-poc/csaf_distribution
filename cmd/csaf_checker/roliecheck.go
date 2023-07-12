@@ -9,6 +9,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"sort"
@@ -86,13 +87,23 @@ func (p *processor) evaluateTLP(doc any, url string) {
 			url, advisoryLabel)
 	}
 
-	if p.usedAuthorizedClient() && (advisoryLabel == csaf.TLPLabelWhite) {
-		p.badWhitePermissions.use()
-		identifier, err := p.extractAdvisoryIdentifier(doc, url)
-		// If there is a valid identifier,
-		// sort it into the processor for later evaluation
-		if err == nil {
-			p.sortIntoWhiteAdvs(identifier)
+	if advisoryLabel == csaf.TLPLabelWhite {
+		p.invalidAdvisories.use()
+		id, err := p.extractAdvisoryIdentifier(doc)
+		if err != nil {
+			p.invalidAdvisories.error("Bad document %s: %v", url, err)
+		} else {
+			if p.whiteAdvisories == nil {
+				p.whiteAdvisories = map[identifier]bool{}
+			}
+
+			if !p.whiteAdvisories[id] && p.usedAuthorizedClient() {
+				if resp, err := p.unauthorizedClient().Get(url); err == nil {
+					p.whiteAdvisories[id] = resp.StatusCode == http.StatusOK
+				}
+			} else {
+				p.whiteAdvisories[id] = true
+			}
 		}
 	}
 
@@ -510,47 +521,29 @@ func extractTLP(tlpa any) csaf.TLPLabel {
 
 // Extract document/publisher/namespace and document/tracking/id from advisory
 // and save it in an identifier
-func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier, error) {
-	var identifier identifier
+// func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier, error) {
+func (p *processor) extractAdvisoryIdentifier(doc any) (identifier, error) {
 	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
 	if err != nil {
-		p.badWhitePermissions.error(
-			"Extracting 'namespace' from %s failed: %v", name, err)
-		return identifier, err
+		return identifier{}, err
 	}
 
-	id, err := p.expr.Eval(`$.document.tracking.id`, doc)
+	idString, err := p.expr.Eval(`$.document.tracking.id`, doc)
 	if err != nil {
-		p.badWhitePermissions.error(
-			"Extracting 'id' from %s failed: %v", name, err)
-		return identifier, err
+		return identifier{}, err
 	}
-	identifier.name = name
-	identifier.namespace = namespace.(string) // TODO: Check type assertion!
-	identifier.id = id.(string)               // TODO: Check type assertion!
-	return identifier, nil
-}
 
-// sortIntoWhiteAdvs sorts identifiers into protected or free within the processor
-func (p *processor) sortIntoWhiteAdvs(ide identifier) {
-	// XXX: usedAuthorizedClient was checked before!
+	ns, ok := namespace.(string)
+	if !ok {
+		return identifier{}, errors.New("cannot extract 'namespace'")
+	}
+	id, ok := idString.(string)
+	if !ok {
+		return identifier{}, errors.New("cannot extract 'id'")
+	}
 
-	// Currently, if there is no openClient, this means the advisory was
-	// freely accessible. TODO: Make viable without labelchecker.
-	if p.usedAuthorizedClient() {
-		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
-		return
-	}
-	res, err := p.unauthClient.Get(ide.name)
-	if err != nil {
-		p.badWhitePermissions.error(
-			"Unexpected Error %v when trying to fetch: %s", err, ide.name)
-	} else if res.StatusCode == http.StatusOK {
-		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
-	} else if res.StatusCode == http.StatusForbidden {
-		p.whiteAdvisories.protected = append(p.whiteAdvisories.protected, ide)
-	} else {
-		p.badWhitePermissions.error(
-			"Unexpected Server response %v when trying to fetch %s", res.StatusCode, ide.name)
-	}
+	return identifier{
+		namespace: ns,
+		id:        id,
+	}, nil
 }

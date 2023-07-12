@@ -54,7 +54,7 @@ type processor struct {
 	pmd             any
 	keys            *crypto.KeyRing
 	labelChecker    labelChecker
-	whiteAdvisories *whiteAdvs
+	whiteAdvisories map[identifier]bool
 
 	invalidAdvisories      topicMessages
 	badFilenames           topicMessages
@@ -92,17 +92,16 @@ var (
 
 type whereType byte
 
-type whiteAdvs struct {
-	free      []identifier
-	protected []identifier
-}
-
 // identifier consist of document/tracking/id and document/publisher/namespace,
 // which in sum are unique for each csaf document and the name of a csaf document
 type identifier struct {
 	id        string
 	namespace string
-	name      string
+}
+
+// String implements fmt.Stringer
+func (id identifier) String() string {
+	return "(" + id.namespace + ", " + id.id + ")"
 }
 
 const (
@@ -133,30 +132,28 @@ func (wt whereType) String() string {
 	}
 }
 
-// advisoryEquals determines if two advisories are the same using document/tracking/id (unique for every advisory in each organization)
-// and document/publisher/namespace (unique for every organization)
-func advisoryEquals(adv1 identifier, adv2 identifier) bool {
-	return adv1.id == adv2.id && adv1.namespace == adv2.namespace
-}
+// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only
+// available within the list of access protected advisories
+func (p *processor) checkAdvisoriesOnlyProtected(string) error {
 
-// arrayContainsAdvisory checks if an array of identifiers contains a certain advisory-identifier
-func arrayContainsAdvisory(adv identifier, arr []identifier) bool {
-	for _, advisory := range arr {
-		if advisoryEquals(adv, advisory) {
-			return true
+	var ids []string
+	for id, open := range p.whiteAdvisories {
+		if !open {
+			ids = append(ids, id.String())
 		}
 	}
-	return false
-}
 
-// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only available within the list of access protected advisories
-func (p *processor) checkAdvisoriesOnlyProtected() {
-	for _, protected := range p.whiteAdvisories.protected {
-		if arrayContainsAdvisory(protected, p.whiteAdvisories.free) {
-			continue
-		}
-		p.badWhitePermissions.error("Advisory %s with TLP:WHITE is only available access-protected.", protected.name)
+	if len(ids) == 0 {
+		return nil
 	}
+
+	sort.Strings(ids)
+
+	p.badWhitePermissions.error(
+		"TLP:WHITE advisory with ids %s are only available access-protected.",
+		strings.Join(ids, ", "))
+
+	return nil
 }
 
 // add adds a message to this topic.
@@ -285,6 +282,8 @@ func (p *processor) clean() {
 	p.badWhitePermissions.reset()
 	p.badAmberRedPermissions.reset()
 	p.labelChecker.reset()
+
+	p.whiteAdvisories = nil
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -390,6 +389,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 		(*processor).checkMissing,
 		(*processor).checkInvalid,
 		(*processor).checkListing,
+		(*processor).checkAdvisoriesOnlyProtected,
 	)
 
 	return checks
@@ -1055,8 +1055,6 @@ func (p *processor) checkCSAFs(_ string) error {
 	fs, hasRolie := rolie.([]any)
 	hasRolie = hasRolie && len(fs) > 0
 
-	p.whiteAdvisories = &whiteAdvs{}
-
 	if hasRolie {
 		var feeds [][]csaf.Feed
 		if err := util.ReMarshalJSON(&feeds, rolie); err != nil {
@@ -1068,10 +1066,6 @@ func (p *processor) checkCSAFs(_ string) error {
 		}
 		// check for service category document
 		p.serviceCheck(feeds)
-	}
-
-	if p.whiteAdvisories != nil && len(p.whiteAdvisories.protected) > 0 {
-		p.checkAdvisoriesOnlyProtected()
 	}
 
 	// No rolie feeds -> try directory_urls.
