@@ -157,7 +157,7 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWhitePermissions.used() {
-		req.message(InfoType, "No advisories labeled TLP:WHITE tested for accessibility.")
+		req.message(InfoType, "No access-protected advisories labeled TLP:WHITE found.")
 		return
 	}
 	if len(p.badWhitePermissions) == 0 {
