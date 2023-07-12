@@ -27,6 +27,13 @@ type rolieLabelChecker struct {
 	advisories map[csaf.TLPLabel]util.Set[string]
 }
 
+// reset brings the checker back to an initial state.
+func (rlc *rolieLabelChecker) reset() {
+	rlc.feedLabel = ""
+	rlc.feedURL = ""
+	rlc.advisories = map[csaf.TLPLabel]util.Set[string]{}
+}
+
 // tlpLevel returns an inclusion order of TLP colors.
 func tlpLevel(label csaf.TLPLabel) int {
 	switch label {
@@ -86,9 +93,7 @@ func (p *processor) evaluateTLP(doc any, name string) {
 			p.sortIntoWhiteAdvs(identifier)
 		}
 	}
-	if p.labelChecker != nil {
-		p.labelChecker.check(p, advisoryLabel, name)
-	}
+	p.labelChecker.check(p, advisoryLabel, name)
 }
 
 // add registers a given url to a label.
@@ -177,9 +182,10 @@ func (rlc *rolieLabelChecker) checkRank(
 	label csaf.TLPLabel,
 	url string,
 ) {
-	if !p.badROLIEFeed.used() {
+	if rlc.feedLabel == "" {
 		return
 	}
+
 	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
 
 	case advisoryRank < feedRank:
@@ -517,8 +523,8 @@ func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier,
 		return identifier, err
 	}
 	identifier.name = name
-	identifier.namespace = namespace.(string)
-	identifier.id = id.(string)
+	identifier.namespace = namespace.(string) // TODO: Check type assertion!
+	identifier.id = id.(string)               // TODO: Check type assertion!
 	return identifier, nil
 }
 
@@ -526,7 +532,7 @@ func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier,
 func (p *processor) sortIntoWhiteAdvs(ide identifier) {
 	// Currently, if there is no openClient, this means the advisory was
 	// freely accessible. TODO: Make viable without labelchecker.
-	if p.unauthClient == nil {
+	if p.usedAuthorizedClient() {
 		p.whiteAdvisories.free = append(p.whiteAdvisories.free, ide)
 		return
 	}

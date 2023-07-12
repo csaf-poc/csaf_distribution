@@ -53,7 +53,7 @@ type processor struct {
 	pmd256          []byte
 	pmd             any
 	keys            *crypto.KeyRing
-	labelChecker    *rolieLabelChecker
+	labelChecker    rolieLabelChecker
 	whiteAdvisories *whiteAdvs
 
 	invalidAdvisories      topicMessages
@@ -230,6 +230,9 @@ func newProcessor(opts *options) (*processor, error) {
 		expr:           util.NewPathEval(),
 		ageAccept:      ageAccept(opts),
 		validator:      validator,
+		labelChecker: rolieLabelChecker{
+			advisories: map[csaf.TLPLabel]util.Set[string]{},
+		},
 	}, nil
 }
 
@@ -281,7 +284,7 @@ func (p *processor) clean() {
 	p.badROLIECategory.reset()
 	p.badWhitePermissions.reset()
 	p.badAmberRedPermissions.reset()
-	p.labelChecker = nil
+	p.labelChecker.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -932,7 +935,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	p.labelChecker = nil
+	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badIndices.add)
 }
@@ -1027,7 +1030,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	p.labelChecker = nil
+	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
@@ -1051,10 +1054,6 @@ func (p *processor) checkCSAFs(_ string) error {
 
 	fs, hasRolie := rolie.([]any)
 	hasRolie = hasRolie && len(fs) > 0
-
-	p.labelChecker = &rolieLabelChecker{
-		advisories: map[csaf.TLPLabel]util.Set[string]{},
-	}
 
 	p.whiteAdvisories = &whiteAdvs{}
 
