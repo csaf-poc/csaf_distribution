@@ -60,20 +60,27 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 	return csaf.TLPLabelUnlabeled
 }
 
+// extractTLP extracts the tlp label of the given document
+// and defaults to TLP:WHITE if not found.
+func (p *processor) extractTLP(doc any) csaf.TLPLabel {
+	advisoryTLP, err := p.expr.Eval(`$.document.distribution.tlp.label`, doc)
+	if err != nil {
+		return csaf.TLPLabelUnlabeled
+	}
+	label, ok := advisoryTLP.(string)
+	if !ok {
+		return csaf.TLPLabelUnlabeled
+	}
+	return csaf.TLPLabel(label)
+}
+
 // evaluateTLP extracts the TLP label from a given document and
 // calls upon functions further checking for mistakes in access-protection
 // or label assignment between feed and advisory
 func (p *processor) evaluateTLP(doc any, url string) {
 
-	var advisoryLabel csaf.TLPLabel
-	// extract TLPLabel of document
-	advisorytlp, err := p.expr.Eval(
-		`$.document.distribution.tlp.label`, doc)
-	if err != nil {
-		advisoryLabel = csaf.TLPLabelUnlabeled
-	} else {
-		advisoryLabel = csaf.TLPLabel(advisorytlp.(string))
-	}
+	advisoryLabel := p.extractTLP(doc)
+
 	// If the client has no authorization it shouldn't be able
 	// to access TLP:AMBER or TLP:RED advisories
 	if !p.usedAuthorizedClient() &&
@@ -84,6 +91,8 @@ func (p *processor) evaluateTLP(doc any, url string) {
 			url, advisoryLabel)
 	}
 
+	// If we found a white labeled document we need to track it
+	// to find out later if there was an unprotected way to access it.
 	if advisoryLabel == csaf.TLPLabelWhite {
 		p.invalidAdvisories.use()
 		id, err := p.extractAdvisoryIdentifier(doc)
@@ -497,9 +506,8 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 	return nil
 }
 
-// Extract document/publisher/namespace and document/tracking/id from advisory
-// and save it in an identifier
-// func (p *processor) extractAdvisoryIdentifier(doc any, name string) (identifier, error) {
+// extractAdvisoryIdentifier extracts document/publisher/namespace and
+// document/tracking/id from advisory and stores it in an identifier.
 func (p *processor) extractAdvisoryIdentifier(doc any) (identifier, error) {
 	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
 	if err != nil {
