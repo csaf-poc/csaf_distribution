@@ -31,7 +31,7 @@ func (id identifier) String() string {
 	return "(" + id.namespace + ", " + id.id + ")"
 }
 
-// labelChecker helps to check if advisories are of there right TLP color.
+// labelChecker helps to check if advisories are of the right TLP color.
 type labelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
@@ -64,23 +64,14 @@ func tlpLevel(label csaf.TLPLabel) int {
 	}
 }
 
-// tlpLabel returns the value of a none-nil pointer
-// to a TLPLabel. If pointer is nil unlabeled is returned.
-func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
-	if label != nil {
-		return *label
-	}
-	return csaf.TLPLabelUnlabeled
-}
-
 // extractTLP extracts the tlp label of the given document
-// and defaults to TLP:WHITE if not found.
+// and defaults to UNLABELED if not found.
 func (p *processor) extractTLP(doc any) csaf.TLPLabel {
-	advisoryTLP, err := p.expr.Eval(`$.document.distribution.tlp.label`, doc)
+	labelString, err := p.expr.Eval(`$.document.distribution.tlp.label`, doc)
 	if err != nil {
 		return csaf.TLPLabelUnlabeled
 	}
-	label, ok := advisoryTLP.(string)
+	label, ok := labelString.(string)
 	if !ok {
 		return csaf.TLPLabelUnlabeled
 	}
@@ -107,6 +98,9 @@ func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
 	// If we found a white labeled document we need to track it
 	// to find out later if there was an unprotected way to access it.
 	if advisoryLabel == csaf.TLPLabelWhite {
+		// Being not able to extract the identifier from the document
+		// indicates that the document is not valid. Should not happen
+		// as the schema validation passed before.
 		p.invalidAdvisories.use()
 		id, err := p.extractAdvisoryIdentifier(doc)
 		if err != nil {
@@ -211,6 +205,7 @@ func (lc *labelChecker) checkRank(
 	label csaf.TLPLabel,
 	url string,
 ) {
+	// Only do this check when we are inside a ROLIE feed.
 	if lc.feedLabel == "" {
 		return
 	}
@@ -235,6 +230,15 @@ func (lc *labelChecker) checkRank(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
 			url, label, lc.feedURL, lc.feedLabel)
 	}
+}
+
+// defaults returns the value of the referencend pointer p
+// if it is not nil, def otherwise.
+func defaults[T any](p *T, def T) T {
+	if p != nil {
+		return *p
+	}
+	return def
 }
 
 // processROLIEFeeds goes through all ROLIE feeds and checks their
@@ -301,7 +305,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				continue
 			}
 
-			label := tlpLabel(feed.TLPLabel)
+			label := defaults(feed.TLPLabel, csaf.TLPLabelUnlabeled)
 			if err := p.categoryCheck(feedBase, label); err != nil {
 				if err != errContinue {
 					return err
@@ -313,8 +317,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			// TODO: Issue a warning if we want check AMBER+ without an
 			// authorizing client.
-
-			// TODO: Complete criteria for requirement 4.
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
@@ -353,7 +355,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			feedBase := base.ResolveReference(up)
 			makeAbs := makeAbsolute(feedBase)
-			label := tlpLabel(feed.TLPLabel)
+			label := defaults(feed.TLPLabel, csaf.TLPLabelUnlabeled)
 
 			switch label {
 			case csaf.TLPLabelUnlabeled:
