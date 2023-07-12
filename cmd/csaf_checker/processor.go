@@ -150,7 +150,7 @@ func (p *processor) checkAdvisoriesOnlyProtected(string) error {
 	sort.Strings(ids)
 
 	p.badWhitePermissions.error(
-		"TLP:WHITE advisory with ids %s are only available access-protected.",
+		"TLP:WHITE advisories with ids %s are only available access-protected.",
 		strings.Join(ids, ", "))
 
 	return nil

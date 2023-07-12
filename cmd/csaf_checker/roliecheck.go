@@ -65,18 +65,15 @@ func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
 // or label assignment between feed and advisory
 func (p *processor) evaluateTLP(doc any, url string) {
 
-	// TODO: Use eval to extract label directly.
-	// extract document
-	document, err := p.expr.Eval(
-		`$.document`, doc)
+	var advisoryLabel csaf.TLPLabel
+	// extract TLPLabel of document
+	advisorytlp, err := p.expr.Eval(
+		`$.document.distribution.tlp.label`, doc)
 	if err != nil {
-		p.badROLIEFeed.error( // XXX: Why badROLIEFeed?
-			"Extracting 'tlp level' from %s failed: %v",
-			url, err)
-		return
+		advisoryLabel = csaf.TLPLabelUnlabeled
+	} else {
+		advisoryLabel = csaf.TLPLabel(advisorytlp.(string))
 	}
-	// extract advisory TLP label
-	advisoryLabel := extractTLP(document)
 	// If the client has no authorization it shouldn't be able
 	// to access TLP:AMBER or TLP:RED advisories
 	if !p.usedAuthorizedClient() &&
@@ -498,25 +495,6 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 
 	// TODO: Check conformity with RFC8322
 	return nil
-}
-
-// extractTLP tries to extract a valid TLP label from an advisory
-// Returns "UNLABELED" if it does not exist, the label otherwise
-func extractTLP(tlpa any) csaf.TLPLabel {
-	if document, ok := tlpa.(map[string]any); ok {
-		if distri, ok := document["distribution"]; ok {
-			if distribution, ok := distri.(map[string]any); ok {
-				if tlp, ok := distribution["tlp"]; ok {
-					if label, ok := tlp.(map[string]any); ok {
-						if labelstring, ok := label["label"].(string); ok {
-							return csaf.TLPLabel(labelstring)
-						}
-					}
-				}
-			}
-		}
-	}
-	return csaf.TLPLabelUnlabeled
 }
 
 // Extract document/publisher/namespace and document/tracking/id from advisory
