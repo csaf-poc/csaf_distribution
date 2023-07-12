@@ -53,7 +53,7 @@ type processor struct {
 	pmd256          []byte
 	pmd             any
 	keys            *crypto.KeyRing
-	labelChecker    rolieLabelChecker
+	labelChecker    labelChecker
 	whiteAdvisories *whiteAdvs
 
 	invalidAdvisories      topicMessages
@@ -230,7 +230,7 @@ func newProcessor(opts *options) (*processor, error) {
 		expr:           util.NewPathEval(),
 		ageAccept:      ageAccept(opts),
 		validator:      validator,
-		labelChecker: rolieLabelChecker{
+		labelChecker: labelChecker{
 			advisories: map[csaf.TLPLabel]util.Set[string]{},
 		},
 	}, nil

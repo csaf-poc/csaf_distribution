@@ -18,9 +18,9 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
-// rolieLabelChecker helps to check id advisories in ROLIE feeds
+// labelChecker helps to check id advisories in ROLIE feeds
 // are in there right TLP color.
-type rolieLabelChecker struct {
+type labelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
@@ -28,10 +28,10 @@ type rolieLabelChecker struct {
 }
 
 // reset brings the checker back to an initial state.
-func (rlc *rolieLabelChecker) reset() {
-	rlc.feedLabel = ""
-	rlc.feedURL = ""
-	rlc.advisories = map[csaf.TLPLabel]util.Set[string]{}
+func (lc *labelChecker) reset() {
+	lc.feedLabel = ""
+	lc.feedURL = ""
+	lc.advisories = map[csaf.TLPLabel]util.Set[string]{}
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -97,34 +97,34 @@ func (p *processor) evaluateTLP(doc any, name string) {
 }
 
 // add registers a given url to a label.
-func (rlc *rolieLabelChecker) add(label csaf.TLPLabel, url string) {
-	advs := rlc.advisories[label]
+func (lc *labelChecker) add(label csaf.TLPLabel, url string) {
+	advs := lc.advisories[label]
 	if advs == nil {
 		advs = util.Set[string]{}
-		rlc.advisories[label] = advs
+		lc.advisories[label] = advs
 	}
 	advs.Add(url)
 }
 
 // check tests if the TLP label of an advisory is used correctly.
-func (rlc *rolieLabelChecker) check(
+func (lc *labelChecker) check(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
 ) {
 	// Associate advisory label to urls.
-	rlc.add(label, url)
+	lc.add(label, url)
 
 	// If entry shows up in feed of higher tlp level, give out info or warning.
-	rlc.checkRank(p, label, url)
+	lc.checkRank(p, label, url)
 
 	// Issue warnings or errors if the advisory is not protected properly.
-	rlc.checkProtection(p, label, url)
+	lc.checkProtection(p, label, url)
 }
 
 // checkProtection tests if a given advisory has the right level
 // of protection.
-func (rlc *rolieLabelChecker) checkProtection(
+func (lc *labelChecker) checkProtection(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
@@ -177,34 +177,34 @@ func (rlc *rolieLabelChecker) checkProtection(
 
 // checkRank tests if a given advisory is contained by the
 // the right feed color.
-func (rlc *rolieLabelChecker) checkRank(
+func (lc *labelChecker) checkRank(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
 ) {
-	if rlc.feedLabel == "" {
+	if lc.feedLabel == "" {
 		return
 	}
 
-	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
+	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(lc.feedLabel); {
 
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
 			p.badROLIEFeed.info(
 				"Found unlabeled advisory %q in feed %q.",
-				url, rlc.feedURL)
+				url, lc.feedURL)
 		} else {
 			p.badROLIEFeed.warn(
 				"Found advisory %q labled TLP:%s in feed %q (TLP:%s).",
 				url, label,
-				rlc.feedURL, rlc.feedLabel)
+				lc.feedURL, lc.feedLabel)
 		}
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
 		p.badROLIEFeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
-			url, label, rlc.feedURL, rlc.feedLabel)
+			url, label, lc.feedURL, lc.feedLabel)
 	}
 }
 
