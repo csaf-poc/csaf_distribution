@@ -19,13 +19,25 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
-// labelChecker helps to check id advisories in ROLIE feeds
-// are in there right TLP color.
+// identifier consist of document/tracking/id and document/publisher/namespace,
+// which in sum are unique for each csaf document and the name of a csaf document
+type identifier struct {
+	id        string
+	namespace string
+}
+
+// String implements fmt.Stringer
+func (id identifier) String() string {
+	return "(" + id.namespace + ", " + id.id + ")"
+}
+
+// labelChecker helps to check if advisories are of there right TLP color.
 type labelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	advisories map[csaf.TLPLabel]util.Set[string]
+	advisories      map[csaf.TLPLabel]util.Set[string]
+	whiteAdvisories map[identifier]bool
 }
 
 // reset brings the checker back to an initial state.
@@ -33,6 +45,7 @@ func (lc *labelChecker) reset() {
 	lc.feedLabel = ""
 	lc.feedURL = ""
 	lc.advisories = map[csaf.TLPLabel]util.Set[string]{}
+	lc.whiteAdvisories = map[identifier]bool{}
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -77,7 +90,7 @@ func (p *processor) extractTLP(doc any) csaf.TLPLabel {
 // evaluateTLP extracts the TLP label from a given document and
 // calls upon functions further checking for mistakes in access-protection
 // or label assignment between feed and advisory
-func (p *processor) evaluateTLP(doc any, url string) {
+func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
 
 	advisoryLabel := p.extractTLP(doc)
 
@@ -99,16 +112,12 @@ func (p *processor) evaluateTLP(doc any, url string) {
 		if err != nil {
 			p.invalidAdvisories.error("Bad document %s: %v", url, err)
 		} else {
-			if p.whiteAdvisories == nil {
-				p.whiteAdvisories = map[identifier]bool{}
-			}
-
-			if !p.whiteAdvisories[id] && p.usedAuthorizedClient() {
+			if !lc.whiteAdvisories[id] && p.usedAuthorizedClient() {
 				if resp, err := p.unauthorizedClient().Get(url); err == nil {
-					p.whiteAdvisories[id] = resp.StatusCode == http.StatusOK
+					lc.whiteAdvisories[id] = resp.StatusCode == http.StatusOK
 				}
 			} else {
-				p.whiteAdvisories[id] = true
+				lc.whiteAdvisories[id] = true
 			}
 		}
 	}

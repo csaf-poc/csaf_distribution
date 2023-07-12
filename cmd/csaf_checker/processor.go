@@ -46,15 +46,14 @@ type processor struct {
 	unauthClient util.Client
 	ageAccept    func(time.Time) bool
 
-	redirects       map[string][]string
-	noneTLS         util.Set[string]
-	alreadyChecked  map[string]whereType
-	pmdURL          string
-	pmd256          []byte
-	pmd             any
-	keys            *crypto.KeyRing
-	labelChecker    labelChecker
-	whiteAdvisories map[identifier]bool
+	redirects      map[string][]string
+	noneTLS        util.Set[string]
+	alreadyChecked map[string]whereType
+	pmdURL         string
+	pmd256         []byte
+	pmd            any
+	keys           *crypto.KeyRing
+	labelChecker   labelChecker
 
 	invalidAdvisories      topicMessages
 	badFilenames           topicMessages
@@ -92,18 +91,6 @@ var (
 
 type whereType byte
 
-// identifier consist of document/tracking/id and document/publisher/namespace,
-// which in sum are unique for each csaf document and the name of a csaf document
-type identifier struct {
-	id        string
-	namespace string
-}
-
-// String implements fmt.Stringer
-func (id identifier) String() string {
-	return "(" + id.namespace + ", " + id.id + ")"
-}
-
 const (
 	rolieMask = whereType(1) << iota
 	indexMask
@@ -130,30 +117,6 @@ func (wt whereType) String() string {
 		}
 		return strings.Join(mixed, "|")
 	}
-}
-
-// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisory is only
-// available within the list of access protected advisories
-func (p *processor) checkAdvisoriesOnlyProtected(string) error {
-
-	var ids []string
-	for id, open := range p.whiteAdvisories {
-		if !open {
-			ids = append(ids, id.String())
-		}
-	}
-
-	if len(ids) == 0 {
-		return nil
-	}
-
-	sort.Strings(ids)
-
-	p.badWhitePermissions.error(
-		"TLP:WHITE advisories with ids %s are only available access-protected.",
-		strings.Join(ids, ", "))
-
-	return nil
 }
 
 // add adds a message to this topic.
@@ -228,7 +191,8 @@ func newProcessor(opts *options) (*processor, error) {
 		ageAccept:      ageAccept(opts),
 		validator:      validator,
 		labelChecker: labelChecker{
-			advisories: map[csaf.TLPLabel]util.Set[string]{},
+			advisories:      map[csaf.TLPLabel]util.Set[string]{},
+			whiteAdvisories: map[identifier]bool{},
 		},
 	}, nil
 }
@@ -282,8 +246,6 @@ func (p *processor) clean() {
 	p.badWhitePermissions.reset()
 	p.badAmberRedPermissions.reset()
 	p.labelChecker.reset()
-
-	p.whiteAdvisories = nil
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -764,7 +726,7 @@ func (p *processor) integrity(
 			}
 		}
 
-		p.evaluateTLP(doc, u)
+		p.labelChecker.evaluateTLP(p, doc, u)
 
 		// Check if file is in the right folder.
 		p.badFolders.use()
@@ -1200,6 +1162,30 @@ func (p *processor) checkListing(string) error {
 		p.badDirListings.error("Not listed advisories: %s",
 			strings.Join(unlisted, ", "))
 	}
+
+	return nil
+}
+
+// checkAdvisoriesOnlyProtected checks if a (TLP:WHITE) advisories are only
+// available within the list of access protected advisories.
+func (p *processor) checkAdvisoriesOnlyProtected(string) error {
+
+	var ids []string
+	for id, open := range p.labelChecker.whiteAdvisories {
+		if !open {
+			ids = append(ids, id.String())
+		}
+	}
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	sort.Strings(ids)
+
+	p.badWhitePermissions.error(
+		"TLP:WHITE advisories with ids %s are only available access-protected.",
+		strings.Join(ids, ", "))
 
 	return nil
 }
