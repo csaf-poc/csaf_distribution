@@ -31,7 +31,7 @@ type requirementRules struct {
 var (
 	publisherRules = &requirementRules{
 		cond: condAll,
-		subs: ruleAtoms(1, 2, 3 /* 4 */),
+		subs: ruleAtoms(1, 2, 3, 4),
 	}
 
 	providerRules = &requirementRules{
@@ -163,7 +163,8 @@ func (p *processor) eval(requirement int) bool {
 		return !p.badFilenames.hasErrors()
 	case 3:
 		return len(p.noneTLS) == 0
-
+	case 4:
+		return !p.badWhitePermissions.hasErrors()
 	case 5:
 		return !p.badAmberRedPermissions.hasErrors()
 	// Currently, only domains using HTTP-Header redirects are checked.

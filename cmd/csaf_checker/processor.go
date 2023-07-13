@@ -53,7 +53,7 @@ type processor struct {
 	pmd256         []byte
 	pmd            any
 	keys           *crypto.KeyRing
-	labelChecker   *rolieLabelChecker
+	labelChecker   labelChecker
 
 	invalidAdvisories      topicMessages
 	badFilenames           topicMessages
@@ -190,6 +190,10 @@ func newProcessor(opts *options) (*processor, error) {
 		expr:           util.NewPathEval(),
 		ageAccept:      ageAccept(opts),
 		validator:      validator,
+		labelChecker: labelChecker{
+			advisories:      map[csaf.TLPLabel]util.Set[string]{},
+			whiteAdvisories: map[identifier]bool{},
+		},
 	}, nil
 }
 
@@ -241,7 +245,7 @@ func (p *processor) clean() {
 	p.badROLIECategory.reset()
 	p.badWhitePermissions.reset()
 	p.badAmberRedPermissions.reset()
-	p.labelChecker = nil
+	p.labelChecker.reset()
 }
 
 // run calls checkDomain function for each domain in the given "domains" parameter.
@@ -361,6 +365,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 		(*processor).checkMissing,
 		(*processor).checkInvalid,
 		(*processor).checkListing,
+		(*processor).checkWhitePermissions,
 	)
 
 	return checks
@@ -735,28 +740,7 @@ func (p *processor) integrity(
 			}
 		}
 
-		// Extract the tlp level of the entry
-		if tlpa, err := p.expr.Eval(
-			`$.document`, doc); err != nil {
-			p.badROLIEFeed.error(
-				"Extracting 'tlp level' from %s failed: %v", u, err)
-		} else {
-			tlpe := extractTLP(tlpa)
-			// If the client has no authorization it shouldn't be able
-			// to access TLP:AMBER or TLP:RED advisories
-			if !p.opts.protectedAccess() &&
-				(tlpe == csaf.TLPLabelAmber || tlpe == csaf.TLPLabelRed) {
-
-				p.badAmberRedPermissions.use()
-				p.badAmberRedPermissions.error(
-					"Advisory %s of TLP level %v is not access protected.",
-					u, tlpe)
-			}
-			// check if current feed has correct or all of their tlp levels entries.
-			if p.labelChecker != nil {
-				p.labelChecker.check(p, tlpe, u)
-			}
-		}
+		p.labelChecker.check(p, doc, u)
 
 		// Check if file is in the right folder.
 		p.badFolders.use()
@@ -870,25 +854,6 @@ func (p *processor) integrity(
 	return nil
 }
 
-// extractTLP tries to extract a valid TLP label from an advisory
-// Returns "UNLABELED" if it does not exist, the label otherwise
-func extractTLP(tlpa any) csaf.TLPLabel {
-	if document, ok := tlpa.(map[string]any); ok {
-		if distri, ok := document["distribution"]; ok {
-			if distribution, ok := distri.(map[string]any); ok {
-				if tlp, ok := distribution["tlp"]; ok {
-					if label, ok := tlp.(map[string]any); ok {
-						if labelstring, ok := label["label"].(string); ok {
-							return csaf.TLPLabel(labelstring)
-						}
-					}
-				}
-			}
-		}
-	}
-	return csaf.TLPLabelUnlabeled
-}
-
 // checkIndex fetches the "index.txt" and calls "checkTLS" method for HTTPS checks.
 // It extracts the file names from the file and passes them to "integrity" function.
 // It returns error if fetching/reading the file(s) fails, otherwise nil.
@@ -946,7 +911,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	p.labelChecker = nil
+	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badIndices.add)
 }
@@ -1041,7 +1006,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 	}
 
 	// Block rolie checks.
-	p.labelChecker = nil
+	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badChanges.add)
 }
@@ -1211,6 +1176,30 @@ func (p *processor) checkListing(string) error {
 		p.badDirListings.error("Not listed advisories: %s",
 			strings.Join(unlisted, ", "))
 	}
+
+	return nil
+}
+
+// checkWhitePermissions checks if the TLP:WHITE advisories are
+// available with unprotected access.
+func (p *processor) checkWhitePermissions(string) error {
+
+	var ids []string
+	for id, open := range p.labelChecker.whiteAdvisories {
+		if !open {
+			ids = append(ids, id.String())
+		}
+	}
+
+	if len(ids) == 0 {
+		return nil
+	}
+
+	sort.Strings(ids)
+
+	p.badWhitePermissions.error(
+		"TLP:WHITE advisories with ids %s are only available access-protected.",
+		strings.Join(ids, ", "))
 
 	return nil
 }

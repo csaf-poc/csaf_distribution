@@ -9,6 +9,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 	"sort"
@@ -18,13 +19,33 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
-// rolieLabelChecker helps to check id advisories in ROLIE feeds
-// are in there right TLP color.
-type rolieLabelChecker struct {
+// identifier consist of document/tracking/id and document/publisher/namespace,
+// which in sum are unique for each csaf document and the name of a csaf document
+type identifier struct {
+	id        string
+	namespace string
+}
+
+// String implements fmt.Stringer
+func (id identifier) String() string {
+	return "(" + id.namespace + ", " + id.id + ")"
+}
+
+// labelChecker helps to check if advisories are of the right TLP color.
+type labelChecker struct {
 	feedURL   string
 	feedLabel csaf.TLPLabel
 
-	advisories map[csaf.TLPLabel]util.Set[string]
+	advisories      map[csaf.TLPLabel]util.Set[string]
+	whiteAdvisories map[identifier]bool
+}
+
+// reset brings the checker back to an initial state.
+func (lc *labelChecker) reset() {
+	lc.feedLabel = ""
+	lc.feedURL = ""
+	lc.advisories = map[csaf.TLPLabel]util.Set[string]{}
+	lc.whiteAdvisories = map[identifier]bool{}
 }
 
 // tlpLevel returns an inclusion order of TLP colors.
@@ -43,81 +64,55 @@ func tlpLevel(label csaf.TLPLabel) int {
 	}
 }
 
-// tlpLabel returns the value of a none-nil pointer
-// to a TLPLabel. If pointer is nil unlabeled is returned.
-func tlpLabel(label *csaf.TLPLabel) csaf.TLPLabel {
-	if label != nil {
-		return *label
+// extractTLP extracts the tlp label of the given document
+// and defaults to UNLABELED if not found.
+func (p *processor) extractTLP(doc any) csaf.TLPLabel {
+	labelString, err := p.expr.Eval(`$.document.distribution.tlp.label`, doc)
+	if err != nil {
+		return csaf.TLPLabelUnlabeled
 	}
-	return csaf.TLPLabelUnlabeled
-}
-
-// add registers a given url to a label.
-func (rlc *rolieLabelChecker) add(label csaf.TLPLabel, url string) {
-	advs := rlc.advisories[label]
-	if advs == nil {
-		advs = util.Set[string]{}
-		rlc.advisories[label] = advs
+	label, ok := labelString.(string)
+	if !ok {
+		return csaf.TLPLabelUnlabeled
 	}
-	advs.Add(url)
+	return csaf.TLPLabel(label)
 }
 
 // check tests if the TLP label of an advisory is used correctly.
-func (rlc *rolieLabelChecker) check(
+func (lc *labelChecker) check(
 	p *processor,
-	label csaf.TLPLabel,
+	doc any,
 	url string,
 ) {
+	label := p.extractTLP(doc)
+
+	// Check the permissions.
+	lc.checkPermissions(p, label, doc, url)
+
 	// Associate advisory label to urls.
-	rlc.add(label, url)
+	lc.add(label, url)
 
 	// If entry shows up in feed of higher tlp level, give out info or warning.
-	rlc.checkRank(p, label, url)
-
-	// Issue warnings or errors if the advisory is not protected properly.
-	rlc.checkProtection(p, label, url)
+	lc.checkRank(p, label, url)
 }
 
-// checkProtection tests if a given advisory has the right level
-// of protection.
-func (rlc *rolieLabelChecker) checkProtection(
+// checkPermissions checks for mistakes in access-protection.
+func (lc *labelChecker) checkPermissions(
 	p *processor,
 	label csaf.TLPLabel,
+	doc any,
 	url string,
 ) {
-	switch {
-	// If we are checking WHITE and we have a test client
-	// and we get a status forbidden then the access is not open.
-	case label == csaf.TLPLabelWhite:
-		p.badWhitePermissions.use()
-		// We only need to download it with an unauthorized client
-		// if have not done it yet.
-		if p.usedAuthorizedClient() {
-			res, err := p.unauthorizedClient().Get(url)
-			if err != nil {
-				p.badWhitePermissions.error(
-					"Unexpected Error %v when trying to fetch: %s", err, url)
-			} else if res.StatusCode == http.StatusForbidden {
-				p.badWhitePermissions.error(
-					"Advisory %s of TLP level WHITE is access protected.", url)
-			}
-		}
-
-	// If we are checking AMBER or above we need to download
-	// the data again with the open client.
-	// If this does not result in status forbidden the
-	// server may be wrongly configured.
-	case tlpLevel(label) >= tlpLevel(csaf.TLPLabelAmber):
+	switch label {
+	case csaf.TLPLabelAmber, csaf.TLPLabelRed:
+		// If the client has no authorization it shouldn't be able
+		// to access TLP:AMBER or TLP:RED advisories
 		p.badAmberRedPermissions.use()
-		// It is an error if we downloaded the advisory with
-		// an unauthorized client.
 		if !p.usedAuthorizedClient() {
 			p.badAmberRedPermissions.error(
-				"Advisory %s of TLP level %v is not properly access protected.",
+				"Advisory %s of TLP level %v is not access protected.",
 				url, label)
 		} else {
-			// We came here by an authorized download which is okay.
-			// So its bad if we can download it with an unauthorized client, too.
 			res, err := p.unauthorizedClient().Get(url)
 			if err != nil {
 				p.badAmberRedPermissions.error(
@@ -128,36 +123,94 @@ func (rlc *rolieLabelChecker) checkProtection(
 					url, label)
 			}
 		}
+
+	case csaf.TLPLabelWhite:
+		// If we found a white labeled document we need to track it
+		// to find out later if there was an unprotected way to access it.
+
+		p.badWhitePermissions.use()
+		// Being not able to extract the identifier from the document
+		// indicates that the document is not valid. Should not happen
+		// as the schema validation passed before.
+		p.invalidAdvisories.use()
+		if id, err := p.extractAdvisoryIdentifier(doc); err != nil {
+			p.invalidAdvisories.error("Bad document %s: %v", url, err)
+		} else if !lc.whiteAdvisories[id] {
+			// Only do check if we haven't seen it as accessible before.
+
+			if !p.usedAuthorizedClient() {
+				// We already downloaded it without protection
+				lc.whiteAdvisories[id] = true
+			} else {
+				// Need to try to re-download it unauthorized.
+				if resp, err := p.unauthorizedClient().Get(url); err == nil {
+					accessible := resp.StatusCode == http.StatusOK
+					lc.whiteAdvisories[id] = accessible
+					// If we are in a white rolie feed or in a dirlisting
+					// directly warn if we cannot access it.
+					// The cases of being in an amber or red feed are resolved.
+					if !accessible &&
+						(lc.feedLabel == "" || lc.feedLabel == csaf.TLPLabelWhite) {
+						p.badWhitePermissions.warn(
+							"Advisory %s of TLP level WHITE is access-protected.", url)
+					}
+				}
+			}
+		}
 	}
+}
+
+// add registers a given url to a label.
+func (lc *labelChecker) add(label csaf.TLPLabel, url string) {
+	advs := lc.advisories[label]
+	if advs == nil {
+		advs = util.Set[string]{}
+		lc.advisories[label] = advs
+	}
+	advs.Add(url)
 }
 
 // checkRank tests if a given advisory is contained by the
 // the right feed color.
-func (rlc *rolieLabelChecker) checkRank(
+func (lc *labelChecker) checkRank(
 	p *processor,
 	label csaf.TLPLabel,
 	url string,
 ) {
-	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(rlc.feedLabel); {
+	// Only do this check when we are inside a ROLIE feed.
+	if lc.feedLabel == "" {
+		return
+	}
+
+	switch advisoryRank, feedRank := tlpLevel(label), tlpLevel(lc.feedLabel); {
 
 	case advisoryRank < feedRank:
 		if advisoryRank == 0 { // All kinds of 'UNLABELED'
 			p.badROLIEFeed.info(
 				"Found unlabeled advisory %q in feed %q.",
-				url, rlc.feedURL)
+				url, lc.feedURL)
 		} else {
 			p.badROLIEFeed.warn(
 				"Found advisory %q labled TLP:%s in feed %q (TLP:%s).",
 				url, label,
-				rlc.feedURL, rlc.feedLabel)
+				lc.feedURL, lc.feedLabel)
 		}
 
 	case advisoryRank > feedRank:
 		// Must not happen, give error
 		p.badROLIEFeed.error(
 			"%s of TLP level %s must not be listed in feed %s of TLP level %s",
-			url, label, rlc.feedURL, rlc.feedLabel)
+			url, label, lc.feedURL, lc.feedLabel)
 	}
+}
+
+// defaults returns the value of the referencend pointer p
+// if it is not nil, def otherwise.
+func defaults[T any](p *T, def T) T {
+	if p != nil {
+		return *p
+	}
+	return def
 }
 
 // processROLIEFeeds goes through all ROLIE feeds and checks their
@@ -199,10 +252,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 		}
 	}
 
-	p.labelChecker = &rolieLabelChecker{
-		advisories: map[csaf.TLPLabel]util.Set[string]{},
-	}
-
 	// Phase 2: check for integrity.
 	for _, fs := range feeds {
 		for i := range fs {
@@ -228,7 +277,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 				continue
 			}
 
-			label := tlpLabel(feed.TLPLabel)
+			label := defaults(feed.TLPLabel, csaf.TLPLabelUnlabeled)
 			if err := p.categoryCheck(feedBase, label); err != nil {
 				if err != errContinue {
 					return err
@@ -240,8 +289,6 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			// TODO: Issue a warning if we want check AMBER+ without an
 			// authorizing client.
-
-			// TODO: Complete criteria for requirement 4.
 
 			if err := p.integrity(files, feedBase, rolieMask, p.badProviderMetadata.add); err != nil {
 				if err != errContinue {
@@ -280,7 +327,7 @@ func (p *processor) processROLIEFeeds(feeds [][]csaf.Feed) error {
 
 			feedBase := base.ResolveReference(up)
 			makeAbs := makeAbsolute(feedBase)
-			label := tlpLabel(feed.TLPLabel)
+			label := defaults(feed.TLPLabel, csaf.TLPLabelUnlabeled)
 
 			switch label {
 			case csaf.TLPLabelUnlabeled:
@@ -440,4 +487,32 @@ func (p *processor) serviceCheck(feeds [][]csaf.Feed) error {
 
 	// TODO: Check conformity with RFC8322
 	return nil
+}
+
+// extractAdvisoryIdentifier extracts document/publisher/namespace and
+// document/tracking/id from advisory and stores it in an identifier.
+func (p *processor) extractAdvisoryIdentifier(doc any) (identifier, error) {
+	namespace, err := p.expr.Eval(`$.document.publisher.namespace`, doc)
+	if err != nil {
+		return identifier{}, err
+	}
+
+	idString, err := p.expr.Eval(`$.document.tracking.id`, doc)
+	if err != nil {
+		return identifier{}, err
+	}
+
+	ns, ok := namespace.(string)
+	if !ok {
+		return identifier{}, errors.New("cannot extract 'namespace'")
+	}
+	id, ok := idString.(string)
+	if !ok {
+		return identifier{}, errors.New("cannot extract 'id'")
+	}
+
+	return identifier{
+		namespace: ns,
+		id:        id,
+	}, nil
 }
