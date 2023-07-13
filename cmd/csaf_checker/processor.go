@@ -726,7 +726,7 @@ func (p *processor) integrity(
 			}
 		}
 
-		p.labelChecker.evaluateTLP(p, doc, u)
+		p.labelChecker.check(p, doc, u)
 
 		// Check if file is in the right folder.
 		p.badFolders.use()

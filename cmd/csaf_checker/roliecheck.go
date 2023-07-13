@@ -78,21 +78,40 @@ func (p *processor) extractTLP(doc any) csaf.TLPLabel {
 	return csaf.TLPLabel(label)
 }
 
-// evaluateTLP extracts the TLP label from a given document and
-// calls upon functions further checking for mistakes in access-protection
-// or label assignment between feed and advisory
-func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
+// check tests if the TLP label of an advisory is used correctly.
+func (lc *labelChecker) check(
+	p *processor,
+	doc any,
+	url string,
+) {
+	label := p.extractTLP(doc)
 
-	advisoryLabel := p.extractTLP(doc)
+	// Check the permissions.
+	lc.checkPermissions(p, label, doc, url)
 
-	// If the client has no authorization it shouldn't be able
-	// to access TLP:AMBER or TLP:RED advisories
-	if advisoryLabel == csaf.TLPLabelAmber || advisoryLabel == csaf.TLPLabelRed {
+	// Associate advisory label to urls.
+	lc.add(label, url)
+
+	// If entry shows up in feed of higher tlp level, give out info or warning.
+	lc.checkRank(p, label, url)
+}
+
+// checkPermissions checks for mistakes in access-protection.
+func (lc *labelChecker) checkPermissions(
+	p *processor,
+	label csaf.TLPLabel,
+	doc any,
+	url string,
+) {
+	switch label {
+	case csaf.TLPLabelAmber, csaf.TLPLabelRed:
+		// If the client has no authorization it shouldn't be able
+		// to access TLP:AMBER or TLP:RED advisories
 		p.badAmberRedPermissions.use()
 		if !p.usedAuthorizedClient() {
 			p.badAmberRedPermissions.error(
 				"Advisory %s of TLP level %v is not access protected.",
-				url, advisoryLabel)
+				url, label)
 		} else {
 			res, err := p.unauthorizedClient().Get(url)
 			if err != nil {
@@ -101,37 +120,44 @@ func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
 			} else if res.StatusCode == http.StatusOK {
 				p.badAmberRedPermissions.error(
 					"Advisory %s of TLP level %v is not properly access protected.",
-					url, advisoryLabel)
+					url, label)
 			}
 		}
-	}
 
-	// If we found a white labeled document we need to track it
-	// to find out later if there was an unprotected way to access it.
-	if advisoryLabel == csaf.TLPLabelWhite {
+	case csaf.TLPLabelWhite:
+		// If we found a white labeled document we need to track it
+		// to find out later if there was an unprotected way to access it.
+
+		p.badWhitePermissions.use()
 		// Being not able to extract the identifier from the document
 		// indicates that the document is not valid. Should not happen
 		// as the schema validation passed before.
 		p.invalidAdvisories.use()
-		id, err := p.extractAdvisoryIdentifier(doc)
-		if err != nil {
+		if id, err := p.extractAdvisoryIdentifier(doc); err != nil {
 			p.invalidAdvisories.error("Bad document %s: %v", url, err)
-		} else {
-			if !lc.whiteAdvisories[id] && p.usedAuthorizedClient() {
+		} else if !lc.whiteAdvisories[id] {
+			// Only do check if we haven't seen it as accessible before.
+
+			if !p.usedAuthorizedClient() {
+				// We already downloaded it without protection
+				lc.whiteAdvisories[id] = true
+			} else {
+				// Need to try to re-download it unauthorized.
 				if resp, err := p.unauthorizedClient().Get(url); err == nil {
-					freelyAccessible := resp.StatusCode == http.StatusOK
-					lc.whiteAdvisories[id] = freelyAccessible
-					if !freelyAccessible {
-						p.badWhitePermissions.warn("Advisory %s of TLP level WHITE is access-protected.", url)
+					accessible := resp.StatusCode == http.StatusOK
+					lc.whiteAdvisories[id] = accessible
+					// If we are in a white rolie feed or in a dirlisting
+					// directly warn if we cannot access it.
+					// The cases of being in an amber or red feed are resolved.
+					if !accessible &&
+						(lc.feedLabel == "" || lc.feedLabel == csaf.TLPLabelWhite) {
+						p.badWhitePermissions.warn(
+							"Advisory %s of TLP level WHITE is access-protected.", url)
 					}
 				}
-			} else {
-				lc.whiteAdvisories[id] = true
 			}
 		}
 	}
-
-	p.labelChecker.check(p, advisoryLabel, url)
 }
 
 // add registers a given url to a label.
@@ -142,19 +168,6 @@ func (lc *labelChecker) add(label csaf.TLPLabel, url string) {
 		lc.advisories[label] = advs
 	}
 	advs.Add(url)
-}
-
-// check tests if the TLP label of an advisory is used correctly.
-func (lc *labelChecker) check(
-	p *processor,
-	label csaf.TLPLabel,
-	url string,
-) {
-	// Associate advisory label to urls.
-	lc.add(label, url)
-
-	// If entry shows up in feed of higher tlp level, give out info or warning.
-	lc.checkRank(p, label, url)
 }
 
 // checkRank tests if a given advisory is contained by the
