@@ -87,12 +87,23 @@ func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
 
 	// If the client has no authorization it shouldn't be able
 	// to access TLP:AMBER or TLP:RED advisories
-	if !p.usedAuthorizedClient() &&
-		(advisoryLabel == csaf.TLPLabelAmber || advisoryLabel == csaf.TLPLabelRed) {
+	if advisoryLabel == csaf.TLPLabelAmber || advisoryLabel == csaf.TLPLabelRed {
 		p.badAmberRedPermissions.use()
-		p.badAmberRedPermissions.error(
-			"Advisory %s of TLP level %v is not access protected.",
-			url, advisoryLabel)
+		if !p.usedAuthorizedClient() {
+			p.badAmberRedPermissions.error(
+				"Advisory %s of TLP level %v is not access protected.",
+				url, advisoryLabel)
+		} else {
+			res, err := p.unauthorizedClient().Get(url)
+			if err != nil {
+				p.badAmberRedPermissions.error(
+					"Unexpected Error %v when trying to fetch: %s", err, url)
+			} else if res.StatusCode == http.StatusOK {
+				p.badAmberRedPermissions.error(
+					"Advisory %s of TLP level %v is not properly access protected.",
+					url, advisoryLabel)
+			}
+		}
 	}
 
 	// If we found a white labeled document we need to track it
@@ -108,7 +119,11 @@ func (lc *labelChecker) evaluateTLP(p *processor, doc any, url string) {
 		} else {
 			if !lc.whiteAdvisories[id] && p.usedAuthorizedClient() {
 				if resp, err := p.unauthorizedClient().Get(url); err == nil {
-					lc.whiteAdvisories[id] = resp.StatusCode == http.StatusOK
+					freelyAccessible := resp.StatusCode == http.StatusOK
+					lc.whiteAdvisories[id] = freelyAccessible
+					if !freelyAccessible {
+						p.badWhitePermissions.warn("Advisory %s of TLP level WHITE is access-protected.", url)
+					}
 				}
 			} else {
 				lc.whiteAdvisories[id] = true
@@ -140,62 +155,6 @@ func (lc *labelChecker) check(
 
 	// If entry shows up in feed of higher tlp level, give out info or warning.
 	lc.checkRank(p, label, url)
-
-	// Issue warnings or errors if the advisory is not protected properly.
-	lc.checkProtection(p, label, url)
-}
-
-// checkProtection tests if a given advisory has the right level
-// of protection.
-func (lc *labelChecker) checkProtection(
-	p *processor,
-	label csaf.TLPLabel,
-	url string,
-) {
-	switch {
-	// If we are checking WHITE and we have a test client
-	// and we get a status forbidden then the access is not open.
-	case label == csaf.TLPLabelWhite:
-		p.badWhitePermissions.use()
-		// We only need to download it with an unauthorized client
-		// if have not done it yet.
-		if p.usedAuthorizedClient() {
-			res, err := p.unauthorizedClient().Get(url)
-			if err != nil {
-				p.badWhitePermissions.error(
-					"Unexpected Error %v when trying to fetch: %s", err, url)
-			} else if res.StatusCode == http.StatusForbidden {
-				p.badWhitePermissions.warn(
-					"Advisory %s of TLP level WHITE is access protected.", url)
-			}
-		}
-
-	// If we are checking AMBER or above we need to download
-	// the data again with the open client.
-	// If this does not result in status forbidden the
-	// server may be wrongly configured.
-	case tlpLevel(label) >= tlpLevel(csaf.TLPLabelAmber):
-		p.badAmberRedPermissions.use()
-		// It is an error if we downloaded the advisory with
-		// an unauthorized client.
-		if !p.usedAuthorizedClient() {
-			p.badAmberRedPermissions.error(
-				"Advisory %s of TLP level %v is not properly access protected.",
-				url, label)
-		} else {
-			// We came here by an authorized download which is okay.
-			// So its bad if we can download it with an unauthorized client, too.
-			res, err := p.unauthorizedClient().Get(url)
-			if err != nil {
-				p.badAmberRedPermissions.error(
-					"Unexpected Error %v when trying to fetch: %s", err, url)
-			} else if res.StatusCode == http.StatusOK {
-				p.badAmberRedPermissions.error(
-					"Advisory %s of TLP level %v is not properly access protected.",
-					url, label)
-			}
-		}
-	}
 }
 
 // checkRank tests if a given advisory is contained by the
