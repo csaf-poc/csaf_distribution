@@ -348,7 +348,7 @@ func (p *processor) domainChecks(domain string) []func(*processor, string) error
 		p.badWellknownMetadata.info(
 			"Performed no test on whether the provider-metadata.json is available under the .well-known path since the direct url of the provider-metadata.json was used.")
 		p.badDNSPath.use()
-		p.badDNSPath.info("Performed no test on the contents of https://csaf.data.security.DOMAIN since direct url of provider-metadata.json was used")
+		p.badDNSPath.info("Performed no test on the contents of https://csaf.data.security.DOMAIN since direct url of provider-metadata.json was used.")
 	}
 
 	checks = append(checks,
