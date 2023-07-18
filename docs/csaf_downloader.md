@@ -18,6 +18,7 @@ Application Options:
       --validator=URL          URL to validate documents remotely
       --validatorcache=FILE    FILE to cache remote validations
       --validatorpreset=       One or more presets to validate remotely (default: mandatory)
+  -c, --config=INI-FILE        Path to config ini file
 
 Help Options:
   -h, --help                   Show this help message
@@ -31,3 +32,12 @@ Increasing the number of workers opens more connections to the web servers
 to download more advisories at once. This may improve the overall speed of the download.
 However, since this also increases the load on the servers, their administrators could
 have taken countermeasures to limit this.
+
+If no config file is explictly given the follwing places are searched for a config file:
+```
+~/.config/csaf/downloader.ini
+~/.csaf_downloader.ini
+csaf_downloader.ini
+```
+
+with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.

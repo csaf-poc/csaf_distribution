@@ -13,31 +13,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
+	"github.com/mitchellh/go-homedir"
 )
-
-const defaultWorker = 2
-
-type options struct {
-	Directory            *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR"`
-	Insecure             bool     `long:"insecure" description:"Do not check TLS certificates from provider"`
-	IgnoreSignatureCheck bool     `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch"`
-	Version              bool     `long:"version" description:"Display version of the binary"`
-	Verbose              bool     `long:"verbose" short:"v" description:"Verbose output"`
-	Rate                 *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)"`
-	Worker               int      `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM"`
-
-	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields"`
-
-	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL"`
-	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory"`
-}
 
 func errCheck(err error) {
 	if err != nil {
@@ -48,8 +30,8 @@ func errCheck(err error) {
 	}
 }
 
-func run(opts *options, domains []string) error {
-	d, err := newDownloader(opts)
+func run(cfg *config, domains []string) error {
+	d, err := newDownloader(cfg)
 	if err != nil {
 		return err
 	}
@@ -65,24 +47,38 @@ func run(opts *options, domains []string) error {
 
 func main() {
 
-	opts := &options{
+	cfg := &config{
 		Worker: defaultWorker,
 	}
 
-	parser := flags.NewParser(opts, flags.Default)
+	parser := flags.NewParser(cfg, flags.Default)
 	parser.Usage = "[OPTIONS] domain..."
 	domains, err := parser.Parse()
 	errCheck(err)
 
-	if opts.Version {
+	if cfg.Version {
 		fmt.Println(util.SemVersion)
 		return
 	}
+
+	if cfg.Config != nil {
+		iniParser := flags.NewIniParser(parser)
+		iniParser.ParseAsDefaults = true
+		name, err := homedir.Expand(*cfg.Config)
+		errCheck(err)
+		errCheck(iniParser.ParseFile(name))
+	} else if iniFile := findIniFile(); iniFile != "" {
+		iniParser := flags.NewIniParser(parser)
+		iniParser.ParseAsDefaults = true
+		errCheck(iniParser.ParseFile(iniFile))
+	}
+
+	errCheck(cfg.prepare())
 
 	if len(domains) == 0 {
 		log.Println("No domains given.")
 		return
 	}
 
-	errCheck(run(opts, domains))
+	errCheck(run(cfg, domains))
 }
