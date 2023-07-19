@@ -22,7 +22,7 @@ type config struct {
 	Directory            *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR"`
 	Insecure             bool     `long:"insecure" description:"Do not check TLS certificates from provider"`
 	IgnoreSignatureCheck bool     `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch"`
-	Version              bool     `long:"version" description:"Display version of the binary"`
+	Version              bool     `long:"version" description:"Display version of the binary" no-ini:"true"`
 	Verbose              bool     `long:"verbose" short:"v" description:"Verbose output"`
 	Rate                 *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)"`
 	Worker               int      `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM"`
