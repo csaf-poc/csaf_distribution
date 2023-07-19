@@ -18,7 +18,7 @@ Application Options:
       --validator=URL          URL to validate documents remotely
       --validatorcache=FILE    FILE to cache remote validations
       --validatorpreset=       One or more presets to validate remotely (default: mandatory)
-  -c, --config=INI-FILE        Path to config ini file
+  -c, --config=TOML-FILE       Path to config TOML file
 
 Help Options:
   -h, --help                   Show this help message
@@ -35,9 +35,9 @@ have taken countermeasures to limit this.
 
 If no config file is explictly given the follwing places are searched for a config file:
 ```
-~/.config/csaf/downloader.ini
-~/.csaf_downloader.ini
-csaf_downloader.ini
+~/.config/csaf/downloader.toml
+~/.csaf_downloader.toml
+csaf_downloader.toml
 ```
 
 with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
@@ -46,12 +46,12 @@ Supported options in config files:
 ```
 directory         # not set by default
 insecure          = false
-ignoresigcheck    = false
+ignore_sig_check  = false
 verbose           = false
 # rate            # set to unlimited
 worker            = 2
 # header          # not set by default
 # validator       # not set by default
 # validatorcache  # not set by default
-validatorpreset   = "mandatory"
+validatorpreset   = ["mandatory"]
 ```
