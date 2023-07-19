@@ -37,7 +37,7 @@ import (
 )
 
 type downloader struct {
-	opts      *options
+	cfg       *config
 	directory string
 	keys      *crypto.KeyRing
 	eval      *util.PathEval
@@ -45,15 +45,15 @@ type downloader struct {
 	mkdirMu   sync.Mutex
 }
 
-func newDownloader(opts *options) (*downloader, error) {
+func newDownloader(cfg *config) (*downloader, error) {
 
 	var validator csaf.RemoteValidator
 
-	if opts.RemoteValidator != "" {
+	if cfg.RemoteValidator != "" {
 		validatorOptions := csaf.RemoteValidatorOptions{
-			URL:     opts.RemoteValidator,
-			Presets: opts.RemoteValidatorPresets,
-			Cache:   opts.RemoteValidatorCache,
+			URL:     cfg.RemoteValidator,
+			Presets: cfg.RemoteValidatorPresets,
+			Cache:   cfg.RemoteValidatorCache,
 		}
 		var err error
 		if validator, err = validatorOptions.Open(); err != nil {
@@ -64,7 +64,7 @@ func newDownloader(opts *options) (*downloader, error) {
 	}
 
 	return &downloader{
-		opts:      opts,
+		cfg:       cfg,
 		eval:      util.NewPathEval(),
 		validator: validator,
 	}, nil
@@ -82,7 +82,7 @@ func (d *downloader) httpClient() util.Client {
 	hClient := http.Client{}
 
 	var tlsConfig tls.Config
-	if d.opts.Insecure {
+	if d.cfg.Insecure {
 		tlsConfig.InsecureSkipVerify = true
 		hClient.Transport = &http.Transport{
 			TLSClientConfig: &tlsConfig,
@@ -92,23 +92,23 @@ func (d *downloader) httpClient() util.Client {
 	client := util.Client(&hClient)
 
 	// Add extra headers.
-	if len(d.opts.ExtraHeader) > 0 {
+	if len(d.cfg.ExtraHeader) > 0 {
 		client = &util.HeaderClient{
 			Client: client,
-			Header: d.opts.ExtraHeader,
+			Header: d.cfg.ExtraHeader,
 		}
 	}
 
 	// Add optional URL logging.
-	if d.opts.Verbose {
+	if d.cfg.Verbose {
 		client = &util.LoggingClient{Client: client}
 	}
 
 	// Add optional rate limiting.
-	if d.opts.Rate != nil {
+	if d.cfg.Rate != nil {
 		client = &util.LimitingClient{
 			Client:  client,
-			Limiter: rate.NewLimiter(rate.Limit(*d.opts.Rate), 1),
+			Limiter: rate.NewLimiter(rate.Limit(*d.cfg.Rate), 1),
 		}
 	}
 
@@ -122,7 +122,7 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	lpmd := loader.Load(domain)
 
-	if d.opts.Verbose {
+	if d.cfg.Verbose {
 		for i := range lpmd.Messages {
 			log.Printf("Loading provider-metadata.json for %q: %s\n",
 				domain, lpmd.Messages[i].Message)
@@ -181,7 +181,7 @@ func (d *downloader) downloadFiles(
 	}()
 
 	var n int
-	if n = d.opts.Worker; n < 1 {
+	if n = d.cfg.Worker; n < 1 {
 		n = 1
 	}
 
@@ -289,7 +289,7 @@ func (d *downloader) logValidationIssues(url string, errors []string, err error)
 		return
 	}
 	if len(errors) > 0 {
-		if d.opts.Verbose {
+		if d.cfg.Verbose {
 			log.Printf("CSAF file %s has validation errors: %s\n",
 				url, strings.Join(errors, ", "))
 		} else {
@@ -372,7 +372,7 @@ nextAdvisory:
 
 		// Only hash when we have a remote counter part we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			if d.opts.Verbose {
+			if d.cfg.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
 			}
 		} else {
@@ -381,7 +381,7 @@ nextAdvisory:
 		}
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			if d.opts.Verbose {
+			if d.cfg.Verbose {
 				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
 			}
 		} else {
@@ -423,7 +423,7 @@ nextAdvisory:
 			var sign *crypto.PGPSignature
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
-				if d.opts.Verbose {
+				if d.cfg.Verbose {
 					log.Printf("downloading signature '%s' failed: %v\n",
 						file.SignURL(), err)
 				}
@@ -431,7 +431,7 @@ nextAdvisory:
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
 					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
-					if !d.opts.IgnoreSignatureCheck {
+					if !d.cfg.IgnoreSignatureCheck {
 						continue
 					}
 				}
@@ -560,7 +560,7 @@ func loadHash(client util.Client, p string) ([]byte, []byte, error) {
 // exists and is setup properly.
 func (d *downloader) prepareDirectory() error {
 	// If no special given use current working directory.
-	if d.opts.Directory == nil {
+	if d.cfg.Directory == nil {
 		dir, err := os.Getwd()
 		if err != nil {
 			return err
@@ -569,17 +569,17 @@ func (d *downloader) prepareDirectory() error {
 		return nil
 	}
 	// Use given directory
-	if _, err := os.Stat(*d.opts.Directory); err != nil {
+	if _, err := os.Stat(*d.cfg.Directory); err != nil {
 		// If it does not exist create it.
 		if os.IsNotExist(err) {
-			if err = os.MkdirAll(*d.opts.Directory, 0755); err != nil {
+			if err = os.MkdirAll(*d.cfg.Directory, 0755); err != nil {
 				return err
 			}
 		} else {
 			return err
 		}
 	}
-	d.directory = *d.opts.Directory
+	d.directory = *d.cfg.Directory
 	return nil
 }
 
