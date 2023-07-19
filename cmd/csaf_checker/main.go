@@ -13,27 +13,14 @@ import (
 	"bufio"
 	_ "embed" // Used for embedding.
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"os"
-
-	"github.com/csaf-poc/csaf_distribution/v2/util"
-	"github.com/jessevdk/go-flags"
 )
 
 //go:embed tmpl/report.html
 var reportHTML string
-
-func errCheck(err error) {
-	if err != nil {
-		if flags.WroteHelp(err) {
-			os.Exit(0)
-		}
-		log.Fatalf("error: %v\n", err)
-	}
-}
 
 // writeJSON writes the JSON encoding of the given report to the given stream.
 // It returns nil, otherwise an error.
@@ -113,17 +100,7 @@ func run(cfg *config, domains []string) (*Report, error) {
 }
 
 func main() {
-	cfg := new(config)
-
-	parser := flags.NewParser(cfg, flags.Default)
-	parser.Usage = "[OPTIONS] domain..."
-	domains, err := parser.Parse()
-	errCheck(err)
-
-	if cfg.Version {
-		fmt.Println(util.SemVersion)
-		return
-	}
+	domains, cfg, err := parseArgsConfig()
 
 	errCheck(cfg.prepare())
 
