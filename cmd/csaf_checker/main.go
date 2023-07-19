@@ -11,10 +11,8 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
 	_ "embed" // Used for embedding.
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -35,31 +33,6 @@ func errCheck(err error) {
 		}
 		log.Fatalf("error: %v\n", err)
 	}
-}
-
-func (o *options) prepare() error {
-	// Load client certs.
-	switch hasCert, hasKey := o.ClientCert != nil, o.ClientKey != nil; {
-
-	case hasCert && !hasKey || !hasCert && hasKey:
-		return errors.New("both client-key and client-cert options must be set for the authentication")
-
-	case hasCert:
-		cert, err := tls.LoadX509KeyPair(*o.ClientCert, *o.ClientKey)
-		if err != nil {
-			return err
-		}
-		o.clientCerts = []tls.Certificate{cert}
-	}
-	return nil
-}
-
-// protectedAccess returns true if we have client certificates or
-// extra http headers configured.
-// This may be a wrong assumption, because the certs are not checked
-// for their domain and custom headers may have other purposes.
-func (o *options) protectedAccess() bool {
-	return len(o.clientCerts) > 0 || len(o.ExtraHeader) > 0
 }
 
 // writeJSON writes the JSON encoding of the given report to the given stream.
@@ -102,14 +75,14 @@ func (nc *nopCloser) Close() error { return nil }
 
 // writeReport defines where to write the report according to the "output" flag option.
 // It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
-func writeReport(report *Report, opts *options) error {
+func writeReport(report *Report, cfg *config) error {
 
 	var w io.WriteCloser
 
-	if opts.Output == "" {
+	if cfg.Output == "" {
 		w = &nopCloser{os.Stdout}
 	} else {
-		f, err := os.Create(opts.Output)
+		f, err := os.Create(cfg.Output)
 		if err != nil {
 			return err
 		}
@@ -118,7 +91,7 @@ func writeReport(report *Report, opts *options) error {
 
 	var writer func(*Report, io.WriteCloser) error
 
-	switch opts.Format {
+	switch cfg.Format {
 	case "json":
 		writer = writeJSON
 	default:
@@ -130,8 +103,8 @@ func writeReport(report *Report, opts *options) error {
 
 // run uses a processor to check all the given domains or direct urls
 // and generates a report.
-func run(opts *options, domains []string) (*Report, error) {
-	p, err := newProcessor(opts)
+func run(cfg *config, domains []string) (*Report, error) {
+	p, err := newProcessor(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -140,27 +113,27 @@ func run(opts *options, domains []string) (*Report, error) {
 }
 
 func main() {
-	opts := new(options)
+	cfg := new(config)
 
-	parser := flags.NewParser(opts, flags.Default)
+	parser := flags.NewParser(cfg, flags.Default)
 	parser.Usage = "[OPTIONS] domain..."
 	domains, err := parser.Parse()
 	errCheck(err)
 
-	if opts.Version {
+	if cfg.Version {
 		fmt.Println(util.SemVersion)
 		return
 	}
 
-	errCheck(opts.prepare())
+	errCheck(cfg.prepare())
 
 	if len(domains) == 0 {
 		log.Println("No domain or direct url given.")
 		return
 	}
 
-	report, err := run(opts, domains)
+	report, err := run(cfg, domains)
 	errCheck(err)
 
-	errCheck(writeReport(report, opts))
+	errCheck(writeReport(report, cfg))
 }

@@ -103,7 +103,7 @@ func (r *validReporter) report(p *processor, domain *Domain) {
 	case !p.invalidAdvisories.used():
 		req.message(InfoType, "No validations performed")
 	case len(p.invalidAdvisories) == 0:
-		if p.validator != nil && containsAny(p.opts.RemoteValidatorPresets,
+		if p.validator != nil && containsAny(p.cfg.RemoteValidatorPresets,
 			"basic", "mandatory", "extended", "full") {
 			req.message(InfoType, "All advisories validated fine.")
 		} else {
