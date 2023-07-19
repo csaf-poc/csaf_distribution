@@ -41,3 +41,17 @@ csaf_downloader.ini
 ```
 
 with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
+
+Supported options in config files:
+```
+directory         # not set by default
+insecure          = false
+ignoresigcheck    = false
+verbose           = false
+# rate            # set to unlimited
+worker            = 2
+# header          # not set by default
+# validator       # not set by default
+# validatorcache  # not set by default
+validatorpreset   = "mandatory"
+```
