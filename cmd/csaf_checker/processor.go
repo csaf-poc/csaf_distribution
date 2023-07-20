@@ -54,6 +54,7 @@ type processor struct {
 	pmd            any
 	keys           *crypto.KeyRing
 	labelChecker   labelChecker
+	foundForbidden bool
 
 	invalidAdvisories      topicMessages
 	badFilenames           topicMessages
@@ -226,6 +227,7 @@ func (p *processor) clean() {
 	p.pmd256 = nil
 	p.pmd = nil
 	p.keys = nil
+	p.foundForbidden = false
 
 	p.invalidAdvisories.reset()
 	p.badFilenames.reset()
@@ -516,6 +518,9 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 	if res.StatusCode != http.StatusOK {
 		p.badProviderMetadata.warn("Fetching %s failed. Status code %d (%s)",
 			feed, res.StatusCode, res.Status)
+		if res.StatusCode == http.StatusForbidden {
+			p.foundForbidden = true
+		}
 		return nil, errContinue
 	}
 
@@ -688,6 +693,9 @@ func (p *processor) integrity(
 		if res.StatusCode != http.StatusOK {
 			lg(ErrorType, "Fetching %s failed: Status code %d (%s)",
 				u, res.StatusCode, res.Status)
+			if res.StatusCode == http.StatusForbidden {
+				p.foundForbidden = true
+			}
 			continue
 		}
 

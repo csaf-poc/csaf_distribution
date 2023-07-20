@@ -157,11 +157,27 @@ func (r *tlsReporter) report(p *processor, domain *Domain) {
 func (r *tlpWhiteReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badWhitePermissions.used() {
-		req.message(InfoType, "No access-protected advisories labeled TLP:WHITE found.")
+		if p.foundForbidden {
+			// Found no TLP:WHITE advisories, but couldn't fetch all advisories
+			req.message(WarnType, "No access-protected advisories labeled "+
+				"TLP:WHITE found, but was unable to check some access-protected "+
+				"advisories, which might be labeled TLP:WHITE, due to missing authorization.")
+		} else {
+			// Found no TLP:WHITE advisories, but could fetch all advisories
+			req.message(InfoType, "No advisories labeled TLP:WHITE found")
+		}
 		return
 	}
 	if len(p.badWhitePermissions) == 0 {
-		req.message(InfoType, "All advisories labeled TLP:WHITE were freely accessible.")
+		if p.foundForbidden {
+			// Found no access-protected TLP:WHITE advisories, but couldn't check all advisories.
+			req.message(WarnType, "No access-protected advisories labeled "+
+				"TLP:WHITE found, but was unable to check some access-protected "+
+				"advisories, which might be labeled TLP:WHITE, due to missing authorization.")
+		} else {
+			// Found no access-protected TLP:WHITE advisories and could check all
+			req.message(InfoType, "All advisories labeled TLP:WHITE were freely accessible.")
+		}
 		return
 	}
 	req.Messages = p.badWhitePermissions
