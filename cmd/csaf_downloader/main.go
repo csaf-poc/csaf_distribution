@@ -11,24 +11,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-
-	"github.com/csaf-poc/csaf_distribution/v2/util"
-	"github.com/jessevdk/go-flags"
-	"github.com/mitchellh/go-homedir"
 )
-
-func errCheck(err error) {
-	if err != nil {
-		if flags.WroteHelp(err) {
-			os.Exit(0)
-		}
-		log.Fatalf("error: %v\n", err)
-	}
-}
 
 func run(cfg *config, domains []string) error {
 	d, err := newDownloader(cfg)
@@ -47,32 +33,8 @@ func run(cfg *config, domains []string) error {
 
 func main() {
 
-	cfg := &config{
-		Worker: defaultWorker,
-	}
-
-	parser := flags.NewParser(cfg, flags.Default)
-	parser.Usage = "[OPTIONS] domain..."
-	domains, err := parser.Parse()
+	domains, cfg, err := parseArgsConfig()
 	errCheck(err)
-
-	if cfg.Version {
-		fmt.Println(util.SemVersion)
-		return
-	}
-
-	if cfg.Config != nil {
-		iniParser := flags.NewIniParser(parser)
-		iniParser.ParseAsDefaults = true
-		name, err := homedir.Expand(*cfg.Config)
-		errCheck(err)
-		errCheck(iniParser.ParseFile(name))
-	} else if iniFile := findIniFile(); iniFile != "" {
-		iniParser := flags.NewIniParser(parser)
-		iniParser.ParseAsDefaults = true
-		errCheck(iniParser.ParseFile(iniFile))
-	}
-
 	errCheck(cfg.prepare())
 
 	if len(domains) == 0 {
