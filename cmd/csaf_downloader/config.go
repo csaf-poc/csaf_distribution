@@ -35,9 +35,9 @@ type config struct {
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory" toml:"validator_preset"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validator_preset"`
 
-	Config *string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
+	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 }
 
 // configPaths are the potential file locations of the the config file.
@@ -47,39 +47,63 @@ var configPaths = []string{
 	"csaf_downloader.toml",
 }
 
-func parseArgsConfig() ([]string, *config, error) {
-	cfg := &config{
+// newConfig returns a new configuration.
+func newConfig() *config {
+	return &config{
 		Worker:                 defaultWorker,
 		RemoteValidatorPresets: []string{"mandatory"},
 	}
+}
 
-	parser := flags.NewParser(cfg, flags.Default)
+// parseArgsConfig parses the command line and if need a config file.
+func parseArgsConfig() ([]string, *config, error) {
+
+	// Parse the command line first.
+	cmdLineCfg := newConfig()
+	parser := flags.NewParser(cmdLineCfg, flags.Default)
 	parser.Usage = "[OPTIONS] domain..."
 	args, err := parser.Parse()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if cfg.Version {
+	// Directly quit if the version flag was set.
+	if cmdLineCfg.Version {
 		fmt.Println(util.SemVersion)
 		os.Exit(0)
 	}
 
-	if cfg.Config != nil {
-		path, err := homedir.Expand(*cfg.Config)
-		if err != nil {
-			return nil, nil, err
-		}
-		if err := cfg.load(path); err != nil {
-			return nil, nil, err
-		}
-	} else if path := findConfigFile(); path != "" {
-		if err := cfg.load(path); err != nil {
-			return nil, nil, err
-		}
+	var path string
+	// Do we have a config file explicitly given by command line?
+	if cmdLineCfg.Config != "" {
+		path = cmdLineCfg.Config
+	} else {
+		path = findConfigFile()
+	}
+	// No config file -> We are good.
+	if path == "" {
+		return args, cmdLineCfg, nil
 	}
 
-	return args, cfg, nil
+	if path, err = homedir.Expand(path); err != nil {
+		return nil, nil, err
+	}
+
+	// Load the config file
+	fileCfg := newConfig()
+	if err := fileCfg.load(path); err != nil {
+		return nil, nil, err
+	}
+
+	// Parse command line a second time to overwrite the
+	// loaded config at places where explicitly command line
+	// options where given.
+	args, err = flags.NewParser(fileCfg, flags.Default).Parse()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return args, fileCfg, nil
 }
 
 // load loads a configuration from file.
