@@ -882,7 +882,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
 		} else {
-			p.badIndices.warn("Fetching index.txt failed: %v not found.", index)
+			p.badIndices.error("Fetching index.txt failed: %v not found.", index)
 		}
 		return errContinue
 	}
@@ -945,7 +945,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
 		} else {
-			p.badChanges.warn("Fetching changes.csv failed: %v not found.", changes)
+			p.badChanges.error("Fetching changes.csv failed: %v not found.", changes)
 		}
 		return errContinue
 	}
