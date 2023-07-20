@@ -46,7 +46,7 @@ Supported options in config files:
 ```
 directory         # not set by default
 insecure          = false
-ignore_sig_check  = false
+ignoresigcheck    = false
 verbose           = false
 # rate            # set to unlimited
 worker            = 2
