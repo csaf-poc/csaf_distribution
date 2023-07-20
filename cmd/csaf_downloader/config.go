@@ -20,7 +20,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-const defaultWorker = 2
+const (
+	defaultWorker = 2
+	defaultPreset = "mandatory"
+)
 
 type config struct {
 	Directory            *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
@@ -51,7 +54,7 @@ var configPaths = []string{
 func newConfig() *config {
 	return &config{
 		Worker:                 defaultWorker,
-		RemoteValidatorPresets: []string{"mandatory"},
+		RemoteValidatorPresets: []string{defaultPreset},
 	}
 }
 
@@ -90,7 +93,7 @@ func parseArgsConfig() ([]string, *config, error) {
 	}
 
 	// Load the config file
-	fileCfg := newConfig()
+	fileCfg := &config{}
 	if err := fileCfg.load(path); err != nil {
 		return nil, nil, err
 	}
@@ -101,6 +104,14 @@ func parseArgsConfig() ([]string, *config, error) {
 	args, err = flags.NewParser(fileCfg, flags.Default).Parse()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// Re-establish default values.
+	if fileCfg.Worker == 0 {
+		fileCfg.Worker = defaultWorker
+	}
+	if fileCfg.RemoteValidatorPresets == nil {
+		fileCfg.RemoteValidatorPresets = []string{defaultPreset}
 	}
 
 	return args, fileCfg, nil
