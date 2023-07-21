@@ -345,7 +345,7 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badROLIEFeed.used() {
-		req.message(ErrorType, "Not ROLIE based distribution was used.")
+		req.message(ErrorType, "ROLIE based distribution was not used.")
 		return
 	}
 	if len(p.badROLIEFeed) == 0 {
@@ -362,7 +362,7 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badROLIEService.used() {
-		req.message(InfoType, "ROLIE service document was not checked.")
+		req.message(WarnType, "ROLIE service document was not checked.")
 		return
 	}
 	if len(p.badROLIEService) == 0 {
@@ -381,7 +381,7 @@ func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badROLIECategory.used() {
-		req.message(InfoType, "No checks on the existence of ROLIE category documents performed.")
+		req.message(WarnType, "No checks on the existence of ROLIE category documents performed.")
 		return
 	}
 	if len(p.badROLIECategory) == 0 {
