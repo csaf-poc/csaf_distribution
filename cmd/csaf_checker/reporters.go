@@ -288,10 +288,6 @@ func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badFolders.used() {
-		req.message(ErrorType, "No checks if files are in right folders were performed.")
-		return
-	}
 	if len(p.badFolders) == 0 {
 		req.message(InfoType, "All CSAF files are in the right folders.")
 		return
@@ -344,10 +340,6 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 // of the "Requirement" struct as a result of that.
 func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badROLIEFeed.used() {
-		req.message(ErrorType, "ROLIE based distribution was not used.")
-		return
-	}
 	if len(p.badROLIEFeed) == 0 {
 		req.message(InfoType, "All checked ROLIE feeds validated fine.")
 		return

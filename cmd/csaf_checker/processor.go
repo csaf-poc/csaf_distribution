@@ -1042,6 +1042,13 @@ func (p *processor) checkCSAFs(_ string) error {
 		}
 		// check for service category document
 		p.serviceCheck(feeds)
+	} else {
+		p.badROLIEFeed.use()
+		p.badROLIEFeed.error("ROLIE feed based distribution was not used.")
+		p.badROLIECategory.use()
+		p.badROLIECategory.warn("No ROLIE category document found.")
+		p.badROLIEService.use()
+		p.badROLIEService.warn("No ROLIE service document found.")
 	}
 
 	// No rolie feeds -> try directory_urls.
@@ -1086,6 +1093,10 @@ func (p *processor) checkCSAFs(_ string) error {
 		}
 	}
 
+	if !p.badFolders.used() {
+		p.badFolders.use()
+		p.badFolders.error("No checks performed on whether files are within the right folders.")
+	}
 	return nil
 }
 
