@@ -20,7 +20,7 @@ Application Options:
       --validator=URL            URL to validate documents remotely
       --validatorcache=FILE      FILE to cache remote validations
       --validatorpreset=         One or more presets to validate remotely (default: mandatory)
-
+  -c, --config=TOML-FILE         Path to config TOML file
 
 Help Options:
   -h, --help                     Show this help message
@@ -30,6 +30,29 @@ Will check all given _domains_, by trying each as a CSAF provider.
 
 If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and checking proceeds from there.
 
+If no config file is explictly given the follwing places are searched for a config file:
+```
+~/.config/csaf/checker.toml
+~/.csaf_checker.toml
+csaf_checker.toml
+```
+
+with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
+Supported options in config files:
+```
+output           = ""
+format           = "json"
+insecure         = false 
+# client_cert    # not set by default
+# client_key     # not set by default
+verbose          = false
+# rate           # not set by default
+# years	         # not set by default
+# header         # not set by default
+# validator      # not set by default
+# validatorcache # not set by default
+validatorpreset  = ["mandatory"]
+```
 
 Usage example:
 ` ./csaf_checker example.com -f html --rate=5.3 -H apikey:SECRET -o check-results.html`
