@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
 
-// Package options helpers to handle command line options and config files.
+// Package options contains helpers to handle command line options and config files.
 package options
 
 import (
