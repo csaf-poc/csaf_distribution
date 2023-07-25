@@ -11,6 +11,7 @@ package main
 import (
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
@@ -18,18 +19,20 @@ import (
 
 const defaultPreset = "mandatory"
 
+type outputFormat string
+
 type config struct {
 	Output string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE" toml:"output"`
 	//lint:ignore SA5008 We are using choice twice: json, html.
-	Format      string      `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json" toml:"format"`
-	Insecure    bool        `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
-	ClientCert  *string     `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
-	ClientKey   *string     `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
-	Version     bool        `long:"version" description:"Display version of the binary" toml:"-"`
-	Verbose     bool        `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
-	Rate        *float64    `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
-	Years       *uint       `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
-	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
+	Format      outputFormat `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json" toml:"format"`
+	Insecure    bool         `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
+	ClientCert  *string      `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
+	ClientKey   *string      `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
+	Version     bool         `long:"version" description:"Display version of the binary" toml:"-"`
+	Verbose     bool         `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
+	Rate        *float64     `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
+	Years       *uint        `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
+	ExtraHeader http.Header  `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
@@ -45,6 +48,18 @@ var configPaths = []string{
 	"~/.config/csaf/checker.toml",
 	"~/.csaf_checker.toml",
 	"csaf_checker.toml",
+}
+
+// UnmarshalText implements [encoding/text.TextUnmarshaler].
+func (of *outputFormat) UnmarshalText(text []byte) error {
+	s := string(text)
+	switch s {
+	case "html", "json":
+		*of = outputFormat(s)
+	default:
+		return fmt.Errorf(`%q is neither "html" nor "json"`, s)
+	}
+	return nil
 }
 
 // parseArgsConfig parse the command arguments and loads configuration

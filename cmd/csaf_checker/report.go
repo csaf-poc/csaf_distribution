@@ -154,7 +154,7 @@ func (nc *nopCloser) Close() error { return nil }
 
 // write defines where to write the report according to the "output" flag option.
 // It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
-func (r *Report) write(format, output string) error {
+func (r *Report) write(format outputFormat, output string) error {
 
 	var w io.WriteCloser
 
