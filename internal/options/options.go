@@ -73,7 +73,9 @@ func (p *Parser[C]) Parse() ([]string, *C, error) {
 	// Do we have a config file explicitly given by command line?
 	if p.ConfigLocation != nil {
 		path = p.ConfigLocation(&cmdLineOpts)
-	} else {
+	}
+	// Fallback to defaults if we have not found any.
+	if path == "" && len(p.DefaultConfigLocations) > 0 {
 		path = findConfigFile(p.DefaultConfigLocations)
 	}
 
