@@ -17,14 +17,17 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 )
 
-const defaultPreset = "mandatory"
-
 type outputFormat string
+
+const (
+	defaultPreset = "mandatory"
+	defaultFormat = "json"
+)
 
 type config struct {
 	Output string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE" toml:"output"`
 	//lint:ignore SA5008 We are using choice twice: json, html.
-	Format      outputFormat `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" default:"json" toml:"format"`
+	Format      outputFormat `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" toml:"format"`
 	Insecure    bool         `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
 	ClientCert  *string      `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
 	ClientKey   *string      `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
@@ -36,7 +39,7 @@ type config struct {
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" default:"mandatory" toml:"validator_preset"`
+	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more presets to validate remotely" toml:"validator_preset"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
@@ -72,10 +75,14 @@ func parseArgsConfig() ([]string, *config, error) {
 		},
 		Usage: "[OPTIONS] domain...",
 		SetDefaults: func(cfg *config) {
+			cfg.Format = defaultFormat
 			cfg.RemoteValidatorPresets = []string{defaultPreset}
 		},
 		// Re-establish default values if not set.
 		EnsureDefaults: func(cfg *config) {
+			if cfg.Format == "" {
+				cfg.Format = defaultFormat
+			}
 			if cfg.RemoteValidatorPresets == nil {
 				cfg.RemoteValidatorPresets = []string{defaultPreset}
 			}
