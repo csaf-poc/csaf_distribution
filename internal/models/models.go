@@ -38,7 +38,7 @@ func guessDate(s string) (time.Time, bool) {
 		"2006-01",
 		"2006",
 	} {
-		if t, err := time.Parse(s, layout); err == nil {
+		if t, err := time.Parse(layout, s); err == nil {
 			return t, true
 		}
 	}
@@ -66,6 +66,7 @@ func (tr *TimeRange) UnmarshalText(text []byte) error {
 			return fmt.Errorf("%q is not a valid RFC date time", a)
 		}
 		*tr = NewTimeInterval(start, time.Now())
+		return nil
 	}
 	// Real interval
 	start, ok := guessDate(a)
