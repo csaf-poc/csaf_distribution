@@ -67,8 +67,9 @@ into a given intervall. There are three possible notations:
 
 2. Absolute. If the given string is an RFC 3339 date timestamp the time interval between
    this date and now is used. 
-   E.g. "2006-01-02" means that all files between 2006 January 2nd and now going to being
-   downloaded. Accepted patterns are:
+   E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to being
+   downloaded. 
+   Accepted patterns are:
    - `"2006-01-02T15:04:05Z07:00"`
    - `"2006-01-02T15:04:05"`
    - `"2006-01-02T15:04"`
