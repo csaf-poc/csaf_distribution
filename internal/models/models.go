@@ -47,8 +47,13 @@ func guessDate(s string) (time.Time, bool) {
 
 // UnmarshalText implements [encoding/text.TextUnmarshaler].
 func (tr *TimeRange) UnmarshalText(text []byte) error {
+	return tr.UnmarshalFlag(string(text))
+}
 
-	s := strings.TrimSpace(string(text))
+// UnmarshalFlag implements [go-flags/Unmarshaler].
+func (tr *TimeRange) UnmarshalFlag(s string) error {
+	s = strings.TrimSpace(s)
+
 	// Handle relative case first.
 	if duration, err := time.ParseDuration(s); err == nil {
 		now := time.Now()
