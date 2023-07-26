@@ -68,7 +68,7 @@ type 2: error
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise.
 
-`years` and `timerange` allows only checking advisories from a given time interval.
+The options `years` and `timerange` allow to only check advisories from a given time interval.
 It is only allowed to specify one off them. 
 `years`  looks number of years back from now. `timerange` values allow finer controls:
 
