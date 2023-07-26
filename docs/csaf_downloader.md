@@ -76,6 +76,7 @@ into a given intervall. There are three possible notations:
    - `"2006-01-02"`
    - `"2006-01"`
    - `"2006"`
+
    Missing parts are set to the smallest value possible in that field.
 
 3. Range. Same as 2 but separated by a `,` to span an interval. e.g `2019,2024`
