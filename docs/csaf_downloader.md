@@ -70,7 +70,9 @@ into a given intervall. There are three possible notations:
    E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to being
    downloaded. 
    Accepted patterns are:
-   - `"2006-01-02T15:04:05Z07:00"`
+   - `"2006-01-02T15:04:05Z"`
+   - `"2006-01-02T15:04:05+07:00"`
+   - `"2006-01-02T15:04:05-07:00"`
    - `"2006-01-02T15:04:05"`
    - `"2006-01-02T15:04"`
    - `"2006-01-02T15"`
