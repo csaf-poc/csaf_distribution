@@ -73,11 +73,11 @@ func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
 // advisory file names from a given provider metadata.
 type AdvisoryFileProcessor struct {
 	AgeAccept func(time.Time) bool
+	Log       func(format string, args ...any)
 	client    util.Client
 	expr      *util.PathEval
 	doc       any
 	base      *url.URL
-	log       func(format string, args ...any)
 }
 
 // NewAdvisoryFileProcessor constructs an filename extractor
@@ -87,14 +87,12 @@ func NewAdvisoryFileProcessor(
 	expr *util.PathEval,
 	doc any,
 	base *url.URL,
-	log func(format string, args ...any),
 ) *AdvisoryFileProcessor {
 	return &AdvisoryFileProcessor{
 		client: client,
 		expr:   expr,
 		doc:    doc,
 		base:   base,
-		log:    log,
 	}
 }
 
@@ -113,7 +111,7 @@ func empty(arr []string) bool {
 func (afp *AdvisoryFileProcessor) Process(
 	fn func(TLPLabel, []AdvisoryFile) error,
 ) error {
-	lg := afp.log
+	lg := afp.Log
 	if lg == nil {
 		lg = func(format string, args ...any) {
 			log.Printf("AdvisoryFileProcessor.Process: "+format, args...)

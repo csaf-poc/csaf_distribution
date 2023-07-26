@@ -150,8 +150,7 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 		client,
 		d.eval,
 		lpmd.Document,
-		base,
-		nil)
+		base)
 
 	// Do we need time range based filtering?
 	if d.cfg.Range != nil {
