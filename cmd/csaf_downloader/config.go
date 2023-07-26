@@ -10,7 +10,6 @@ package main
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
@@ -38,8 +37,6 @@ type config struct {
 	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validatorpreset"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
-
-	ageAccept func(time.Time) bool
 }
 
 // configPaths are the potential file locations of the config file.
