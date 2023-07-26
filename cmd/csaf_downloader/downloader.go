@@ -153,6 +153,11 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 		base,
 		nil)
 
+	// Do we need time range based filtering?
+	if d.cfg.Range != nil {
+		afp.AgeAccept = d.cfg.Range.Contains
+	}
+
 	return afp.Process(func(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
 		return d.downloadFiles(ctx, label, files)
 	})

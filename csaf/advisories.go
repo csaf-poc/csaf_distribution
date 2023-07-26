@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
@@ -71,11 +72,12 @@ func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
 // AdvisoryFileProcessor implements the extraction of
 // advisory file names from a given provider metadata.
 type AdvisoryFileProcessor struct {
-	client util.Client
-	expr   *util.PathEval
-	doc    any
-	base   *url.URL
-	log    func(format string, args ...any)
+	AgeAccept func(time.Time) bool
+	client    util.Client
+	expr      *util.PathEval
+	doc       any
+	base      *url.URL
+	log       func(format string, args ...any)
 }
 
 // NewAdvisoryFileProcessor constructs an filename extractor
@@ -286,6 +288,13 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 		}
 
 		rfeed.Entries(func(entry *Entry) {
+
+			// Filter if we have date checking.
+			if afp.AgeAccept != nil {
+				if pub := time.Time(entry.Published); !pub.IsZero() && !afp.AgeAccept(pub) {
+					return
+				}
+			}
 
 			var self, sha256, sha512, sign string
 

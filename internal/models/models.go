@@ -79,3 +79,8 @@ func (tr *TimeRange) UnmarshalText(text []byte) error {
 	*tr = NewTimeInterval(start, end)
 	return nil
 }
+
+// Contains return true if the given time is inside this time interval.
+func (tr TimeRange) Contains(t time.Time) bool {
+	return !(t.Before(tr[0]) || t.After(tr[1]))
+}
