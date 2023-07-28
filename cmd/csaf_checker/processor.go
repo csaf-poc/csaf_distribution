@@ -44,7 +44,6 @@ type processor struct {
 	validator    csaf.RemoteValidator
 	client       util.Client
 	unauthClient util.Client
-	ageAccept    func(time.Time) bool
 
 	redirects      map[string][]string
 	noneTLS        util.Set[string]
@@ -187,7 +186,6 @@ func newProcessor(cfg *config) (*processor, error) {
 		cfg:            cfg,
 		alreadyChecked: map[string]whereType{},
 		expr:           util.NewPathEval(),
-		ageAccept:      ageAccept(cfg),
 		validator:      validator,
 		labelChecker: labelChecker{
 			advisories:      map[csaf.TLPLabel]util.Set[string]{},
@@ -201,16 +199,6 @@ func (p *processor) close() {
 	if p.validator != nil {
 		p.validator.Close()
 		p.validator = nil
-	}
-}
-
-func ageAccept(cfg *config) func(time.Time) bool {
-	if cfg.Years == nil {
-		return nil
-	}
-	good := time.Now().AddDate(-int(*cfg.Years), 0, 0)
-	return func(t time.Time) bool {
-		return !t.Before(good)
 	}
 }
 
@@ -557,8 +545,8 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 	rfeed.Entries(func(entry *csaf.Entry) {
 
 		// Filter if we have date checking.
-		if p.ageAccept != nil {
-			if pub := time.Time(entry.Published); !pub.IsZero() && !p.ageAccept(pub) {
+		if p.cfg.ageAccept != nil {
+			if pub := time.Time(entry.Published); !pub.IsZero() && !p.cfg.ageAccept(pub) {
 				return
 			}
 		}
@@ -669,7 +657,7 @@ func (p *processor) integrity(
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
 			// Check if we are in checking time interval.
-			if p.ageAccept != nil && !p.ageAccept(
+			if p.cfg.ageAccept != nil && !p.cfg.ageAccept(
 				time.Date(
 					year, 12, 31, // Assume last day of year.
 					23, 59, 59, 0, // 23:59:59
@@ -975,7 +963,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 				return nil, nil, err
 			}
 			// Apply date range filtering.
-			if p.ageAccept != nil && !p.ageAccept(t) {
+			if p.cfg.ageAccept != nil && !p.cfg.ageAccept(t) {
 				continue
 			}
 			path := r[pathColumn]
@@ -992,7 +980,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 
 	if len(files) == 0 {
 		var filtered string
-		if p.ageAccept != nil {
+		if p.cfg.ageAccept != nil {
 			filtered = " (maybe filtered out by time interval)"
 		}
 		p.badChanges.warn("no entries in changes.csv found" + filtered)
