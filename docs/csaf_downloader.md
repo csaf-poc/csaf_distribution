@@ -14,6 +14,7 @@ Application Options:
   -v, --verbose                    Verbose output
   -r, --rate=                      The average upper limit of https operations per second (defaults to unlimited)
   -w, --worker=NUM                 NUMber of concurrent downloads (default: 2)
+  -t, --timerange=RANGE            RANGE of time from which advisories to download
   -H, --header=                    One or more extra HTTP header fields
       --validator=URL              URL to validate documents remotely
       --validatorcache=FILE        FILE to cache remote validations
@@ -54,4 +55,34 @@ worker            = 2
 # validator       # not set by default
 # validatorcache  # not set by default
 validatorpreset   = ["mandatory"]
+# timerange       # not set by default
 ```
+
+The `timerange` parameter enables downloading advisories which last changes falls
+into a given intervall. There are three possible notations:
+
+1. Relative. If the given string follows the rules of being a [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration)
+    the time interval from now minus that duration till now is used. 
+    E.g. `"3h"` means downloading the advisories that have changed in the last three hours.
+
+2. Absolute. If the given string is an RFC 3339 date timestamp the time interval between
+   this date and now is used. 
+   E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to being
+   downloaded. 
+   Accepted patterns are:
+   - `"2006-01-02T15:04:05Z"`
+   - `"2006-01-02T15:04:05+07:00"`
+   - `"2006-01-02T15:04:05-07:00"`
+   - `"2006-01-02T15:04:05"`
+   - `"2006-01-02T15:04"`
+   - `"2006-01-02T15"`
+   - `"2006-01-02"`
+   - `"2006-01"`
+   - `"2006"`
+
+   Missing parts are set to the smallest value possible in that field.
+
+3. Range. Same as 2 but separated by a `,` to span an interval. e.g `2019,2024`
+   spans an interval from 1st January 2019 to the 1st January of 2024.
+
+All interval boundaries are inclusive.

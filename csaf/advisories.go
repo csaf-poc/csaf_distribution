@@ -9,11 +9,14 @@
 package csaf
 
 import (
-	"bufio"
+	"encoding/csv"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
@@ -71,11 +74,12 @@ func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
 // AdvisoryFileProcessor implements the extraction of
 // advisory file names from a given provider metadata.
 type AdvisoryFileProcessor struct {
-	client util.Client
-	expr   *util.PathEval
-	doc    any
-	base   *url.URL
-	log    func(format string, args ...any)
+	AgeAccept func(time.Time) bool
+	Log       func(format string, args ...any)
+	client    util.Client
+	expr      *util.PathEval
+	doc       any
+	base      *url.URL
 }
 
 // NewAdvisoryFileProcessor constructs an filename extractor
@@ -85,14 +89,12 @@ func NewAdvisoryFileProcessor(
 	expr *util.PathEval,
 	doc any,
 	base *url.URL,
-	log func(format string, args ...any),
 ) *AdvisoryFileProcessor {
 	return &AdvisoryFileProcessor{
 		client: client,
 		expr:   expr,
 		doc:    doc,
 		base:   base,
-		log:    log,
 	}
 }
 
@@ -111,7 +113,7 @@ func empty(arr []string) bool {
 func (afp *AdvisoryFileProcessor) Process(
 	fn func(TLPLabel, []AdvisoryFile) error,
 ) error {
-	lg := afp.log
+	lg := afp.Log
 	if lg == nil {
 		lg = func(format string, args ...any) {
 			log.Printf("AdvisoryFileProcessor.Process: "+format, args...)
@@ -173,7 +175,8 @@ func (afp *AdvisoryFileProcessor) Process(
 				continue
 			}
 
-			files, err := afp.loadIndex(base, lg)
+			// Use changes.csv to be able to filter by age.
+			files, err := afp.loadChanges(base, lg)
 			if err != nil {
 				return err
 			}
@@ -186,9 +189,9 @@ func (afp *AdvisoryFileProcessor) Process(
 	return nil
 }
 
-// loadIndex loads baseURL/index.txt and returns a list of files
+// loadChanges loads baseURL/changes.csv and returns a list of files
 // prefixed by baseURL/.
-func (afp *AdvisoryFileProcessor) loadIndex(
+func (afp *AdvisoryFileProcessor) loadChanges(
 	baseURL string,
 	lg func(string, ...any),
 ) ([]AdvisoryFile, error) {
@@ -197,29 +200,53 @@ func (afp *AdvisoryFileProcessor) loadIndex(
 	if err != nil {
 		return nil, err
 	}
+	changesURL := base.JoinPath("changes.csv").String()
 
-	indexURL := base.JoinPath("index.txt").String()
-	resp, err := afp.client.Get(indexURL)
+	resp, err := afp.client.Get(changesURL)
 	if err != nil {
 		return nil, err
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching %s failed. Status code %d (%s)",
+			changesURL, resp.StatusCode, resp.Status)
+	}
+
 	defer resp.Body.Close()
 	var files []AdvisoryFile
-
-	scanner := bufio.NewScanner(resp.Body)
-
-	for line := 1; scanner.Scan(); line++ {
-		u := scanner.Text()
-		if _, err := url.Parse(u); err != nil {
-			lg("index.txt contains invalid URL %q in line %d", u, line)
+	c := csv.NewReader(resp.Body)
+	const (
+		pathColumn = 0
+		timeColumn = 1
+	)
+	for line := 1; ; line++ {
+		r, err := c.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		if len(r) < 2 {
+			lg("%q has not enough columns in line %d", line)
+			continue
+		}
+		t, err := time.Parse(time.RFC3339, r[timeColumn])
+		if err != nil {
+			lg("%q has an invalid time stamp in line %d: %v", changesURL, line, err)
+			continue
+		}
+		// Apply date range filtering.
+		if afp.AgeAccept != nil && !afp.AgeAccept(t) {
+			continue
+		}
+		path := r[pathColumn]
+		if _, err := url.Parse(path); err != nil {
+			lg("%q contains an invalid URL %q in line %d", changesURL, path, line)
 			continue
 		}
 		files = append(files,
-			PlainAdvisoryFile(base.JoinPath(u).String()))
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
+			PlainAdvisoryFile(base.JoinPath(path).String()))
 	}
 	return files, nil
 }
@@ -286,6 +313,13 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 		}
 
 		rfeed.Entries(func(entry *Entry) {
+
+			// Filter if we have date checking.
+			if afp.AgeAccept != nil {
+				if pub := time.Time(entry.Published); !pub.IsZero() && !afp.AgeAccept(pub) {
+					return
+				}
+			}
 
 			var self, sha256, sha512, sign string
 

@@ -76,8 +76,7 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		w.client,
 		w.expr,
 		w.metadataProvider,
-		base,
-		nil)
+		base)
 
 	if err := afp.Process(w.mirrorFiles); err != nil {
 		return nil, err

@@ -11,6 +11,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 )
 
@@ -20,13 +21,14 @@ const (
 )
 
 type config struct {
-	Directory            *string  `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
-	Insecure             bool     `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
-	IgnoreSignatureCheck bool     `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
-	Version              bool     `long:"version" description:"Display version of the binary" toml:"-"`
-	Verbose              bool     `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
-	Rate                 *float64 `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
-	Worker               int      `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
+	Directory            *string           `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
+	Insecure             bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
+	IgnoreSignatureCheck bool              `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
+	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
+	Verbose              bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
+	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
+	Worker               int               `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
+	Range                *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
 
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
