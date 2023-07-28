@@ -14,6 +14,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+
+	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 )
 
 func run(cfg *config, domains []string) error {
@@ -34,13 +36,13 @@ func run(cfg *config, domains []string) error {
 func main() {
 
 	domains, cfg, err := parseArgsConfig()
-	errCheck(err)
-	errCheck(cfg.prepare())
+	options.ErrorCheck(err)
+	options.ErrorCheck(cfg.prepare())
 
 	if len(domains) == 0 {
 		log.Println("No domains given.")
 		return
 	}
 
-	errCheck(run(cfg, domains))
+	options.ErrorCheck(run(cfg, domains))
 }

@@ -9,7 +9,13 @@
 package main
 
 import (
+	"bufio"
+	_ "embed" // Used for embedding.
+	"encoding/json"
 	"fmt"
+	"html/template"
+	"io"
+	"os"
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
@@ -103,4 +109,73 @@ func (r *Requirement) message(typ MessageType, texts ...string) {
 	for _, text := range texts {
 		r.Messages = append(r.Messages, Message{Type: typ, Text: text})
 	}
+}
+
+// writeJSON writes the JSON encoding of the given report to the given stream.
+// It returns nil, otherwise an error.
+func (r *Report) writeJSON(w io.WriteCloser) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	err := enc.Encode(r)
+	if e := w.Close(); err != nil {
+		err = e
+	}
+	return err
+}
+
+//go:embed tmpl/report.html
+var reportHTML string
+
+// writeHTML writes the given report to the given writer, it uses the template
+// in the "reportHTML" variable. It returns nil, otherwise an error.
+func (r *Report) writeHTML(w io.WriteCloser) error {
+	tmpl, err := template.New("Report HTML").Parse(reportHTML)
+	if err != nil {
+		w.Close()
+		return err
+	}
+	buf := bufio.NewWriter(w)
+
+	if err := tmpl.Execute(buf, r); err != nil {
+		w.Close()
+		return err
+	}
+
+	err = buf.Flush()
+	if e := w.Close(); err == nil {
+		err = e
+	}
+	return err
+}
+
+type nopCloser struct{ io.Writer }
+
+func (nc *nopCloser) Close() error { return nil }
+
+// write defines where to write the report according to the "output" flag option.
+// It calls also the "writeJSON" or "writeHTML" function according to the "format" flag option.
+func (r *Report) write(format outputFormat, output string) error {
+
+	var w io.WriteCloser
+
+	if output == "" {
+		w = &nopCloser{os.Stdout}
+	} else {
+		f, err := os.Create(output)
+		if err != nil {
+			return err
+		}
+		w = f
+	}
+
+	var writer func(*Report, io.WriteCloser) error
+
+	switch format {
+	case "json":
+		writer = (*Report).writeJSON
+	default:
+		writer = (*Report).writeHTML
+	}
+
+	return writer(r, w)
 }
