@@ -15,16 +15,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/gofrs/flock"
 	"github.com/jessevdk/go-flags"
 )
-
-type options struct {
-	Config  string `short:"c" long:"config" description:"File name of the configuration file" value-name:"CFG-FILE" default:"aggregator.toml"`
-	Version bool   `long:"version" description:"Display version of the binary"`
-	Interim bool   `short:"i" long:"interim" description:"Perform an interim scan"`
-}
 
 func errCheck(err error) {
 	if err != nil {
@@ -60,24 +54,9 @@ func lock(lockFile *string, fn func() error) error {
 }
 
 func main() {
-	opts := new(options)
-
-	_, err := flags.Parse(opts)
-	errCheck(err)
-
-	if opts.Version {
-		fmt.Println(util.SemVersion)
-		return
-	}
-
-	interim := opts.Interim
-
-	cfg, err := loadConfig(opts.Config)
-	errCheck(err)
-
-	if interim {
-		cfg.Interim = true
-	}
+	_, cfg, err := parseArgsConfig()
+	options.ErrorCheck(err)
+	options.ErrorCheck(cfg.check())
 
 	p := processor{cfg: cfg}
 	errCheck(lock(cfg.LockFile, p.process))

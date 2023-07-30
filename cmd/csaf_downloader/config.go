@@ -53,7 +53,8 @@ func parseArgsConfig() ([]string, *config, error) {
 		ConfigLocation: func(cfg *config) string {
 			return cfg.Config
 		},
-		Usage: "[OPTIONS] domain...",
+		Usage:      "[OPTIONS] domain...",
+		HasVersion: func(cfg *config) bool { return cfg.Version },
 		SetDefaults: func(cfg *config) {
 			cfg.Worker = defaultWorker
 			cfg.RemoteValidatorPresets = []string{defaultPreset}

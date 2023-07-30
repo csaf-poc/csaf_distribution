@@ -6,13 +6,12 @@
   csaf_aggregator [OPTIONS]
 
 Application Options:
-  -c, --config=CFG-FILE    File name of the configuration file (default:
-                           aggregator.toml)
-      --version            Display version of the binary
-  -i, --interim            Perform an interim scan
+  -i, --interim             Perform an interim scan
+      --version             Display version of the binary
+  -c, --config=TOML-FILE    Path to config TOML file
 
 Help Options:
-  -h, --help               Show this help message
+  -h, --help                Show this help message
 ```
 
 Usage example for a single run, to test if the config is good:
