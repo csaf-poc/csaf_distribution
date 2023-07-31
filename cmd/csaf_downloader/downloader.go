@@ -474,8 +474,15 @@ nextAdvisory:
 		initialReleaseDate = initialReleaseDate.UTC()
 
 		// Write advisory to file
+		newDir := path.Join(d.directory, lower)
 
-		newDir := path.Join(d.directory, lower, strconv.Itoa(initialReleaseDate.Year()))
+		// Do we have a configured destination folder?
+		if d.cfg.Folder != "" {
+			newDir = path.Join(newDir, d.cfg.Folder)
+		} else {
+			newDir = path.Join(newDir, strconv.Itoa(initialReleaseDate.Year()))
+		}
+
 		if newDir != lastDir {
 			if err := d.mkdirAll(newDir, 0755); err != nil {
 				errorCh <- err

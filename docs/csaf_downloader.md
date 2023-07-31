@@ -15,6 +15,7 @@ Application Options:
   -r, --rate=                      The average upper limit of https operations per second (defaults to unlimited)
   -w, --worker=NUM                 NUMber of concurrent downloads (default: 2)
   -t, --timerange=RANGE            RANGE of time from which advisories to download
+  -f, --folder=FOLDER              Download into a given FOLDER
   -H, --header=                    One or more extra HTTP header fields
       --validator=URL              URL to validate documents remotely
       --validatorcache=FILE        FILE to cache remote validations
@@ -86,3 +87,7 @@ into a given intervall. There are three possible notations:
    spans an interval from 1st January 2019 to the 1st January of 2024.
 
 All interval boundaries are inclusive.
+
+if the `folder` option is given the advisories are stored in this folder.  
+If it is omitted (by default) the advisories are stored in folder name by the
+year they are from.
