@@ -1,0 +1,7 @@
+format = "json"
+insecure = true
+client_cert = "./../devca1/testclient1.crt"
+client_key = "./../devca1/testclient1-key.pem"
+verbose = true
+rate = 15
+years = 29
