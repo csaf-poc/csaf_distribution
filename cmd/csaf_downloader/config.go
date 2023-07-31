@@ -9,7 +9,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
@@ -30,6 +32,7 @@ type config struct {
 	Worker               int               `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
 	Range                *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
 	Folder               string            `long:"folder" short:"f" description:"Download into a given FOLDER" value-name:"FOLDER" toml:"folder"`
+	IgnorePattern        []string          `long:"ignorepattern" short:"i" description:"Dont download files if there URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
 
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
@@ -38,6 +41,8 @@ type config struct {
 	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validatorpreset"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
+
+	ignorePattern []*regexp.Regexp
 }
 
 // configPaths are the potential file locations of the config file.
@@ -51,11 +56,9 @@ var configPaths = []string{
 func parseArgsConfig() ([]string, *config, error) {
 	p := options.Parser[config]{
 		DefaultConfigLocations: configPaths,
-		ConfigLocation: func(cfg *config) string {
-			return cfg.Config
-		},
-		Usage:      "[OPTIONS] domain...",
-		HasVersion: func(cfg *config) bool { return cfg.Version },
+		ConfigLocation:         func(cfg *config) string { return cfg.Config },
+		Usage:                  "[OPTIONS] domain...",
+		HasVersion:             func(cfg *config) bool { return cfg.Version },
 		SetDefaults: func(cfg *config) {
 			cfg.Worker = defaultWorker
 			cfg.RemoteValidatorPresets = []string{defaultPreset}
@@ -73,8 +76,30 @@ func parseArgsConfig() ([]string, *config, error) {
 	return p.Parse()
 }
 
+// ignoreFile returns true if the given URL should not be downloaded.
+func (cfg *config) ignoreURL(u string) bool {
+	for _, expr := range cfg.ignorePattern {
+		if expr.MatchString(u) {
+			return true
+		}
+	}
+	return false
+}
+
+// compileIgnorePatterns compiles the configure patterns to be ignored.
+func (cfg *config) compileIgnorePatterns() error {
+	cfg.ignorePattern = make([]*regexp.Regexp, 0, len(cfg.IgnorePattern))
+	for _, pattern := range cfg.IgnorePattern {
+		expr, err := regexp.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid ignorepattern: %w", err)
+		}
+		cfg.ignorePattern = append(cfg.ignorePattern, expr)
+	}
+	return nil
+}
+
 // prepare prepares internal state of a loaded configuration.
 func (cfg *config) prepare() error {
-	// TODO: Implement me!
-	return nil
+	return cfg.compileIgnorePatterns()
 }

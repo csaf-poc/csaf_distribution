@@ -347,6 +347,13 @@ nextAdvisory:
 			continue
 		}
 
+		if d.cfg.ignoreURL(file.URL()) {
+			if d.cfg.Verbose {
+				log.Printf("Igoring %q.\n", file.URL())
+			}
+			continue
+		}
+
 		resp, err := client.Get(file.URL())
 		if err != nil {
 			log.Printf("WARN: cannot get '%s': %v\n", file.URL(), err)
