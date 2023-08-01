@@ -642,6 +642,15 @@ func (p *processor) integrity(
 		fp = makeAbs(fp)
 
 		u := b.ResolveReference(fp).String()
+
+		// Should this URL be ignored?
+		if p.cfg.ignoreURL(u) {
+			if p.cfg.Verbose {
+				log.Printf("Ignoring %q\n", u)
+			}
+			continue
+		}
+
 		if p.markChecked(u, mask) {
 			continue
 		}

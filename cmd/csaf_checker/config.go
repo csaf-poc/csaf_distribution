@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 )
@@ -29,16 +30,17 @@ const (
 type config struct {
 	Output string `short:"o" long:"output" description:"File name of the generated report" value-name:"REPORT-FILE" toml:"output"`
 	//lint:ignore SA5008 We are using choice twice: json, html.
-	Format      outputFormat      `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" toml:"format"`
-	Insecure    bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
-	ClientCert  *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
-	ClientKey   *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
-	Version     bool              `long:"version" description:"Display version of the binary" toml:"-"`
-	Verbose     bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
-	Rate        *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
-	Years       *uint             `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
-	Range       *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
-	ExtraHeader http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
+	Format        outputFormat      `short:"f" long:"format" choice:"json" choice:"html" description:"Format of report" toml:"format"`
+	Insecure      bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
+	ClientCert    *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
+	ClientKey     *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
+	Version       bool              `long:"version" description:"Display version of the binary" toml:"-"`
+	Verbose       bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
+	Rate          *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
+	Years         *uint             `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
+	Range         *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
+	IgnorePattern []string          `long:"ignorepattern" short:"i" description:"Dont download files if there URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
+	ExtraHeader   http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
@@ -46,8 +48,9 @@ type config struct {
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
-	clientCerts []tls.Certificate
-	ageAccept   func(time.Time) bool
+	clientCerts   []tls.Certificate
+	ageAccept     func(time.Time) bool
+	ignorePattern filter.PatternMatcher
 }
 
 // configPaths are the potential file locations of the config file.
@@ -104,14 +107,35 @@ func (cfg *config) protectedAccess() bool {
 	return len(cfg.clientCerts) > 0 || len(cfg.ExtraHeader) > 0
 }
 
+// ignoreFile returns true if the given URL should not be downloaded.
+func (cfg *config) ignoreURL(u string) bool {
+	return cfg.ignorePattern.Matches(u)
+}
+
 // prepare prepares internal state of a loaded configuration.
 func (cfg *config) prepare() error {
+
+	// Pre-compile the regexes used to check if we need to ignore advisories.
+	if err := cfg.compileIgnorePatterns(); err != nil {
+		return err
+	}
+
 	// Load client certs.
 	if err := cfg.prepareCertificates(); err != nil {
 		return err
 	}
 
 	return cfg.prepareTimeRangeFilter()
+}
+
+// compileIgnorePatterns compiles the configure patterns to be ignored.
+func (cfg *config) compileIgnorePatterns() error {
+	pm, err := filter.NewPatternMatcher(cfg.IgnorePattern)
+	if err != nil {
+		return err
+	}
+	cfg.ignorePattern = pm
+	return nil
 }
 
 // prepareCertificates loads the client side certificates used by the HTTP client.
