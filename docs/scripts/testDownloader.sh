@@ -13,8 +13,9 @@ set -e  # to exit if a command in the script fails
 cd ~/csaf_distribution
 
 echo
-echo '==== run downloader (1)'
+echo '==== run downloader (1): find pmd, command line'
 
+rm -r -f ~/downloaded1
 mkdir ~/downloaded1
 
 ./bin-linux-amd64/csaf_downloader --directory ../downloaded1 \
@@ -27,8 +28,9 @@ find .
 popd
 
 echo
-echo '==== run downloader (2)'
+echo '==== run downloader (2): direct url, command line'
 
+rm -r -f ~/downloaded2
 mkdir ~/downloaded2
 
 ./bin-linux-amd64/csaf_downloader --directory ../downloaded2 \
@@ -37,5 +39,19 @@ mkdir ~/downloaded2
 echo
 echo '==== this was downloaded (2)'
 pushd ~/downloaded2
+find .
+popd
+
+echo
+echo '==== run downloader (3): find pmd, config file'
+
+rm -r -f ~/downloaded3
+mkdir ~/downloaded3
+
+./bin-linux-amd64/csaf_downloader -c "docs/scriptsdownloader_test.toml" localhost
+
+echo
+echo '==== this was downloaded (3)'
+pushd ~/downloaded3
 find .
 popd

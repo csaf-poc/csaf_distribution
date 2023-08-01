@@ -1,0 +1,7 @@
+directory = "../downloaded3"
+insecure = true
+ignoresigcheck = true
+verbose = true
+rate = 4.1
+worker = 2
+timerange = "2021-01-01"
