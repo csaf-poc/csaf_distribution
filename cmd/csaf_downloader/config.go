@@ -9,11 +9,9 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
-	"regexp"
 
+	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 )
@@ -43,7 +41,7 @@ type config struct {
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
-	ignorePattern []*regexp.Regexp
+	ignorePattern filter.PatternMatcher
 }
 
 // configPaths are the potential file locations of the config file.
@@ -79,27 +77,16 @@ func parseArgsConfig() ([]string, *config, error) {
 
 // ignoreFile returns true if the given URL should not be downloaded.
 func (cfg *config) ignoreURL(u string) bool {
-	for _, expr := range cfg.ignorePattern {
-		if expr.MatchString(u) {
-			return true
-		}
-	}
-	return false
+	return cfg.ignorePattern.Matches(u)
 }
 
 // compileIgnorePatterns compiles the configure patterns to be ignored.
 func (cfg *config) compileIgnorePatterns() error {
-	cfg.ignorePattern = make([]*regexp.Regexp, 0, len(cfg.IgnorePattern))
-	for _, pattern := range cfg.IgnorePattern {
-		expr, err := regexp.Compile(pattern)
-		if err != nil {
-			return fmt.Errorf("invalid ignorepattern: %w", err)
-		}
-		if cfg.Verbose {
-			log.Printf("ignore advisories containing pattern %q\n", expr)
-		}
-		cfg.ignorePattern = append(cfg.ignorePattern, expr)
+	pm, err := filter.NewPatternMatcher(cfg.IgnorePattern)
+	if err != nil {
+		return err
 	}
+	cfg.ignorePattern = pm
 	return nil
 }
 
