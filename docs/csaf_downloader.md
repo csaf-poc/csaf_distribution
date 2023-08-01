@@ -52,11 +52,12 @@ ignoresigcheck    = false
 verbose           = false
 # rate            # set to unlimited
 worker            = 2
+# timerange       # not set by default
+# folder          # not set by default
 # header          # not set by default
 # validator       # not set by default
 # validatorcache  # not set by default
 validatorpreset   = ["mandatory"]
-# timerange       # not set by default
 ```
 
 The `timerange` parameter enables downloading advisories which last changes falls
