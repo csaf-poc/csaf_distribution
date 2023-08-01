@@ -307,7 +307,8 @@ func (c *config) setDefaults() {
 	}
 }
 
-func (c *config) check() error {
+// prepare prepares internal state of a loaded configuration.
+func (c *config) prepare() error {
 	if len(c.Providers) == 0 {
 		return errors.New("no providers given in configuration")
 	}
