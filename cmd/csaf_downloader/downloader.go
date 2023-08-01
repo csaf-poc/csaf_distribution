@@ -349,7 +349,7 @@ nextAdvisory:
 
 		if d.cfg.ignoreURL(file.URL()) {
 			if d.cfg.Verbose {
-				log.Printf("Igoring %q.\n", file.URL())
+				log.Printf("Ignoring %q.\n", file.URL())
 			}
 			continue
 		}

@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -93,6 +94,9 @@ func (cfg *config) compileIgnorePatterns() error {
 		expr, err := regexp.Compile(pattern)
 		if err != nil {
 			return fmt.Errorf("invalid ignorepattern: %w", err)
+		}
+		if cfg.Verbose {
+			log.Printf("ignore advisories containing pattern %q\n", expr)
 		}
 		cfg.ignorePattern = append(cfg.ignorePattern, expr)
 	}
