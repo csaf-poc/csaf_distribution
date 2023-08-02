@@ -20,6 +20,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
@@ -52,6 +53,15 @@ type provider struct {
 
 	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
 	IgnorePattern []string `toml:"ignorepattern"`
+
+	// ExtraHeader adds extra HTTP header fields to client
+	ExtraHeader http.Header `toml:"header"`
+
+	ClientCert       *string `toml:"client_cert"`
+	ClientKey        *string `toml:"client_key"`
+	ClientPassphrase *string `toml:"client_passphrase"`
+
+	clientCerts   []tls.Certificate
 	ignorePattern filter.PatternMatcher
 }
 
@@ -73,6 +83,10 @@ type config struct {
 	OpenPGPPublicKey    string              `toml:"openpgp_public_key"`
 	Passphrase          *string             `toml:"passphrase"`
 	AllowSingleProvider bool                `toml:"allow_single_provider"`
+
+	ClientCert       *string `toml:"client_cert"`
+	ClientKey        *string `toml:"client_key"`
+	ClientPassphrase *string `toml:"client_passphrase"`
 
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
@@ -97,13 +111,18 @@ type config struct {
 
 	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
 	IgnorePattern []string `toml:"ignorepattern"`
-	ignorePattern filter.PatternMatcher
+
+	// ExtraHeader adds extra HTTP header fields to client
+	ExtraHeader http.Header `toml:"header"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+
+	clientCerts   []tls.Certificate
+	ignorePattern filter.PatternMatcher
 }
 
 // configPaths are the potential file locations of the config file.
@@ -217,20 +236,44 @@ func (c *config) privateOpenPGPKey() (*crypto.Key, error) {
 func (c *config) httpClient(p *provider) util.Client {
 
 	hClient := http.Client{}
+
+	var tlsConfig tls.Config
 	if p.Insecure != nil && *p.Insecure || c.Insecure != nil && *c.Insecure {
-		hClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+		tlsConfig.InsecureSkipVerify = true
+	}
+
+	// Use client certs if needed.
+	switch {
+	// Provider has precedence over global.
+	case len(p.clientCerts) != 0:
+		tlsConfig.Certificates = p.clientCerts
+	case len(c.clientCerts) != 0:
+		tlsConfig.Certificates = c.clientCerts
+	}
+
+	hClient.Transport = &http.Transport{
+		TLSClientConfig: &tlsConfig,
+	}
+
+	client := util.Client(&hClient)
+
+	// Add extra headers.
+	switch {
+	// Provider has precedence over global.
+	case len(p.ExtraHeader) > 0:
+		client = &util.HeaderClient{
+			Client: client,
+			Header: p.ExtraHeader,
+		}
+	case len(c.ExtraHeader) > 0:
+		client = &util.HeaderClient{
+			Client: client,
+			Header: c.ExtraHeader,
 		}
 	}
 
-	var client util.Client
-
 	if c.Verbose {
-		client = &util.LoggingClient{Client: &hClient}
-	} else {
-		client = &hClient
+		client = &util.LoggingClient{Client: client}
 	}
 
 	if p.Rate == nil && c.Rate == nil {
@@ -325,7 +368,7 @@ func (c *config) setDefaults() {
 func (p *provider) compileIgnorePatterns() error {
 	pm, err := filter.NewPatternMatcher(p.IgnorePattern)
 	if err != nil {
-		return err
+		return fmt.Errorf("invalid ignore patterns for %q: %w", p.Name, err)
 	}
 	p.ignorePattern = pm
 	return nil
@@ -342,7 +385,37 @@ func (c *config) compileIgnorePatterns() error {
 	// Compile the patterns of the providers.
 	for _, p := range c.Providers {
 		if err := p.compileIgnorePatterns(); err != nil {
-			return fmt.Errorf("invalid ignore patterns for %q: %w", p.Name, err)
+			return err
+		}
+	}
+	return nil
+}
+
+// prepareCertificates loads the provider specific client side certificates
+// used by the HTTP client.
+func (p *provider) prepareCertificates() error {
+	cert, err := certs.LoadCertificate(
+		p.ClientCert, p.ClientKey, p.ClientPassphrase)
+	if err != nil {
+		return fmt.Errorf("invalid certificates for %q: %w", p.Name, err)
+	}
+	p.clientCerts = cert
+	return nil
+}
+
+// prepareCertificates loads the client side certificates used by the HTTP client.
+func (c *config) prepareCertificates() error {
+	// Global certificates
+	cert, err := certs.LoadCertificate(
+		c.ClientCert, c.ClientKey, c.ClientPassphrase)
+	if err != nil {
+		return err
+	}
+	c.clientCerts = cert
+	// Provider certificates
+	for _, p := range c.Providers {
+		if err := p.prepareCertificates(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -355,17 +428,16 @@ func (c *config) prepare() error {
 		return errors.New("no providers given in configuration")
 	}
 
-	if err := c.compileIgnorePatterns(); err != nil {
-		return err
+	for _, prepare := range []func() error{
+		c.prepareCertificates,
+		c.compileIgnorePatterns,
+		c.Aggregator.Validate,
+		c.checkProviders,
+		c.checkMirror,
+	} {
+		if err := prepare(); err != nil {
+			return err
+		}
 	}
-
-	if err := c.Aggregator.Validate(); err != nil {
-		return err
-	}
-
-	if err := c.checkProviders(); err != nil {
-		return err
-	}
-
-	return c.checkMirror()
+	return nil
 }
