@@ -13,7 +13,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
@@ -49,7 +48,7 @@ type config struct {
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
 	clientCerts   []tls.Certificate
-	ageAccept     func(time.Time) bool
+	ageAccept     *models.TimeRange
 	ignorePattern filter.PatternMatcher
 }
 
@@ -156,14 +155,6 @@ func (cfg *config) prepareCertificates() error {
 	return nil
 }
 
-// acceptYears returns a filter that accepts advisories from the last years.
-func acceptYears(years uint) func(time.Time) bool {
-	good := time.Now().AddDate(-int(years), 0, 0)
-	return func(t time.Time) bool {
-		return !t.Before(good)
-	}
-}
-
 // prepareTimeRangeFilter sets up the filter in which time range
 // advisory should be considered for checking.
 func (cfg *config) prepareTimeRangeFilter() error {
@@ -172,10 +163,11 @@ func (cfg *config) prepareTimeRangeFilter() error {
 		return errors.New(`"timerange" and "years" are both configured: only one allowed`)
 
 	case cfg.Years != nil:
-		cfg.ageAccept = acceptYears(*cfg.Years)
+		years := models.NYears(*cfg.Years)
+		cfg.ageAccept = &years
 
 	case cfg.Range != nil:
-		cfg.ageAccept = cfg.Range.Contains
+		cfg.ageAccept = cfg.Range
 	}
 	return nil
 }

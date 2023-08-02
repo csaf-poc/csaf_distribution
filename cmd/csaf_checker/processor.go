@@ -241,8 +241,9 @@ func (p *processor) clean() {
 func (p *processor) run(domains []string) (*Report, error) {
 
 	report := Report{
-		Date:    ReportTime{Time: time.Now().UTC()},
-		Version: util.SemVersion,
+		Date:      ReportTime{Time: time.Now().UTC()},
+		Version:   util.SemVersion,
+		TimeRange: p.cfg.ageAccept,
 	}
 
 	for _, d := range domains {
@@ -545,8 +546,8 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 	rfeed.Entries(func(entry *csaf.Entry) {
 
 		// Filter if we have date checking.
-		if p.cfg.ageAccept != nil {
-			if pub := time.Time(entry.Published); !pub.IsZero() && !p.cfg.ageAccept(pub) {
+		if accept := p.cfg.ageAccept; accept != nil {
+			if pub := time.Time(entry.Published); !pub.IsZero() && !accept.Contains(pub) {
 				return
 			}
 		}
@@ -666,7 +667,7 @@ func (p *processor) integrity(
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
 			// Check if we are in checking time interval.
-			if p.cfg.ageAccept != nil && !p.cfg.ageAccept(
+			if accept := p.cfg.ageAccept; accept != nil && !accept.Contains(
 				time.Date(
 					year, 12, 31, // Assume last day of year.
 					23, 59, 59, 0, // 23:59:59
@@ -972,7 +973,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 				return nil, nil, err
 			}
 			// Apply date range filtering.
-			if p.cfg.ageAccept != nil && !p.cfg.ageAccept(t) {
+			if accept := p.cfg.ageAccept; accept != nil && !accept.Contains(t) {
 				continue
 			}
 			path := r[pathColumn]
