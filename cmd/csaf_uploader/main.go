@@ -28,6 +28,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
@@ -43,11 +44,12 @@ type options struct {
 	ExternalSigned bool   `short:"x" long:"external-signed" description:"CSAF files are signed externally. Assumes .asc files beside CSAF files."`
 	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally."`
 
-	Key        *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
-	Password   *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
-	Passphrase *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	ClientCert *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE.crt"`
-	ClientKey  *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem"`
+	Key              *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
+	Password         *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
+	Passphrase       *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
+	ClientCert       *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE.crt"`
+	ClientKey        *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem"`
+	ClientPassphrase *string `long:"client-passphrase" description:"Optional passphrase for the client certificate" value-name:"PASSPHRASE"`
 
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" no-ini:"true"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interactive" description:"Enter OpenPGP key passphrase interactively" no-ini:"true"`
@@ -75,18 +77,12 @@ var iniPaths = []string{
 
 func (o *options) prepare() error {
 	// Load client certs.
-	switch hasCert, hasKey := o.ClientCert != nil, o.ClientKey != nil; {
-
-	case hasCert && !hasKey || !hasCert && hasKey:
-		return errors.New("both client-key and client-cert options must be set for the authentication")
-
-	case hasCert:
-		cert, err := tls.LoadX509KeyPair(*o.ClientCert, *o.ClientKey)
-		if err != nil {
-			return err
-		}
-		o.clientCerts = []tls.Certificate{cert}
+	cert, err := certs.LoadCertificate(
+		o.ClientCert, o.ClientKey, o.ClientPassphrase)
+	if err != nil {
+		return err
 	}
+	o.clientCerts = cert
 	return nil
 }
 
