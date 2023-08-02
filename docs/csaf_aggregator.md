@@ -124,6 +124,7 @@ category
 update_interval
 create_service_document
 categories
+ignorepattern
 ```
 
 Where valid `name` and `domain` settings are required.
@@ -205,6 +206,7 @@ insecure = true
   # If aggregator.category == "aggregator", set for an entry that should
   # be listed in addition:
   category = "lister"
+#  ignorepattern = [".*white.*", ".*red.*"]
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
