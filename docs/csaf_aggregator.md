@@ -98,6 +98,7 @@ ignorepattern           // patterns of advisory URLs to be ignored
 client_cert             // path to client certificate to access access-protected advisories
 client_key              // path to client key to access access-protected advisories
 client_passphrase       // client passphrase to access access-protected advisories
+header                  // adds extra HTTP header fields to the client
 ```
 
 Next we have two TOML _tables_:
@@ -131,6 +132,7 @@ ignorepattern
 client_cert
 client_key
 client_passphrase
+header
 ```
 
 Where valid `name` and `domain` settings are required.
@@ -205,6 +207,7 @@ insecure = true
   client_cert = "./../devca1/testclient1.crt"
   client_key = "./../devca1/testclient1-key.pem"
 #  client_passphrase =
+# header =
 
 [[providers]]
   name = "local-dev-provider3"
