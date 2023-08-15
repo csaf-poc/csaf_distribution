@@ -11,23 +11,12 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/gofrs/flock"
-	"github.com/jessevdk/go-flags"
 )
-
-func errCheck(err error) {
-	if err != nil {
-		if flags.WroteHelp(err) {
-			os.Exit(0)
-		}
-		log.Fatalf("error: %v\n", err)
-	}
-}
 
 func lock(lockFile *string, fn func() error) error {
 	if lockFile == nil {
@@ -57,7 +46,6 @@ func main() {
 	_, cfg, err := parseArgsConfig()
 	options.ErrorCheck(err)
 	options.ErrorCheck(cfg.prepare())
-
 	p := processor{cfg: cfg}
-	errCheck(lock(cfg.LockFile, p.process))
+	options.ErrorCheck(lock(cfg.LockFile, p.process))
 }
