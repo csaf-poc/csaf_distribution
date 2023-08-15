@@ -18,15 +18,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"golang.org/x/time/rate"
 )
 
 const (
-	defaultConfigPath     = "aggregator.toml"
 	defaultWorkers        = 10
 	defaultFolder         = "/var/www"
 	defaultWeb            = "/var/www/html"
@@ -74,7 +73,8 @@ type config struct {
 	LockFile *string `toml:"lock_file"`
 
 	// Interim performs an interim scan.
-	Interim bool `toml:"interim"`
+	Interim bool `short:"i" long:"interim" description:"Perform an interim scan" toml:"interim"`
+	Version bool `long:"version" description:"Display version of the binary" toml:"-"`
 
 	// InterimYears is numbers numbers of years to look back
 	// for interim advisories. Less/equal zero means forever.
@@ -90,9 +90,32 @@ type config struct {
 	// 'update_interval'.
 	UpdateInterval *string `toml:"update_interval"`
 
+	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
+
 	keyMu  sync.Mutex
 	key    *crypto.Key
 	keyErr error
+}
+
+// configPaths are the potential file locations of the config file.
+var configPaths = []string{
+	// TODO: Make symmetric to checker and downloader.
+	"aggregator.toml",
+}
+
+// parseArgsConfig parse the command arguments and loads configuration
+// from a configuration file.
+func parseArgsConfig() ([]string, *config, error) {
+	p := options.Parser[config]{
+		DefaultConfigLocations: configPaths,
+		ConfigLocation: func(cfg *config) string {
+			return cfg.Config
+		},
+		HasVersion: func(cfg *config) bool { return cfg.Version },
+		// Establish default values if not set.
+		EnsureDefaults: (*config).setDefaults,
+	}
+	return p.Parse()
 }
 
 // tooOldForInterims returns a function that tells if a given
@@ -298,28 +321,4 @@ func (c *config) check() error {
 	}
 
 	return c.checkMirror()
-}
-
-func loadConfig(path string) (*config, error) {
-	if path == "" {
-		path = defaultConfigPath
-	}
-
-	var cfg config
-	md, err := toml.DecodeFile(path, &cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	if undecoded := md.Undecoded(); len(undecoded) != 0 {
-		return nil, fmt.Errorf("could not parse %q from config.toml", undecoded)
-	}
-
-	cfg.setDefaults()
-
-	if err := cfg.check(); err != nil {
-		return nil, err
-	}
-
-	return &cfg, nil
 }
