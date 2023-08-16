@@ -101,16 +101,11 @@ It is only allowed to specify one off them.
 All interval boundaries are inclusive.
 
 You can ignore certain advisories while checking by specifying a list
-<<<<<<< HEAD
-of regular expressions to match their URLs by using the `ignorepattern` option. 
-E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain the sub strings **white** or **red**.
-=======
 of regular expressions to match their URLs by using the `ignorepattern`
 option.
 
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
-the sub strings **white** or **red**.
->>>>>>> main
+the sub strings **white** or **red**. 
 In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
