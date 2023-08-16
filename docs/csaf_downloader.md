@@ -15,11 +15,12 @@ Application Options:
       --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
-  -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
+  -r, --rate=                           The average upper limit of https operations per second (defaults to
+                                        unlimited)
   -w, --worker=NUM                      NUMber of concurrent downloads (default: 2)
   -t, --timerange=RANGE                 RANGE of time from which advisories to download
-  -f, --folder=FOLDER                   Download into a given FOLDER
-  -i, --ignorepattern=PATTERN           Dont download files if there URLs match any of the given PATTERNs
+  -f, --folder=FOLDER                   Download into a given subFOLDER
+  -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                         One or more extra HTTP header fields
       --validator=URL                   URL to validate documents remotely
       --validatorcache=FILE             FILE to cache remote validations
@@ -97,13 +98,16 @@ into a given intervall. There are three possible notations:
 
 All interval boundaries are inclusive.
 
-If the `folder` option is given the advisories are stored in this folder. 
-If it is omitted (by default) the advisories are stored in folder name by the
-year they are from.
+If the `folder` option is given all the advisories are stored in a subfolder
+of this name. Otherwise the advisories are each stored in a folder named
+by the year they are from.
 
 You can ignore certain advisories while downloading by specifying a list
-of regular expressions to match their URLs by using the `ignorepattern` option. 
-E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain the sub strings **white** or **red**.
+of regular expressions to match their URLs by using the `ignorepattern`
+option.
+
+E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
+the sub strings **white** or **red**.
 In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
