@@ -39,7 +39,7 @@ type config struct {
 	Rate          *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
 	Years         *uint             `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
 	Range         *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
-	IgnorePattern []string          `long:"ignorepattern" short:"i" description:"Dont download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
+	IgnorePattern []string          `long:"ignorepattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
 	ExtraHeader   http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
