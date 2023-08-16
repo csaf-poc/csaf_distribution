@@ -16,6 +16,7 @@ Application Options:
   -w, --worker=NUM                 NUMber of concurrent downloads (default: 2)
   -t, --timerange=RANGE            RANGE of time from which advisories to download
   -f, --folder=FOLDER              Download all into a given subFOLDER
+  -i, --ignorepattern=PATTERN      Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                    One or more extra HTTP header fields
       --validator=URL              URL to validate documents remotely
       --validatorcache=FILE        FILE to cache remote validations
@@ -54,6 +55,7 @@ verbose           = false
 worker            = 2
 # timerange       # not set by default
 # folder          # not set by default
+# ignorepattern   # not set by default
 # header          # not set by default
 # validator       # not set by default
 # validatorcache  # not set by default
@@ -92,3 +94,14 @@ All interval boundaries are inclusive.
 If the `folder` option is given all the advisories are stored in a subfolder
 of this name. Otherwise the advisories are each stored in a folder named
 by the year they are from.
+
+You can ignore certain advisories while downloading by specifying a list
+of regular expressions to match their URLs by using the `ignorepattern`
+option.
+
+E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
+the sub strings **white** or **red**.
+In the config file this has to be noted as:
+```
+ignorepattern = [".*white.*", ".*red.*"]
+```
