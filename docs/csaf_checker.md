@@ -17,7 +17,7 @@ Application Options:
   -r, --rate=                    The average upper limit of https operations per second (defaults to unlimited)
   -y, --years=YEARS              Number of years to look back from now
   -t, --timerange=RANGE          RANGE of time from which advisories to download
-  -i, --ignorepattern=PATTERN    Dont download files if there URLs match any of the given PATTERNs
+  -i, --ignorepattern=PATTERN    Dont download files if their URLs match any of the given PATTERNs
   -H, --header=                  One or more extra HTTP header fields
       --validator=URL            URL to validate documents remotely
       --validatorcache=FILE      FILE to cache remote validations
