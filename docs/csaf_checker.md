@@ -17,6 +17,7 @@ Application Options:
   -r, --rate=                    The average upper limit of https operations per second (defaults to unlimited)
   -y, --years=YEARS              Number of years to look back from now
   -t, --timerange=RANGE          RANGE of time from which advisories to download
+  -i, --ignorepattern=PATTERN    Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                  One or more extra HTTP header fields
       --validator=URL            URL to validate documents remotely
       --validatorcache=FILE      FILE to cache remote validations
@@ -97,6 +98,17 @@ It is only allowed to specify one off them.
    spans an interval from 1st January 2019 to the 1st January of 2024.
 
 All interval boundaries are inclusive.
+
+You can ignore certain advisories while checking by specifying a list
+of regular expressions to match their URLs by using the `ignorepattern`
+option.
+
+E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
+the sub strings **white** or **red**.
+In the config file this has to be noted as:
+```
+ignorepattern = [".*white.*", ".*red.*"]
+```
 
 ### Remarks
 
