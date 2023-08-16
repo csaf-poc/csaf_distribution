@@ -45,7 +45,7 @@ func lock(lockFile *string, fn func() error) error {
 func main() {
 	_, cfg, err := parseArgsConfig()
 	options.ErrorCheck(err)
-	options.ErrorCheck(cfg.check())
+	options.ErrorCheck(cfg.prepare())
 	p := processor{cfg: cfg}
 	options.ErrorCheck(lock(cfg.LockFile, p.process))
 }

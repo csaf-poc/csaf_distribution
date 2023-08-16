@@ -48,3 +48,4 @@ insecure = true
   # If aggregator.category == "aggreator", set for an entry that should
   # be listed in addition:
   category = "lister"
+# ignorepattern = [".*white.*", ".*red.*"]

@@ -500,6 +500,14 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 			continue
 		}
 
+		// Should we ignore this advisory?
+		if w.provider.ignoreURL(file.URL(), w.processor.cfg) {
+			if w.processor.cfg.Verbose {
+				log.Printf("Ignoring %s: %q\n", w.provider.Name, file.URL())
+			}
+			continue
+		}
+
 		// Ignore not conforming filenames.
 		filename := filepath.Base(u.Path)
 		if !util.ConformingFileName(filename) {

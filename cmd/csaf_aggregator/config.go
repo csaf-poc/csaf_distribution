@@ -20,6 +20,7 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"golang.org/x/time/rate"
@@ -48,6 +49,10 @@ type provider struct {
 
 	// UpdateInterval is as the mandatory `update_interval` if this is a publisher.
 	UpdateInterval *string `toml:"update_interval"`
+
+	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
+	IgnorePattern []string `toml:"ignorepattern"`
+	ignorePattern filter.PatternMatcher
 }
 
 type config struct {
@@ -90,6 +95,10 @@ type config struct {
 	// 'update_interval'.
 	UpdateInterval *string `toml:"update_interval"`
 
+	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
+	IgnorePattern []string `toml:"ignorepattern"`
+	ignorePattern filter.PatternMatcher
+
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
 	keyMu  sync.Mutex
@@ -126,6 +135,11 @@ func (c *config) tooOldForInterims() func(time.Time) bool {
 	}
 	from := time.Now().AddDate(-c.InterimYears, 0, 0)
 	return func(t time.Time) bool { return t.Before(from) }
+}
+
+// ignoreFile returns true if the given URL should not be downloaded.
+func (p *provider) ignoreURL(u string, c *config) bool {
+	return p.ignorePattern.Matches(u) || c.ignorePattern.Matches(u)
 }
 
 // updateInterval returns the update interval of a publisher.
@@ -307,9 +321,42 @@ func (c *config) setDefaults() {
 	}
 }
 
-func (c *config) check() error {
+// compileIgnorePatterns compiles the configured patterns to be ignored.
+func (p *provider) compileIgnorePatterns() error {
+	pm, err := filter.NewPatternMatcher(p.IgnorePattern)
+	if err != nil {
+		return err
+	}
+	p.ignorePattern = pm
+	return nil
+}
+
+// compileIgnorePatterns compiles the configured patterns to be ignored.
+func (c *config) compileIgnorePatterns() error {
+	// Compile the top level patterns.
+	pm, err := filter.NewPatternMatcher(c.IgnorePattern)
+	if err != nil {
+		return err
+	}
+	c.ignorePattern = pm
+	// Compile the patterns of the providers.
+	for _, p := range c.Providers {
+		if err := p.compileIgnorePatterns(); err != nil {
+			return fmt.Errorf("invalid ignore patterns for %q: %w", p.Name, err)
+		}
+	}
+	return nil
+}
+
+// prepare prepares internal state of a loaded configuration.
+func (c *config) prepare() error {
+
 	if len(c.Providers) == 0 {
 		return errors.New("no providers given in configuration")
+	}
+
+	if err := c.compileIgnorePatterns(); err != nil {
+		return err
 	}
 
 	if err := c.Aggregator.Validate(); err != nil {
