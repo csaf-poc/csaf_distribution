@@ -15,6 +15,7 @@ Application Options:
   -r, --rate=                      The average upper limit of https operations per second (defaults to unlimited)
   -w, --worker=NUM                 NUMber of concurrent downloads (default: 2)
   -t, --timerange=RANGE            RANGE of time from which advisories to download
+  -f, --folder=FOLDER              Download all into a given subFOLDER
   -H, --header=                    One or more extra HTTP header fields
       --validator=URL              URL to validate documents remotely
       --validatorcache=FILE        FILE to cache remote validations
@@ -51,11 +52,12 @@ ignoresigcheck    = false
 verbose           = false
 # rate            # set to unlimited
 worker            = 2
+# timerange       # not set by default
+# folder          # not set by default
 # header          # not set by default
 # validator       # not set by default
 # validatorcache  # not set by default
 validatorpreset   = ["mandatory"]
-# timerange       # not set by default
 ```
 
 The `timerange` parameter enables downloading advisories which last changes falls
@@ -86,3 +88,7 @@ into a given intervall. There are three possible notations:
    spans an interval from 1st January 2019 to the 1st January of 2024.
 
 All interval boundaries are inclusive.
+
+If the `folder` option is given all the advisories are stored in a subfolder
+of this name. Otherwise the advisories are each stored in a folder named
+by the year they are from.
