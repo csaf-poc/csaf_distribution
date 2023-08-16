@@ -33,8 +33,6 @@ type config struct {
 	Folder               string            `long:"folder" short:"f" description:"Download into a given subFOLDER" value-name:"FOLDER" toml:"folder"`
 	IgnorePattern        []string          `long:"ignorepattern" short:"i" description:"Dont download files if there URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
 
-
-
 	ExtraHeader http.Header `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
