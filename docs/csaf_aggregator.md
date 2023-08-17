@@ -95,6 +95,10 @@ interim_years           // limiting the years for which interim documents are se
 verbose                 // print more diagnostic output, e.g. https requests (default false)
 allow_single_provider   // debugging option (default false)
 ignorepattern           // patterns of advisory URLs to be ignored
+client_cert             // path to client certificate to access access-protected advisories
+client_key              // path to client key to access access-protected advisories
+client_passphrase       // client passphrase to access access-protected advisories
+header                  // adds extra HTTP header fields to the client
 ```
 
 Next we have two TOML _tables_:
@@ -125,6 +129,10 @@ update_interval
 create_service_document
 categories
 ignorepattern
+client_cert
+client_key
+client_passphrase
+header
 ```
 
 Where valid `name` and `domain` settings are required.
@@ -196,6 +204,10 @@ insecure = true
 #  rate = 1.2
 #  insecure = true
   write_indices = true
+  client_cert = "./../devca1/testclient1.crt"
+  client_key = "./../devca1/testclient1-key.pem"
+#  client_passphrase =
+# header =
 
 [[providers]]
   name = "local-dev-provider3"
