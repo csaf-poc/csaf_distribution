@@ -118,11 +118,7 @@ func (cfg *config) prepare() error {
 	}
 
 	// Load client certs.
-	if err := cfg.prepareCertificates(); err != nil {
-		return err
-	}
-
-	return nil
+	return cfg.prepareCertificates()
 }
 
 // compileIgnorePatterns compiles the configure patterns to be ignored.
