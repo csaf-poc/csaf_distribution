@@ -6,6 +6,7 @@
   csaf_aggregator [OPTIONS]
 
 Application Options:
+  -t, --timerange=RANGE     RANGE of time from which advisories to download
   -i, --interim             Perform an interim scan
       --version             Display version of the binary
   -c, --config=TOML-FILE    Path to config TOML file
@@ -99,6 +100,7 @@ client_cert             // path to client certificate to access access-protected
 client_key              // path to client key to access access-protected advisories
 client_passphrase       // client passphrase to access access-protected advisories
 header                  // adds extra HTTP header fields to the client
+timerange               // Accepted time range of advisories to handle. See checker doc for details.
 ```
 
 Next we have two TOML _tables_:

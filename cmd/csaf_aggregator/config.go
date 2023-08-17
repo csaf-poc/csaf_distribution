@@ -22,6 +22,7 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"golang.org/x/time/rate"
@@ -61,6 +62,8 @@ type provider struct {
 	ClientKey        *string `toml:"client_key"`
 	ClientPassphrase *string `toml:"client_passphrase"`
 
+	Range *models.TimeRange `toml:"timerange"`
+
 	clientCerts   []tls.Certificate
 	ignorePattern filter.PatternMatcher
 }
@@ -87,6 +90,8 @@ type config struct {
 	ClientCert       *string `toml:"client_cert"`
 	ClientKey        *string `toml:"client_key"`
 	ClientPassphrase *string `toml:"client_passphrase"`
+
+	Range *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
 
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
@@ -154,6 +159,20 @@ func (c *config) tooOldForInterims() func(time.Time) bool {
 	}
 	from := time.Now().AddDate(-c.InterimYears, 0, 0)
 	return func(t time.Time) bool { return t.Before(from) }
+}
+
+// ageAccept returns a function which checks if a given time
+// is in the accepted download interval of the provider or
+// the global config.
+func (p *provider) ageAccept(c *config) func(time.Time) bool {
+	switch {
+	case p.Range != nil:
+		return p.Range.Contains
+	case c.Range != nil:
+		return c.Range.Contains
+	default:
+		return nil
+	}
 }
 
 // ignoreFile returns true if the given URL should not be downloaded.
