@@ -120,4 +120,4 @@ To check these advisories, authorization can be given via custom headers or cert
 The authorization method chosen needs to grant access to all advisories, as otherwise the
 checker will be unable to check the advisories it doesn't have permission for, falsifying the result.
 
-[^1]: Accepted syntax is describes [here](https://github.com/google/re2/wiki/Syntax).
+[^1]: Accepted syntax is described [here](https://github.com/google/re2/wiki/Syntax).
