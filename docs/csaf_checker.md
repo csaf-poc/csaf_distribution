@@ -100,7 +100,7 @@ There are following variants:
 All interval boundaries are inclusive.
 
 You can ignore certain advisories while checking by specifying a list
-of regular expressions to match their URLs by using the `ignorepattern`
+of regular expressions[^1] to match their URLs by using the `ignorepattern`
 option.
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
 the sub strings **white** or **red**.
@@ -119,3 +119,5 @@ If a provider hosts one or more advisories with a TLP level of AMBER or RED, the
 To check these advisories, authorization can be given via custom headers or certificates.
 The authorization method chosen needs to grant access to all advisories, as otherwise the
 checker will be unable to check the advisories it doesn't have permission for, falsifying the result.
+
+[^1]: Accepted syntax is described [here](https://github.com/google/re2/wiki/Syntax).

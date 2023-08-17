@@ -103,7 +103,7 @@ of this name. Otherwise the advisories are each stored in a folder named
 by the year they are from.
 
 You can ignore certain advisories while downloading by specifying a list
-of regular expressions to match their URLs by using the `ignorepattern`
+of regular expressions[^1] to match their URLs by using the `ignorepattern`
 option.
 
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
@@ -112,3 +112,5 @@ In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
 ```
+
+[^1]: Accepted syntax is described [here](https://github.com/google/re2/wiki/Syntax).

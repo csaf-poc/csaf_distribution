@@ -95,7 +95,7 @@ lock_file               // path to lockfile, to stop other instances if one is n
 interim_years           // limiting the years for which interim documents are searched (default 0)
 verbose                 // print more diagnostic output, e.g. https requests (default false)
 allow_single_provider   // debugging option (default false)
-ignorepattern           // patterns of advisory URLs to be ignored
+ignorepattern           // patterns of advisory URLs to be ignored (see checker doc for details)
 client_cert             // path to client certificate to access access-protected advisories
 client_key              // path to client key to access access-protected advisories
 client_passphrase       // client passphrase to access access-protected advisories
