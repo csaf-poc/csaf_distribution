@@ -9,8 +9,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"net/http"
 
+	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
@@ -25,6 +27,9 @@ type config struct {
 	Directory            *string           `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
 	Insecure             bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
 	IgnoreSignatureCheck bool              `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
+	ClientCert           *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
+	ClientKey            *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
+	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client certificate" value-name:"PASSPHRASE" toml:"client_passphrase"`
 	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
 	Verbose              bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
 	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
@@ -40,6 +45,7 @@ type config struct {
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
+	clientCerts   []tls.Certificate
 	ignorePattern filter.PatternMatcher
 }
 
@@ -89,7 +95,21 @@ func (cfg *config) compileIgnorePatterns() error {
 	return nil
 }
 
+// prepareCertificates loads the client side certificates used by the HTTP client.
+func (cfg *config) prepareCertificates() error {
+	cert, err := certs.LoadCertificate(
+		cfg.ClientCert, cfg.ClientKey, cfg.ClientPassphrase)
+	if err != nil {
+		return err
+	}
+	cfg.clientCerts = cert
+	return nil
+}
+
 // prepare prepares internal state of a loaded configuration.
 func (cfg *config) prepare() error {
+	if err := cfg.prepareCertificates(); err != nil {
+		return err
+	}
 	return cfg.compileIgnorePatterns()
 }

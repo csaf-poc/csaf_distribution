@@ -7,26 +7,26 @@ Usage:
   csaf_checker [OPTIONS] domain...
 
 Application Options:
-Application Options:
-  -o, --output=REPORT-FILE       File name of the generated report
-  -f, --format=[json|html]       Format of report (default: json)
-      --insecure                 Do not check TLS certificates from provider
-      --client-cert=CERT-FILE    TLS client certificate file (PEM encoded data)
-      --client-key=KEY-FILE      TLS client private key file (PEM encoded data)
-      --version                  Display version of the binary
-  -v, --verbose                  Verbose output
-  -r, --rate=                    The average upper limit of https operations per second (defaults to unlimited)
-  -y, --years=YEARS              Number of years to look back from now
-  -t, --timerange=RANGE          RANGE of time from which advisories to download
-  -i, --ignorepattern=PATTERN    Do not download files if their URLs match any of the given PATTERNs
-  -H, --header=                  One or more extra HTTP header fields
-      --validator=URL            URL to validate documents remotely
-      --validatorcache=FILE      FILE to cache remote validations
-      --validatorpreset=         One or more presets to validate remotely (default: [mandatory])
-  -c, --config=TOML-FILE         Path to config TOML file
+  -o, --output=REPORT-FILE              File name of the generated report
+  -f, --format=[json|html]              Format of report (default: json)
+      --insecure                        Do not check TLS certificates from provider
+      --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
+      --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
+      --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
+      --version                         Display version of the binary
+  -v, --verbose                         Verbose output
+  -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
+  -y, --years=YEARS                     Number of years to look back from now
+  -t, --timerange=RANGE                 RANGE of time from which advisories to download
+  -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
+  -H, --header=                         One or more extra HTTP header fields
+      --validator=URL                   URL to validate documents remotely
+      --validatorcache=FILE             FILE to cache remote validations
+      --validatorpreset=                One or more presets to validate remotely (default: [mandatory])
+  -c, --config=TOML-FILE                Path to config TOML file
 
 Help Options:
-  -h, --help                     Show this help message
+  -h, --help                            Show this help message
 ```
 
 Will check all given _domains_, by trying each as a CSAF provider.
@@ -43,19 +43,20 @@ csaf_checker.toml
 with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
 Supported options in config files:
 ```
-output           = ""
-format           = "json"
-insecure         = false 
-# client_cert    # not set by default
-# client_key     # not set by default
-verbose          = false
-# rate           # not set by default
-# years	         # not set by default
-# timerange      # not set by default
-# header         # not set by default
-# validator      # not set by default
-# validatorcache # not set by default
-validatorpreset  = ["mandatory"]
+output              = ""
+format              = "json"
+insecure            = false 
+# client_cert       # not set by default
+# client_key        # not set by default
+# client_passphrase # not set by default
+verbose             = false
+# rate              # not set by default
+# years	            # not set by default
+# timerange         # not set by default
+# header            # not set by default
+# validator         # not set by default
+# validatorcache    # not set by default
+validatorpreset     = ["mandatory"]
 ```
 
 Usage example:
@@ -103,9 +104,8 @@ All interval boundaries are inclusive.
 You can ignore certain advisories while checking by specifying a list
 of regular expressions to match their URLs by using the `ignorepattern`
 option.
-
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
-the sub strings **white** or **red**. 
+the sub strings **white** or **red**.
 In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]

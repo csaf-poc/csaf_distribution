@@ -7,24 +7,28 @@ A tool to download CSAF documents from CSAF providers.
 csaf_downloader [OPTIONS] domain...
 
 Application Options:
-  -d, --directory=DIR              DIRectory to store the downloaded files in
-      --insecure                   Do not check TLS certificates from provider
-      --ignoresigcheck             Ignore signature check results, just warn on mismatch
-      --version                    Display version of the binary
-  -v, --verbose                    Verbose output
-  -r, --rate=                      The average upper limit of https operations per second (defaults to unlimited)
-  -w, --worker=NUM                 NUMber of concurrent downloads (default: 2)
-  -t, --timerange=RANGE            RANGE of time from which advisories to download
-  -f, --folder=FOLDER              Download all into a given subFOLDER
-  -i, --ignorepattern=PATTERN      Do not download files if their URLs match any of the given PATTERNs
-  -H, --header=                    One or more extra HTTP header fields
-      --validator=URL              URL to validate documents remotely
-      --validatorcache=FILE        FILE to cache remote validations
-      --validatorpreset=PRESETS    One or more PRESETS to validate remotely (default: [mandatory])
-  -c, --config=TOML-FILE           Path to config TOML file
+  -d, --directory=DIR                   DIRectory to store the downloaded files in
+      --insecure                        Do not check TLS certificates from provider
+      --ignoresigcheck                  Ignore signature check results, just warn on mismatch
+      --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
+      --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
+      --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
+      --version                         Display version of the binary
+  -v, --verbose                         Verbose output
+  -r, --rate=                           The average upper limit of https operations per second (defaults to
+                                        unlimited)
+  -w, --worker=NUM                      NUMber of concurrent downloads (default: 2)
+  -t, --timerange=RANGE                 RANGE of time from which advisories to download
+  -f, --folder=FOLDER                   Download into a given subFOLDER
+  -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
+  -H, --header=                         One or more extra HTTP header fields
+      --validator=URL                   URL to validate documents remotely
+      --validatorcache=FILE             FILE to cache remote validations
+      --validatorpreset=PRESETS         One or more PRESETS to validate remotely (default: [mandatory])
+  -c, --config=TOML-FILE                Path to config TOML file
 
 Help Options:
-  -h, --help                       Show this help message
+  -h, --help                            Show this help message
 ```
 
 Will download all CSAF documents for the given _domains_, by trying each as a CSAF provider.
@@ -47,19 +51,22 @@ with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows syst
 
 Supported options in config files:
 ```
-directory         # not set by default
-insecure          = false
-ignoresigcheck    = false
-verbose           = false
-# rate            # set to unlimited
-worker            = 2
-# timerange       # not set by default
-# folder          # not set by default
-# ignorepattern   # not set by default
-# header          # not set by default
-# validator       # not set by default
-# validatorcache  # not set by default
-validatorpreset   = ["mandatory"]
+# directory         # not set by default
+insecure            = false
+# client_cert       # not set by default
+# client_key        # not set by default
+# client_passphrase # not set by default
+ignoresigcheck      = false
+verbose             = false
+# rate              # set to unlimited
+worker              = 2
+# timerange         # not set by default
+# folder            # not set by default
+# ignorepattern     # not set by default
+# header            # not set by default
+# validator         # not set by default
+# validatorcache    # not set by default
+validatorpreset     = ["mandatory"]
 ```
 
 The `timerange` parameter enables downloading advisories which last changes falls

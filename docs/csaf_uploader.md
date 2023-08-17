@@ -7,19 +7,18 @@
 
 Application Options:
   -a, --action=[upload|create]              Action to perform (default: upload)
-  -u, --url=URL                             URL of the CSAF provider (default:
-                                            https://localhost/cgi-bin/csaf_provider.go)
+  -u, --url=URL                             URL of the CSAF provider (default: https://localhost/cgi-bin/csaf_provider.go)
   -t, --tlp=[csaf|white|green|amber|red]    TLP of the feed (default: csaf)
-  -x, --external-signed                     CSAF files are signed externally. Assumes .asc files
-                                            beside CSAF files.
+  -x, --external-signed                     CSAF files are signed externally. Assumes .asc files beside CSAF files.
   -s, --no-schema-check                     Do not check files against CSAF JSON schema locally.
   -k, --key=KEY-FILE                        OpenPGP key to sign the CSAF files
   -p, --password=PASSWORD                   Authentication password for accessing the CSAF provider
   -P, --passphrase=PASSPHRASE               Passphrase to unlock the OpenPGP key
       --client-cert=CERT-FILE.crt           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE.pem             TLS client private key file (PEM encoded data)
+      --client-passphrase=PASSPHRASE        Optional passphrase for the client certificate
   -i, --password-interactive                Enter password interactively
-  -I, --passphrase-interactive               Enter passphrase interactively
+  -I, --passphrase-interactive              Enter OpenPGP key passphrase interactively
       --insecure                            Do not check TLS certificates from provider
   -c, --config=INI-FILE                     Path to config ini file
       --version                             Display version of the binary

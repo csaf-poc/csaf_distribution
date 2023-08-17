@@ -84,9 +84,14 @@ func (d *downloader) httpClient() util.Client {
 	var tlsConfig tls.Config
 	if d.cfg.Insecure {
 		tlsConfig.InsecureSkipVerify = true
-		hClient.Transport = &http.Transport{
-			TLSClientConfig: &tlsConfig,
-		}
+	}
+
+	if len(d.cfg.clientCerts) != 0 {
+		tlsConfig.Certificates = d.cfg.clientCerts
+	}
+
+	hClient.Transport = &http.Transport{
+		TLSClientConfig: &tlsConfig,
 	}
 
 	client := util.Client(&hClient)
