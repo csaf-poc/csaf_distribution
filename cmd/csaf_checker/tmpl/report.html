@@ -62,8 +62,26 @@
 {{ end }}
 
     <footer>
-      Date of run: <time datetime="{{.Date.Format "2006-01-02T15:04:05Z"}}">{{ .Date.Local.Format "Monday, 02 Jan 2006 15:04:05 MST" }}</time>
-      csaf_checker v<span class="version">{{ .Version }}</span>
+    <fieldset>
+    <legend>Runtime</legend>
+    <table>
+    <tr>
+      <td><strong>Date of run:</strong></td>
+      <td><time datetime="{{ .Date.Format "2006-01-02T15:04:05Z"}}">{{ .Date.Local.Format "Monday, 02 Jan 2006 15:04:05 MST" }}</time></td>
+    </tr>
+    {{ if .TimeRange }}{{ with .TimeRange }}
+    <tr>
+      <td><strong>Time range:</strong></td>
+      <td><time datetime="{{ (index . 0).Format "2006-01-02T15:04:05Z"}}">{{ (index . 0).Local.Format "Monday, 02 Jan 2006 15:04:05 MST" }}</time> -
+          <time datetime="{{ (index . 1).Format "2006-01-02T15:04:05Z"}}">{{ (index . 1).Local.Format "Monday, 02 Jan 2006 15:04:05 MST" }}</time></td>
+    </tr>
+    {{ end }}{{ end }}
+    <tr>
+      <td><strong>Version:</strong></td>
+      <td>csaf_checker v<span class="version">{{ .Version }}</span></td>
+    </tr>
+    </table>
+    </fieldset>
     </footer>
   </body>
 </html>

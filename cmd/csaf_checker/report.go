@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
 )
 
 // MessageType is the kind of the message.
@@ -60,9 +61,10 @@ type ReportTime struct{ time.Time }
 
 // Report is the overall report.
 type Report struct {
-	Domains []*Domain  `json:"domains,omitempty"`
-	Version string     `json:"version,omitempty"`
-	Date    ReportTime `json:"date,omitempty"`
+	Domains   []*Domain         `json:"domains,omitempty"`
+	Version   string            `json:"version,omitempty"`
+	Date      ReportTime        `json:"date,omitempty"`
+	TimeRange *models.TimeRange `json:"timerange,omitempty"`
 }
 
 // MarshalText implements the encoding.TextMarshaller interface.

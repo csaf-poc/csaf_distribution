@@ -7,6 +7,7 @@ Usage:
   csaf_checker [OPTIONS] domain...
 
 Application Options:
+Application Options:
   -o, --output=REPORT-FILE       File name of the generated report
   -f, --format=[json|html]       Format of report (default: json)
       --insecure                 Do not check TLS certificates from provider
@@ -104,7 +105,7 @@ of regular expressions to match their URLs by using the `ignorepattern`
 option.
 
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
-the sub strings **white** or **red**.
+the sub strings **white** or **red**. 
 In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
