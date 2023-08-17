@@ -16,7 +16,6 @@ Application Options:
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
-  -y, --years=YEARS                     Number of years to look back from now
   -t, --timerange=RANGE                 RANGE of time from which advisories to download
   -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                         One or more extra HTTP header fields
@@ -51,7 +50,6 @@ insecure            = false
 # client_passphrase # not set by default
 verbose             = false
 # rate              # not set by default
-# years	            # not set by default
 # timerange         # not set by default
 # header            # not set by default
 # validator         # not set by default
@@ -71,9 +69,9 @@ type 2: error
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise.
 
-The options `years` and `timerange` allow to only check advisories from a given time interval.
+The option `timerange` allows to only check advisories from a given time interval.
 It is only allowed to specify one off them. 
-`years`  looks number of years back from now. `timerange` values allow finer controls:
+There are following variants:
 
 1. Relative. If the given string follows the rules of being a [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration)
     the time interval from now minus that duration till now is used. 

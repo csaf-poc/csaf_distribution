@@ -28,13 +28,6 @@ func NewTimeInterval(a, b time.Time) TimeRange {
 	return TimeRange{a, b}
 }
 
-// NYears returns a time interval spanning the last years.
-func NYears(years uint) TimeRange {
-	now := time.Now()
-	start := now.AddDate(-int(years), 0, 0)
-	return NewTimeInterval(start, now)
-}
-
 // guessDate tries to guess an RFC 3339 date time from a given string.
 func guessDate(s string) (time.Time, bool) {
 	for _, layout := range []string{

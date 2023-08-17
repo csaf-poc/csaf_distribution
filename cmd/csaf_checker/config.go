@@ -10,7 +10,6 @@ package main
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -38,7 +37,6 @@ type config struct {
 	Version                bool              `long:"version" description:"Display version of the binary" toml:"-"`
 	Verbose                bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
 	Rate                   *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
-	Years                  *uint             `long:"years" short:"y" description:"Number of years to look back from now" value-name:"YEARS" toml:"years"`
 	Range                  *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
 	IgnorePattern          []string          `long:"ignorepattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
 	ExtraHeader            http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
@@ -49,7 +47,6 @@ type config struct {
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
 	clientCerts   []tls.Certificate
-	ageAccept     *models.TimeRange
 	ignorePattern filter.PatternMatcher
 }
 
@@ -125,7 +122,7 @@ func (cfg *config) prepare() error {
 		return err
 	}
 
-	return cfg.prepareTimeRangeFilter()
+	return nil
 }
 
 // compileIgnorePatterns compiles the configure patterns to be ignored.
@@ -146,22 +143,5 @@ func (cfg *config) prepareCertificates() error {
 		return err
 	}
 	cfg.clientCerts = cert
-	return nil
-}
-
-// prepareTimeRangeFilter sets up the filter in which time range
-// advisory should be considered for checking.
-func (cfg *config) prepareTimeRangeFilter() error {
-	switch {
-	case cfg.Years != nil && cfg.Range != nil:
-		return errors.New(`"timerange" and "years" are both configured: only one allowed`)
-
-	case cfg.Years != nil:
-		years := models.NYears(*cfg.Years)
-		cfg.ageAccept = &years
-
-	case cfg.Range != nil:
-		cfg.ageAccept = cfg.Range
-	}
 	return nil
 }
