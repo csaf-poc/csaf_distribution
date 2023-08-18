@@ -1216,8 +1216,9 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 	lpmd := loader.Load(domain)
 
 	for i := range lpmd.Messages {
-		// TODO: Filter depending on the role.
-		p.badProviderMetadata.error(lpmd.Messages[i].Message)
+		p.badProviderMetadata.warn(
+			"Unexpected situation while loading provider-metadata.json: " +
+				lpmd.Messages[i].Message)
 	}
 
 	if !lpmd.Valid() {
