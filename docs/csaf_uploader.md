@@ -16,7 +16,7 @@ Application Options:
   -P, --passphrase=PASSPHRASE               Passphrase to unlock the OpenPGP key
       --client-cert=CERT-FILE.crt           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE.pem             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE        Optional passphrase for the client certificate
+      --client-passphrase=PASSPHRASE        Optional passphrase for the client cert (limited, experimental, see downloader doc)
   -i, --password-interactive                Enter password interactively
   -I, --passphrase-interactive              Enter OpenPGP key passphrase interactively
       --insecure                            Do not check TLS certificates from provider

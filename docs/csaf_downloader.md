@@ -12,7 +12,7 @@ Application Options:
       --ignoresigcheck                  Ignore signature check results, just warn on mismatch
       --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
+      --client-passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see doc)
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to
@@ -69,9 +69,6 @@ worker              = 2
 validatorpreset     = ["mandatory"]
 ```
 
-Using the `client-passphrase` option may lead to a
-[security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
-
 The `timerange` parameter enables downloading advisories which last changes falls
 into a given intervall. There are three possible notations:
 
@@ -115,3 +112,17 @@ In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
 ```
+
+#### beware of client cert passphrase
+
+The `client-passphrase` option implements a legacy private
+key protection mechanism based on RFC 1423, see
+[DecryptPEMBlock](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
+Thus it considered experimental and most likely to be removed
+in a future release. Please only use this option, if you fully understand
+the security implications!
+Note that for fully automated processes, it usually not make sense
+to protect the client certificate's private key with a passphrase.
+Because the passphrase has to be accessible to the process anyway to run
+unattented. In this situation the processing environment should be secured
+properly instead.

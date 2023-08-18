@@ -12,7 +12,7 @@ Application Options:
       --insecure                        Do not check TLS certificates from provider
       --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
+      --client-passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
@@ -68,9 +68,6 @@ type 2: error
 ```
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise.
-
-Using the `client-passphrase` option may lead to a
-[security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
 
 The option `timerange` allows to only check advisories from a given time interval.
 It is only allowed to specify one off them. 
