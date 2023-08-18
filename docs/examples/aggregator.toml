@@ -42,7 +42,7 @@ insecure = true
   write_indices = true
   client_cert = "./../devca1/testclient1.crt"
   client_key = "./../devca1/testclient1-key.pem"
-#  client_passphrase =
+#  client_passphrase = # Limited and experimental, see downloader doc.
 #  header =
 
 [[providers]]

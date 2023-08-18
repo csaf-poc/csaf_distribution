@@ -98,7 +98,7 @@ allow_single_provider   // debugging option (default false)
 ignorepattern           // patterns of advisory URLs to be ignored (see checker doc for details)
 client_cert             // path to client certificate to access access-protected advisories
 client_key              // path to client key to access access-protected advisories
-client_passphrase       // client passphrase to access access-protected advisories
+client_passphrase       // optional client cert passphrase (limited, experimental, see downloader doc)
 header                  // adds extra HTTP header fields to the client
 timerange               // Accepted time range of advisories to handle. See checker doc for details.
 ```

@@ -29,7 +29,7 @@ type config struct {
 	IgnoreSignatureCheck bool              `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
 	ClientCert           *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
 	ClientKey            *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
-	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client certificate" value-name:"PASSPHRASE" toml:"client_passphrase"`
+	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
 	Verbose              bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
 	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`

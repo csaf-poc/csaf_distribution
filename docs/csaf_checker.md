@@ -12,7 +12,7 @@ Application Options:
       --insecure                        Do not check TLS certificates from provider
       --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
       --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE    Optional passphrase for the client certificate
+      --client-passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
