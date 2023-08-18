@@ -103,7 +103,7 @@ of this name. Otherwise the advisories are each stored in a folder named
 by the year they are from.
 
 You can ignore certain advisories while downloading by specifying a list
-of regular expressions to match their URLs by using the `ignorepattern`
+of regular expressions[^1] to match their URLs by using the `ignorepattern`
 option.
 
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
@@ -126,3 +126,5 @@ to protect the client certificate's private key with a passphrase.
 Because the passphrase has to be accessible to the process anyway to run
 unattented. In this situation the processing environment should be secured
 properly instead.
+
+[^1]: Accepted syntax is described [here](https://github.com/google/re2/wiki/Syntax).

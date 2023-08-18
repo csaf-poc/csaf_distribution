@@ -78,6 +78,8 @@ func (w *worker) mirrorInternal() (*csaf.AggregatorCSAFProvider, error) {
 		w.metadataProvider,
 		base)
 
+	afp.AgeAccept = w.provider.ageAccept(w.processor.cfg)
+
 	if err := afp.Process(w.mirrorFiles); err != nil {
 		return nil, err
 	}
@@ -494,6 +496,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 	yearDirs := make(map[int]string)
 
 	for _, file := range files {
+
 		u, err := url.Parse(file.URL())
 		if err != nil {
 			log.Printf("error: %s\n", err)
