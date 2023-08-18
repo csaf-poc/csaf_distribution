@@ -69,7 +69,8 @@ worker              = 2
 validatorpreset     = ["mandatory"]
 ```
 
-Using the `client-passphrase` option may imply an [security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
+Using the `client-passphrase` option may lead to a
+[security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
 
 The `timerange` parameter enables downloading advisories which last changes falls
 into a given intervall. There are three possible notations:

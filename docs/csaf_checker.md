@@ -69,7 +69,8 @@ type 2: error
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise.
 
-Using the `client-passphrase` option may imply an [security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
+Using the `client-passphrase` option may lead to a
+[security issue](https://pkg.go.dev/crypto/x509@go1.20.6#DecryptPEMBlock).
 
 The option `timerange` allows to only check advisories from a given time interval.
 It is only allowed to specify one off them. 
