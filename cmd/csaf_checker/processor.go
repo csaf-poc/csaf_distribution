@@ -879,7 +879,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 			p.badIndices.error("Fetching %s failed. Status code %d (%s)",
 				index, res.StatusCode, res.Status)
 		} else {
-			p.badIndices.warn("Fetching index.txt failed: %v not found.", index)
+			p.badIndices.error("Fetching index.txt failed: %v not found.", index)
 		}
 		return errContinue
 	}
@@ -942,7 +942,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			p.badChanges.error("Fetching %s failed. Status code %d (%s)",
 				changes, res.StatusCode, res.Status)
 		} else {
-			p.badChanges.warn("Fetching changes.csv failed: %v not found.", changes)
+			p.badChanges.error("Fetching changes.csv failed: %v not found.", changes)
 		}
 		return errContinue
 	}
@@ -1039,6 +1039,13 @@ func (p *processor) checkCSAFs(_ string) error {
 		}
 		// check for service category document
 		p.serviceCheck(feeds)
+	} else {
+		p.badROLIEFeed.use()
+		p.badROLIEFeed.error("ROLIE feed based distribution was not used.")
+		p.badROLIECategory.use()
+		p.badROLIECategory.warn("No ROLIE category document found.")
+		p.badROLIEService.use()
+		p.badROLIEService.warn("No ROLIE service document found.")
 	}
 
 	// No rolie feeds -> try directory_urls.
@@ -1083,6 +1090,10 @@ func (p *processor) checkCSAFs(_ string) error {
 		}
 	}
 
+	if !p.badFolders.used() {
+		p.badFolders.use()
+		p.badFolders.error("No checks performed on whether files are within the right folders.")
+	}
 	return nil
 }
 

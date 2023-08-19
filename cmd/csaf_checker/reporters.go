@@ -288,10 +288,6 @@ func (r *dnsPathReporter) report(p *processor, domain *Domain) {
 
 func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badFolders.used() {
-		req.message(InfoType, "No checks if files are in right folders were performed.")
-		return
-	}
 	if len(p.badFolders) == 0 {
 		req.message(InfoType, "All CSAF files are in the right folders.")
 		return
@@ -302,7 +298,7 @@ func (r *oneFolderPerYearReport) report(p *processor, domain *Domain) {
 func (r *indexReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badIndices.used() {
-		req.message(InfoType, "No index.txt checked.")
+		req.message(ErrorType, "No index.txt checked.")
 		return
 	}
 	if len(p.badIndices) == 0 {
@@ -315,7 +311,7 @@ func (r *indexReporter) report(p *processor, domain *Domain) {
 func (r *changesReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badChanges.used() {
-		req.message(InfoType, "No changes.csv checked.")
+		req.message(ErrorType, "No changes.csv checked.")
 		return
 	}
 	if len(p.badChanges) == 0 {
@@ -328,7 +324,7 @@ func (r *changesReporter) report(p *processor, domain *Domain) {
 func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badDirListings.used() {
-		req.message(InfoType, "No directory listings checked.")
+		req.message(WarnType, "No directory listings checked.")
 		return
 	}
 	if len(p.badDirListings) == 0 {
@@ -344,10 +340,6 @@ func (r *directoryListingsReporter) report(p *processor, domain *Domain) {
 // of the "Requirement" struct as a result of that.
 func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
-	if !p.badROLIEFeed.used() {
-		req.message(InfoType, "No checks on the validity of ROLIE feeds performed.")
-		return
-	}
 	if len(p.badROLIEFeed) == 0 {
 		req.message(InfoType, "All checked ROLIE feeds validated fine.")
 		return
@@ -362,7 +354,7 @@ func (r *rolieFeedReporter) report(p *processor, domain *Domain) {
 func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badROLIEService.used() {
-		req.message(InfoType, "ROLIE service document was not checked.")
+		req.message(WarnType, "ROLIE service document was not checked.")
 		return
 	}
 	if len(p.badROLIEService) == 0 {
@@ -381,7 +373,7 @@ func (r *rolieServiceReporter) report(p *processor, domain *Domain) {
 func (r *rolieCategoryReporter) report(p *processor, domain *Domain) {
 	req := r.requirement(domain)
 	if !p.badROLIECategory.used() {
-		req.message(InfoType, "No checks on the existence of ROLIE category documents performed.")
+		req.message(WarnType, "No checks on the existence of ROLIE category documents performed.")
 		return
 	}
 	if len(p.badROLIECategory) == 0 {
