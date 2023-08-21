@@ -3,7 +3,7 @@
 ### Usage
 
 ```
-  csaf_uploader [OPTIONS]
+csaf_uploader [OPTIONS]
 
 Application Options:
   -a, --action=[upload|create]              Action to perform (default: upload)
@@ -20,7 +20,7 @@ Application Options:
   -i, --password-interactive                Enter password interactively
   -I, --passphrase-interactive              Enter OpenPGP key passphrase interactively
       --insecure                            Do not check TLS certificates from provider
-  -c, --config=INI-FILE                     Path to config ini file
+  -c, --config=TOML-FILE                    Path to config TOML file
       --version                             Display version of the binary
 
 Help Options:
@@ -47,16 +47,16 @@ By default csaf_uploader will try to load a config file
 from the following places:
 
 ```
-    "~/.config/csaf/uploader.ini",
-    "~/.csaf_uploader.ini",
-    "csaf_uploader.ini",
+    "~/.config/csaf/uploader.toml",
+    "~/.csaf_uploader.toml",
+    "csaf_uploader.toml",
 ```
 
-The command line options can be written in the init file, except:
+The command line options can be written in the config file, except:
 `password-interactive`, `passphrase-interactive` and `config`.
 An example:
 
 ```
-action=create
-u=https://localhost/cgi-bin/csaf_provider.go
+action = create
+url    = https://localhost/cgi-bin/csaf_provider.go
 ```
