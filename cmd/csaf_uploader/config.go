@@ -140,8 +140,8 @@ func loadOpenPGPKey(filename string) (*crypto.Key, error) {
 	return crypto.NewKeyFromArmoredReader(f)
 }
 
-// prepareKey loads the configure OpenPGP key.
-func (cfg *config) prepareKey() error {
+// prepareOpenPGPKey loads the configured OpenPGP key.
+func (cfg *config) prepareOpenPGPKey() error {
 	if cfg.Action != "upload" || cfg.Key == nil {
 		return nil
 	}
@@ -179,7 +179,7 @@ func (cfg *config) prepare() error {
 	for _, prepare := range []func(*config) error{
 		(*config).prepareCertificates,
 		(*config).prepareInteractive,
-		(*config).prepareKey,
+		(*config).prepareOpenPGPKey,
 		(*config).preparePassword,
 	} {
 		if err := prepare(cfg); err != nil {
