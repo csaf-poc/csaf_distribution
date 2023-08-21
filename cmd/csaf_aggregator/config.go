@@ -132,8 +132,9 @@ type config struct {
 
 // configPaths are the potential file locations of the config file.
 var configPaths = []string{
-	// TODO: Make symmetric to checker and downloader.
-	"aggregator.toml",
+	"~/.config/csaf/aggregator.toml",
+	"~/.csaf_aggregator.toml",
+	"csaf_aggregator.toml",
 }
 
 // parseArgsConfig parse the command arguments and loads configuration
