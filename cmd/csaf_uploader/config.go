@@ -130,8 +130,8 @@ func (cfg *config) prepareInteractive() error {
 	return nil
 }
 
-// loadKey loads an OpenPGP key.
-func loadKey(filename string) (*crypto.Key, error) {
+// loadOpenPGPKey loads an OpenPGP key.
+func loadOpenPGPKey(filename string) (*crypto.Key, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -148,9 +148,8 @@ func (cfg *config) prepareKey() error {
 	if cfg.ExternalSigned {
 		return errors.New("refused to sign external signed files")
 	}
-	var err error
-	var key *crypto.Key
-	if key, err = loadKey(*cfg.Key); err != nil {
+	key, err := loadOpenPGPKey(*cfg.Key)
+	if err != nil {
 		return err
 	}
 	if cfg.Passphrase != nil {
