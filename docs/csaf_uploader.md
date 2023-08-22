@@ -3,7 +3,7 @@
 ### Usage
 
 ```
-  csaf_uploader [OPTIONS]
+csaf_uploader [OPTIONS]
 
 Application Options:
   -a, --action=[upload|create]              Action to perform (default: upload)
@@ -20,7 +20,7 @@ Application Options:
   -i, --password-interactive                Enter password interactively
   -I, --passphrase-interactive              Enter OpenPGP key passphrase interactively
       --insecure                            Do not check TLS certificates from provider
-  -c, --config=INI-FILE                     Path to config ini file
+  -c, --config=TOML-FILE                    Path to config TOML file
       --version                             Display version of the binary
 
 Help Options:
@@ -47,16 +47,25 @@ By default csaf_uploader will try to load a config file
 from the following places:
 
 ```
-    "~/.config/csaf/uploader.ini",
-    "~/.csaf_uploader.ini",
-    "csaf_uploader.ini",
+    "~/.config/csaf/uploader.toml",
+    "~/.csaf_uploader.toml",
+    "csaf_uploader.toml",
 ```
 
-The command line options can be written in the init file, except:
-`password-interactive`, `passphrase-interactive` and `config`.
-An example:
-
+The command line options can be written in the config file:
 ```
-action=create
-u=https://localhost/cgi-bin/csaf_provider.go
+action                 = "upload"
+url                    = "https://localhost/cgi-bin/csaf_provider.go"
+tlp                    = "csaf"
+external_signed        = false
+no_schema_check        = false
+# key                  = "/path/to/openpgp/key/file"       # not set by default
+# password             = "auth-key to access the provider" # not set by default
+# passphrase           = "OpenPGP passphrase"              # not set by default
+# client_cert          = "/path/to/client/cert"            # not set by default
+# client_key           = "/path/to/client/cert.key"        # not set by default
+# client_passphrase    = "client cert passphrase"          # not set by default
+password_interactive   = false
+passphrase_interactive = false
+insecure               = false
 ```
