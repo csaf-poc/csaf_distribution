@@ -36,12 +36,17 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type forwardFunc func(filename, advisory string,
+	status validationStatus,
+	sha256, sha512 string)
+
 type downloader struct {
 	cfg       *config
 	directory string
 	keys      *crypto.KeyRing
 	eval      *util.PathEval
 	validator csaf.RemoteValidator
+	forwarder forwardFunc
 	mkdirMu   sync.Mutex
 }
 
@@ -477,6 +482,20 @@ nextAdvisory:
 			if !rvr.Valid {
 				log.Printf("Remote validation of %q failed\n", file.URL())
 			}
+		}
+
+		// Send to forwarder
+		if d.forwarder != nil {
+			d.forwarder(
+				filename, data.String(),
+				hashValid,
+				string(s256Data),
+				string(s512Data))
+		}
+
+		if d.cfg.NoStore {
+			// Do not write locally.
+			continue
 		}
 
 		if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {

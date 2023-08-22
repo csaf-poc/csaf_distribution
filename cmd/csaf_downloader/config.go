@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	defaultWorker = 2
-	defaultPreset = "mandatory"
+	defaultWorker       = 2
+	defaultPreset       = "mandatory"
+	defaultForwardQueue = 5
 )
 
 type config struct {
@@ -32,6 +33,7 @@ type config struct {
 	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
 	Verbose              bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
+	NoStore              bool              `long:"nostore" short:"n" description:"Do not store files" toml:"no_store"`
 	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
 	Worker               int               `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
 	Range                *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
@@ -42,6 +44,11 @@ type config struct {
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validatorcache"`
 	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validatorpreset"`
+
+	ForwardURL      string      `long:"forwardurl" description:"URL of HTTP endpoint to forward downloads to" value-name:"URL" toml:"forward_url"`
+	ForwardHeader   http.Header `long:"forwardheader" description:"One or more extra HTTP header fields used by forwarding" toml:"forward_header"`
+	ForwardQueue    int         `long:"forwardqueue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
+	ForwardInsecure bool        `long:"forwardinsecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 

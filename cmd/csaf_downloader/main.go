@@ -30,6 +30,12 @@ func run(cfg *config, domains []string) error {
 	ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
 	defer stop()
 
+	if cfg.ForwardURL != "" {
+		f := newForwarder(cfg)
+		go f.run(ctx)
+		d.forwarder = f.forward
+	}
+
 	return d.run(ctx, domains)
 }
 
