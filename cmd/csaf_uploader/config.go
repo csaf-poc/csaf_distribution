@@ -44,8 +44,8 @@ type config struct {
 	ClientKey        *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem" toml:"client_key"`
 	ClientPassphrase *string `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see downloader doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 
-	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" toml:"-"`
-	PassphraseInteractive bool `short:"I" long:"passphrase-interactive" description:"Enter OpenPGP key passphrase interactively" toml:"-"`
+	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" toml:"password_interactive"`
+	PassphraseInteractive bool `short:"I" long:"passphrase-interactive" description:"Enter OpenPGP key passphrase interactively" toml:"passphrase_interactive"`
 
 	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
 

@@ -54,16 +54,18 @@ from the following places:
 
 The command line options can be written in the config file:
 ```
-action              = "upload"
-url                 = "https://localhost/cgi-bin/csaf_provider.go"
-tlp                 = "csaf"
-external_signed     = false
-no_schema_check     = false
-# key               = "/path/to/openpgp/key/file"       # not set by default
-# password          = "auth-key to access the provider" # not set by default
-# passphrase        = "OpenPGP passphrase"              # not set by default
-# client_cert       = "/path/to/client/cert"            # not set by default
-# client_key        = "/path/to/client/cert.key"        # not set by default
-# client_passphrase = "client cert passphrase"          # not set by default
-insecure            = false
+action                 = "upload"
+url                    = "https://localhost/cgi-bin/csaf_provider.go"
+tlp                    = "csaf"
+external_signed        = false
+no_schema_check        = false
+# key                  = "/path/to/openpgp/key/file"       # not set by default
+# password             = "auth-key to access the provider" # not set by default
+# passphrase           = "OpenPGP passphrase"              # not set by default
+# client_cert          = "/path/to/client/cert"            # not set by default
+# client_key           = "/path/to/client/cert.key"        # not set by default
+# client_passphrase    = "client cert passphrase"          # not set by default
+password_interactive   = false
+passphrase_interactive = false
+insecure               = false
 ```
