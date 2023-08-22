@@ -15,6 +15,15 @@ Help Options:
   -h, --help                Show this help message
 ```
 
+If no config file is explictly given the follwing places are searched for a config file:
+```
+~/.config/csaf/aggregator.toml
+~/.csaf_aggregator.toml
+csaf_aggregator.toml
+```
+
+with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
+
 Usage example for a single run, to test if the config is good:
 ```bash
 ./csaf_aggregator -c docs/examples/aggregator.toml
