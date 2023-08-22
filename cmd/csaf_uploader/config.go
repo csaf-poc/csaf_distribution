@@ -30,27 +30,27 @@ const (
 // The supported flag config of the uploader command line
 type config struct {
 	//lint:ignore SA5008 We are using choice twice: upload, create.
-	Action string `short:"a" long:"action" choice:"upload" choice:"create" description:"Action to perform"`
-	URL    string `short:"u" long:"url" description:"URL of the CSAF provider" value-name:"URL"`
+	Action string `short:"a" long:"action" choice:"upload" choice:"create" description:"Action to perform" toml:"action"`
+	URL    string `short:"u" long:"url" description:"URL of the CSAF provider" value-name:"URL" toml:"url"`
 	//lint:ignore SA5008 We are using choice many times: csaf, white, green, amber, red.
-	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" description:"TLP of the feed"`
-	ExternalSigned bool   `short:"x" long:"external-signed" description:"CSAF files are signed externally. Assumes .asc files beside CSAF files."`
-	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally."`
+	TLP            string `short:"t" long:"tlp" choice:"csaf" choice:"white" choice:"green" choice:"amber" choice:"red" description:"TLP of the feed" toml:"tlp"`
+	ExternalSigned bool   `short:"x" long:"external-signed" description:"CSAF files are signed externally. Assumes .asc files beside CSAF files." toml:"external_signed"`
+	NoSchemaCheck  bool   `short:"s" long:"no-schema-check" description:"Do not check files against CSAF JSON schema locally." toml:"no_schema_check"`
 
-	Key              *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE"`
-	Password         *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD"`
-	Passphrase       *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE"`
-	ClientCert       *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE.crt"`
-	ClientKey        *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem"`
-	ClientPassphrase *string `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see downloader doc)" value-name:"PASSPHRASE"`
+	Key              *string `short:"k" long:"key" description:"OpenPGP key to sign the CSAF files" value-name:"KEY-FILE" toml:"key"`
+	Password         *string `short:"p" long:"password" description:"Authentication password for accessing the CSAF provider" value-name:"PASSWORD" toml:"password"`
+	Passphrase       *string `short:"P" long:"passphrase" description:"Passphrase to unlock the OpenPGP key" value-name:"PASSPHRASE" toml:"passphrase"`
+	ClientCert       *string `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE.crt" toml:"client_cert"`
+	ClientKey        *string `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE.pem" toml:"client_key"`
+	ClientPassphrase *string `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see downloader doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 
 	PasswordInteractive   bool `short:"i" long:"password-interactive" description:"Enter password interactively" toml:"-"`
 	PassphraseInteractive bool `short:"I" long:"passphrase-interactive" description:"Enter OpenPGP key passphrase interactively" toml:"-"`
 
-	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider"`
+	Insecure bool `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
 
 	Config  string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
-	Version bool   `long:"version" description:"Display version of the binary"`
+	Version bool   `long:"version" description:"Display version of the binary" toml:"-"`
 
 	clientCerts []tls.Certificate
 	cachedAuth  string
