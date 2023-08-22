@@ -26,11 +26,9 @@ import (
 type validationStatus string
 
 const (
-	signatureValid   = validationStatus("signature_valid")
-	signatureInvalid = validationStatus("signature_invalid")
-	hashValid        = validationStatus("hash_valid")
-	hashInvalid      = validationStatus("hash_invalid")
-	notValidated     = validationStatus("not_validated")
+	validValidationStatus        = validationStatus("valid")
+	invalidValidationStatus      = validationStatus("invalid")
+	notValidatedValidationStatus = validationStatus("not_validated")
 )
 
 type forwarder struct {
@@ -118,7 +116,9 @@ func (f *forwarder) forward(
 				return
 			}
 			var part io.Writer
-			if part, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
+			if fname == "" {
+				err = writer.WriteField(name, content)
+			} else if part, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
 				_, err = part.Write([]byte(content))
 			}
 		}
@@ -137,12 +137,15 @@ func (f *forwarder) forward(
 			return nil, err
 		}
 
+		if err := writer.Close(); err != nil {
+			return nil, err
+		}
+
 		req, err := http.NewRequest(http.MethodPost, f.cfg.ForwardURL, body)
 		if err != nil {
 			return nil, err
 		}
 		contentType := writer.FormDataContentType()
-		log.Printf("debug: Content-Type: %s\n", contentType)
 		req.Header.Set("Content-Type", contentType)
 		return req, nil
 	}
@@ -160,7 +163,7 @@ func (f *forwarder) forward(
 			log.Printf("error: %v\n", err)
 			return
 		}
-		if res.StatusCode != http.StatusOK {
+		if res.StatusCode != http.StatusCreated {
 			// TODO: improve logging
 			defer res.Body.Close()
 			var msg strings.Builder
@@ -171,6 +174,8 @@ func (f *forwarder) forward(
 			}
 			log.Printf("error: %s: %q (%d)\n",
 				filename, msg.String()+dots, res.StatusCode)
+		} else {
+			log.Printf("info: forwarding %q succeeded\n", filename)
 		}
 	}
 

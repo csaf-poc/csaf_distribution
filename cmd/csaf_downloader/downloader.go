@@ -488,7 +488,7 @@ nextAdvisory:
 		if d.forwarder != nil {
 			d.forwarder(
 				filename, data.String(),
-				hashValid,
+				validValidationStatus,
 				string(s256Data),
 				string(s512Data))
 		}
