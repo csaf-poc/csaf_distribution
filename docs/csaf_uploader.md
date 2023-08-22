@@ -53,7 +53,7 @@ from the following places:
 ```
 
 The command line options can be written in the config file, except:
-`password-interactive`, `passphrase-interactive` and `config`.
+`version`, `password-interactive`, `passphrase-interactive` and `config`.
 An example:
 
 ```
