@@ -32,6 +32,13 @@ const (
 	notValidatedValidationStatus = validationStatus("not_validated")
 )
 
+func (vs *validationStatus) update(status validationStatus) {
+	// Cannot heal after it fails at least once.
+	if *vs != invalidValidationStatus {
+		*vs = status
+	}
+}
+
 // forwarder forwards downloaded advisories to a given
 // HTTP endpoint.
 type forwarder struct {

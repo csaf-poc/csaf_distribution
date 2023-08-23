@@ -424,14 +424,20 @@ nextAdvisory:
 			continue
 		}
 
+		valStatus := notValidatedValidationStatus
+
 		// Compare the checksums.
 		if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
 			log.Printf("SHA256 checksum of %s does not match.\n", file.URL())
+			valStatus.update(invalidValidationStatus)
+			// TODO: strict mode check
 			continue
 		}
 
 		if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
 			log.Printf("SHA512 checksum of %s does not match.\n", file.URL())
+			valStatus.update(invalidValidationStatus)
+			// TODO: strict mode check
 			continue
 		}
 
@@ -449,6 +455,8 @@ nextAdvisory:
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
 					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
 					if !d.cfg.IgnoreSignatureCheck {
+						valStatus.update(invalidValidationStatus)
+						// TODO: strict mode check
 						continue
 					}
 				}
@@ -458,11 +466,15 @@ nextAdvisory:
 		// Validate against CSAF schema.
 		if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
 			d.logValidationIssues(file.URL(), errors, err)
+			valStatus.update(invalidValidationStatus)
+			// TODO: strict mode check
 			continue
 		}
 
 		if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
 			log.Printf("Ignoring %s: %s.\n", file.URL(), err)
+			valStatus.update(invalidValidationStatus)
+			// TODO: strict mode check
 			continue
 		}
 
@@ -477,6 +489,9 @@ nextAdvisory:
 			}
 			if !rvr.Valid {
 				log.Printf("Remote validation of %q failed\n", file.URL())
+				valStatus.update(invalidValidationStatus)
+				// TODO: strict mode check
+				continue
 			}
 		}
 
@@ -484,7 +499,7 @@ nextAdvisory:
 		if d.forwarder != nil {
 			d.forwarder.forward(
 				filename, data.String(),
-				validValidationStatus,
+				valStatus,
 				string(s256Data),
 				string(s512Data))
 		}
