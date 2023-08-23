@@ -36,10 +36,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type forwardFunc func(filename, advisory string,
-	status validationStatus,
-	sha256, sha512 string)
-
 type downloader struct {
 	cfg       *config
 	directory string

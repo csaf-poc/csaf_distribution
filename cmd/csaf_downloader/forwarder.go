@@ -22,6 +22,8 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
+// validationStatus represents the validation status
+// known to the HTTP endpoint.
 type validationStatus string
 
 const (
@@ -30,12 +32,15 @@ const (
 	notValidatedValidationStatus = validationStatus("not_validated")
 )
 
+// forwarder forwards downloaded advisories to a given
+// HTTP endpoint.
 type forwarder struct {
 	cfg    *config
 	cmds   chan func(*forwarder)
 	client util.Client
 }
 
+// newForwarder creates a new forwarder.
 func newForwarder(cfg *config) *forwarder {
 	queue := max(1, cfg.ForwardQueue)
 	return &forwarder{
@@ -44,6 +49,7 @@ func newForwarder(cfg *config) *forwarder {
 	}
 }
 
+// run runs the forwarder. Meant to be used in a Go routine.
 func (f *forwarder) run() {
 	defer log.Println("debug: forwarder done")
 
@@ -52,10 +58,13 @@ func (f *forwarder) run() {
 	}
 }
 
+// close terminates the forwarder.
 func (f *forwarder) close() {
 	close(f.cmds)
 }
 
+// httpClient returns a cached HTTP client used for uploading
+// the advisories to the configured HTTP endpoint.
 func (f *forwarder) httpClient() util.Client {
 	if f.client != nil {
 		return f.client
@@ -91,11 +100,15 @@ func (f *forwarder) httpClient() util.Client {
 	return f.client
 }
 
+// replaceExt replaces the extension of a given filename.
 func replaceExt(fname, nExt string) string {
 	ext := filepath.Ext(fname)
 	return fname[:len(fname)-len(ext)] + nExt
 }
 
+// forward sends a given document with filename, status and
+// checksums to the forwarder. This is async to the degree
+// till the configured queue size is filled.
 func (f *forwarder) forward(
 	filename, doc string,
 	status validationStatus,
@@ -147,6 +160,7 @@ func (f *forwarder) forward(
 		return req, nil
 	}
 
+	// Run this in the main loop of the forwarder.
 	f.cmds <- func(f *forwarder) {
 		req, err := buildRequest()
 		if err != nil {
