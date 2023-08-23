@@ -1131,18 +1131,19 @@ func (p *processor) checkMissing(string) error {
 			}
 		}
 		// List error in all appropriate categories
-		if mistake&rolieMask != 0 {
-			p.badROLIEFeed.error("%s %s", f, strings.Join(where, ", "))
+		if mistake&(rolieMask|indexMask|changesMask|listingMask) == 0 {
+			continue
 		}
-		if mistake&indexMask != 0 {
-			p.badIndices.error("%s %s", f, strings.Join(where, ", "))
+		joined := strings.Join(where, ", ")
+		report := func(mask whereType, msgs *topicMessages) {
+			if mistake&mask != 0 {
+				msgs.error("%s %s", f, joined)
+			}
 		}
-		if mistake&changesMask != 0 {
-			p.badChanges.error("%s %s", f, strings.Join(where, ", "))
-		}
-		if mistake&listingMask != 0 {
-			p.badDirListings.error("%s %s", f, strings.Join(where, ", "))
-		}
+		report(rolieMask, &p.badROLIEFeed)
+		report(indexMask, &p.badIndices)
+		report(changesMask, &p.badChanges)
+		report(listingMask, &p.badDirListings)
 	}
 	return nil
 }
