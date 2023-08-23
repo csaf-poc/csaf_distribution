@@ -1143,11 +1143,6 @@ func (p *processor) checkMissing(string) error {
 		if mistake&listingMask != 0 {
 			p.badDirListings.error("%s %s", f, strings.Join(where, ", "))
 		}
-		// reset mistake
-		mistake &= rolieMask
-		mistake &= indexMask
-		mistake &= changesMask
-		mistake &= listingMask
 	}
 	return nil
 }
