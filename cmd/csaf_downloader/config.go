@@ -10,6 +10,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
@@ -19,9 +20,17 @@ import (
 )
 
 const (
-	defaultWorker       = 2
-	defaultPreset       = "mandatory"
-	defaultForwardQueue = 5
+	defaultWorker         = 2
+	defaultPreset         = "mandatory"
+	defaultForwardQueue   = 5
+	defaultValidationMode = validationStrict
+)
+
+type validationMode string
+
+const (
+	validationStrict = validationMode("strict")
+	validationUnsafe = validationMode("unsafe")
 )
 
 type config struct {
@@ -44,6 +53,9 @@ type config struct {
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validatorcache"`
 	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validatorpreset"`
+
+	//lint:ignore SA5008 We are using choice twice: strict, unsafe.
+	ValidationMode validationMode `long:"validationmode" short:"m" choice:"strict" choice:"unsafe" value-name:"MODE" description:"MODE how strict the validation is" toml:"validation_mode"`
 
 	ForwardURL      string      `long:"forwardurl" description:"URL of HTTP endpoint to forward downloads to" value-name:"URL" toml:"forward_url"`
 	ForwardHeader   http.Header `long:"forwardheader" description:"One or more extra HTTP header fields used by forwarding" toml:"forward_header"`
@@ -73,6 +85,8 @@ func parseArgsConfig() ([]string, *config, error) {
 		SetDefaults: func(cfg *config) {
 			cfg.Worker = defaultWorker
 			cfg.RemoteValidatorPresets = []string{defaultPreset}
+			cfg.ValidationMode = defaultValidationMode
+			cfg.ForwardQueue = defaultForwardQueue
 		},
 		// Re-establish default values if not set.
 		EnsureDefaults: func(cfg *config) {
@@ -82,9 +96,25 @@ func parseArgsConfig() ([]string, *config, error) {
 			if cfg.RemoteValidatorPresets == nil {
 				cfg.RemoteValidatorPresets = []string{defaultPreset}
 			}
+			switch cfg.ValidationMode {
+			case validationStrict, validationUnsafe:
+			default:
+				cfg.ValidationMode = validationStrict
+			}
 		},
 	}
 	return p.Parse()
+}
+
+// UnmarshalText implements [encoding/text.TextUnmarshaler].
+func (vm *validationMode) UnmarshalText(text []byte) error {
+	switch m := validationMode(text); m {
+	case validationStrict, validationUnsafe:
+		*vm = m
+	default:
+		return fmt.Errorf(`invalid value %q (expected "strict" or "unsafe"`, m)
+	}
+	return nil
 }
 
 // ignoreFile returns true if the given URL should not be downloaded.

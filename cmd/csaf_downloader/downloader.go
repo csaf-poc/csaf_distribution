@@ -456,7 +456,6 @@ nextAdvisory:
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
 					if !d.cfg.IgnoreSignatureCheck {
-						// TODO: strict mode check
 						return fmt.Errorf("cannot verify signature for %s: %v", file.URL(), err)
 					}
 				}
@@ -513,8 +512,9 @@ nextAdvisory:
 				// TODO: Improve logging.
 				log.Printf("check failed: %v\n", err)
 				valStatus.update(invalidValidationStatus)
-				// TODO strict mode check
-				continue nextAdvisory
+				if d.cfg.ValidationMode == validationStrict {
+					continue nextAdvisory
+				}
 			}
 		}
 		valStatus.update(validValidationStatus)
