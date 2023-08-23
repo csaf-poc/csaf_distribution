@@ -10,7 +10,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"io"
 	"log"
@@ -45,20 +44,16 @@ func newForwarder(cfg *config) *forwarder {
 	}
 }
 
-func (f *forwarder) run(ctx context.Context) {
-	defer func() {
-		log.Println("DEBUG: forwarder done")
-	}()
+func (f *forwarder) run() {
+	defer log.Println("debug: forwarder done")
 
-stop:
-	for {
-		select {
-		case cmd := <-f.cmds:
-			cmd(f)
-		case <-ctx.Done():
-			break stop
-		}
+	for cmd := range f.cmds {
+		cmd(f)
 	}
+}
+
+func (f *forwarder) close() {
+	close(f.cmds)
 }
 
 func (f *forwarder) httpClient() util.Client {
@@ -150,7 +145,7 @@ func (f *forwarder) forward(
 		return req, nil
 	}
 
-	cmd := func(f *forwarder) {
+	f.cmds <- func(f *forwarder) {
 		req, err := buildRequest()
 		if err != nil {
 			// TODO: improve logging
@@ -177,11 +172,5 @@ func (f *forwarder) forward(
 		} else {
 			log.Printf("info: forwarding %q succeeded\n", filename)
 		}
-	}
-
-	select {
-	case f.cmds <- cmd:
-	default:
-		log.Println("warn: forwarding failed")
 	}
 }

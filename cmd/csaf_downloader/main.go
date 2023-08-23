@@ -32,8 +32,9 @@ func run(cfg *config, domains []string) error {
 
 	if cfg.ForwardURL != "" {
 		f := newForwarder(cfg)
-		go f.run(ctx)
-		d.forwarder = f.forward
+		go f.run()
+		defer f.close()
+		d.forwarder = f
 	}
 
 	return d.run(ctx, domains)

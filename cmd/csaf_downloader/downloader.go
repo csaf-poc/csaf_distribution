@@ -46,7 +46,7 @@ type downloader struct {
 	keys      *crypto.KeyRing
 	eval      *util.PathEval
 	validator csaf.RemoteValidator
-	forwarder forwardFunc
+	forwarder *forwarder
 	mkdirMu   sync.Mutex
 }
 
@@ -486,7 +486,7 @@ nextAdvisory:
 
 		// Send to forwarder
 		if d.forwarder != nil {
-			d.forwarder(
+			d.forwarder.forward(
 				filename, data.String(),
 				validValidationStatus,
 				string(s256Data),
