@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1117,7 +1116,7 @@ func (p *processor) checkMissing(string) error {
 		v := p.alreadyChecked[f]
 		var where []string
 		// mistake contains which requirements are broken
-		var mistake []string
+		mistake := util.Set[whereType]{}
 		for mask := rolieMask; mask <= listingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
@@ -1126,22 +1125,22 @@ func (p *processor) checkMissing(string) error {
 				} else {
 					in = "not in"
 					// Which file is missing entries?
-					mistake = append(mistake, mask.String())
+					mistake.Add(mask)
 				}
 				where = append(where, in+" "+mask.String())
 			}
 		}
 		// List error in all appropriate categories
-		if slices.Contains(mistake, "ROLIE") {
+		if mistake.Contains(rolieMask) {
 			p.badROLIEFeed.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if slices.Contains(mistake, "index.txt") {
+		if mistake.Contains(indexMask) {
 			p.badIndices.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if slices.Contains(mistake, "changes.csv") {
+		if mistake.Contains(changesMask) {
 			p.badChanges.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if slices.Contains(mistake, "directory listing") {
+		if mistake.Contains(listingMask) {
 			p.badDirListings.error("%s %s", f, strings.Join(where, ", "))
 		}
 		// reset mistake
