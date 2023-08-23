@@ -106,26 +106,28 @@ func (f *forwarder) forward(
 		writer := multipart.NewWriter(body)
 
 		var err error
-		send := func(name, fname, mimeType, content string) {
+		part := func(name, fname, mimeType, content string) {
 			if err != nil {
 				return
 			}
-			var part io.Writer
 			if fname == "" {
 				err = writer.WriteField(name, content)
-			} else if part, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
-				_, err = part.Write([]byte(content))
+				return
+			}
+			var w io.Writer
+			if w, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
+				_, err = w.Write([]byte(content))
 			}
 		}
 
 		base := filepath.Base(filename)
-		send("advisory", base, "application/json", doc)
-		send("validation_status", "", "text/plain", string(status))
+		part("advisory", base, "application/json", doc)
+		part("validation_status", "", "text/plain", string(status))
 		if sha256 != "" {
-			send("hash-256", replaceExt(base, ".sha256"), "text/plain", sha256)
+			part("hash-256", replaceExt(base, ".sha256"), "text/plain", sha256)
 		}
 		if sha512 != "" {
-			send("hash-512", replaceExt(base, ".sha512"), "text/plain", sha512)
+			part("hash-512", replaceExt(base, ".sha512"), "text/plain", sha512)
 		}
 
 		if err != nil {
