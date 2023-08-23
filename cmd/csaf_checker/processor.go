@@ -1116,7 +1116,7 @@ func (p *processor) checkMissing(string) error {
 		v := p.alreadyChecked[f]
 		var where []string
 		// mistake contains which requirements are broken
-		mistake := util.Set[whereType]{}
+		var mistake whereType
 		for mask := rolieMask; mask <= listingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
@@ -1125,26 +1125,29 @@ func (p *processor) checkMissing(string) error {
 				} else {
 					in = "not in"
 					// Which file is missing entries?
-					mistake.Add(mask)
+					mistake |= mask
 				}
 				where = append(where, in+" "+mask.String())
 			}
 		}
 		// List error in all appropriate categories
-		if mistake.Contains(rolieMask) {
+		if mistake&rolieMask != 0 {
 			p.badROLIEFeed.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if mistake.Contains(indexMask) {
+		if mistake&indexMask != 0 {
 			p.badIndices.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if mistake.Contains(changesMask) {
+		if mistake&changesMask != 0 {
 			p.badChanges.error("%s %s", f, strings.Join(where, ", "))
 		}
-		if mistake.Contains(listingMask) {
+		if mistake&listingMask != 0 {
 			p.badDirListings.error("%s %s", f, strings.Join(where, ", "))
 		}
 		// reset mistake
-		mistake = nil
+		mistake &= rolieMask
+		mistake &= indexMask
+		mistake &= changesMask
+		mistake &= listingMask
 	}
 	return nil
 }
