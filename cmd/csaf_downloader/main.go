@@ -11,7 +11,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -47,7 +47,7 @@ func main() {
 	options.ErrorCheck(cfg.prepare())
 
 	if len(domains) == 0 {
-		log.Println("No domains given.")
+		slog.Info("No domains given.")
 		return
 	}
 

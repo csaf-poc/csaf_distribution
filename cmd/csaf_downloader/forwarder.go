@@ -12,7 +12,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"io"
-	"log"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -58,7 +58,7 @@ func newForwarder(cfg *config) *forwarder {
 
 // run runs the forwarder. Meant to be used in a Go routine.
 func (f *forwarder) run() {
-	defer log.Println("debug: forwarder done")
+	defer slog.Debug("forwarder done")
 
 	for cmd := range f.cmds {
 		cmd(f)
@@ -172,13 +172,15 @@ func (f *forwarder) forward(
 		req, err := buildRequest()
 		if err != nil {
 			// TODO: improve logging
-			log.Printf("error: %v\n", err)
+			slog.Error("building forward Request failed",
+				"error", err)
 			return
 		}
 		res, err := f.httpClient().Do(req)
 		if err != nil {
 			// TODO: improve logging
-			log.Printf("error: %v\n", err)
+			slog.Error("sending forward request failed",
+				"error", err)
 			return
 		}
 		if res.StatusCode != http.StatusCreated {
@@ -190,10 +192,15 @@ func (f *forwarder) forward(
 			if msg.Len() >= 512 {
 				dots = "..."
 			}
-			log.Printf("error: %s: %q (%d)\n",
-				filename, msg.String()+dots, res.StatusCode)
+			slog.Error("forwarding failed",
+				"filename", filename,
+				"body", msg.String()+dots,
+				"status_code", res.StatusCode)
+
 		} else {
-			log.Printf("info: forwarding %q succeeded\n", filename)
+			slog.Debug(
+				"forwarding succeeded",
+				"filename", filename)
 		}
 	}
 }

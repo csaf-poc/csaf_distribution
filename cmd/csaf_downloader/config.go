@@ -11,7 +11,10 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
@@ -24,6 +27,8 @@ const (
 	defaultPreset         = "mandatory"
 	defaultForwardQueue   = 5
 	defaultValidationMode = validationStrict
+	defaultLogFile        = "csaf_downloader.log"
+	defaultLogLevel       = logLevelInfo
 )
 
 type validationMode string
@@ -31,6 +36,15 @@ type validationMode string
 const (
 	validationStrict = validationMode("strict")
 	validationUnsafe = validationMode("unsafe")
+)
+
+type logLevel string
+
+const (
+	logLevelDebug = logLevel("debug")
+	logLevelInfo  = logLevel("info")
+	logLevelWarn  = logLevel("warn")
+	logLevelError = logLevel("error")
 )
 
 type config struct {
@@ -62,6 +76,10 @@ type config struct {
 	ForwardQueue    int         `long:"forwardqueue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
 	ForwardInsecure bool        `long:"forwardinsecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
 
+	LogFile string `long:"logfile" description:"FILE to log download to" value-name:"FILE" toml:"log_file"`
+	//lint:ignore SA5008 We are using choice or than once: debug, info, warn, error
+	LogLevel logLevel `long:"loglevel" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
+
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
 	clientCerts   []tls.Certificate
@@ -87,6 +105,8 @@ func parseArgsConfig() ([]string, *config, error) {
 			cfg.RemoteValidatorPresets = []string{defaultPreset}
 			cfg.ValidationMode = defaultValidationMode
 			cfg.ForwardQueue = defaultForwardQueue
+			cfg.LogFile = defaultLogFile
+			cfg.LogLevel = defaultLogLevel
 		},
 		// Re-establish default values if not set.
 		EnsureDefaults: func(cfg *config) {
@@ -117,9 +137,58 @@ func (vm *validationMode) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// UnmarshalText implements [encoding/text.TextUnmarshaler].
+func (ll *logLevel) UnmarshalText(text []byte) error {
+	switch l := logLevel(text); l {
+	case logLevelDebug, logLevelInfo, logLevelWarn, logLevelError:
+		*ll = l
+	default:
+		return fmt.Errorf(`invalid value %q (expected "debug", "info", "warn", "error")`, l)
+	}
+	return nil
+}
+
 // ignoreFile returns true if the given URL should not be downloaded.
 func (cfg *config) ignoreURL(u string) bool {
 	return cfg.ignorePattern.Matches(u)
+}
+
+// slogLevel converts logLevel to [slog.Level].
+func (ll logLevel) slogLevel() slog.Level {
+	switch ll {
+	case logLevelDebug:
+		return slog.LevelDebug
+	case logLevelInfo:
+		return slog.LevelInfo
+	case logLevelWarn:
+		return slog.LevelWarn
+	case logLevelError:
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
+// prepareLogging sets up the structured logging.
+func (cfg *config) prepareLogging() error {
+	var w io.Writer
+	if cfg.LogFile == "" {
+		w = os.Stderr
+	} else {
+		f, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		w = f
+	}
+	ho := slog.HandlerOptions{
+		//AddSource: true,
+		Level: cfg.LogLevel.slogLevel(),
+	}
+	handler := slog.NewJSONHandler(w, &ho)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+	return nil
 }
 
 // compileIgnorePatterns compiles the configure patterns to be ignored.
@@ -145,8 +214,14 @@ func (cfg *config) prepareCertificates() error {
 
 // prepare prepares internal state of a loaded configuration.
 func (cfg *config) prepare() error {
-	if err := cfg.prepareCertificates(); err != nil {
-		return err
+	for _, prepare := range []func(*config) error{
+		(*config).prepareLogging,
+		(*config).prepareCertificates,
+		(*config).compileIgnorePatterns,
+	} {
+		if err := prepare(cfg); err != nil {
+			return err
+		}
 	}
-	return cfg.compileIgnorePatterns()
+	return nil
 }

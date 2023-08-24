@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,9 +31,10 @@ import (
 	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"golang.org/x/time/rate"
+
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
-	"golang.org/x/time/rate"
 )
 
 type downloader struct {
@@ -130,8 +131,9 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	if d.cfg.Verbose {
 		for i := range lpmd.Messages {
-			log.Printf("Loading provider-metadata.json for %q: %s\n",
-				domain, lpmd.Messages[i].Message)
+			slog.Info("Loading provider-metadata.json",
+				"domain", domain,
+				"message", lpmd.Messages[i].Message)
 		}
 	}
 
@@ -247,7 +249,9 @@ func (d *downloader) loadOpenPGPKeys(
 		}
 		up, err := url.Parse(*key.URL)
 		if err != nil {
-			log.Printf("Invalid URL '%s': %v", *key.URL, err)
+			slog.Warn("Invalid URL",
+				"url", *key.URL,
+				"error", err)
 			continue
 		}
 
@@ -255,12 +259,18 @@ func (d *downloader) loadOpenPGPKeys(
 
 		res, err := client.Get(u)
 		if err != nil {
-			log.Printf("Fetching public OpenPGP key %s failed: %v.", u, err)
+			slog.Warn(
+				"Fetching public OpenPGP key failed",
+				"url", u,
+				"error", err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			log.Printf("Fetching public OpenPGP key %s status code: %d (%s)",
-				u, res.StatusCode, res.Status)
+			slog.Warn(
+				"Fetching public OpenPGP key failed",
+				"url", u,
+				"status_code", res.StatusCode,
+				"status", res.Status)
 			continue
 		}
 
@@ -270,18 +280,25 @@ func (d *downloader) loadOpenPGPKeys(
 		}()
 
 		if err != nil {
-			log.Printf("Reading public OpenPGP key %s failed: %v", u, err)
+			slog.Warn(
+				"Reading public OpenPGP key failed",
+				"url", u,
+				"error", err)
 			continue
 		}
 
 		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
-			log.Printf(
-				"Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
+			slog.Warn(
+				"Fingerprint of public OpenPGP key does not match remotely loaded",
+				"url", u)
 			continue
 		}
 		if d.keys == nil {
 			if keyring, err := crypto.NewKeyRing(ckey); err != nil {
-				log.Printf("Creating store for public OpenPGP key %s failed: %v.", u, err)
+				slog.Warn(
+					"Creating store for public OpenPGP key failed",
+					"url", u,
+					"error", err)
 			} else {
 				d.keys = keyring
 			}
@@ -295,16 +312,20 @@ func (d *downloader) loadOpenPGPKeys(
 // logValidationIssues logs the issues reported by the advisory schema validation.
 func (d *downloader) logValidationIssues(url string, errors []string, err error) {
 	if err != nil {
-		log.Printf("Failed to validate %s: %v", url, err)
+		slog.Error("Failed to validate",
+			"url", url,
+			"error", err)
 		return
 	}
 	if len(errors) > 0 {
 		if d.cfg.Verbose {
-			log.Printf("CSAF file %s has validation errors: %s\n",
-				url, strings.Join(errors, ", "))
+			slog.Error("CSAF file has validation errors",
+				"url", url,
+				"error", strings.Join(errors, ", "))
 		} else {
-			log.Printf("CSAF file %s has %d validation errors.\n",
-				url, len(errors))
+			slog.Error("CSAF file has validation errors",
+				"url", url,
+				"count", len(errors))
 		}
 	}
 }
@@ -342,41 +363,48 @@ nextAdvisory:
 
 		u, err := url.Parse(file.URL())
 		if err != nil {
-			log.Printf("Ignoring invalid URL: %s: %v\n", file.URL(), err)
+			slog.Warn("Ignoring invalid URL",
+				"url", file.URL(),
+				"error", err)
 			continue
 		}
 
 		// Ignore not conforming filenames.
 		filename := filepath.Base(u.Path)
 		if !util.ConformingFileName(filename) {
-			log.Printf("Not conforming filename %q. Ignoring.\n", filename)
+			slog.Warn("Ignoring none conforming filename",
+				"filename", filename)
 			continue
 		}
 
 		if d.cfg.ignoreURL(file.URL()) {
 			if d.cfg.Verbose {
-				log.Printf("Ignoring %q.\n", file.URL())
+				slog.Warn("Ignoring URL", "url", file.URL())
 			}
 			continue
 		}
 
 		resp, err := client.Get(file.URL())
 		if err != nil {
-			log.Printf("WARN: cannot get '%s': %v\n", file.URL(), err)
+			slog.Warn("Cannot GET",
+				"url", file.URL(),
+				"error", err)
 			continue
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			log.Printf("WARN: cannot load %s: %s (%d)\n",
-				file.URL(), resp.Status, resp.StatusCode)
+			slog.Warn("Cannot load",
+				"url", file.URL(),
+				"status", resp.Status,
+				"status_code", resp.StatusCode)
 			continue
 		}
 
 		// Warn if we do not get JSON.
 		if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-			log.Printf(
-				"WARN: The content type of %s should be 'application/json' but is '%s'\n",
-				file.URL(), ct)
+			slog.Warn("Content type is not 'application/json'",
+				"url", file.URL(),
+				"content_type", ct)
 		}
 
 		var (
@@ -390,7 +418,9 @@ nextAdvisory:
 		// Only hash when we have a remote counter part we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
 			if d.cfg.Verbose {
-				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA256URL(), err)
+				slog.Warn("Cannot fetch SHA256",
+					"url", file.SHA256URL(),
+					"error", err)
 			}
 		} else {
 			s256 = sha256.New()
@@ -399,7 +429,9 @@ nextAdvisory:
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
 			if d.cfg.Verbose {
-				log.Printf("WARN: cannot fetch %s: %v\n", file.SHA512URL(), err)
+				slog.Warn("Cannot fetch SHA512",
+					"url", file.SHA512URL(),
+					"error", err)
 			}
 		} else {
 			s512 = sha512.New()
@@ -420,7 +452,9 @@ nextAdvisory:
 			tee := io.TeeReader(resp.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
-			log.Printf("Downloading %s failed: %v", file.URL(), err)
+			slog.Warn("Downloading failed",
+				"url", file.URL(),
+				"error", err)
 			continue
 		}
 
@@ -449,8 +483,9 @@ nextAdvisory:
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
 				if d.cfg.Verbose {
-					log.Printf("downloading signature '%s' failed: %v\n",
-						file.SignURL(), err)
+					slog.Warn("Downloading signature failed",
+						"url", file.SignURL(),
+						"error", err)
 				}
 			}
 			if sign != nil {
@@ -509,8 +544,7 @@ nextAdvisory:
 			remoteValidatorCheck,
 		} {
 			if err := check(); err != nil {
-				// TODO: Improve logging.
-				log.Printf("check failed: %v\n", err)
+				slog.Error("Validation check failed", "error", err)
 				valStatus.update(invalidValidationStatus)
 				if d.cfg.ValidationMode == validationStrict {
 					continue nextAdvisory
@@ -534,7 +568,8 @@ nextAdvisory:
 		}
 
 		if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {
-			log.Printf("Cannot extract initial_release_date from advisory '%s'\n", file.URL())
+			slog.Warn("Cannot extract initial_release_date from advisory",
+				"url", file.URL())
 			initialReleaseDate = time.Now()
 		}
 		initialReleaseDate = initialReleaseDate.UTC()
@@ -577,7 +612,7 @@ nextAdvisory:
 			}
 		}
 
-		log.Printf("Written advisory '%s'.\n", path)
+		slog.Info("Written advisory", "path", path)
 	}
 }
 
