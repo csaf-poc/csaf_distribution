@@ -28,7 +28,7 @@ const (
 	defaultPreset         = "mandatory"
 	defaultForwardQueue   = 5
 	defaultValidationMode = validationStrict
-	defaultLogFile        = "csaf_downloader.log"
+	defaultLogFile        = "downloader.log"
 	defaultLogLevel       = logLevelInfo
 )
 
