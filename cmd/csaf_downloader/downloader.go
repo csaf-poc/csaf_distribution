@@ -42,6 +42,7 @@ type downloader struct {
 	keys      *crypto.KeyRing
 	eval      *util.PathEval
 	validator csaf.RemoteValidator
+	forwarder *forwarder
 	mkdirMu   sync.Mutex
 }
 
@@ -424,18 +425,26 @@ nextAdvisory:
 		}
 
 		// Compare the checksums.
-		if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
-			log.Printf("SHA256 checksum of %s does not match.\n", file.URL())
-			continue
+		s256Check := func() error {
+			if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
+				return fmt.Errorf("SHA256 checksum of %s does not match", file.URL())
+			}
+			return nil
 		}
 
-		if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
-			log.Printf("SHA512 checksum of %s does not match.\n", file.URL())
-			continue
+		s512Check := func() error {
+			if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
+				return fmt.Errorf("SHA512 checksum of %s does not match", file.URL())
+			}
+			return nil
 		}
 
-		// Only check signature if we have loaded keys.
-		if d.keys != nil {
+		// Validate OpenPGG signature.
+		keysCheck := func() error {
+			// Only check signature if we have loaded keys.
+			if d.keys == nil {
+				return nil
+			}
 			var sign *crypto.PGPSignature
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
@@ -446,37 +455,82 @@ nextAdvisory:
 			}
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
-					log.Printf("Cannot verify signature for %s: %v\n", file.URL(), err)
 					if !d.cfg.IgnoreSignatureCheck {
-						continue
+						return fmt.Errorf("cannot verify signature for %s: %v", file.URL(), err)
 					}
 				}
 			}
+			return nil
 		}
 
 		// Validate against CSAF schema.
-		if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
-			d.logValidationIssues(file.URL(), errors, err)
-			continue
+		schemaCheck := func() error {
+			if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
+				d.logValidationIssues(file.URL(), errors, err)
+				return fmt.Errorf("schema validation for %q failed", file.URL())
+			}
+			return nil
 		}
 
-		if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
-			log.Printf("Ignoring %s: %s.\n", file.URL(), err)
-			continue
+		// Validate if filename is conforming.
+		filenameCheck := func() error {
+			if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
+				return fmt.Errorf("filename not conforming %s: %s", file.URL(), err)
+			}
+			return nil
 		}
 
-		// Validate against remote validator
-		if d.validator != nil {
+		// Validate against remote validator.
+		remoteValidatorCheck := func() error {
+			if d.validator == nil {
+				return nil
+			}
 			rvr, err := d.validator.Validate(doc)
 			if err != nil {
 				errorCh <- fmt.Errorf(
 					"calling remote validator on %q failed: %w",
 					file.URL(), err)
-				continue
+				return nil
 			}
 			if !rvr.Valid {
-				log.Printf("Remote validation of %q failed\n", file.URL())
+				return fmt.Errorf("remote validation of %q failed", file.URL())
 			}
+			return nil
+		}
+
+		// Run all the validations.
+		valStatus := notValidatedValidationStatus
+		for _, check := range []func() error{
+			s256Check,
+			s512Check,
+			keysCheck,
+			schemaCheck,
+			filenameCheck,
+			remoteValidatorCheck,
+		} {
+			if err := check(); err != nil {
+				// TODO: Improve logging.
+				log.Printf("check failed: %v\n", err)
+				valStatus.update(invalidValidationStatus)
+				if d.cfg.ValidationMode == validationStrict {
+					continue nextAdvisory
+				}
+			}
+		}
+		valStatus.update(validValidationStatus)
+
+		// Send to forwarder
+		if d.forwarder != nil {
+			d.forwarder.forward(
+				filename, data.String(),
+				valStatus,
+				string(s256Data),
+				string(s512Data))
+		}
+
+		if d.cfg.NoStore {
+			// Do not write locally.
+			continue
 		}
 
 		if err := d.eval.Extract(`$.document.tracking.initial_release_date`, dateExtract, false, doc); err != nil {

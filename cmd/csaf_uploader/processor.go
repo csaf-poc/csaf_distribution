@@ -18,7 +18,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +27,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 
 	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v2/internal/misc"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
 
@@ -103,20 +103,6 @@ func (p *processor) create() error {
 	return nil
 }
 
-var escapeQuotes = strings.NewReplacer("\\", "\\\\", `"`, "\\\"").Replace
-
-// createFormFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
-// This version allows to set the mime type, too.
-func createFormFile(w *multipart.Writer, fieldname, filename, mimeType string) (io.Writer, error) {
-	// Source: https://cs.opensource.google/go/go/+/refs/tags/go1.20:src/mime/multipart/writer.go;l=140
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition",
-		fmt.Sprintf(`form-data; name="%s"; filename="%s"`,
-			escapeQuotes(fieldname), escapeQuotes(filename)))
-	h.Set("Content-Type", mimeType)
-	return w.CreatePart(h)
-}
-
 // uploadRequest creates the request for uploading a csaf document by passing the filename.
 // According to the flags values the multipart sections of the request are established.
 // It returns the created http request.
@@ -151,7 +137,7 @@ func (p *processor) uploadRequest(filename string) (*http.Request, error) {
 
 	// As the csaf_provider only accepts uploads with mime type
 	// "application/json" we have to set this.
-	part, err := createFormFile(
+	part, err := misc.CreateFormFile(
 		writer, "csaf", filepath.Base(filename), "application/json")
 	if err != nil {
 		return nil, err
