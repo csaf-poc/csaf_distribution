@@ -44,6 +44,8 @@ type downloader struct {
 	validator csaf.RemoteValidator
 	forwarder *forwarder
 	mkdirMu   sync.Mutex
+	statsMu   sync.Mutex
+	stats     stats
 }
 
 // failedValidationDir is the name of the sub folder
@@ -81,6 +83,13 @@ func (d *downloader) close() {
 		d.validator.Close()
 		d.validator = nil
 	}
+}
+
+// addStats add stats to total stats
+func (d *downloader) addStats(o *stats) {
+	d.statsMu.Lock()
+	defer d.statsMu.Unlock()
+	d.stats.add(o)
 }
 
 func (d *downloader) httpClient() util.Client {
@@ -350,7 +359,11 @@ func (d *downloader) downloadWorker(
 		initialReleaseDate time.Time
 		dateExtract        = util.TimeMatcher(&initialReleaseDate, time.RFC3339)
 		lower              = strings.ToLower(string(label))
+		stats              = stats{}
 	)
+
+	// Add collected stats back to total.
+	defer d.addStats(&stats)
 
 nextAdvisory:
 	for {
@@ -367,17 +380,10 @@ nextAdvisory:
 
 		u, err := url.Parse(file.URL())
 		if err != nil {
+			stats.downloadFailed++
 			slog.Warn("Ignoring invalid URL",
 				"url", file.URL(),
 				"error", err)
-			continue
-		}
-
-		// Ignore not conforming filenames.
-		filename := filepath.Base(u.Path)
-		if !util.ConformingFileName(filename) {
-			slog.Warn("Ignoring none conforming filename",
-				"filename", filename)
 			continue
 		}
 
@@ -388,8 +394,18 @@ nextAdvisory:
 			continue
 		}
 
+		// Ignore not conforming filenames.
+		filename := filepath.Base(u.Path)
+		if !util.ConformingFileName(filename) {
+			stats.filenameFailed++
+			slog.Warn("Ignoring none conforming filename",
+				"filename", filename)
+			continue
+		}
+
 		resp, err := client.Get(file.URL())
 		if err != nil {
+			stats.downloadFailed++
 			slog.Warn("Cannot GET",
 				"url", file.URL(),
 				"error", err)
@@ -397,6 +413,7 @@ nextAdvisory:
 		}
 
 		if resp.StatusCode != http.StatusOK {
+			stats.downloadFailed++
 			slog.Warn("Cannot load",
 				"url", file.URL(),
 				"status", resp.Status,
@@ -456,6 +473,7 @@ nextAdvisory:
 			tee := io.TeeReader(resp.Body, hasher)
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
+			stats.downloadFailed++
 			slog.Warn("Downloading failed",
 				"url", file.URL(),
 				"error", err)
@@ -465,6 +483,7 @@ nextAdvisory:
 		// Compare the checksums.
 		s256Check := func() error {
 			if s256 != nil && !bytes.Equal(s256.Sum(nil), remoteSHA256) {
+				stats.sha256Failed++
 				return fmt.Errorf("SHA256 checksum of %s does not match", file.URL())
 			}
 			return nil
@@ -472,6 +491,7 @@ nextAdvisory:
 
 		s512Check := func() error {
 			if s512 != nil && !bytes.Equal(s512.Sum(nil), remoteSHA512) {
+				stats.sha512Failed++
 				return fmt.Errorf("SHA512 checksum of %s does not match", file.URL())
 			}
 			return nil
@@ -495,6 +515,7 @@ nextAdvisory:
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
 					if !d.cfg.IgnoreSignatureCheck {
+						stats.signatureFailed++
 						return fmt.Errorf("cannot verify signature for %s: %v", file.URL(), err)
 					}
 				}
@@ -505,6 +526,7 @@ nextAdvisory:
 		// Validate against CSAF schema.
 		schemaCheck := func() error {
 			if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
+				stats.schemaFailed++
 				d.logValidationIssues(file.URL(), errors, err)
 				return fmt.Errorf("schema validation for %q failed", file.URL())
 			}
@@ -514,6 +536,7 @@ nextAdvisory:
 		// Validate if filename is conforming.
 		filenameCheck := func() error {
 			if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
+				stats.filenameFailed++
 				return fmt.Errorf("filename not conforming %s: %s", file.URL(), err)
 			}
 			return nil
@@ -532,6 +555,7 @@ nextAdvisory:
 				return nil
 			}
 			if !rvr.Valid {
+				stats.remoteFailed++
 				return fmt.Errorf("remote validation of %q failed", file.URL())
 			}
 			return nil
@@ -622,6 +646,7 @@ nextAdvisory:
 			}
 		}
 
+		stats.succeeded++
 		slog.Info("Written advisory", "path", path)
 	}
 }
@@ -680,6 +705,7 @@ func loadHash(client util.Client, p string) ([]byte, []byte, error) {
 
 // run performs the downloads for all the given domains.
 func (d *downloader) run(ctx context.Context, domains []string) error {
+	defer d.stats.log()
 	for _, domain := range domains {
 		if err := d.download(ctx, domain); err != nil {
 			return err
