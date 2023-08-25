@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2022, 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2022, 2023 Intevation GmbH <https://intevation.de>
 
 package main
 
@@ -472,7 +472,7 @@ nextAdvisory:
 			return nil
 		}
 
-		// Validate OpenPGG signature.
+		// Validate OpenPGP signature.
 		keysCheck := func() error {
 			// Only check signature if we have loaded keys.
 			if d.keys == nil {
