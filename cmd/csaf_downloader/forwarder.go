@@ -50,6 +50,9 @@ type forwarder struct {
 	cfg    *config
 	cmds   chan func(*forwarder)
 	client util.Client
+
+	failed    int
+	succeeded int
 }
 
 // newForwarder creates a new forwarder.
@@ -73,6 +76,15 @@ func (f *forwarder) run() {
 // close terminates the forwarder.
 func (f *forwarder) close() {
 	close(f.cmds)
+}
+
+// log logs the current statistics.
+func (f *forwarder) log() {
+	f.cmds <- func(f *forwarder) {
+		slog.Info("Forward statistics",
+			"succeeded", f.succeeded,
+			"failed", f.failed)
+	}
 }
 
 // httpClient returns a cached HTTP client used for uploading
@@ -204,6 +216,7 @@ func (f *forwarder) storeFailedAdvisory(filename, doc, sha256, sha512 string) er
 
 // storeFailed is a logging wrapper around storeFailedAdvisory.
 func (f *forwarder) storeFailed(filename, doc, sha256, sha512 string) {
+	f.failed++
 	if err := f.storeFailedAdvisory(filename, doc, sha256, sha512); err != nil {
 		slog.Error("Storing advisory failed forwarding failed",
 			"error", err)
@@ -248,6 +261,7 @@ func (f *forwarder) forward(
 				"status_code", res.StatusCode)
 			f.storeFailed(filename, doc, sha256, sha512)
 		} else {
+			f.succeeded++
 			slog.Debug(
 				"forwarding succeeded",
 				"filename", filename)
