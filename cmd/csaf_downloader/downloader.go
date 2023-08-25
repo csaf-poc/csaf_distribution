@@ -439,7 +439,7 @@ nextAdvisory:
 			return nil
 		}
 
-		// Validate OpenPGG signature.
+		// Validate OpenPGP signature.
 		keysCheck := func() error {
 			// Only check signature if we have loaded keys.
 			if d.keys == nil {
