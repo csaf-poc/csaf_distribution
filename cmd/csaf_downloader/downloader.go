@@ -46,6 +46,11 @@ type downloader struct {
 	mkdirMu   sync.Mutex
 }
 
+// failedValidationDir is the name of the sub folder
+// where advisories are stored that fail validation in
+// unsafe mode.
+const failedValidationDir = "failed_validation"
+
 func newDownloader(cfg *config) (*downloader, error) {
 
 	var validator csaf.RemoteValidator
@@ -573,8 +578,13 @@ nextAdvisory:
 		}
 		initialReleaseDate = initialReleaseDate.UTC()
 
-		// Write advisory to file
-		newDir := path.Join(d.cfg.Directory, lower)
+		// Advisories that failed validation are store in a special folder.
+		var newDir string
+		if valStatus != validValidationStatus {
+			newDir = path.Join(d.cfg.Directory, failedValidationDir, lower)
+		} else {
+			newDir = path.Join(d.cfg.Directory, lower)
+		}
 
 		// Do we have a configured destination folder?
 		if d.cfg.Folder != "" {
@@ -591,6 +601,7 @@ nextAdvisory:
 			lastDir = newDir
 		}
 
+		// Write advisory to file
 		path := filepath.Join(lastDir, filename)
 
 		// Write data to disk.
