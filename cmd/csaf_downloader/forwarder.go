@@ -15,12 +15,17 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/misc"
 	"github.com/csaf-poc/csaf_distribution/v2/util"
 )
+
+// failedForwardDir is the name of the special sub folder
+// where advisories get stored which fail forwarding.
+const failedForwardDir = "failed_forward"
 
 // validationStatus represents the validation status
 // known to the HTTP endpoint.
@@ -113,6 +118,98 @@ func replaceExt(fname, nExt string) string {
 	return fname[:len(fname)-len(ext)] + nExt
 }
 
+// buildRequest creates an HTTP request suited ti forward the given advisory.
+func (f *forwarder) buildRequest(
+	filename, doc string,
+	status validationStatus,
+	sha256, sha512 string,
+) (*http.Request, error) {
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+
+	var err error
+	part := func(name, fname, mimeType, content string) {
+		if err != nil {
+			return
+		}
+		if fname == "" {
+			err = writer.WriteField(name, content)
+			return
+		}
+		var w io.Writer
+		if w, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
+			_, err = w.Write([]byte(content))
+		}
+	}
+
+	base := filepath.Base(filename)
+	part("advisory", base, "application/json", doc)
+	part("validation_status", "", "text/plain", string(status))
+	if sha256 != "" {
+		part("hash-256", replaceExt(base, ".sha256"), "text/plain", sha256)
+	}
+	if sha512 != "" {
+		part("hash-512", replaceExt(base, ".sha512"), "text/plain", sha512)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, f.cfg.ForwardURL, body)
+	if err != nil {
+		return nil, err
+	}
+	contentType := writer.FormDataContentType()
+	req.Header.Set("Content-Type", contentType)
+	return req, nil
+}
+
+// storeFailedAdvisory stores an advisory in a special folder
+// in case the forwarding failed.
+func (f *forwarder) storeFailedAdvisory(filename, doc, sha256, sha512 string) error {
+	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
+	// Create special folder if it does not exist.
+	if _, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	// Store parts which are not empty.
+	for _, x := range []struct {
+		p string
+		d string
+	}{
+		{filename, doc},
+		{filename + ".sha256", sha256},
+		{filename + ".sha512", sha512},
+	} {
+		if len(x.d) != 0 {
+			path := filepath.Join(dir, x.p)
+			if err := os.WriteFile(path, []byte(x.d), 0644); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// storeFailed is a logging wrapper around storeFailedAdvisory.
+func (f *forwarder) storeFailed(filename, doc, sha256, sha512 string) {
+	if err := f.storeFailedAdvisory(filename, doc, sha256, sha512); err != nil {
+		slog.Error("Storing advisory failed forwarding failed",
+			"error", err)
+	}
+}
+
 // forward sends a given document with filename, status and
 // checksums to the forwarder. This is async to the degree
 // till the configured queue size is filled.
@@ -121,70 +218,23 @@ func (f *forwarder) forward(
 	status validationStatus,
 	sha256, sha512 string,
 ) {
-	buildRequest := func() (*http.Request, error) {
-		body := new(bytes.Buffer)
-		writer := multipart.NewWriter(body)
-
-		var err error
-		part := func(name, fname, mimeType, content string) {
-			if err != nil {
-				return
-			}
-			if fname == "" {
-				err = writer.WriteField(name, content)
-				return
-			}
-			var w io.Writer
-			if w, err = misc.CreateFormFile(writer, name, fname, mimeType); err == nil {
-				_, err = w.Write([]byte(content))
-			}
-		}
-
-		base := filepath.Base(filename)
-		part("advisory", base, "application/json", doc)
-		part("validation_status", "", "text/plain", string(status))
-		if sha256 != "" {
-			part("hash-256", replaceExt(base, ".sha256"), "text/plain", sha256)
-		}
-		if sha512 != "" {
-			part("hash-512", replaceExt(base, ".sha512"), "text/plain", sha512)
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		if err := writer.Close(); err != nil {
-			return nil, err
-		}
-
-		req, err := http.NewRequest(http.MethodPost, f.cfg.ForwardURL, body)
-		if err != nil {
-			return nil, err
-		}
-		contentType := writer.FormDataContentType()
-		req.Header.Set("Content-Type", contentType)
-		return req, nil
-	}
-
 	// Run this in the main loop of the forwarder.
 	f.cmds <- func(f *forwarder) {
-		req, err := buildRequest()
+		req, err := f.buildRequest(filename, doc, status, sha256, sha512)
 		if err != nil {
-			// TODO: improve logging
 			slog.Error("building forward Request failed",
 				"error", err)
+			f.storeFailed(filename, doc, sha256, sha512)
 			return
 		}
 		res, err := f.httpClient().Do(req)
 		if err != nil {
-			// TODO: improve logging
 			slog.Error("sending forward request failed",
 				"error", err)
+			f.storeFailed(filename, doc, sha256, sha512)
 			return
 		}
 		if res.StatusCode != http.StatusCreated {
-			// TODO: improve logging
 			defer res.Body.Close()
 			var msg strings.Builder
 			io.Copy(&msg, io.LimitReader(res.Body, 512))
@@ -196,7 +246,7 @@ func (f *forwarder) forward(
 				"filename", filename,
 				"body", msg.String()+dots,
 				"status_code", res.StatusCode)
-
+			f.storeFailed(filename, doc, sha256, sha512)
 		} else {
 			slog.Debug(
 				"forwarding succeeded",
