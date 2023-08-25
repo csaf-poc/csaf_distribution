@@ -15,6 +15,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
@@ -48,7 +49,7 @@ const (
 )
 
 type config struct {
-	Directory            *string           `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
+	Directory            string            `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
 	Insecure             bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
 	IgnoreSignatureCheck bool              `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
 	ClientCert           *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
@@ -169,13 +170,47 @@ func (ll logLevel) slogLevel() slog.Level {
 	}
 }
 
+// prepareDirectory ensures that the working directory
+// exists and is setup properly.
+func (cfg *config) prepareDirectory() error {
+	// If no special given use current working directory.
+	if cfg.Directory == "" {
+		dir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		cfg.Directory = dir
+		return nil
+	}
+	// Use given directory
+	if _, err := os.Stat(cfg.Directory); err != nil {
+		// If it does not exist create it.
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(cfg.Directory, 0755); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
 // prepareLogging sets up the structured logging.
 func (cfg *config) prepareLogging() error {
 	var w io.Writer
 	if cfg.LogFile == "" {
 		w = os.Stderr
 	} else {
-		f, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		var fname string
+		// We put the log inside the download folder
+		// if it is not absolute.
+		if filepath.IsAbs(cfg.LogFile) {
+			fname = cfg.LogFile
+		} else {
+			fname = filepath.Join(cfg.Directory, cfg.LogFile)
+		}
+		f, err := os.OpenFile(fname, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			return err
 		}
@@ -215,6 +250,7 @@ func (cfg *config) prepareCertificates() error {
 // prepare prepares internal state of a loaded configuration.
 func (cfg *config) prepare() error {
 	for _, prepare := range []func(*config) error{
+		(*config).prepareDirectory,
 		(*config).prepareLogging,
 		(*config).prepareCertificates,
 		(*config).compileIgnorePatterns,

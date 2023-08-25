@@ -39,7 +39,6 @@ import (
 
 type downloader struct {
 	cfg       *config
-	directory string
 	keys      *crypto.KeyRing
 	eval      *util.PathEval
 	validator csaf.RemoteValidator
@@ -575,7 +574,7 @@ nextAdvisory:
 		initialReleaseDate = initialReleaseDate.UTC()
 
 		// Write advisory to file
-		newDir := path.Join(d.directory, lower)
+		newDir := path.Join(d.cfg.Directory, lower)
 
 		// Do we have a configured destination folder?
 		if d.cfg.Folder != "" {
@@ -668,40 +667,8 @@ func loadHash(client util.Client, p string) ([]byte, []byte, error) {
 	return hash, data.Bytes(), nil
 }
 
-// prepareDirectory ensures that the working directory
-// exists and is setup properly.
-func (d *downloader) prepareDirectory() error {
-	// If no special given use current working directory.
-	if d.cfg.Directory == nil {
-		dir, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		d.directory = dir
-		return nil
-	}
-	// Use given directory
-	if _, err := os.Stat(*d.cfg.Directory); err != nil {
-		// If it does not exist create it.
-		if os.IsNotExist(err) {
-			if err = os.MkdirAll(*d.cfg.Directory, 0755); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	d.directory = *d.cfg.Directory
-	return nil
-}
-
 // run performs the downloads for all the given domains.
 func (d *downloader) run(ctx context.Context, domains []string) error {
-
-	if err := d.prepareDirectory(); err != nil {
-		return err
-	}
-
 	for _, domain := range domains {
 		if err := d.download(ctx, domain); err != nil {
 			return err
