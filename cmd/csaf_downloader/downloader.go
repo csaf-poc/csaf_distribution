@@ -592,6 +592,9 @@ nextAdvisory:
 
 		if d.cfg.NoStore {
 			// Do not write locally.
+			if valStatus == validValidationStatus {
+				stats.succeeded++
+			}
 			continue
 		}
 
