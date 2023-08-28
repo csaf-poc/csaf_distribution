@@ -7,34 +7,36 @@ A tool to download CSAF documents from CSAF providers.
 csaf_downloader [OPTIONS] domain...
 
 Application Options:
-  -d, --directory=DIR                         DIRectory to store the downloaded files in
-      --insecure                              Do not check TLS certificates from provider
-      --ignoresigcheck                        Ignore signature check results, just warn on mismatch
-      --client-cert=CERT-FILE                 TLS client certificate file (PEM encoded data)
-      --client-key=KEY-FILE                   TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE          Optional passphrase for the client cert (limited, experimental, see doc)
-      --version                               Display version of the binary
-  -v, --verbose                               Verbose output
-  -n, --nostore                               Do not store files
-  -r, --rate=                                 The average upper limit of https operations per second (defaults to
-                                              unlimited)
-  -w, --worker=NUM                            NUMber of concurrent downloads (default: 2)
-  -t, --timerange=RANGE                       RANGE of time from which advisories to download
-  -f, --folder=FOLDER                         Download into a given subFOLDER
-  -i, --ignorepattern=PATTERN                 Do not download files if their URLs match any of the given PATTERNs
-  -H, --header=                               One or more extra HTTP header fields
-      --validator=URL                         URL to validate documents remotely
-      --validatorcache=FILE                   FILE to cache remote validations
-      --validatorpreset=PRESETS               One or more PRESETS to validate remotely (default: [mandatory])
-  -m, --validationmode=MODE[strict|unsafe]    MODE how strict the validation is (default: strict)
-      --forwardurl=URL                        URL of HTTP endpoint to forward downloads to
-      --forwardheader=                        One or more extra HTTP header fields used by forwarding
-      --forwardqueue=LENGTH                   Maximal queue LENGTH before forwarder
-      --forwardinsecure                       Do not check TLS certificates from forward endpoint
-  -c, --config=TOML-FILE                      Path to config TOML file
+  -d, --directory=DIR                            DIRectory to store the downloaded files in
+      --insecure                                 Do not check TLS certificates from provider
+      --ignoresigcheck                           Ignore signature check results, just warn on mismatch
+      --client-cert=CERT-FILE                    TLS client certificate file (PEM encoded data)
+      --client-key=KEY-FILE                      TLS client private key file (PEM encoded data)
+      --client-passphrase=PASSPHRASE             Optional passphrase for the client cert (limited, experimental, see doc)
+      --version                                  Display version of the binary
+  -v, --verbose                                  Verbose output
+  -n, --nostore                                  Do not store files
+  -r, --rate=                                    The average upper limit of https operations per second (defaults to
+                                                 unlimited)
+  -w, --worker=NUM                               NUMber of concurrent downloads (default: 2)
+  -t, --timerange=RANGE                          RANGE of time from which advisories to download
+  -f, --folder=FOLDER                            Download into a given subFOLDER
+  -i, --ignorepattern=PATTERN                    Do not download files if their URLs match any of the given PATTERNs
+  -H, --header=                                  One or more extra HTTP header fields
+      --validator=URL                            URL to validate documents remotely
+      --validatorcache=FILE                      FILE to cache remote validations
+      --validatorpreset=PRESETS                  One or more PRESETS to validate remotely (default: [mandatory])
+  -m, --validationmode=MODE[strict|unsafe]       MODE how strict the validation is (default: strict)
+      --forwardurl=URL                           URL of HTTP endpoint to forward downloads to
+      --forwardheader=                           One or more extra HTTP header fields used by forwarding
+      --forwardqueue=LENGTH                      Maximal queue LENGTH before forwarder (default: 5)
+      --forwardinsecure                          Do not check TLS certificates from forward endpoint
+      --logfile=FILE                             FILE to log downloading to (default: downloader.log)
+      --loglevel=LEVEL[debug|info|warn|error]    LEVEL of logging details (default: info)
+  -c, --config=TOML-FILE                         Path to config TOML file
 
 Help Options:
-  -h, --help                                  Show this help message
+  -h, --help                                     Show this help message
 ```
 
 Will download all CSAF documents for the given _domains_, by trying each as a CSAF provider.

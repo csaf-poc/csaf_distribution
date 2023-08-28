@@ -50,7 +50,7 @@ func main() {
 	options.ErrorCheck(cfg.prepare())
 
 	if len(domains) == 0 {
-		slog.Info("No domains given.")
+		slog.Warn("No domains given.")
 		return
 	}
 
