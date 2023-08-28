@@ -11,7 +11,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -33,7 +33,10 @@ func run(cfg *config, domains []string) error {
 	if cfg.ForwardURL != "" {
 		f := newForwarder(cfg)
 		go f.run()
-		defer f.close()
+		defer func() {
+			f.log()
+			f.close()
+		}()
 		d.forwarder = f
 	}
 
@@ -47,7 +50,7 @@ func main() {
 	options.ErrorCheck(cfg.prepare())
 
 	if len(domains) == 0 {
-		log.Println("No domains given.")
+		slog.Info("No domains given.")
 		return
 	}
 
