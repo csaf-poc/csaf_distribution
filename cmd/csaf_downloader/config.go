@@ -77,7 +77,7 @@ type config struct {
 	ForwardQueue    int         `long:"forwardqueue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
 	ForwardInsecure bool        `long:"forwardinsecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
 
-	LogFile string `long:"logfile" description:"FILE to log download to" value-name:"FILE" toml:"log_file"`
+	LogFile string `long:"logfile" description:"FILE to log downloading to" value-name:"FILE" toml:"log_file"`
 	//lint:ignore SA5008 We are using choice or than once: debug, info, warn, error
 	LogLevel logLevel `long:"loglevel" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
 
@@ -173,7 +173,7 @@ func (ll logLevel) slogLevel() slog.Level {
 // prepareDirectory ensures that the working directory
 // exists and is setup properly.
 func (cfg *config) prepareDirectory() error {
-	// If no special given use current working directory.
+	// If not given use current working directory.
 	if cfg.Directory == "" {
 		dir, err := os.Getwd()
 		if err != nil {

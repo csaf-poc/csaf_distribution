@@ -130,7 +130,7 @@ func replaceExt(fname, nExt string) string {
 	return fname[:len(fname)-len(ext)] + nExt
 }
 
-// buildRequest creates an HTTP request suited ti forward the given advisory.
+// buildRequest creates an HTTP request suited to forward the given advisory.
 func (f *forwarder) buildRequest(
 	filename, doc string,
 	status validationStatus,
