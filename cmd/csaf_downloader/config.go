@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
@@ -196,6 +197,15 @@ func (cfg *config) prepareDirectory() error {
 	return nil
 }
 
+// dropSubSeconds drops all parts below resolution of seconds.
+func dropSubSeconds(_ []string, a slog.Attr) slog.Attr {
+	if a.Key == slog.TimeKey {
+		t := a.Value.Time()
+		a.Value = slog.TimeValue(t.Truncate(time.Second))
+	}
+	return a
+}
+
 // prepareLogging sets up the structured logging.
 func (cfg *config) prepareLogging() error {
 	var w io.Writer
@@ -218,7 +228,8 @@ func (cfg *config) prepareLogging() error {
 	}
 	ho := slog.HandlerOptions{
 		//AddSource: true,
-		Level: cfg.LogLevel.slogLevel(),
+		Level:       cfg.LogLevel.slogLevel(),
+		ReplaceAttr: dropSubSeconds,
 	}
 	handler := slog.NewJSONHandler(w, &ho)
 	logger := slog.New(handler)
