@@ -52,6 +52,12 @@ Download the binaries from the most recent release assets on Github.
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
 
+- Maintainers only: No need to do this if you have cloned this repository for unmodified usage only.
+```
+go generate ./...
+```
+will update the machine generated code.
+
 
 ### Setup (Trusted Provider)
 
