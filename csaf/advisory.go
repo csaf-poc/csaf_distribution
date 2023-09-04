@@ -781,14 +781,11 @@ func LoadAdvisory(fname string) (*Advisory, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	defer f.Close()
 	var advisory Advisory
-	dec := json.NewDecoder(f)
-	if err := dec.Decode(&advisory); err != nil {
+	if err := json.NewDecoder(f).Decode(&advisory); err != nil {
 		return nil, err
 	}
-	defer f.Close()
-
 	return &advisory, nil
 }
 
