@@ -222,30 +222,10 @@ const CSAFVersion20 CSAFVersion = "2.0"
 
 var CSAFVersionPattern = alternativesUnmarshal(string(CSAFVersion20))
 
-// DocumentTLPLabel is the label of a TLP.
-type DocumentTLPLabel string
-
-const (
-	// DocumentTLPLabelAmber is the "AMBER" label.
-	DocumentTLPLabelAmber DocumentTLPLabel = "AMBER"
-	// DocumentTLPLabelGreen is the "GREEN" label.
-	DocumentTLPLabelGreen DocumentTLPLabel = "GREEN"
-	// DocumentTLPLabelRed is the "RED" label.
-	DocumentTLPLabelRed DocumentTLPLabel = "RED"
-	// DocumentTLPLabelWhite is the "WHITE" label.
-	DocumentTLPLabelWhite DocumentTLPLabel = "WHITE"
-)
-
-var csafDocumentTLPLabelPattern = alternativesUnmarshal(
-	string(DocumentTLPLabelAmber),
-	string(DocumentTLPLabelGreen),
-	string(DocumentTLPLabelRed),
-	string(DocumentTLPLabelWhite))
-
 // TLP provides details about the TLP classification of the document.
 type TLP struct {
-	DocumentTLPLabel DocumentTLPLabel `json:"label"` // required
-	URL              *string          `json:"url,omitempty"`
+	DocumentTLPLabel TLPLabel `json:"label"` // required
+	URL              *string  `json:"url,omitempty"`
 }
 
 // DocumentDistribution describes rules for sharing a document.
@@ -254,39 +234,13 @@ type DocumentDistribution struct {
 	TLP  *TLP    `json:"tlp,omitempty"`
 }
 
-// PublisherCategory is the category of a publisher.
-type PublisherCategory string
-
-const (
-	// CSAFPublisherCategoryCoordinator is the "coordinator" category.
-	CSAFPublisherCategoryCoordinator PublisherCategory = "coordinator"
-	// CSAFPublisherCategoryDiscoverer is the "discoverer" category.
-	CSAFPublisherCategoryDiscoverer PublisherCategory = "discoverer"
-	// CSAFPublisherCategoryOther is the "other" category.
-	CSAFPublisherCategoryOther PublisherCategory = "other"
-	// CSAFPublisherCategoryTranslator is the "translator" category.
-	CSAFPublisherCategoryTranslator PublisherCategory = "translator"
-	// CSAFPublisherCategoryUser is the "user" category.
-	CSAFPublisherCategoryUser PublisherCategory = "user"
-	// CSAFPublisherCategoryVendor is the "vendor" category.
-	CSAFPublisherCategoryVendor PublisherCategory = "vendor"
-)
-
-var csafPublisherCategoryPattern = alternativesUnmarshal(
-	string(CSAFPublisherCategoryCoordinator),
-	string(CSAFPublisherCategoryDiscoverer),
-	string(CSAFPublisherCategoryOther),
-	string(CSAFPublisherCategoryTranslator),
-	string(CSAFPublisherCategoryUser),
-	string(CSAFPublisherCategoryVendor))
-
 // DocumentPublisher provides information about the publishing entity.
 type DocumentPublisher struct {
-	Category         PublisherCategory `json:"category"` // required
-	ContactDetails   *string           `json:"contact_details,omitempty"`
-	IssuingAuthority *string           `json:"issuing_authority,omitempty"`
-	Name             string            `json:"name"`      // required
-	Namespace        string            `json:"namespace"` // required
+	Category         Category `json:"category"` // required
+	ContactDetails   *string  `json:"contact_details,omitempty"`
+	IssuingAuthority *string  `json:"issuing_authority,omitempty"`
+	Name             string   `json:"name"`      // required
+	Namespace        string   `json:"namespace"` // required
 }
 
 // The version specifies a version string to denote clearly the evolution of the content of the document.
@@ -832,24 +786,6 @@ func (rc *ReferenceCategory) UnmarshalText(data []byte) error {
 	s, err := csafReferenceCategoryPattern(data)
 	if err == nil {
 		*rc = ReferenceCategory(s)
-	}
-	return err
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (dtl *DocumentTLPLabel) UnmarshalText(data []byte) error {
-	s, err := csafDocumentTLPLabelPattern(data)
-	if err == nil {
-		*dtl = DocumentTLPLabel(s)
-	}
-	return err
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (pc *PublisherCategory) UnmarshalText(data []byte) error {
-	s, err := csafPublisherCategoryPattern(data)
-	if err == nil {
-		*pc = PublisherCategory(s)
 	}
 	return err
 }
