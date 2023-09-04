@@ -658,54 +658,54 @@ type CVSSv2 struct {
 	AccessVector               *CVSS20AccessVector              `json:"accessVector"`
 	AccessComplexity           *CVSS20AccessComplexity          `json:"accessComplexity"`
 	Authentication             *CVSS20Authentication            `json:"authentication"`
-	ConfidentialityImpact      *string                          `json:"confidentialityImpact"`
-	IntegrityImpact            *string                          `json:"integrityImpact"`
-	AvailabilityImpact         *string                          `json:"availabilityImpact"`
+	ConfidentialityImpact      *CVSS20Cia                       `json:"confidentialityImpact"`
+	IntegrityImpact            *CVSS20Cia                       `json:"integrityImpact"`
+	AvailabilityImpact         *CVSS20Cia                       `json:"availabilityImpact"`
 	BaseScore                  float64                          `json:"baseScore"` // required
 	Exploitability             *CVSS20Exploitability            `json:"exploitability"`
 	RemediationLevel           *CVSS20RemediationLevel          `json:"remediationLevel"`
-	ReportConfidence           *string                          `json:"reportConfidence"`
-	TemporalScore              *string                          `json:"temporalScore"`
+	ReportConfidence           *CVSS20ReportConfidence          `json:"reportConfidence"`
+	TemporalScore              *float64                         `json:"temporalScore"`
 	CollateralDamagePotential  *CVSS20CollateralDamagePotential `json:"collateralDamagePotential"`
 	TargetDistribution         *CVSS20TargetDistribution        `json:"targetDistribution"`
-	ConfidentialityRequirement *string                          `json:"confidentialityRequirement"`
-	IntegrityRequirement       *string                          `json:"integrityRequirement"`
-	AvailabilityRequirement    *string                          `json:"availabilityRequirement"`
-	EnvironmentalScore         *string                          `json:"environmentalScore"`
+	ConfidentialityRequirement *CVSS20CiaRequirement            `json:"confidentialityRequirement"`
+	IntegrityRequirement       *CVSS20CiaRequirement            `json:"integrityRequirement"`
+	AvailabilityRequirement    *CVSS20CiaRequirement            `json:"availabilityRequirement"`
+	EnvironmentalScore         *float64                         `json:"environmentalScore"`
 }
 
 // CVSSv3 holding a CVSS v3.x value
 type CVSSv3 struct {
-	Version                       string                          `json:"version"`      // required
-	VectorString                  string                          `json:"vectorString"` // required
-	AttackVector                  *string                         `json:"attackVector"`
-	AttackComplexity              *CVSS30AttackComplexity         `json:"attackComplexity"`
-	PrivilegesRequired            *CVSS30PrivilegesRequired       `json:"privilegesRequired"`
-	UserInteraction               *CVSS30UserInteraction          `json:"userInteraction"`
-	Scope                         *CVSS30Scope                    `json:"scope"`
-	ConfidentialityImpact         *string                         `json:"confidentialityImpact"`
-	IntegrityImpact               string                          `json:"integrityImpact"`
-	AvailabilityImpact            *string                         `json:"availabilityImpact"`
-	BaseScore                     float64                         `json:"baseScore"`    // required
-	BaseSeverity                  string                          `json:"baseSeverity"` // required
-	ExploitCodeMaturity           *CVSS30ExploitCodeMaturity      `json:"exploitCodeMaturity"`
-	RemediationLevel              *CVSS30RemediationLevel         `json:"remediationLevel"`
-	ReportConfidence              *string                         `json:"reportConfidence"`
-	TemporalScore                 *string                         `json:"temporalScore"`
-	TemporalSeverity              *string                         `json:"temporalSeverity"`
-	ConfidentialityRequirement    *string                         `json:"confidentialityRequirement"`
-	IntegrityRequirement          *string                         `json:"integrityRequirement"`
-	AvailabilityRequirement       *string                         `json:"availabilityRequirement"`
-	ModifiedAttackVector          *CVSS30ModifiedAttackVector     `json:"modifiedAttackVector"`
-	ModifiedAttackComplexity      *CVSS30ModifiedAttackComplexity `json:"modifiedAttackComplexity"`
-	ModifiedPrivilegesRequired    *string                         `json:"modifiedPrivilegesRequired"`
-	ModifiedUserInteraction       *string                         `json:"modifiedUserInteraction"`
-	ModifiedScope                 *string                         `json:"modifiedScope"`
-	ModifiedConfidentialityImpact *string                         `json:"modifiedConfidentialityImpact"`
-	ModifiedIntegrityImpact       *string                         `json:"modifiedIntegrityImpact"`
-	ModifiedAvailabilityImpact    *string                         `json:"modifiedAvailabilityImpact"`
-	EenvironmentalScore           *string                         `json:"environmentalScore"`
-	EnvironmentalSeverity         *string                         `json:"environmentalSeverity"`
+	Version                       string                            `json:"version"`      // required
+	VectorString                  string                            `json:"vectorString"` // required
+	AttackVector                  *CVSS30AttackVector               `json:"attackVector"`
+	AttackComplexity              *CVSS30AttackComplexity           `json:"attackComplexity"`
+	PrivilegesRequired            *CVSS30PrivilegesRequired         `json:"privilegesRequired"`
+	UserInteraction               *CVSS30UserInteraction            `json:"userInteraction"`
+	Scope                         *CVSS30Scope                      `json:"scope"`
+	ConfidentialityImpact         *CVSS30Cia                        `json:"confidentialityImpact"`
+	IntegrityImpact               CVSS30Cia                         `json:"integrityImpact"`
+	AvailabilityImpact            *CVSS30Cia                        `json:"availabilityImpact"`
+	BaseScore                     float64                           `json:"baseScore"`    // required
+	BaseSeverity                  CVSS30Severity                    `json:"baseSeverity"` // required
+	ExploitCodeMaturity           *CVSS30ExploitCodeMaturity        `json:"exploitCodeMaturity"`
+	RemediationLevel              *CVSS30RemediationLevel           `json:"remediationLevel"`
+	ReportConfidence              *CVSS30Confidence                 `json:"reportConfidence"`
+	TemporalScore                 *float64                          `json:"temporalScore"`
+	TemporalSeverity              *CVSS30Severity                   `json:"temporalSeverity"`
+	ConfidentialityRequirement    *CVSS30CiaRequirement             `json:"confidentialityRequirement"`
+	IntegrityRequirement          *CVSS30CiaRequirement             `json:"integrityRequirement"`
+	AvailabilityRequirement       *CVSS30CiaRequirement             `json:"availabilityRequirement"`
+	ModifiedAttackVector          *CVSS30ModifiedAttackVector       `json:"modifiedAttackVector"`
+	ModifiedAttackComplexity      *CVSS30ModifiedAttackComplexity   `json:"modifiedAttackComplexity"`
+	ModifiedPrivilegesRequired    *CVSS30ModifiedPrivilegesRequired `json:"modifiedPrivilegesRequired"`
+	ModifiedUserInteraction       *CVSS30ModifiedUserInteraction    `json:"modifiedUserInteraction"`
+	ModifiedScope                 *CVSS30ModifiedScope              `json:"modifiedScope"`
+	ModifiedConfidentialityImpact *CVSS30ModifiedCia                `json:"modifiedConfidentialityImpact"`
+	ModifiedIntegrityImpact       *CVSS30ModifiedCia                `json:"modifiedIntegrityImpact"`
+	ModifiedAvailabilityImpact    *CVSS30ModifiedCia                `json:"modifiedAvailabilityImpact"`
+	EenvironmentalScore           *float64                          `json:"environmentalScore"`
+	EnvironmentalSeverity         *CVSS30Severity                   `json:"environmentalSeverity"`
 }
 
 // Score specifies information about (at least one) score of the vulnerability and for which
