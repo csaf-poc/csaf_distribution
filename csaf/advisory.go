@@ -78,7 +78,7 @@ type Products []ProductID
 // FileHashValue represents the value of a hash.
 type FileHashValue string
 
-var FileHashValuePattern = patternUnmarshal(`^[0-9a-fA-F]{32,}$`)
+var fileHashValuePattern = patternUnmarshal(`^[0-9a-fA-F]{32,}$`)
 
 // FileHash is checksum hash.
 // Values for 'algorithm' are derived from the currently supported digests OpenSSL. Leading dashes were removed.
@@ -96,12 +96,12 @@ type Hashes struct {
 // CPE represents a Common Platform Enumeration in an advisory.
 type CPE string
 
-var CPEPattern = patternUnmarshal("^(cpe:2\\.3:[aho\\*\\-](:(((\\?*|\\*?)([a-zA-Z0-9\\-\\._]|(\\\\[\\\\\\*\\?!\"#\\$%&'\\(\\)\\+,/:;<=>@\\[\\]\\^`\\{\\|\\}~]))+(\\?*|\\*?))|[\\*\\-])){5}(:(([a-zA-Z]{2,3}(-([a-zA-Z]{2}|[0-9]{3}))?)|[\\*\\-]))(:(((\\?*|\\*?)([a-zA-Z0-9\\-\\._]|(\\\\[\\\\\\*\\?!\"#\\$%&'\\(\\)\\+,/:;<=>@\\[\\]\\^`\\{\\|\\}~]))+(\\?*|\\*?))|[\\*\\-])){4})|([c][pP][eE]:/[AHOaho]?(:[A-Za-z0-9\\._\\-~%]*){0,6})$")
+var cpePattern = patternUnmarshal("^(cpe:2\\.3:[aho\\*\\-](:(((\\?*|\\*?)([a-zA-Z0-9\\-\\._]|(\\\\[\\\\\\*\\?!\"#\\$%&'\\(\\)\\+,/:;<=>@\\[\\]\\^`\\{\\|\\}~]))+(\\?*|\\*?))|[\\*\\-])){5}(:(([a-zA-Z]{2,3}(-([a-zA-Z]{2}|[0-9]{3}))?)|[\\*\\-]))(:(((\\?*|\\*?)([a-zA-Z0-9\\-\\._]|(\\\\[\\\\\\*\\?!\"#\\$%&'\\(\\)\\+,/:;<=>@\\[\\]\\^`\\{\\|\\}~]))+(\\?*|\\*?))|[\\*\\-])){4})|([c][pP][eE]:/[AHOaho]?(:[A-Za-z0-9\\._\\-~%]*){0,6})$")
 
 // PURL represents a package URL in an advisory.
 type PURL string
 
-var PURLPattern = patternUnmarshal(`^pkg:[A-Za-z\\.\\-\\+][A-Za-z0-9\\.\\-\\+]*/.+`)
+var pURLPattern = patternUnmarshal(`^pkg:[A-Za-z\\.\\-\\+][A-Za-z0-9\\.\\-\\+]*/.+`)
 
 // XGenericURI represents an identifier for a product.
 type XGenericURI struct {
@@ -212,15 +212,15 @@ type AggregateSeverity struct {
 // DocumentCategory represents a category of a document.
 type DocumentCategory string
 
-var DocumentCategoryPattern = patternUnmarshal(`^[^\\s\\-_\\.](.*[^\\s\\-_\\.])?$`)
+var documentCategoryPattern = patternUnmarshal(`^[^\\s\\-_\\.](.*[^\\s\\-_\\.])?$`)
 
-// CSAFVersion is the version of a document.
-type CSAFVersion string
+// Version is the version of a document.
+type Version string
 
-// CSAFVersion is the current version of CSAF.
-const CSAFVersion20 CSAFVersion = "2.0"
+// CSAFVersion20 is the current version of CSAF.
+const CSAFVersion20 Version = "2.0"
 
-var CSAFVersionPattern = alternativesUnmarshal(string(CSAFVersion20))
+var csafVersionPattern = alternativesUnmarshal(string(CSAFVersion20))
 
 // TLP provides details about the TLP classification of the document.
 type TLP struct {
@@ -243,10 +243,10 @@ type DocumentPublisher struct {
 	Namespace        string   `json:"namespace"` // required
 }
 
-// The version specifies a version string to denote clearly the evolution of the content of the document.
-type Version string
+// RevisionNumber specifies a version string to denote clearly the evolution of the content of the document.
+type RevisionNumber string
 
-var VersionPattern = patternUnmarshal(`^(0|[1-9][0-9]*)$|^((0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)
+var versionPattern = patternUnmarshal(`^(0|[1-9][0-9]*)$|^((0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)
 	(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?)$`)
 
 // Engine contains information about the engine that generated the CSAF document.
@@ -266,14 +266,14 @@ type Generator struct {
 // TrackingID is a unique identifier for the document.
 type TrackingID string
 
-var TrackingIDPattern = patternUnmarshal("^[\\S](.*[\\S])?$")
+var trackingIDPattern = patternUnmarshal("^[\\S](.*[\\S])?$")
 
 // Revision contains information about one revision of the document.
 type Revision struct {
-	Date          string  `json:"date"` // required
-	LegacyVersion *string `json:"legacy_version,omitempty"`
-	Number        Version `json:"number"`  // required
-	Summary       string  `json:"summary"` // required
+	Date          string         `json:"date"` // required
+	LegacyVersion *string        `json:"legacy_version,omitempty"`
+	Number        RevisionNumber `json:"number"`  // required
+	Summary       string         `json:"summary"` // required
 }
 
 // TrackingStatus is the category of a publisher.
@@ -302,20 +302,20 @@ type Tracking struct {
 	InitialReleaseDate string         `json:"initial_release_date"` // required
 	RevisionHistory    []Revision     `json:"revision_history"`     // required
 	Status             TrackingStatus `json:"status"`               // required
-	Version            Version        `json:"version"`              // required
+	Version            RevisionNumber `json:"version"`              // required
 }
 
 // Lang is a language identifier, corresponding to IETF BCP 47 / RFC 5646.
 type Lang string
 
-var LangPattern = patternUnmarshal("^(([A-Za-z]{2,3}(-[A-Za-z]{3}(-[A-Za-z]{3}){0,2})?|[A-Za-z]{4,8})(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?(-([A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-[A-WY-Za-wy-z0-9](-[A-Za-z0-9]{2,8})+)*(-[Xx](-[A-Za-z0-9]{1,8})+)?|[Xx](-[A-Za-z0-9]{1,8})+|[Ii]-[Dd][Ee][Ff][Aa][Uu][Ll][Tt]|[Ii]-[Mm][Ii][Nn][Gg][Oo])$")
+var langPattern = patternUnmarshal("^(([A-Za-z]{2,3}(-[A-Za-z]{3}(-[A-Za-z]{3}){0,2})?|[A-Za-z]{4,8})(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?(-([A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*(-[A-WY-Za-wy-z0-9](-[A-Za-z0-9]{2,8})+)*(-[Xx](-[A-Za-z0-9]{1,8})+)?|[Xx](-[A-Za-z0-9]{1,8})+|[Ii]-[Dd][Ee][Ff][Aa][Uu][Ll][Tt]|[Ii]-[Mm][Ii][Nn][Gg][Oo])$")
 
 // Document contains meta-data about an advisory.
 type Document struct {
 	Acknowledgements  []Acknowledgement     `json:"acknowledgements,omitempty"`
 	AggregateSeverity *AggregateSeverity    `json:"aggregate_severity,omitempty"`
 	Category          DocumentCategory      `json:"category"`     // required
-	CSAFVersion       CSAFVersion           `json:"csaf_version"` // required
+	CSAFVersion       Version               `json:"csaf_version"` // required
 	Distribution      *DocumentDistribution `json:"distribution,omitempty"`
 	Lang              *Lang                 `json:"lang,omitempty"`
 	Notes             []*Note               `json:"notes,omitempty"`
@@ -384,12 +384,12 @@ type ProductTree struct {
 // CVE holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for a vulnerability.
 type CVE string
 
-var CVEPattern = patternUnmarshal("^CVE-[0-9]{4}-[0-9]{4,}$")
+var cvePattern = patternUnmarshal("^CVE-[0-9]{4}-[0-9]{4,}$")
 
 // WeaknessID is the identifier of a weakness.
 type WeaknessID string
 
-var WeaknessIDPattern = patternUnmarshal("^CWE-[1-9]\\d{0,5}$")
+var weaknessIDPattern = patternUnmarshal("^CWE-[1-9]\\d{0,5}$")
 
 // CWE holds the MITRE standard Common Weakness Enumeration (CWE) for the weakness associated.
 type CWE struct {
@@ -590,33 +590,33 @@ type Remediation struct {
 // CVSSVersion2 is the version of a CVSS2 item.
 type CVSSVersion2 string
 
-// MetadataVersion20 is the current version of the schema.
+// CVSSVersion20 is the current version of the schema.
 const CVSSVersion20 CVSSVersion2 = "2.0"
 
-var CVSSVersion2Pattern = alternativesUnmarshal(string(CVSSVersion20))
+var cvssVersion2Pattern = alternativesUnmarshal(string(CVSSVersion20))
 
 // CVSS2VectorString is the VectorString of a CVSS2 item with version 3.x.
 type CVSS2VectorString string
 
-var CVSS2VectorStringPattern = patternUnmarshal(`^((AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))/)*(AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))$`)
+var cvss2VectorStringPattern = patternUnmarshal(`^((AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))/)*(AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))$`)
 
 // CVSSVersion3 is the version of a CVSS3 item.
 type CVSSVersion3 string
 
-// CVSS3Version30 is version 3.0 of a CVSS3 item.
+// CVSSVersion30 is version 3.0 of a CVSS3 item.
 const CVSSVersion30 CVSSVersion3 = "3.0"
 
 // CVSSVersion31 is version 3.1 of a CVSS3 item.
 const CVSSVersion31 CVSSVersion3 = "3.1"
 
-var CVSS3VersionPattern = alternativesUnmarshal(
+var cvss3VersionPattern = alternativesUnmarshal(
 	string(CVSSVersion30),
 	string(CVSSVersion31))
 
 // CVSS3VectorString is the VectorString of a CVSS3 item with version 3.x.
 type CVSS3VectorString string
 
-var CVSS3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$`)
+var cvss3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$`)
 
 // CVSS2 holding a CVSS v2.0 value
 type CVSS2 struct {
@@ -877,7 +877,7 @@ func (tc *ThreatCategory) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cpe *CPE) UnmarshalText(data []byte) error {
-	s, err := CPEPattern(data)
+	s, err := cpePattern(data)
 	if err == nil {
 		*cpe = CPE(s)
 	}
@@ -886,7 +886,7 @@ func (cpe *CPE) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (fhv *FileHashValue) UnmarshalText(data []byte) error {
-	s, err := FileHashValuePattern(data)
+	s, err := fileHashValuePattern(data)
 	if err == nil {
 		*fhv = FileHashValue(s)
 	}
@@ -895,7 +895,7 @@ func (fhv *FileHashValue) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (p *PURL) UnmarshalText(data []byte) error {
-	s, err := PURLPattern(data)
+	s, err := pURLPattern(data)
 	if err == nil {
 		*p = PURL(s)
 	}
@@ -904,7 +904,7 @@ func (p *PURL) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (l *Lang) UnmarshalText(data []byte) error {
-	s, err := LangPattern(data)
+	s, err := langPattern(data)
 	if err == nil {
 		*l = Lang(s)
 	}
@@ -912,17 +912,17 @@ func (l *Lang) UnmarshalText(data []byte) error {
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (v *Version) UnmarshalText(data []byte) error {
-	s, err := VersionPattern(data)
+func (v *RevisionNumber) UnmarshalText(data []byte) error {
+	s, err := versionPattern(data)
 	if err == nil {
-		*v = Version(s)
+		*v = RevisionNumber(s)
 	}
 	return err
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (dc *DocumentCategory) UnmarshalText(data []byte) error {
-	s, err := DocumentCategoryPattern(data)
+	s, err := documentCategoryPattern(data)
 	if err == nil {
 		*dc = DocumentCategory(s)
 	}
@@ -930,17 +930,17 @@ func (dc *DocumentCategory) UnmarshalText(data []byte) error {
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (cv *CSAFVersion) UnmarshalText(data []byte) error {
-	s, err := CSAFVersionPattern(data)
+func (cv *Version) UnmarshalText(data []byte) error {
+	s, err := csafVersionPattern(data)
 	if err == nil {
-		*cv = CSAFVersion(s)
+		*cv = Version(s)
 	}
 	return err
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (ti *TrackingID) UnmarshalText(data []byte) error {
-	s, err := TrackingIDPattern(data)
+	s, err := trackingIDPattern(data)
 	if err == nil {
 		*ti = TrackingID(s)
 	}
@@ -949,7 +949,7 @@ func (ti *TrackingID) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cve *CVE) UnmarshalText(data []byte) error {
-	s, err := CVEPattern(data)
+	s, err := cvePattern(data)
 	if err == nil {
 		*cve = CVE(s)
 	}
@@ -958,7 +958,7 @@ func (cve *CVE) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (wi *WeaknessID) UnmarshalText(data []byte) error {
-	s, err := WeaknessIDPattern(data)
+	s, err := weaknessIDPattern(data)
 	if err == nil {
 		*wi = WeaknessID(s)
 	}
@@ -967,7 +967,7 @@ func (wi *WeaknessID) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cv *CVSSVersion2) UnmarshalText(data []byte) error {
-	s, err := CVSSVersion2Pattern(data)
+	s, err := cvssVersion2Pattern(data)
 	if err == nil {
 		*cv = CVSSVersion2(s)
 	}
@@ -976,7 +976,7 @@ func (cv *CVSSVersion2) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cvs *CVSS2VectorString) UnmarshalText(data []byte) error {
-	s, err := CVSS2VectorStringPattern(data)
+	s, err := cvss2VectorStringPattern(data)
 	if err == nil {
 		*cvs = CVSS2VectorString(s)
 	}
@@ -985,7 +985,7 @@ func (cvs *CVSS2VectorString) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cv *CVSSVersion3) UnmarshalText(data []byte) error {
-	s, err := CVSS3VersionPattern(data)
+	s, err := cvss3VersionPattern(data)
 	if err == nil {
 		*cv = CVSSVersion3(s)
 	}
@@ -994,7 +994,7 @@ func (cv *CVSSVersion3) UnmarshalText(data []byte) error {
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
 func (cvs *CVSS3VectorString) UnmarshalText(data []byte) error {
-	s, err := CVSS3VectorStringPattern(data)
+	s, err := cvss3VectorStringPattern(data)
 	if err == nil {
 		*cvs = CVSS3VectorString(s)
 	}
