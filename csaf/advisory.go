@@ -587,28 +587,41 @@ type Remediation struct {
 	URL             *string              `json:"url,omitempty"`
 }
 
-// CVSSv3Version is the version of a CVSSv3 item.
-type CVSSv3Version string
+// CVSSVersion2 is the version of a CVSS2 item.
+type CVSSVersion2 string
 
-// CVSSv3Version30 is version 3.0 of a CVSSv3 item.
-const CVSSv3Version30 CVSSv3Version = "3.0"
+// MetadataVersion20 is the current version of the schema.
+const CVSSVersion20 CVSSVersion2 = "2.0"
 
-// CVSSv3Version31 is version 3.1 of a CVSSv3 item.
-const CVSSv3Version31 CVSSv3Version = "3.1"
+var CVSSVersion2Pattern = alternativesUnmarshal(string(CVSSVersion20))
 
-// CVSSv3VectorString is the VectorString of a CVSSv3 item with version 3.x.
-type CVSSv3VectorString string
+// CVSS2VectorString is the VectorString of a CVSS2 item with version 3.x.
+type CVSS2VectorString string
 
-var CVSSv3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$`)
+var CVSS2VectorStringPattern = patternUnmarshal(`^((AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))/)*(AV:[NAL]|AC:[LMH]|Au:[MSN]|[CIA]:[NPC]|E:(U|POC|F|H|ND)|RL:(OF|TF|W|U|ND)|RC:(UC|UR|C|ND)|CDP:(N|L|LM|MH|H|ND)|TD:(N|L|M|H|ND)|[CIA]R:(L|M|H|ND))$`)
 
-var CVSSv3VersionPattern = alternativesUnmarshal(
-	string(CVSSv3Version30),
-	string(CVSSv3Version31))
+// CVSSVersion3 is the version of a CVSS3 item.
+type CVSSVersion3 string
 
-// CVSSv2 holding a CVSS v2.0 value
-type CVSSv2 struct {
-	Version                    string                           `json:"version"`      // required
-	VectorString               string                           `json:"vectorString"` // required
+// CVSS3Version30 is version 3.0 of a CVSS3 item.
+const CVSSVersion30 CVSSVersion3 = "3.0"
+
+// CVSSVersion31 is version 3.1 of a CVSS3 item.
+const CVSSVersion31 CVSSVersion3 = "3.1"
+
+var CVSS3VersionPattern = alternativesUnmarshal(
+	string(CVSSVersion30),
+	string(CVSSVersion31))
+
+// CVSS3VectorString is the VectorString of a CVSS3 item with version 3.x.
+type CVSS3VectorString string
+
+var CVSS3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$`)
+
+// CVSS2 holding a CVSS v2.0 value
+type CVSS2 struct {
+	Version                    CVSSVersion2                     `json:"version"`      // required
+	VectorString               CVSS2VectorString                `json:"vectorString"` // required
 	AccessVector               *CVSS20AccessVector              `json:"accessVector,omitempty"`
 	AccessComplexity           *CVSS20AccessComplexity          `json:"accessComplexity,omitempty"`
 	Authentication             *CVSS20Authentication            `json:"authentication,omitempty"`
@@ -628,10 +641,10 @@ type CVSSv2 struct {
 	EnvironmentalScore         *float64                         `json:"environmentalScore,omitempty"`
 }
 
-// CVSSv3 holding a CVSS v3.x value
-type CVSSv3 struct {
-	Version                       string                            `json:"version"`      // required
-	VectorString                  string                            `json:"vectorString"` // required
+// CVSS3 holding a CVSS v3.x value
+type CVSS3 struct {
+	Version                       CVSSVersion3                      `json:"version"`      // required
+	VectorString                  CVSS3VectorString                 `json:"vectorString"` // required
 	AttackVector                  *CVSS30AttackVector               `json:"attackVector,omitempty"`
 	AttackComplexity              *CVSS30AttackComplexity           `json:"attackComplexity,omitempty"`
 	PrivilegesRequired            *CVSS30PrivilegesRequired         `json:"privilegesRequired,omitempty"`
@@ -665,8 +678,8 @@ type CVSSv3 struct {
 // Score specifies information about (at least one) score of the vulnerability and for which
 // products the given value applies. A Score item has at least 2 properties.
 type Score struct {
-	CVSSv2   *CVSSv2   `json:"cvss_v2,omitempty"`
-	CVSSv3   *CVSSv3   `json:"cvss_v3,omitempty"`
+	CVSS2    *CVSS2    `json:"cvss_v2,omitempty"`
+	CVSS3    *CVSS3    `json:"cvss_v3,omitempty"`
 	Products *Products `json:"products"` // required
 }
 
@@ -953,19 +966,37 @@ func (wi *WeaknessID) UnmarshalText(data []byte) error {
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (cv *CVSSv3Version) UnmarshalText(data []byte) error {
-	s, err := CVSSv3VersionPattern(data)
+func (cv *CVSSVersion2) UnmarshalText(data []byte) error {
+	s, err := CVSSVersion2Pattern(data)
 	if err == nil {
-		*cv = CVSSv3Version(s)
+		*cv = CVSSVersion2(s)
 	}
 	return err
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaller interface.
-func (cvs *CVSSv3VectorString) UnmarshalText(data []byte) error {
-	s, err := CVSSv3VectorStringPattern(data)
+func (cvs *CVSS2VectorString) UnmarshalText(data []byte) error {
+	s, err := CVSS2VectorStringPattern(data)
 	if err == nil {
-		*cvs = CVSSv3VectorString(s)
+		*cvs = CVSS2VectorString(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (cv *CVSSVersion3) UnmarshalText(data []byte) error {
+	s, err := CVSS3VersionPattern(data)
+	if err == nil {
+		*cv = CVSSVersion3(s)
+	}
+	return err
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaller interface.
+func (cvs *CVSS3VectorString) UnmarshalText(data []byte) error {
+	s, err := CVSS3VectorStringPattern(data)
+	if err == nil {
+		*cvs = CVSS3VectorString(s)
 	}
 	return err
 }
