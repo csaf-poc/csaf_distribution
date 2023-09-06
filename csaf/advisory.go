@@ -615,6 +615,8 @@ var cvss3VersionPattern = alternativesUnmarshal(
 // CVSS3VectorString is the VectorString of a CVSS3 item with version 3.x.
 type CVSS3VectorString string
 
+// cvss3VectorStringPattern is a combination of the vectorString patterns of CVSS 3.0
+// and CVSS 3.1 since the only difference is the number directly after the first dot.
 var cvss3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/)*(AV:[NALP]|AC:[LH]|PR:[NLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])$`)
 
 // CVSS2 holding a CVSS v2.0 value
