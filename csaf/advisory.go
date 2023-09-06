@@ -644,36 +644,36 @@ type CVSS2 struct {
 
 // CVSS3 holding a CVSS v3.x value
 type CVSS3 struct {
-	Version                       CVSSVersion3                      `json:"version"`      // required
-	VectorString                  CVSS3VectorString                 `json:"vectorString"` // required
-	AttackVector                  *CVSS30AttackVector               `json:"attackVector,omitempty"`
-	AttackComplexity              *CVSS30AttackComplexity           `json:"attackComplexity,omitempty"`
-	PrivilegesRequired            *CVSS30PrivilegesRequired         `json:"privilegesRequired,omitempty"`
-	UserInteraction               *CVSS30UserInteraction            `json:"userInteraction,omitempty"`
-	Scope                         *CVSS30Scope                      `json:"scope,omitempty"`
-	ConfidentialityImpact         *CVSS30Cia                        `json:"confidentialityImpact,omitempty"`
-	IntegrityImpact               CVSS30Cia                         `json:"integrityImpact,omitempty"`
-	AvailabilityImpact            *CVSS30Cia                        `json:"availabilityImpact,omitempty"`
-	BaseScore                     float64                           `json:"baseScore"`    // required
-	BaseSeverity                  CVSS30Severity                    `json:"baseSeverity"` // required
-	ExploitCodeMaturity           *CVSS30ExploitCodeMaturity        `json:"exploitCodeMaturity,omitempty"`
-	RemediationLevel              *CVSS30RemediationLevel           `json:"remediationLevel,omitempty"`
-	ReportConfidence              *CVSS30Confidence                 `json:"reportConfidence,omitempty"`
-	TemporalScore                 *float64                          `json:"temporalScore,omitempty"`
-	TemporalSeverity              *CVSS30Severity                   `json:"temporalSeverity,omitempty"`
-	ConfidentialityRequirement    *CVSS30CiaRequirement             `json:"confidentialityRequirement,omitempty"`
-	IntegrityRequirement          *CVSS30CiaRequirement             `json:"integrityRequirement,omitempty"`
-	AvailabilityRequirement       *CVSS30CiaRequirement             `json:"availabilityRequirement,omitempty"`
-	ModifiedAttackVector          *CVSS30ModifiedAttackVector       `json:"modifiedAttackVector,omitempty"`
-	ModifiedAttackComplexity      *CVSS30ModifiedAttackComplexity   `json:"modifiedAttackComplexity,omitempty"`
-	ModifiedPrivilegesRequired    *CVSS30ModifiedPrivilegesRequired `json:"modifiedPrivilegesRequired,omitempty"`
-	ModifiedUserInteraction       *CVSS30ModifiedUserInteraction    `json:"modifiedUserInteraction,omitempty"`
-	ModifiedScope                 *CVSS30ModifiedScope              `json:"modifiedScope,omitempty"`
-	ModifiedConfidentialityImpact *CVSS30ModifiedCia                `json:"modifiedConfidentialityImpact,omitempty"`
-	ModifiedIntegrityImpact       *CVSS30ModifiedCia                `json:"modifiedIntegrityImpact,omitempty"`
-	ModifiedAvailabilityImpact    *CVSS30ModifiedCia                `json:"modifiedAvailabilityImpact,omitempty"`
-	EenvironmentalScore           *float64                          `json:"environmentalScore,omitempty"`
-	EnvironmentalSeverity         *CVSS30Severity                   `json:"environmentalSeverity,omitempty"`
+	Version                       CVSSVersion3                     `json:"version"`      // required
+	VectorString                  CVSS3VectorString                `json:"vectorString"` // required
+	AttackVector                  *CVSS3AttackVector               `json:"attackVector,omitempty"`
+	AttackComplexity              *CVSS3AttackComplexity           `json:"attackComplexity,omitempty"`
+	PrivilegesRequired            *CVSS3PrivilegesRequired         `json:"privilegesRequired,omitempty"`
+	UserInteraction               *CVSS3UserInteraction            `json:"userInteraction,omitempty"`
+	Scope                         *CVSS3Scope                      `json:"scope,omitempty"`
+	ConfidentialityImpact         *CVSS3Cia                        `json:"confidentialityImpact,omitempty"`
+	IntegrityImpact               CVSS3Cia                         `json:"integrityImpact,omitempty"`
+	AvailabilityImpact            *CVSS3Cia                        `json:"availabilityImpact,omitempty"`
+	BaseScore                     float64                          `json:"baseScore"`    // required
+	BaseSeverity                  CVSS3Severity                    `json:"baseSeverity"` // required
+	ExploitCodeMaturity           *CVSS3ExploitCodeMaturity        `json:"exploitCodeMaturity,omitempty"`
+	RemediationLevel              *CVSS3RemediationLevel           `json:"remediationLevel,omitempty"`
+	ReportConfidence              *CVSS3Confidence                 `json:"reportConfidence,omitempty"`
+	TemporalScore                 *float64                         `json:"temporalScore,omitempty"`
+	TemporalSeverity              *CVSS3Severity                   `json:"temporalSeverity,omitempty"`
+	ConfidentialityRequirement    *CVSS3CiaRequirement             `json:"confidentialityRequirement,omitempty"`
+	IntegrityRequirement          *CVSS3CiaRequirement             `json:"integrityRequirement,omitempty"`
+	AvailabilityRequirement       *CVSS3CiaRequirement             `json:"availabilityRequirement,omitempty"`
+	ModifiedAttackVector          *CVSS3ModifiedAttackVector       `json:"modifiedAttackVector,omitempty"`
+	ModifiedAttackComplexity      *CVSS3ModifiedAttackComplexity   `json:"modifiedAttackComplexity,omitempty"`
+	ModifiedPrivilegesRequired    *CVSS3ModifiedPrivilegesRequired `json:"modifiedPrivilegesRequired,omitempty"`
+	ModifiedUserInteraction       *CVSS3ModifiedUserInteraction    `json:"modifiedUserInteraction,omitempty"`
+	ModifiedScope                 *CVSS3ModifiedScope              `json:"modifiedScope,omitempty"`
+	ModifiedConfidentialityImpact *CVSS3ModifiedCia                `json:"modifiedConfidentialityImpact,omitempty"`
+	ModifiedIntegrityImpact       *CVSS3ModifiedCia                `json:"modifiedIntegrityImpact,omitempty"`
+	ModifiedAvailabilityImpact    *CVSS3ModifiedCia                `json:"modifiedAvailabilityImpact,omitempty"`
+	EenvironmentalScore           *float64                         `json:"environmentalScore,omitempty"`
+	EnvironmentalSeverity         *CVSS3Severity                   `json:"environmentalSeverity,omitempty"`
 }
 
 // Score specifies information about (at least one) score of the vulnerability and for which

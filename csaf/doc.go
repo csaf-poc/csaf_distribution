@@ -10,5 +10,6 @@
 package csaf
 
 //go:generate go run ./generate_cvss_enums.go -o cvss20enums.go -i ./schema/cvss-v2.0.json -p CVSS20
-//go:generate go run ./generate_cvss_enums.go -o cvss30enums.go -i ./schema/cvss-v3.0.json -p CVSS30
-//go:generate go run ./generate_cvss_enums.go -o cvss31enums.go -i ./schema/cvss-v3.1.json -p CVSS31
+// Generating only enums for CVSS 3.0 and not for 3.1 since the enums of both of them
+// are identical.
+//go:generate go run ./generate_cvss_enums.go -o cvss3enums.go -i ./schema/cvss-v3.0.json -p CVSS3
