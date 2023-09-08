@@ -9,18 +9,17 @@
 package misc
 
 import (
-	"testing"
 	"bytes"
 	"mime/multipart"
+	"testing"
 )
-
 
 // CreateFormFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
 // This version allows to set the mime type, too.
-func TestCreateFormFile( t *testing.T)  {
+func TestCreateFormFile(t *testing.T) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
-	
+
 	_, err := CreateFormFile(writer, "csaf", "data", "application/json")
 	if err != nil {
 		t.Errorf("failed to create an io.Writer via CreateFormFile")

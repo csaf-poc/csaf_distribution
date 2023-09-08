@@ -10,11 +10,9 @@
 package models
 
 import (
-	"time"
 	"testing"
+	"time"
 )
-
-
 
 func TestNewTimeInterval(t *testing.T) {
 	var before time.Time
@@ -23,7 +21,6 @@ func TestNewTimeInterval(t *testing.T) {
 	after = time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)
 	NewTimeInterval(after, before)
 }
-
 
 func TestGuessDate(t *testing.T) {
 	if _, guess := guessDate("2006-01-02T15:04:05"); !guess {
@@ -34,12 +31,11 @@ func TestGuessDate(t *testing.T) {
 	}
 }
 
-
 func TestUnmarshalText(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
-	byteSlice := []byte{'3', 'h'} 
+	byteSlice := []byte{'3', 'h'}
 	var emptySlice []byte
 	if testTimeRange.UnmarshalText(byteSlice) != nil {
 		t.Errorf(testTimeRange.UnmarshalText(byteSlice).Error())
@@ -51,17 +47,17 @@ func TestUnmarshalText(t *testing.T) {
 
 func TestMarshalJSON(t *testing.T) {
 	testTimeRange := NewTimeInterval(
-			time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
-			time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
+		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
 	testTimeRange.MarshalJSON()
 }
 
-func TestUnmarshalFlag(t *testing.T){
+func TestUnmarshalFlag(t *testing.T) {
 	testTimeRange := NewTimeInterval(
-				time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
-				time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
+		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
+		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
 	if err := testTimeRange.UnmarshalFlag("3h"); err != nil {
-			t.Errorf(err.Error())
+		t.Errorf(err.Error())
 	}
 	if err := testTimeRange.UnmarshalFlag("2006-01-02T15:04:05"); err != nil {
 		t.Errorf(err.Error())
@@ -84,6 +80,6 @@ func TestContains(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
-	testPointInTime :=	time.Date(2010, time.March, 10, 23, 0, 0, 0, time.UTC)
+	testPointInTime := time.Date(2010, time.March, 10, 23, 0, 0, 0, time.UTC)
 	testTimeRange.Contains(testPointInTime)
 }

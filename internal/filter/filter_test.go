@@ -16,19 +16,19 @@ import (
 // NewPatternMatcher compiles a new list of regular expression from
 // a given list of strings.
 func TestNewPatternMatcher(t *testing.T) {
-	var regex []string 
+	var regex []string
 	if pm, err := NewPatternMatcher(regex); pm == nil || err != nil {
-		t.Errorf("Failure: Did not compile valid regex pattern")		
+		t.Errorf("Failure: Did not compile valid regex pattern")
 	}
 	regex = append(regex, "++")
 	if pm, err := NewPatternMatcher(regex); pm != nil || err == nil {
-		t.Errorf("Failure: No error thrown at invalid compile pattern")		
+		t.Errorf("Failure: No error thrown at invalid compile pattern")
 	}
 }
 
 // Matches returns true if the given string matches any of the expressions.
 func TestMatches(t *testing.T) {
-	regex :=  []string{"a"}  
+	regex := []string{"a"}
 	pm, _ := NewPatternMatcher(regex)
 	if !pm.Matches("a") {
 		t.Errorf("Failure: Did not match two identical strings")
