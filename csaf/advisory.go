@@ -863,6 +863,81 @@ func (adv *Advisory) ValidateDocument() error {
 	return nil
 }
 
+func ValidateBranch(branches []*Branch) error {
+	for _, branch := range branches {
+		if branch.Category == nil {
+			return fmt.Errorf("element of property 'branches' is missing the property 'category'")
+		}
+
+		if branch.Name == nil {
+			return fmt.Errorf("element of property 'branches' is missing the property 'name'")
+		}
+
+		if branch.Product != nil {
+			if branch.Product.Name == nil {
+				return fmt.Errorf("property 'product' is missing the property 'name'")
+			}
+
+			if branch.Product.ProductID == nil {
+				return fmt.Errorf("property 'product' is missing the property 'product_id'")
+			}
+
+			if branch.Product.ProductIdentificationHelper != nil {
+				helper := branch.Product.ProductIdentificationHelper
+
+				if helper.Hashes != nil {
+					if helper.Hashes.FileHashes == nil {
+						return fmt.Errorf("property 'hashes' is missing the property 'file_hashes'")
+					}
+
+					for _, hash := range helper.Hashes.FileHashes {
+						if hash.Algorithm == nil {
+							return fmt.Errorf("element of property 'file_hashes' is missing the property 'algorithm'")
+						}
+
+						if hash.Value == nil {
+							return fmt.Errorf("element of property 'file_hashes' is missing the property 'value'")
+						}
+					}
+
+					if helper.Hashes.FileName == nil {
+						return fmt.Errorf("property 'hashes' is missing the property 'filename'")
+					}
+				}
+
+				if helper.XGenericURIs != nil {
+					for _, uri := range helper.XGenericURIs {
+						if uri.Namespace == nil {
+							return fmt.Errorf("element of property 'x_generic_uris' is missing the property 'namespace'")
+						}
+
+						if uri.URI == nil {
+							return fmt.Errorf("element of property 'x_generic_uris' is missing the property 'uri'")
+						}
+					}
+				}
+			}
+		}
+
+		if branch.Branches != nil {
+			if validationError := ValidateBranch(branch.Branches); validationError != nil {
+				return validationError
+			}
+		}
+	}
+	return nil
+}
+
+func (adv *Advisory) ValidateProductTree() error {
+	tree := adv.ProductTree
+	if tree.Branches != nil {
+		if validationError := ValidateBranch(tree.Branches); validationError != nil {
+			return validationError
+		}
+	}
+	return nil
+}
+
 // Validate checks if the advisory is valid.
 // Returns an error if the validation fails otherwise nil.
 func (adv *Advisory) Validate() error {
@@ -873,6 +948,13 @@ func (adv *Advisory) Validate() error {
 	if validationError := adv.ValidateDocument(); validationError != nil {
 		return validationError
 	}
+
+	if adv.ProductTree != nil {
+		if validationError := adv.ValidateProductTree(); validationError != nil {
+			return validationError
+		}
+	}
+
 	return nil
 }
 
