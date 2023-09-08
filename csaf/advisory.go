@@ -10,6 +10,7 @@ package csaf
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 )
@@ -83,14 +84,14 @@ var fileHashValuePattern = patternUnmarshal(`^[0-9a-fA-F]{32,}$`)
 // FileHash is checksum hash.
 // Values for 'algorithm' are derived from the currently supported digests OpenSSL. Leading dashes were removed.
 type FileHash struct {
-	Algorithm string        `json:"algorithm"` // required, default: sha256
-	Value     FileHashValue `json:"value"`     // required
+	Algorithm *string        `json:"algorithm"` // required, default: sha256
+	Value     *FileHashValue `json:"value"`     // required
 }
 
 // Hashes is a list of hashes.
 type Hashes struct {
-	FileHashes []FileHash `json:"file_hashes"` // required
-	FileName   string     `json:"filename"`    // required
+	FileHashes []*FileHash `json:"file_hashes"` // required
+	FileName   *string     `json:"filename"`    // required
 }
 
 // CPE represents a Common Platform Enumeration in an advisory.
@@ -105,8 +106,8 @@ var pURLPattern = patternUnmarshal(`^pkg:[A-Za-z\\.\\-\\+][A-Za-z0-9\\.\\-\\+]*/
 
 // XGenericURI represents an identifier for a product.
 type XGenericURI struct {
-	Namespace string `json:"namespace"` //  required
-	URI       string `json:"uri"`       //  required
+	Namespace *string `json:"namespace"` //  required
+	URI       *string `json:"uri"`       //  required
 }
 
 // ProductIdentificationHelper bundles product identifier information.
@@ -124,8 +125,8 @@ type ProductIdentificationHelper struct {
 
 // FullProductName is the full name of a product.
 type FullProductName struct {
-	Name                        string                       `json:"name"`       // required
-	ProductID                   ProductID                    `json:"product_id"` // required
+	Name                        *string                      `json:"name"`       // required
+	ProductID                   *ProductID                   `json:"product_id"` // required
 	ProductIdentificationHelper *ProductIdentificationHelper `json:"product_identification_helper,omitempty"`
 }
 
@@ -137,8 +138,8 @@ type FullProductName struct {
 // version ranges.
 type Branch struct {
 	Branches []*Branch        `json:"branches,omitempty"`
-	Category BranchCategory   `json:"category"` // required
-	Name     string           `json:"name"`     // required
+	Category *BranchCategory  `json:"category"` // required
+	Name     *string          `json:"name"`     // required
 	Product  *FullProductName `json:"product,omitempty"`
 }
 
@@ -173,10 +174,10 @@ var csafNoteCategoryPattern = alternativesUnmarshal(
 
 // Note reflects the 'Note' object of an advisory.
 type Note struct {
-	Audience     string        `json:"audience,omitempty"`
+	Audience     *string       `json:"audience,omitempty"`
 	NoteCategory *NoteCategory `json:"category"` // required
 	Text         *string       `json:"text"`     // required
-	Title        string        `json:"title,omitempty"`
+	Title        *string       `json:"title,omitempty"`
 }
 
 // ReferenceCategory is the category of a note.
@@ -198,15 +199,15 @@ var csafReferenceCategoryPattern = alternativesUnmarshal(
 // or the entire document and to be of value to the document consumer.
 type Reference struct {
 	ReferenceCategory *string `json:"category"` // optional, default: external
-	Summary           string  `json:"summary"`  // required
-	URL               string  `json:"url"`      // required
+	Summary           *string `json:"summary"`  // required
+	URL               *string `json:"url"`      // required
 }
 
 // AggregateSeverity stands for the urgency with which the vulnerabilities of an advisory
 // (not a specific one) should be addressed.
 type AggregateSeverity struct {
 	Namespace *string `json:"namespace,omitempty"`
-	Text      string  `json:"text"` // required
+	Text      *string `json:"text"` // required
 }
 
 // DocumentCategory represents a category of a document.
@@ -224,8 +225,8 @@ var csafVersionPattern = alternativesUnmarshal(string(CSAFVersion20))
 
 // TLP provides details about the TLP classification of the document.
 type TLP struct {
-	DocumentTLPLabel TLPLabel `json:"label"` // required
-	URL              *string  `json:"url,omitempty"`
+	DocumentTLPLabel *TLPLabel `json:"label"` // required
+	URL              *string   `json:"url,omitempty"`
 }
 
 // DocumentDistribution describes rules for sharing a document.
@@ -236,11 +237,11 @@ type DocumentDistribution struct {
 
 // DocumentPublisher provides information about the publishing entity.
 type DocumentPublisher struct {
-	Category         Category `json:"category"` // required
-	ContactDetails   *string  `json:"contact_details,omitempty"`
-	IssuingAuthority *string  `json:"issuing_authority,omitempty"`
-	Name             string   `json:"name"`      // required
-	Namespace        string   `json:"namespace"` // required
+	Category         *Category `json:"category"` // required
+	ContactDetails   *string   `json:"contact_details,omitempty"`
+	IssuingAuthority *string   `json:"issuing_authority,omitempty"`
+	Name             *string   `json:"name"`      // required
+	Namespace        *string   `json:"namespace"` // required
 }
 
 // RevisionNumber specifies a version string to denote clearly the evolution of the content of the document.
@@ -250,7 +251,7 @@ var versionPattern = patternUnmarshal("^(0|[1-9][0-9]*)$|^((0|[1-9]\\d*)\\.(0|[1
 
 // Engine contains information about the engine that generated the CSAF document.
 type Engine struct {
-	Name    string  `json:"name"` // required
+	Name    *string `json:"name"` // required
 	Version *string `json:"version,omitempty"`
 }
 
@@ -259,7 +260,7 @@ type Engine struct {
 // including the date it was generated and the entity that generated it.
 type Generator struct {
 	Date   *string `json:"date,omitempty"`
-	Engine Engine  `json:"engine"` // required
+	Engine *Engine `json:"engine"` // required
 }
 
 // TrackingID is a unique identifier for the document.
@@ -269,10 +270,10 @@ var trackingIDPattern = patternUnmarshal("^[\\S](.*[\\S])?$")
 
 // Revision contains information about one revision of the document.
 type Revision struct {
-	Date          string         `json:"date"` // required
-	LegacyVersion *string        `json:"legacy_version,omitempty"`
-	Number        RevisionNumber `json:"number"`  // required
-	Summary       string         `json:"summary"` // required
+	Date          *string         `json:"date"` // required
+	LegacyVersion *string         `json:"legacy_version,omitempty"`
+	Number        *RevisionNumber `json:"number"`  // required
+	Summary       *string         `json:"summary"` // required
 }
 
 // TrackingStatus is the category of a publisher.
@@ -294,14 +295,14 @@ var csafTrackingStatusPattern = alternativesUnmarshal(
 
 // Tracking holds information that is necessary to track a CSAF document.
 type Tracking struct {
-	Aliases            []*string      `json:"aliases,omitempty"`    // unique elements
-	CurrentReleaseDate string         `json:"current_release_date"` // required
-	Generator          *Generator     `json:"generator"`
-	ID                 TrackingID     `json:"id"`                   // required
-	InitialReleaseDate string         `json:"initial_release_date"` // required
-	RevisionHistory    []Revision     `json:"revision_history"`     // required
-	Status             TrackingStatus `json:"status"`               // required
-	Version            RevisionNumber `json:"version"`              // required
+	Aliases            []*string       `json:"aliases,omitempty"`    // unique elements
+	CurrentReleaseDate *string         `json:"current_release_date"` // required
+	Generator          *Generator      `json:"generator"`
+	ID                 *TrackingID     `json:"id"`                   // required
+	InitialReleaseDate *string         `json:"initial_release_date"` // required
+	RevisionHistory    []*Revision     `json:"revision_history"`     // required
+	Status             *TrackingStatus `json:"status"`               // required
+	Version            *RevisionNumber `json:"version"`              // required
 }
 
 // Lang is a language identifier, corresponding to IETF BCP 47 / RFC 5646.
@@ -311,18 +312,18 @@ var langPattern = patternUnmarshal("^(([A-Za-z]{2,3}(-[A-Za-z]{3}(-[A-Za-z]{3}){
 
 // Document contains meta-data about an advisory.
 type Document struct {
-	Acknowledgements  []Acknowledgement     `json:"acknowledgements,omitempty"`
+	Acknowledgements  []*Acknowledgement    `json:"acknowledgements,omitempty"`
 	AggregateSeverity *AggregateSeverity    `json:"aggregate_severity,omitempty"`
-	Category          DocumentCategory      `json:"category"`     // required
-	CSAFVersion       Version               `json:"csaf_version"` // required
+	Category          *DocumentCategory     `json:"category"`     // required
+	CSAFVersion       *Version              `json:"csaf_version"` // required
 	Distribution      *DocumentDistribution `json:"distribution,omitempty"`
 	Lang              *Lang                 `json:"lang,omitempty"`
 	Notes             []*Note               `json:"notes,omitempty"`
-	Publisher         DocumentPublisher     `json:"publisher"` // required
+	Publisher         *DocumentPublisher    `json:"publisher"` // required
 	References        []*Reference          `json:"references,omitempty"`
 	SourceLang        *Lang                 `json:"source_lang,omitempty"`
-	Title             string                `json:"title"`    // required
-	Tracking          Tracking              `json:"tracking"` // required
+	Title             *string               `json:"title"`    // required
+	Tracking          *Tracking             `json:"tracking"` // required
 }
 
 // ProductGroupID is a reference token for product group instances.
@@ -330,9 +331,9 @@ type ProductGroupID string
 
 // ProductGroup is a group of products in the document that belong to one group.
 type ProductGroup struct {
-	GroupID    string   `json:"group_id"`    // required
-	ProductIDs Products `json:"product_ids"` // required, two or more unique elements
-	Summary    *string  `json:"summary,omitempty"`
+	GroupID    *string   `json:"group_id"`    // required
+	ProductIDs *Products `json:"product_ids"` // required, two or more unique elements
+	Summary    *string   `json:"summary,omitempty"`
 }
 
 // ProductGroups is a list of ProductGroupIDs
@@ -365,10 +366,10 @@ var csafRelationshipCategoryPattern = alternativesUnmarshal(
 
 // Relationship establishes a link between two existing FullProductName elements.
 type Relationship struct {
-	Category                  RelationshipCategory `json:"category"`                     // required
-	FullProductName           FullProductName      `json:"full_product_name"`            // required
-	ProductReference          ProductID            `json:"product_reference"`            // required
-	RelatesToProductReference ProductID            `json:"relates_to_product_reference"` // required
+	Category                  *RelationshipCategory `json:"category"`                     // required
+	FullProductName           *FullProductName      `json:"full_product_name"`            // required
+	ProductReference          *ProductID            `json:"product_reference"`            // required
+	RelatesToProductReference *ProductID            `json:"relates_to_product_reference"` // required
 
 }
 
@@ -392,8 +393,8 @@ var weaknessIDPattern = patternUnmarshal("^CWE-[1-9]\\d{0,5}$")
 
 // CWE holds the MITRE standard Common Weakness Enumeration (CWE) for the weakness associated.
 type CWE struct {
-	ID   WeaknessID `json:"id"`   // required
-	Name string     `json:"name"` // required
+	ID   *WeaknessID `json:"id"`   // required
+	Name *string     `json:"name"` // required
 }
 
 // FlagLabel is the label of a flag for a vulnerability.
@@ -425,14 +426,14 @@ var csafFlagLabelPattern = alternativesUnmarshal(
 type Flag struct {
 	Date       *string        `json:"date,omitempty"`
 	GroupIds   *ProductGroups `json:"group_ids,omitempty"`
-	Label      FlagLabel      `json:"label"` // required
+	Label      *FlagLabel     `json:"label"` // required
 	ProductIds *Products      `json:"product_ids,omitempty"`
 }
 
 // VulnerabilityID is the identifier of a vulnerability.
 type VulnerabilityID struct {
-	SystemName string `json:"system_name"` // required
-	Text       string `json:"text"`        // required
+	SystemName *string `json:"system_name"` // required
+	Text       *string `json:"text"`        // required
 }
 
 // InvolvementParty is the party of an involvement.
@@ -490,10 +491,10 @@ var csafInvolvementStatusPattern = alternativesUnmarshal(
 // The ordered tuple of the values of party and date (if present) SHALL be unique within the involvements
 // of a vulnerability.
 type Involvement struct {
-	Date    *string           `json:"date,omitempty"`
-	Party   InvolvementParty  `json:"party"`  // required
-	Status  InvolvementStatus `json:"status"` // required
-	Summary *string           `json:"summary,omitempty"`
+	Date    *string            `json:"date,omitempty"`
+	Party   *InvolvementParty  `json:"party"`  // required
+	Status  *InvolvementStatus `json:"status"` // required
+	Summary *string            `json:"summary,omitempty"`
 }
 
 // ProductStatus contains different lists of ProductIDs which provide details on
@@ -570,8 +571,8 @@ var csafRestartRequiredCategoryPattern = alternativesUnmarshal(
 // RestartRequired provides information on category of restart is required by this remediation to become
 // effective.
 type RestartRequired struct {
-	Category RestartRequiredCategory `json:"category"` // required
-	Details  *string                 `json:"details,omitempty"`
+	Category *RestartRequiredCategory `json:"category"` // required
+	Details  *string                  `json:"details,omitempty"`
 }
 
 // Remediation specifies details on how to handle (and presumably, fix) a vulnerability.
@@ -621,15 +622,15 @@ var cvss3VectorStringPattern = patternUnmarshal(`^CVSS:3[.][01]/((AV:[NALP]|AC:[
 
 // CVSS2 holding a CVSS v2.0 value
 type CVSS2 struct {
-	Version                    CVSSVersion2                     `json:"version"`      // required
-	VectorString               CVSS2VectorString                `json:"vectorString"` // required
+	Version                    *CVSSVersion2                    `json:"version"`      // required
+	VectorString               *CVSS2VectorString               `json:"vectorString"` // required
 	AccessVector               *CVSS20AccessVector              `json:"accessVector,omitempty"`
 	AccessComplexity           *CVSS20AccessComplexity          `json:"accessComplexity,omitempty"`
 	Authentication             *CVSS20Authentication            `json:"authentication,omitempty"`
 	ConfidentialityImpact      *CVSS20Cia                       `json:"confidentialityImpact,omitempty"`
 	IntegrityImpact            *CVSS20Cia                       `json:"integrityImpact,omitempty"`
 	AvailabilityImpact         *CVSS20Cia                       `json:"availabilityImpact,omitempty"`
-	BaseScore                  float64                          `json:"baseScore"` // required
+	BaseScore                  *float64                         `json:"baseScore"` // required
 	Exploitability             *CVSS20Exploitability            `json:"exploitability,omitempty"`
 	RemediationLevel           *CVSS20RemediationLevel          `json:"remediationLevel,omitempty"`
 	ReportConfidence           *CVSS20ReportConfidence          `json:"reportConfidence,omitempty"`
@@ -644,8 +645,8 @@ type CVSS2 struct {
 
 // CVSS3 holding a CVSS v3.x value
 type CVSS3 struct {
-	Version                       CVSSVersion3                     `json:"version"`      // required
-	VectorString                  CVSS3VectorString                `json:"vectorString"` // required
+	Version                       *CVSSVersion3                    `json:"version"`      // required
+	VectorString                  *CVSS3VectorString               `json:"vectorString"` // required
 	AttackVector                  *CVSS3AttackVector               `json:"attackVector,omitempty"`
 	AttackComplexity              *CVSS3AttackComplexity           `json:"attackComplexity,omitempty"`
 	PrivilegesRequired            *CVSS3PrivilegesRequired         `json:"privilegesRequired,omitempty"`
@@ -654,8 +655,8 @@ type CVSS3 struct {
 	ConfidentialityImpact         *CVSS3Cia                        `json:"confidentialityImpact,omitempty"`
 	IntegrityImpact               CVSS3Cia                         `json:"integrityImpact,omitempty"`
 	AvailabilityImpact            *CVSS3Cia                        `json:"availabilityImpact,omitempty"`
-	BaseScore                     float64                          `json:"baseScore"`    // required
-	BaseSeverity                  CVSS3Severity                    `json:"baseSeverity"` // required
+	BaseScore                     *float64                         `json:"baseScore"`    // required
+	BaseSeverity                  *CVSS3Severity                   `json:"baseSeverity"` // required
 	ExploitCodeMaturity           *CVSS3ExploitCodeMaturity        `json:"exploitCodeMaturity,omitempty"`
 	RemediationLevel              *CVSS3RemediationLevel           `json:"remediationLevel,omitempty"`
 	ReportConfidence              *CVSS3Confidence                 `json:"reportConfidence,omitempty"`
@@ -703,11 +704,11 @@ var csafThreatCategoryPattern = alternativesUnmarshal(
 
 // Threat contains information about a vulnerability that can change with time.
 type Threat struct {
-	Category   ThreatCategory `json:"category"` // required
-	Date       *string        `json:"date,omitempty"`
-	Details    string         `json:"details"` // required
-	GroupIds   *ProductGroups `json:"group_ids,omitempty"`
-	ProductIds *Products      `json:"product_ids,omitempty"`
+	Category   *ThreatCategory `json:"category"` // required
+	Date       *string         `json:"date,omitempty"`
+	Details    *string         `json:"details"` // required
+	GroupIds   *ProductGroups  `json:"group_ids,omitempty"`
+	ProductIds *Products       `json:"product_ids,omitempty"`
 }
 
 // Vulnerability contains all fields that are related to a single vulnerability in the document.
@@ -731,15 +732,147 @@ type Vulnerability struct {
 
 // Advisory represents a CSAF advisory.
 type Advisory struct {
-	Document        Document         `json:"document"` // required
+	Document        *Document        `json:"document"` // required
 	ProductTree     *ProductTree     `json:"product_tree,omitempty"`
 	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
+}
+
+func (adv *Advisory) ValidateDocument() error {
+	doc := adv.Document
+
+	if doc.AggregateSeverity != nil {
+		if doc.AggregateSeverity.Text == nil {
+			return fmt.Errorf("the property 'aggregate_severity' is missing the property 'text'")
+		}
+	}
+
+	if doc.Category == nil {
+		return fmt.Errorf("the property 'document' is missing the property 'category'")
+	}
+
+	if doc.CSAFVersion == nil {
+		return fmt.Errorf("the property 'document' is missing the property 'csaf_version'")
+	}
+
+	if doc.Distribution != nil {
+		if doc.Distribution.Text == nil && doc.Distribution.TLP == nil {
+			return fmt.Errorf("the property 'distribution' must at least contain one of the following properties:" +
+				"'text', 'tlp'")
+		}
+	}
+
+	if doc.Notes != nil {
+		for index, note := range doc.Notes {
+			if note.NoteCategory == nil {
+				return fmt.Errorf("the %d. note in the property 'document' is missing the property 'note_category'", index)
+			}
+			if note.Text == nil {
+				return fmt.Errorf("the %d. note in the property 'document' is missing the property 'text'", index)
+			}
+		}
+	}
+
+	if doc.Publisher == nil {
+		return fmt.Errorf("the property 'document' is missing the property 'publisher'")
+	}
+
+	publisher := doc.Publisher
+
+	if publisher.Category == nil {
+		return fmt.Errorf("the publisher in the property 'document' is missing the property 'category'")
+	}
+
+	if publisher.Name == nil {
+		return fmt.Errorf("the publisher in the property 'document' is missing the property 'name'")
+	}
+
+	if publisher.Namespace == nil {
+		return fmt.Errorf("the publisher in the property 'document' is missing the property 'namespace'")
+	}
+
+	if doc.References != nil {
+		for index, ref := range doc.References {
+			if ref.Summary == nil {
+				return fmt.Errorf("the %d. reference in the property 'document' is missing the property 'summary'", index)
+			}
+			if ref.URL == nil {
+				return fmt.Errorf("the %d. reference in the property 'document' is missing the property 'url'", index)
+			}
+		}
+	}
+
+	if doc.Title == nil {
+		return fmt.Errorf("the property 'document' is missing the property 'title'")
+	}
+
+	if doc.Tracking == nil {
+		return fmt.Errorf("the property 'document' is missing the property 'tracking'")
+	}
+
+	tracking := doc.Tracking
+
+	if tracking.CurrentReleaseDate == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'current_release_date'")
+	}
+
+	if tracking.Generator != nil {
+		generator := tracking.Generator
+		if generator.Engine == nil {
+			return fmt.Errorf("the property 'generator' is missing the property 'engine'")
+		}
+
+		if generator.Engine.Version == nil {
+			return fmt.Errorf("the property 'engine' is missing the property 'version'")
+		}
+	}
+
+	if tracking.ID == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'id'")
+	}
+
+	if tracking.InitialReleaseDate == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'initial_release_date'")
+	}
+
+	if tracking.RevisionHistory == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'revision_history'")
+	}
+
+	for index, revision := range tracking.RevisionHistory {
+		if revision.Date == nil {
+			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'date'", index)
+		}
+
+		if revision.Number == nil {
+			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'number'", index)
+		}
+
+		if revision.Summary == nil {
+			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'summary'", index)
+		}
+	}
+
+	if tracking.Status == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'status'")
+	}
+
+	if tracking.Version == nil {
+		return fmt.Errorf("the property 'tracking' is missing the property 'version'")
+	}
+
+	return nil
 }
 
 // Validate checks if the advisory is valid.
 // Returns an error if the validation fails otherwise nil.
 func (adv *Advisory) Validate() error {
-	// TODO
+	if adv.Document == nil {
+		return fmt.Errorf("the advisory is missing the property 'document'")
+	}
+
+	if validationError := adv.ValidateDocument(); validationError != nil {
+		return validationError
+	}
 	return nil
 }
 
@@ -753,6 +886,9 @@ func LoadAdvisory(fname string) (*Advisory, error) {
 	var advisory Advisory
 	if err := json.NewDecoder(f).Decode(&advisory); err != nil {
 		return nil, err
+	}
+	if validationError := advisory.Validate(); validationError != nil {
+		return nil, validationError
 	}
 	return &advisory, nil
 }
