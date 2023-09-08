@@ -3,26 +3,24 @@ package certs
 import "testing"
 
 func TestLoadCertificates(t *testing.T) {
-	goodTestCert := "data/testclient.crt"
-	goodTestkey := "data/testclientkey.pem"
-	goodPassphrase := "security123"
-//	missingTestCert := "data/testclient_missing.crt"
+	TestCert := "data/testclient.crt"
+	Testkey := "data/testclientkey.pem"
+	Passphrase := "security123"
 	missingTestkey := "data/testclientkey_missing.pem"
-//	missingPassphrase := ""
 
-	if certificate, err := LoadCertificate(&goodTestCert, &goodTestkey, nil); certificate == nil || err != nil {
+	if certificate, err := LoadCertificate(&TestCert, &Testkey, nil); certificate == nil || err != nil {
 		t.Errorf("Failure: Couldn't load supposedly valid certificate.")
 	}
-	if certificate, err := LoadCertificate(nil, &goodTestkey, nil); certificate != nil || err == nil {
+	if certificate, err := LoadCertificate(nil, &Testkey, nil); certificate != nil || err == nil {
 		t.Errorf("Failure: No error despite missing certificate")
 	}
-	if certificate, err := LoadCertificate(&goodTestCert, &missingTestkey, nil); certificate != nil || err == nil {
+	if certificate, err := LoadCertificate(&TestCert, &missingTestkey, nil); certificate != nil || err == nil {
 		t.Errorf("Failure: No Failure while loading certificate using missing key.")
 	}
-	if certificate, err := LoadCertificate(&goodTestCert, &goodTestkey, &goodPassphrase); certificate == nil || err != nil {
+	if certificate, err := LoadCertificate(&TestCert, &Testkey, &Passphrase); certificate == nil || err != nil {
 		t.Errorf("Failure: Couldn't load supposedly valid certificate with passphrase.")
 	}
-	if certificate, err := LoadCertificate(&goodTestCert, &missingTestkey, &goodPassphrase); certificate != nil || err == nil {
+	if certificate, err := LoadCertificate(&TestCert, &missingTestkey, &Passphrase); certificate != nil || err == nil {
 		t.Errorf("Failure:  No Failure while loading certificate using missing key with passphrase.")
 	}
 }
