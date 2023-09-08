@@ -83,8 +83,8 @@ var fileHashValuePattern = patternUnmarshal(`^[0-9a-fA-F]{32,}$`)
 // FileHash is checksum hash.
 // Values for 'algorithm' are derived from the currently supported digests OpenSSL. Leading dashes were removed.
 type FileHash struct {
-	Algorithm string `json:"algorithm"` // required, default: sha256
-	Value     string `json:"value"`     // required
+	Algorithm string        `json:"algorithm"` // required, default: sha256
+	Value     FileHashValue `json:"value"`     // required
 }
 
 // Hashes is a list of hashes.
