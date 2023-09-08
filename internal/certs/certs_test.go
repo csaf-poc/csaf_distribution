@@ -17,8 +17,8 @@ func TestLoadCertificates(t *testing.T) {
 	if certificate, err := LoadCertificate(&TestCert, &missingTestkey, nil); certificate != nil || err == nil {
 		t.Errorf("Failure: No Failure while loading certificate using missing key.")
 	}
-	if certificate, err := LoadCertificate(&TestCert, &Testkey, &Passphrase); certificate == nil || err != nil {
-		t.Errorf("Failure: Couldn't load supposedly valid certificate with passphrase.")
+	if certificate, err := LoadCertificate(&TestCert, &Testkey, &Passphrase); certificate != nil || err == nil {
+		t.Errorf("Failure: Could load unprotected valid certificate with passphrase.")
 	}
 	if certificate, err := LoadCertificate(&TestCert, &missingTestkey, &Passphrase); certificate != nil || err == nil {
 		t.Errorf("Failure:  No Failure while loading certificate using missing key with passphrase.")
