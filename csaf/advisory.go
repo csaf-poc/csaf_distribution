@@ -10,6 +10,7 @@ package csaf
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -110,17 +111,20 @@ type XGenericURI struct {
 	URI       *string `json:"uri"`       //  required
 }
 
+// XGenericURIs is a list of XGenericURI.
+type XGenericURIs []*XGenericURI
+
 // ProductIdentificationHelper bundles product identifier information.
 // Supported formats for SBOMs are SPDX, CycloneDX, and SWID
 type ProductIdentificationHelper struct {
-	CPE           *CPE           `json:"cpe,omitempty"`
-	Hashes        *Hashes        `json:"hashes,omitempty"`
-	ModelNumbers  []*string      `json:"model_numbers,omitempty"` // unique elements
-	PURL          *PURL          `json:"purl,omitempty"`
-	SBOMURLs      []*string      `json:"sbom_urls,omitempty"`
-	SerialNumbers []*string      `json:"serial_numbers,omitempty"` // unique elements
-	SKUs          []*string      `json:"skus,omitempty"`
-	XGenericURIs  []*XGenericURI `json:"x_generic_uris,omitempty"`
+	CPE           *CPE         `json:"cpe,omitempty"`
+	Hashes        *Hashes      `json:"hashes,omitempty"`
+	ModelNumbers  []*string    `json:"model_numbers,omitempty"` // unique elements
+	PURL          *PURL        `json:"purl,omitempty"`
+	SBOMURLs      []*string    `json:"sbom_urls,omitempty"`
+	SerialNumbers []*string    `json:"serial_numbers,omitempty"` // unique elements
+	SKUs          []*string    `json:"skus,omitempty"`
+	XGenericURIs  XGenericURIs `json:"x_generic_uris,omitempty"`
 }
 
 // FullProductName is the full name of a product.
@@ -137,7 +141,7 @@ type FullProductName struct {
 // If the category is 'product_version_range' the name MUST contain
 // version ranges.
 type Branch struct {
-	Branches []*Branch        `json:"branches,omitempty"`
+	Branches Branches         `json:"branches,omitempty"`
 	Category *BranchCategory  `json:"category"` // required
 	Name     *string          `json:"name"`     // required
 	Product  *FullProductName `json:"product,omitempty"`
@@ -293,6 +297,9 @@ var csafTrackingStatusPattern = alternativesUnmarshal(
 	string(CSAFTrackingStatusFinal),
 	string(CSAFTrackingStatusInterim))
 
+// Revisions is a list of Revision.
+type Revisions []*Revision
+
 // Tracking holds information that is necessary to track a CSAF document.
 type Tracking struct {
 	Aliases            []*string       `json:"aliases,omitempty"`    // unique elements
@@ -300,7 +307,7 @@ type Tracking struct {
 	Generator          *Generator      `json:"generator"`
 	ID                 *TrackingID     `json:"id"`                   // required
 	InitialReleaseDate *string         `json:"initial_release_date"` // required
-	RevisionHistory    []*Revision     `json:"revision_history"`     // required
+	RevisionHistory    Revisions       `json:"revision_history"`     // required
 	Status             *TrackingStatus `json:"status"`               // required
 	Version            *RevisionNumber `json:"version"`              // required
 }
@@ -318,9 +325,9 @@ type Document struct {
 	CSAFVersion       *Version              `json:"csaf_version"` // required
 	Distribution      *DocumentDistribution `json:"distribution,omitempty"`
 	Lang              *Lang                 `json:"lang,omitempty"`
-	Notes             []*Note               `json:"notes,omitempty"`
+	Notes             Notes                 `json:"notes,omitempty"`
 	Publisher         *DocumentPublisher    `json:"publisher"` // required
-	References        []*Reference          `json:"references,omitempty"`
+	References        References            `json:"references,omitempty"`
 	SourceLang        *Lang                 `json:"source_lang,omitempty"`
 	Title             *string               `json:"title"`    // required
 	Tracking          *Tracking             `json:"tracking"` // required
@@ -373,9 +380,12 @@ type Relationship struct {
 
 }
 
+// Branches is a list of Branch.
+type Branches []*Branch
+
 // ProductTree contains product names that can be referenced elsewhere in the document.
 type ProductTree struct {
-	Branches         []*Branch          `json:"branches,omitempty"`
+	Branches         Branches           `json:"branches,omitempty"`
 	FullProductNames []*FullProductName `json:"full_product_name,omitempty"`
 	ProductGroups    *ProductGroups     `json:"product_groups,omitempty"`
 	RelationShips    []*Relationship    `json:"relationships,omitempty"`
@@ -711,6 +721,12 @@ type Threat struct {
 	ProductIds *Products       `json:"product_ids,omitempty"`
 }
 
+// Notes is a list of Note.
+type Notes []*Note
+
+// References is a list of Reference.
+type References []*Reference
+
 // Vulnerability contains all fields that are related to a single vulnerability in the document.
 type Vulnerability struct {
 	Acknowledgements []*Acknowledgement `json:"acknowledgements,omitempty"`
@@ -720,9 +736,9 @@ type Vulnerability struct {
 	Flags            []*Flag            `json:"flags,omitempty"`
 	Ids              []*VulnerabilityID `json:"ids,omitempty"` // unique ID elements
 	Involvements     []*Involvement     `json:"involvements,omitempty"`
-	Notes            []*Note            `json:"notes,omitempty"`
+	Notes            Notes              `json:"notes,omitempty"`
 	ProductStatus    *ProductStatus     `json:"product_status,omitempty"`
-	References       []*Reference       `json:"references,omitempty"`
+	References       References         `json:"references,omitempty"`
 	ReleaseDate      *string            `json:"release_date,omitempty"`
 	Remediations     []*Remediation     `json:"remediations,omitempty"`
 	Scores           []*Score           `json:"scores,omitempty"`
@@ -737,224 +753,321 @@ type Advisory struct {
 	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
 }
 
-func (adv *Advisory) ValidateDocument() error {
-	doc := adv.Document
+// Validate validates a AggregateSeverity.
+func (as *AggregateSeverity) Validate() error {
+	if as.Text == nil {
+		return errors.New("'text' is missing")
+	}
+	return nil
+}
 
-	if doc.AggregateSeverity != nil {
-		if doc.AggregateSeverity.Text == nil {
-			return fmt.Errorf("the property 'aggregate_severity' is missing the property 'text'")
+// Validate validates a DocumentDistribution.
+func (dd *DocumentDistribution) Validate() error {
+	if dd.Text == nil && dd.TLP == nil {
+		return errors.New("needs at least properties 'text' or 'tlp'")
+	}
+	return nil
+}
+
+// Validate validates a list of notes.
+func (ns Notes) Validate() error {
+	for i, n := range ns {
+		if err := n.Validate(); err != nil {
+			return fmt.Errorf("%d. note is invalid: %w", i+1, err)
 		}
 	}
+	return nil
+}
 
-	if doc.Category == nil {
-		return fmt.Errorf("the property 'document' is missing the property 'category'")
+// Validate validates a single note.
+func (n *Note) Validate() error {
+	switch {
+	case n == nil:
+		return errors.New("is nil")
+	case n.NoteCategory == nil:
+		return errors.New("'note_category' is missing")
+	case n.Text == nil:
+		return errors.New("'text' is missing")
+	default:
+		return nil
 	}
+}
 
-	if doc.CSAFVersion == nil {
-		return fmt.Errorf("the property 'document' is missing the property 'csaf_version'")
+// Validate validates a DocumentPublisher.
+func (p *DocumentPublisher) Validate() error {
+	switch {
+	case p.Category == nil:
+		return errors.New("'document' is missing")
+	case p.Name == nil:
+		return errors.New("'name' is missing")
+	case p.Namespace == nil:
+		return errors.New("'namespace' is missing")
+	default:
+		return nil
 	}
+}
 
+// Validate validates a single reference.
+func (r *Reference) Validate() error {
+	switch {
+	case r.Summary == nil:
+		return errors.New("summary' is missing")
+	case r.URL == nil:
+		return errors.New("'url' is missing")
+	default:
+		return nil
+	}
+}
+
+// Validate validates a list of references.
+func (rs References) Validate() error {
+	for i, r := range rs {
+		if err := r.Validate(); err != nil {
+			return fmt.Errorf("%d. reference is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single revision.
+func (r *Revision) Validate() error {
+	switch {
+	case r.Date == nil:
+		return errors.New("'date' is missing")
+	case r.Number == nil:
+		return errors.New("'number' is missing")
+	case r.Summary == nil:
+		return errors.New("'summary' is missing")
+	default:
+		return nil
+	}
+}
+
+// Validate validates a list of revisions.
+func (rs Revisions) Validate() error {
+	for i, r := range rs {
+		if err := r.Validate(); err != nil {
+			return fmt.Errorf("%d. revision is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates an Engine.
+func (e *Engine) Validate() error {
+	if e.Version == nil {
+		return errors.New("'version' is missing")
+	}
+	return nil
+}
+
+// Validate validates a Generator.
+func (g *Generator) Validate() error {
+	if g.Engine == nil {
+		return errors.New("'engine' is missing")
+	}
+	if err := g.Engine.Validate(); err != nil {
+		return fmt.Errorf("'engine' is invalid: %w", err)
+	}
+	return nil
+}
+
+// Validate validates a single Tracking.
+func (t *Tracking) Validate() error {
+	switch {
+	case t.CurrentReleaseDate == nil:
+		return errors.New("'current_release_date' is missing")
+	case t.ID == nil:
+		return errors.New("'id' is missing")
+	case t.InitialReleaseDate == nil:
+		return errors.New("'initial_release_date' is missing")
+	case t.RevisionHistory == nil:
+		return errors.New("'revision_history' is missing")
+	case t.Status == nil:
+		return errors.New("'status' is missing")
+	case t.Version == nil:
+		return errors.New("'version' is missing")
+	}
+	if err := t.RevisionHistory.Validate(); err != nil {
+		return fmt.Errorf("'revision_history' is invalid: %w", err)
+	}
+	if t.Generator != nil {
+		if err := t.Generator.Validate(); err != nil {
+			return fmt.Errorf("'generator' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a Document.
+func (doc *Document) Validate() error {
+	switch {
+	case doc.Category == nil:
+		return errors.New("'category' is missing")
+	case doc.CSAFVersion == nil:
+		return errors.New("'csaf_version' is missing")
+	case doc.Publisher == nil:
+		return errors.New("'publisher' is missing")
+	case doc.Title == nil:
+		return errors.New("'title' is missing")
+	case doc.Tracking == nil:
+		return errors.New("'tracking' is missing")
+	}
+	if err := doc.Tracking.Validate(); err != nil {
+		return fmt.Errorf("'tracking' is invalid: %w", err)
+	}
 	if doc.Distribution != nil {
-		if doc.Distribution.Text == nil && doc.Distribution.TLP == nil {
-			return fmt.Errorf("the property 'distribution' must at least contain one of the following properties:" +
-				"'text', 'tlp'")
+		if err := doc.Distribution.Validate(); err != nil {
+			return fmt.Errorf("'distribution' is invalid: %w", err)
 		}
 	}
-
-	if doc.Notes != nil {
-		for index, note := range doc.Notes {
-			if note.NoteCategory == nil {
-				return fmt.Errorf("the %d. note in the property 'document' is missing the property 'note_category'", index)
-			}
-			if note.Text == nil {
-				return fmt.Errorf("the %d. note in the property 'document' is missing the property 'text'", index)
-			}
+	if doc.AggregateSeverity != nil {
+		if err := doc.AggregateSeverity.Validate(); err != nil {
+			return fmt.Errorf("'aggregate_severity' is invalid: %w", err)
 		}
 	}
-
-	if doc.Publisher == nil {
-		return fmt.Errorf("the property 'document' is missing the property 'publisher'")
+	if err := doc.Publisher.Validate(); err != nil {
+		return fmt.Errorf("'publisher' is invalid: %w", err)
 	}
-
-	publisher := doc.Publisher
-
-	if publisher.Category == nil {
-		return fmt.Errorf("the publisher in the property 'document' is missing the property 'category'")
+	if err := doc.References.Validate(); err != nil {
+		return fmt.Errorf("'references' is invalid: %w", err)
 	}
-
-	if publisher.Name == nil {
-		return fmt.Errorf("the publisher in the property 'document' is missing the property 'name'")
+	if err := doc.Notes.Validate(); err != nil {
+		return fmt.Errorf("'notes' is invalid: %w", err)
 	}
-
-	if publisher.Namespace == nil {
-		return fmt.Errorf("the publisher in the property 'document' is missing the property 'namespace'")
-	}
-
-	if doc.References != nil {
-		for index, ref := range doc.References {
-			if ref.Summary == nil {
-				return fmt.Errorf("the %d. reference in the property 'document' is missing the property 'summary'", index)
-			}
-			if ref.URL == nil {
-				return fmt.Errorf("the %d. reference in the property 'document' is missing the property 'url'", index)
-			}
-		}
-	}
-
-	if doc.Title == nil {
-		return fmt.Errorf("the property 'document' is missing the property 'title'")
-	}
-
-	if doc.Tracking == nil {
-		return fmt.Errorf("the property 'document' is missing the property 'tracking'")
-	}
-
-	tracking := doc.Tracking
-
-	if tracking.CurrentReleaseDate == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'current_release_date'")
-	}
-
-	if tracking.Generator != nil {
-		generator := tracking.Generator
-		if generator.Engine == nil {
-			return fmt.Errorf("the property 'generator' is missing the property 'engine'")
-		}
-
-		if generator.Engine.Version == nil {
-			return fmt.Errorf("the property 'engine' is missing the property 'version'")
-		}
-	}
-
-	if tracking.ID == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'id'")
-	}
-
-	if tracking.InitialReleaseDate == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'initial_release_date'")
-	}
-
-	if tracking.RevisionHistory == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'revision_history'")
-	}
-
-	for index, revision := range tracking.RevisionHistory {
-		if revision.Date == nil {
-			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'date'", index)
-		}
-
-		if revision.Number == nil {
-			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'number'", index)
-		}
-
-		if revision.Summary == nil {
-			return fmt.Errorf("the %d. revision in the property 'document' is missing the property 'summary'", index)
-		}
-	}
-
-	if tracking.Status == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'status'")
-	}
-
-	if tracking.Version == nil {
-		return fmt.Errorf("the property 'tracking' is missing the property 'version'")
-	}
-
 	return nil
 }
 
-func ValidateBranch(branches []*Branch) error {
-	for _, branch := range branches {
-		if branch.Category == nil {
-			return fmt.Errorf("element of property 'branches' is missing the property 'category'")
-		}
+// Validate validates a single FileHash.
+func (fh *FileHash) Validate() error {
+	switch {
+	case fh == nil:
+		return errors.New("is nil")
+	case fh.Algorithm == nil:
+		return errors.New("'algorithm' is missing")
+	case fh.Value == nil:
+		return errors.New("'value' is missing")
+	default:
+		return nil
+	}
+}
 
-		if branch.Name == nil {
-			return fmt.Errorf("element of property 'branches' is missing the property 'name'")
-		}
-
-		if branch.Product != nil {
-			if branch.Product.Name == nil {
-				return fmt.Errorf("property 'product' is missing the property 'name'")
-			}
-
-			if branch.Product.ProductID == nil {
-				return fmt.Errorf("property 'product' is missing the property 'product_id'")
-			}
-
-			if branch.Product.ProductIdentificationHelper != nil {
-				helper := branch.Product.ProductIdentificationHelper
-
-				if helper.Hashes != nil {
-					if helper.Hashes.FileHashes == nil {
-						return fmt.Errorf("property 'hashes' is missing the property 'file_hashes'")
-					}
-
-					for _, hash := range helper.Hashes.FileHashes {
-						if hash.Algorithm == nil {
-							return fmt.Errorf("element of property 'file_hashes' is missing the property 'algorithm'")
-						}
-
-						if hash.Value == nil {
-							return fmt.Errorf("element of property 'file_hashes' is missing the property 'value'")
-						}
-					}
-
-					if helper.Hashes.FileName == nil {
-						return fmt.Errorf("property 'hashes' is missing the property 'filename'")
-					}
-				}
-
-				if helper.XGenericURIs != nil {
-					for _, uri := range helper.XGenericURIs {
-						if uri.Namespace == nil {
-							return fmt.Errorf("element of property 'x_generic_uris' is missing the property 'namespace'")
-						}
-
-						if uri.URI == nil {
-							return fmt.Errorf("element of property 'x_generic_uris' is missing the property 'uri'")
-						}
-					}
-				}
-			}
-		}
-
-		if branch.Branches != nil {
-			if validationError := ValidateBranch(branch.Branches); validationError != nil {
-				return validationError
-			}
+// Validate validates a list of file hashes.
+func (hs *Hashes) Validate() error {
+	switch {
+	case hs.FileHashes == nil:
+		return errors.New("'hashes' is missing")
+	case hs.FileName == nil:
+		return errors.New("'filename' is missing")
+	}
+	for i, fh := range hs.FileHashes {
+		if err := fh.Validate(); err != nil {
+			return fmt.Errorf("%d. file hash is invalid: %w", i+1, err)
 		}
 	}
 	return nil
 }
 
-func (adv *Advisory) ValidateProductTree() error {
-	tree := adv.ProductTree
-	if tree.Branches != nil {
-		if validationError := ValidateBranch(tree.Branches); validationError != nil {
-			return validationError
+// Validate validates a single XGenericURI.
+func (xgu *XGenericURI) Validate() error {
+	switch {
+	case xgu == nil:
+		return errors.New("is nil")
+	case xgu.Namespace == nil:
+		return errors.New("'namespace' is missing")
+	case xgu.URI == nil:
+		return errors.New("'uri' is missing")
+	default:
+		return nil
+	}
+}
+
+// Validate validates a list of XGenericURIs.
+func (xgus XGenericURIs) Validate() error {
+	for i, xgu := range xgus {
+		if err := xgu.Validate(); err != nil {
+			return fmt.Errorf("%d. generic uri is invalid: %w", i+1, err)
 		}
 	}
 	return nil
+}
+
+// Validate validates a ProductIdentificationHelper.
+func (pih *ProductIdentificationHelper) Validate() error {
+	if pih.Hashes != nil {
+		if err := pih.Hashes.Validate(); err != nil {
+			return fmt.Errorf("'hashes' is invalid: %w", err)
+		}
+	}
+	if pih.XGenericURIs != nil {
+		if err := pih.XGenericURIs.Validate(); err != nil {
+			return fmt.Errorf("'x_generic_uris' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a FullProductName.
+func (fpn *FullProductName) Validate() error {
+	switch {
+	case fpn.Name == nil:
+		return errors.New("'name' is missing")
+	case fpn.ProductID == nil:
+		return errors.New("'product_id' is missing")
+	}
+	if fpn.ProductIdentificationHelper != nil {
+		if err := fpn.ProductIdentificationHelper.Validate(); err != nil {
+			return fmt.Errorf("'product_identification_helper' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single Branch.
+func (b *Branch) Validate() error {
+	switch {
+	case b.Category == nil:
+		return errors.New("'category' is missing")
+	case b.Name == nil:
+		return errors.New("'name' is missing")
+	}
+	if b.Product != nil {
+		if err := b.Product.Validate(); err != nil {
+			return fmt.Errorf("'product' is invalid: %w", err)
+		}
+	}
+	return b.Branches.Validate()
+}
+
+// Validate validates a list of branches.
+func (bs Branches) Validate() error {
+	for i, b := range bs {
+		if err := b.Validate(); err != nil {
+			return fmt.Errorf("%d. branch is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a ProductTree.
+func (pt *ProductTree) Validate() error {
+	return pt.Branches.Validate()
 }
 
 // Validate checks if the advisory is valid.
 // Returns an error if the validation fails otherwise nil.
 func (adv *Advisory) Validate() error {
 	if adv.Document == nil {
-		return fmt.Errorf("the advisory is missing the property 'document'")
+		return errors.New("'document' is missing")
 	}
-
-	if validationError := adv.ValidateDocument(); validationError != nil {
-		return validationError
+	if err := adv.Document.Validate(); err != nil {
+		return fmt.Errorf("'document' is invalid: %w", err)
 	}
-
 	if adv.ProductTree != nil {
-		if validationError := adv.ValidateProductTree(); validationError != nil {
-			return validationError
+		if err := adv.ProductTree.Validate(); err != nil {
+			return fmt.Errorf("'product_tree' is invalid: %w", err)
 		}
 	}
-
 	return nil
 }
 
@@ -969,8 +1082,8 @@ func LoadAdvisory(fname string) (*Advisory, error) {
 	if err := json.NewDecoder(f).Decode(&advisory); err != nil {
 		return nil, err
 	}
-	if validationError := advisory.Validate(); validationError != nil {
-		return nil, validationError
+	if err := advisory.Validate(); err != nil {
+		return nil, err
 	}
 	return &advisory, nil
 }
