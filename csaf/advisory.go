@@ -376,8 +376,8 @@ type Relationship struct {
 // ProductTree contains product names that can be referenced elsewhere in the document.
 type ProductTree struct {
 	Branches         []*Branch          `json:"branches,omitempty"`
-	FullProductNames []*FullProductName `json:"full_product_name,omitempty"`
-	ProductGroups    *ProductGroups     `json:"product_groups,omitempty"`
+	FullProductNames []*FullProductName `json:"full_product_names,omitempty"`
+	ProductGroups    []*ProductGroup    `json:"product_groups,omitempty"`
 	RelationShips    []*Relationship    `json:"relationships,omitempty"`
 }
 
