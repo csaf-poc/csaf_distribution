@@ -25,6 +25,9 @@ type Acknowledgement struct {
 	URLs         []*string `json:"urls,omitempty"`
 }
 
+// Acknowledgements is a list of Acknowledgement elements.
+type Acknowledgements []*Acknowledgement
+
 // BranchCategory is the category of a branch.
 type BranchCategory string
 
@@ -75,7 +78,7 @@ var csafBranchCategoryPattern = alternativesUnmarshal(
 type ProductID string
 
 // Products is a list of one or more unique ProductID elements.
-type Products []ProductID
+type Products []*ProductID
 
 // FileHashValue represents the value of a hash.
 type FileHashValue string
@@ -135,7 +138,7 @@ type FullProductName struct {
 }
 
 // FullProductNames is a list of FullProductName.
-type FullProductNames []FullProductName
+type FullProductNames []*FullProductName
 
 // Branch reflects the 'branch' object in the list of branches.
 // It may contain either the property Branches OR Product.
@@ -322,7 +325,7 @@ var langPattern = patternUnmarshal("^(([A-Za-z]{2,3}(-[A-Za-z]{3}(-[A-Za-z]{3}){
 
 // Document contains meta-data about an advisory.
 type Document struct {
-	Acknowledgements  []*Acknowledgement    `json:"acknowledgements,omitempty"`
+	Acknowledgements  *Acknowledgements     `json:"acknowledgements,omitempty"`
 	AggregateSeverity *AggregateSeverity    `json:"aggregate_severity,omitempty"`
 	Category          *DocumentCategory     `json:"category"`     // required
 	CSAFVersion       *Version              `json:"csaf_version"` // required
@@ -348,7 +351,7 @@ type ProductGroup struct {
 
 // ProductGroups is a list of ProductGroupIDs
 type ProductGroups struct {
-	ProductGroupIDs []ProductGroupID `json:"product_group_ids"` // unique elements
+	ProductGroupIDs []*ProductGroupID `json:"product_group_ids"` // unique elements
 }
 
 // RelationshipCategory is the category of a relationship.
@@ -384,7 +387,7 @@ type Relationship struct {
 }
 
 // Relationships is a list of Relationship.
-type Relationships []Relationship
+type Relationships []*Relationship
 
 // Branches is a list of Branch.
 type Branches []*Branch
@@ -441,16 +444,22 @@ var csafFlagLabelPattern = alternativesUnmarshal(
 // code why a product is not affected.
 type Flag struct {
 	Date       *string        `json:"date,omitempty"`
-	GroupIds   *ProductGroups `json:"group_ids,omitempty"`
+	GroupIDs   *ProductGroups `json:"group_ids,omitempty"`
 	Label      *FlagLabel     `json:"label"` // required
 	ProductIds *Products      `json:"product_ids,omitempty"`
 }
+
+// Flags is a list if Flag elements.
+type Flags []*Flag
 
 // VulnerabilityID is the identifier of a vulnerability.
 type VulnerabilityID struct {
 	SystemName *string `json:"system_name"` // required
 	Text       *string `json:"text"`        // required
 }
+
+// VulneratilityIDs is a list of VulnerabilityID elements.
+type VulnerabilityIDs []*VulnerabilityID
 
 // InvolvementParty is the party of an involvement.
 type InvolvementParty string
@@ -512,6 +521,9 @@ type Involvement struct {
 	Status  *InvolvementStatus `json:"status"` // required
 	Summary *string            `json:"summary,omitempty"`
 }
+
+// Involvements is a list of Involvement elements.
+type Involvements []*Involvement
 
 // ProductStatus contains different lists of ProductIDs which provide details on
 // the status of the referenced product related to the current vulnerability.
@@ -602,6 +614,9 @@ type Remediation struct {
 	RestartRequired *RestartRequired     `json:"restart_required,omitempty"`
 	URL             *string              `json:"url,omitempty"`
 }
+
+// Remediations is a list of Remediation elements.
+type Remediations []*Remediation
 
 // CVSSVersion2 is the version of a CVSS2 item.
 type CVSSVersion2 string
@@ -701,6 +716,9 @@ type Score struct {
 	Products *Products `json:"products"` // required
 }
 
+// Scores is a list of Score elements.
+type Scores []*Score
+
 // ThreatCategory is the category of a threat.
 type ThreatCategory string
 
@@ -727,6 +745,9 @@ type Threat struct {
 	ProductIds *Products       `json:"product_ids,omitempty"`
 }
 
+// Threats is a list of Threat elements.
+type Threats []*Threat
+
 // Notes is a list of Note.
 type Notes []*Note
 
@@ -735,21 +756,21 @@ type References []*Reference
 
 // Vulnerability contains all fields that are related to a single vulnerability in the document.
 type Vulnerability struct {
-	Acknowledgements []*Acknowledgement `json:"acknowledgements,omitempty"`
-	CVE              *CVE               `json:"cve,omitempty"`
-	CWE              *CWE               `json:"cwe,omitempty"`
-	DiscoveryDate    *string            `json:"discovery_date,omitempty"`
-	Flags            []*Flag            `json:"flags,omitempty"`
-	Ids              []*VulnerabilityID `json:"ids,omitempty"` // unique ID elements
-	Involvements     []*Involvement     `json:"involvements,omitempty"`
-	Notes            Notes              `json:"notes,omitempty"`
-	ProductStatus    *ProductStatus     `json:"product_status,omitempty"`
-	References       References         `json:"references,omitempty"`
-	ReleaseDate      *string            `json:"release_date,omitempty"`
-	Remediations     []*Remediation     `json:"remediations,omitempty"`
-	Scores           []*Score           `json:"scores,omitempty"`
-	Threats          []*Threat          `json:"threats,omitempty"`
-	Title            *string            `json:"title,omitempty"`
+	Acknowledgements *Acknowledgements `json:"acknowledgements,omitempty"`
+	CVE              *CVE              `json:"cve,omitempty"`
+	CWE              *CWE              `json:"cwe,omitempty"`
+	DiscoveryDate    *string           `json:"discovery_date,omitempty"`
+	Flags            *Flags            `json:"flags,omitempty"`
+	IDs              *VulnerabilityIDs `json:"ids,omitempty"` // unique ID elements
+	Involvements     *Involvements     `json:"involvements,omitempty"`
+	Notes            Notes             `json:"notes,omitempty"`
+	ProductStatus    *ProductStatus    `json:"product_status,omitempty"`
+	References       References        `json:"references,omitempty"`
+	ReleaseDate      *string           `json:"release_date,omitempty"`
+	Remediations     *Remediations     `json:"remediations,omitempty"`
+	Scores           *Scores           `json:"scores,omitempty"`
+	Threats          *Threats          `json:"threats,omitempty"`
+	Title            *string           `json:"title,omitempty"`
 }
 
 // Vulnerabilities is a list of Vulnerability
@@ -1114,6 +1135,232 @@ func (pt *ProductTree) Validate() error {
 	return nil
 }
 
+// Validate validates a single Flag.
+func (f *Flag) Validate() error {
+	if f.Label == nil {
+		return errors.New("'label' is missing")
+	}
+	return nil
+}
+
+// Validate validates a list of Flag elements.
+func (fs Flags) Validate() error {
+	for i, f := range fs {
+		if err := f.Validate(); err != nil {
+			return fmt.Errorf("%d. flag is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a CWE.
+func (cwe *CWE) Validate() error {
+	switch {
+	case cwe.ID == nil:
+		return errors.New("'id' is missing")
+	case cwe.Name == nil:
+		return errors.New("'name' is missing")
+	}
+	return nil
+}
+
+// Validate validates a single VulnerabilityID.
+func (id *VulnerabilityID) Validate() error {
+	switch {
+	case id.SystemName == nil:
+		return errors.New("'system_name' is missing")
+	case id.Text == nil:
+		return errors.New("'text' is missing")
+	}
+	return nil
+}
+
+// Validate validates a list of VulnerabilityID elements.
+func (ids VulnerabilityIDs) Validate() error {
+	for i, id := range ids {
+		if err := id.Validate(); err != nil {
+			return fmt.Errorf("%d. vulnerability id is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single Involvement.
+func (iv *Involvement) Validate() error {
+	switch {
+	case iv.Party == nil:
+		return errors.New("'party' is missing")
+	case iv.Status == nil:
+		return errors.New("'status' is missing")
+	}
+	return nil
+}
+
+// Validate validates a list of Involvement elements.
+func (ivs Involvements) Validate() error {
+	for i, iv := range ivs {
+		if err := iv.Validate(); err != nil {
+			return fmt.Errorf("%d. involvement is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a RestartRequired.
+func (rr *RestartRequired) Validate() error {
+	if rr.Category == nil {
+		return errors.New("'category' is missing")
+	}
+	return nil
+}
+
+// Validate validates a CVSS2
+func (c *CVSS2) Validate() error {
+	switch {
+	case c.Version == nil:
+		return errors.New("'version' is missing")
+	case c.VectorString == nil:
+		return errors.New("'vectorString' is missing")
+	case c.BaseScore == nil:
+		return errors.New("'baseScore' is missing")
+	}
+	return nil
+}
+
+// Validate validates a CVSS3
+func (c *CVSS3) Validate() error {
+	switch {
+	case c.Version == nil:
+		return errors.New("'version' is missing")
+	case c.VectorString == nil:
+		return errors.New("'vectorString' is missing")
+	case c.BaseScore == nil:
+		return errors.New("'baseScore' is missing")
+	case c.BaseSeverity == nil:
+		return errors.New("'baseSeverity' is missing")
+	}
+	return nil
+}
+
+// Validate validates a single Score.
+func (s *Score) Validate() error {
+	if s.Products == nil {
+		return errors.New("'products' is missing")
+	}
+	if s.CVSS2 != nil {
+		if err := s.CVSS2.Validate(); err != nil {
+			return fmt.Errorf("'cvss_v2' is invalid: %w", err)
+		}
+	}
+	if s.CVSS3 != nil {
+		if err := s.CVSS3.Validate(); err != nil {
+			return fmt.Errorf("'cvss_v3' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a list of Score elements.
+func (ss Scores) Validate() error {
+	for i, s := range ss {
+		if err := s.Validate(); err != nil {
+			return fmt.Errorf("%d. score is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single Remediation.
+func (r *Remediation) Validate() error {
+	switch {
+	case r.Category == nil:
+		return errors.New("'category' is missing")
+	case r.Details == nil:
+		return errors.New("'details' is missing")
+	}
+	if r.RestartRequired != nil {
+		if err := r.RestartRequired.Validate(); err != nil {
+			return fmt.Errorf("'restart_required' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a list of Remediation elements.
+func (rms Remediations) Validate() error {
+	for i, r := range rms {
+		if err := r.Validate(); err != nil {
+			return fmt.Errorf("%d. remediation is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single Threat.
+func (t *Threat) Validate() error {
+	switch {
+	case t.Category == nil:
+		return errors.New("'category' is missing")
+	case t.Details == nil:
+		return errors.New("'details' is missing")
+	}
+	return nil
+}
+
+// Validate validates a list of Threat elements.
+func (ts Threats) Validate() error {
+	for i, t := range ts {
+		if err := t.Validate(); err != nil {
+			return fmt.Errorf("%d. threat is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
+// Validate validates a single Vulnerability.
+func (v *Vulnerability) Validate() error {
+	if v.CWE != nil {
+		if err := v.CWE.Validate(); err != nil {
+			return fmt.Errorf("'cwe' is invalid: %w", err)
+		}
+	}
+	if err := v.Flags.Validate(); err != nil {
+		return fmt.Errorf("'flags' is invalid: %w", err)
+	}
+	if err := v.IDs.Validate(); err != nil {
+		return fmt.Errorf("'ids' is invalid: %w", err)
+	}
+	if err := v.Involvements.Validate(); err != nil {
+		return fmt.Errorf("'involvements' is invalid: %w", err)
+	}
+	if err := v.Notes.Validate(); err != nil {
+		return fmt.Errorf("'notes' is invalid: %w", err)
+	}
+	if err := v.References.Validate(); err != nil {
+		return fmt.Errorf("'references' is invalid: %w", err)
+	}
+	if err := v.Remediations.Validate(); err != nil {
+		return fmt.Errorf("'remediations' is invalid: %w", err)
+	}
+	if err := v.Scores.Validate(); err != nil {
+		return fmt.Errorf("'scores' is invalid: %w", err)
+	}
+	if err := v.Threats.Validate(); err != nil {
+		return fmt.Errorf("'threats' is invalid: %w", err)
+	}
+	return nil
+}
+
+// Validate validates a list of Vulnerability elements.
+func (vs Vulnerabilities) Validate() error {
+	for i, v := range vs {
+		if err := v.Validate(); err != nil {
+			return fmt.Errorf("%d. vulnerability is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
 // Validate checks if the advisory is valid.
 // Returns an error if the validation fails otherwise nil.
 func (adv *Advisory) Validate() error {
@@ -1127,6 +1374,9 @@ func (adv *Advisory) Validate() error {
 		if err := adv.ProductTree.Validate(); err != nil {
 			return fmt.Errorf("'product_tree' is invalid: %w", err)
 		}
+	}
+	if err := adv.Vulnerabilities.Validate(); err != nil {
+		return fmt.Errorf("'vulnerabilities' is invalid: %w", err)
 	}
 	return nil
 }
