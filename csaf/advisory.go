@@ -134,6 +134,9 @@ type FullProductName struct {
 	ProductIdentificationHelper *ProductIdentificationHelper `json:"product_identification_helper,omitempty"`
 }
 
+// FullProductNames is a list of FullProductName.
+type FullProductNames []FullProductName
+
 // Branch reflects the 'branch' object in the list of branches.
 // It may contain either the property Branches OR Product.
 // If the category is 'product_version' the name MUST NOT contain
@@ -380,15 +383,18 @@ type Relationship struct {
 
 }
 
+// Relationships is a list of Relationship.
+type Relationships []Relationship
+
 // Branches is a list of Branch.
 type Branches []*Branch
 
 // ProductTree contains product names that can be referenced elsewhere in the document.
 type ProductTree struct {
-	Branches         Branches           `json:"branches,omitempty"`
-	FullProductNames []*FullProductName `json:"full_product_names,omitempty"`
-	ProductGroups    *ProductGroups     `json:"product_groups,omitempty"`
-	RelationShips    []*Relationship    `json:"relationships,omitempty"`
+	Branches         Branches          `json:"branches,omitempty"`
+	FullProductNames *FullProductNames `json:"full_product_names,omitempty"`
+	ProductGroups    *ProductGroups    `json:"product_groups,omitempty"`
+	RelationShips    *Relationships    `json:"relationships,omitempty"`
 }
 
 // CVE holds the MITRE standard Common Vulnerabilities and Exposures (CVE) tracking number for a vulnerability.
@@ -746,11 +752,14 @@ type Vulnerability struct {
 	Title            *string            `json:"title,omitempty"`
 }
 
+// Vulnerabilities is a list of Vulnerability
+type Vulnerabilities []*Vulnerability
+
 // Advisory represents a CSAF advisory.
 type Advisory struct {
 	Document        *Document        `json:"document"` // required
 	ProductTree     *ProductTree     `json:"product_tree,omitempty"`
-	Vulnerabilities []*Vulnerability `json:"vulnerabilities,omitempty"`
+	Vulnerabilities *Vulnerabilities `json:"vulnerabilities,omitempty"`
 }
 
 // Validate validates a AggregateSeverity.
@@ -1023,6 +1032,16 @@ func (fpn *FullProductName) Validate() error {
 	return nil
 }
 
+// Validate validates a list of Relationship elements.
+func (fpns FullProductNames) Validate() error {
+	for i, f := range fpns {
+		if err := f.Validate(); err != nil {
+			return fmt.Errorf("%d. full product name is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
 // Validate validates a single Branch.
 func (b *Branch) Validate() error {
 	switch {
@@ -1039,6 +1058,24 @@ func (b *Branch) Validate() error {
 	return b.Branches.Validate()
 }
 
+// Validate validates a single Relationship.
+func (r *Relationship) Validate() error {
+	switch {
+	case r.Category == nil:
+		return errors.New("'category' is missing")
+	case r.ProductReference == nil:
+		return errors.New("'product_reference' is missing")
+	case r.RelatesToProductReference == nil:
+		return errors.New("'relates_to_product_reference' is missing")
+	}
+	if r.FullProductName != nil {
+		if err := r.FullProductName.Validate(); err != nil {
+			return fmt.Errorf("'product' is invalid: %w", err)
+		}
+	}
+	return nil
+}
+
 // Validate validates a list of branches.
 func (bs Branches) Validate() error {
 	for i, b := range bs {
@@ -1049,9 +1086,32 @@ func (bs Branches) Validate() error {
 	return nil
 }
 
+// Validate validates a list of Relationship elements.
+func (rs Relationships) Validate() error {
+	for i, r := range rs {
+		if err := r.Validate(); err != nil {
+			return fmt.Errorf("%d. relationship is invalid: %w", i+1, err)
+		}
+	}
+	return nil
+}
+
 // Validate validates a ProductTree.
 func (pt *ProductTree) Validate() error {
-	return pt.Branches.Validate()
+	if err := pt.Branches.Validate(); err != nil {
+		return fmt.Errorf("'branches' is invalid: %w", err)
+	}
+	if pt.FullProductNames != nil {
+		if err := pt.FullProductNames.Validate(); err != nil {
+			return fmt.Errorf("'full_product_names is invalid: %w", err)
+		}
+	}
+	if pt.RelationShips != nil {
+		if err := pt.RelationShips.Validate(); err != nil {
+			return fmt.Errorf("'relationships' is invalid: %w", err)
+		}
+	}
+	return nil
 }
 
 // Validate checks if the advisory is valid.
