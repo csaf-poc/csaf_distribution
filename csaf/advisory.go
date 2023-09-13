@@ -756,21 +756,21 @@ type References []*Reference
 
 // Vulnerability contains all fields that are related to a single vulnerability in the document.
 type Vulnerability struct {
-	Acknowledgements *Acknowledgements `json:"acknowledgements,omitempty"`
-	CVE              *CVE              `json:"cve,omitempty"`
-	CWE              *CWE              `json:"cwe,omitempty"`
-	DiscoveryDate    *string           `json:"discovery_date,omitempty"`
-	Flags            *Flags            `json:"flags,omitempty"`
-	IDs              *VulnerabilityIDs `json:"ids,omitempty"` // unique ID elements
-	Involvements     *Involvements     `json:"involvements,omitempty"`
-	Notes            Notes             `json:"notes,omitempty"`
-	ProductStatus    *ProductStatus    `json:"product_status,omitempty"`
-	References       References        `json:"references,omitempty"`
-	ReleaseDate      *string           `json:"release_date,omitempty"`
-	Remediations     *Remediations     `json:"remediations,omitempty"`
-	Scores           *Scores           `json:"scores,omitempty"`
-	Threats          *Threats          `json:"threats,omitempty"`
-	Title            *string           `json:"title,omitempty"`
+	Acknowledgements Acknowledgements `json:"acknowledgements,omitempty"`
+	CVE              *CVE             `json:"cve,omitempty"`
+	CWE              *CWE             `json:"cwe,omitempty"`
+	DiscoveryDate    *string          `json:"discovery_date,omitempty"`
+	Flags            Flags            `json:"flags,omitempty"`
+	IDs              VulnerabilityIDs `json:"ids,omitempty"` // unique ID elements
+	Involvements     Involvements     `json:"involvements,omitempty"`
+	Notes            Notes            `json:"notes,omitempty"`
+	ProductStatus    *ProductStatus   `json:"product_status,omitempty"`
+	References       References       `json:"references,omitempty"`
+	ReleaseDate      *string          `json:"release_date,omitempty"`
+	Remediations     Remediations     `json:"remediations,omitempty"`
+	Scores           Scores           `json:"scores,omitempty"`
+	Threats          Threats          `json:"threats,omitempty"`
+	Title            *string          `json:"title,omitempty"`
 }
 
 // Vulnerabilities is a list of Vulnerability
@@ -778,9 +778,9 @@ type Vulnerabilities []*Vulnerability
 
 // Advisory represents a CSAF advisory.
 type Advisory struct {
-	Document        *Document        `json:"document"` // required
-	ProductTree     *ProductTree     `json:"product_tree,omitempty"`
-	Vulnerabilities *Vulnerabilities `json:"vulnerabilities,omitempty"`
+	Document        *Document       `json:"document"` // required
+	ProductTree     *ProductTree    `json:"product_tree,omitempty"`
+	Vulnerabilities Vulnerabilities `json:"vulnerabilities,omitempty"`
 }
 
 // Validate validates a AggregateSeverity.
@@ -1375,8 +1375,10 @@ func (adv *Advisory) Validate() error {
 			return fmt.Errorf("'product_tree' is invalid: %w", err)
 		}
 	}
-	if err := adv.Vulnerabilities.Validate(); err != nil {
-		return fmt.Errorf("'vulnerabilities' is invalid: %w", err)
+	if adv.Vulnerabilities != nil {
+		if err := adv.Vulnerabilities.Validate(); err != nil {
+			return fmt.Errorf("'vulnerabilities' is invalid: %w", err)
+		}
 	}
 	return nil
 }
