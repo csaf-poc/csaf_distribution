@@ -92,9 +92,17 @@ func (d *downloader) addStats(o *stats) {
 	d.stats.add(o)
 }
 
+// checkRedirect specifies the policy for handling redirects.
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	slog.Debug(fmt.Sprintf("Redirecting to %s", req.URL))
+	return nil
+}
+
 func (d *downloader) httpClient() util.Client {
 
-	hClient := http.Client{}
+	hClient := http.Client{
+		CheckRedirect: checkRedirect,
+	}
 
 	var tlsConfig tls.Config
 	if d.cfg.Insecure {
