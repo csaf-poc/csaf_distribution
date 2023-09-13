@@ -458,7 +458,7 @@ type VulnerabilityID struct {
 	Text       *string `json:"text"`        // required
 }
 
-// VulneratilityIDs is a list of VulnerabilityID elements.
+// VulnerabilityIDs is a list of VulnerabilityID elements.
 type VulnerabilityIDs []*VulnerabilityID
 
 // InvolvementParty is the party of an involvement.
