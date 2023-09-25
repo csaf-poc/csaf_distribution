@@ -19,7 +19,10 @@ func TestNewTimeInterval(t *testing.T) {
 	before = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 	var after time.Time
 	after = time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)
-	NewTimeInterval(after, before)
+	pseudoTimeRange := TimeRange{before, after}
+	if NewTimeInterval(after, before) != pseudoTimeRange {
+		t.Errorf("Failure: Couldn't generate timerange.")
+	}
 }
 
 func TestGuessDate(t *testing.T) {
@@ -49,7 +52,9 @@ func TestMarshalJSON(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
-	testTimeRange.MarshalJSON()
+	if _, err := testTimeRange.MarshalJSON(); err != nil {
+		t.Errorf("Failure: %v", err)
+	}
 }
 
 func TestUnmarshalFlag(t *testing.T) {
@@ -81,5 +86,15 @@ func TestContains(t *testing.T) {
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
 		time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC))
 	testPointInTime := time.Date(2010, time.March, 10, 23, 0, 0, 0, time.UTC)
-	testTimeRange.Contains(testPointInTime)
+	testPointAfterTime := time.Date(2022, time.March, 10, 23, 0, 0, 0, time.UTC)
+	testPointBeforeTime := time.Date(2002, time.March, 10, 23, 0, 0, 0, time.UTC)
+	if !testTimeRange.Contains(testPointInTime) {
+		t.Errorf("Failure: Did not recognize point within timerange correctly.")
+	}
+	if testTimeRange.Contains(testPointAfterTime) {
+		t.Errorf("Failure: Did not recognize that a point in time was after a timerange correctly.")
+	}
+	if testTimeRange.Contains(testPointBeforeTime) {
+		t.Errorf("Failure: Did not recognize that a point in time was before a timerange correctly.")
+	}
 }
