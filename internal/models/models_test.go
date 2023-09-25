@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2023 Intevation GmbH <https://intevation.de>
 
-// Package models contains helper models used in the tools internally.
 package models
 
 import (
@@ -16,11 +15,11 @@ import (
 
 // TestNewTimeInterval tests the creation of time intervals via NewTimeInterval()
 func TestNewTimeInterval(t *testing.T) {
-	var before time.Time
-	before = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
-	var after time.Time
-	after = time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)
-	pseudoTimeRange := TimeRange{before, after}
+	var (
+		before          = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+		after           = time.Date(2010, time.November, 10, 23, 0, 0, 0, time.UTC)
+		pseudoTimeRange = TimeRange{before, after}
+	)
 	if NewTimeInterval(after, before) != pseudoTimeRange {
 		t.Errorf("Failure: Couldn't generate timerange.")
 	}
