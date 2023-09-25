@@ -2,6 +2,7 @@
 package options
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -139,8 +140,7 @@ func TestLoadToml(t *testing.T) {
 // TestErrorCheck checks whether the ErrorChecker correctly logs a fatal error
 func TestErrorCheck(t *testing.T) {
 	if os.Getenv("TEST_ERROR") == "1" {
-		testError := fmt.Errorf("Succesful")
-		ErrorCheck(testError)
+		ErrorCheck(errors.New("succesful"))
 		return
 	}
 	cmd := exec.Command(os.Args[0], "-test.run=TestErrorCheck")
@@ -169,5 +169,31 @@ func TestSecondPassCommandlineParsing(t *testing.T) {
 	}
 	if _, _, err := p.Parse(); err == nil {
 		t.Fatalf("Second command line parsing pass did not fail.\n")
+	}
+}
+
+// TestSecondPassCommandlineHelp triggers the help output in the
+// second pass of the command line parsing.
+func TestSecondPassCommandlineHelp(t *testing.T) {
+	if os.Getenv("TEST_ERROR") == "1" {
+		orig := os.Args
+		defer func() { os.Args = orig }()
+
+		os.Args = []string{"cmd"}
+		p := Parser[config]{
+			ConfigLocation: func(cfg *config) string {
+				// This is a bit stupid.
+				os.Args = []string{"cmd", "--help"}
+				return "data/empty.toml"
+			},
+		}
+		p.Parse()
+		t.Fatalf("Second command line parsing pass help should not reach this.\n")
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestSecondPassCommandlineHelp")
+	cmd.Env = append(os.Environ(), "TEST_ERROR=1")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("process ran with err %v", err)
 	}
 }
