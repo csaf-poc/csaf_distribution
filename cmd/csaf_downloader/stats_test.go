@@ -11,7 +11,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"log/slog"
 	"testing"
 )
@@ -38,7 +37,7 @@ func TestStatsAdd(t *testing.T) {
 	b.signatureFailed *= 2
 	b.succeeded *= 2
 	if a != b {
-		log.Fatalf("%v != %v", a, b)
+		t.Fatalf("%v != %v", a, b)
 	}
 }
 
@@ -60,7 +59,7 @@ func TestStatsTotalFailed(t *testing.T) {
 		a.sha512Failed +
 		a.signatureFailed
 	if got := a.totalFailed(); got != sum {
-		log.Fatalf("got %d expected %d", got, sum)
+		t.Fatalf("got %d expected %d", got, sum)
 	}
 }
 
