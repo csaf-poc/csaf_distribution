@@ -63,9 +63,10 @@ func TestParse(t *testing.T) {
 	if _, _, err := p.Parse(); err == nil {
 		t.Errorf("Failure: Invalid path expanded.")
 	}
-	// fmt.Println(p.Parse())
 }
 
+// TestFindConfigFile tests if findConfigFile() correctly finds existing and
+// doesn't find nonexisting config files
 func TestFindConfigFile(t *testing.T) {
 	locations := []string{"data/config.toml"}
 	notLocation := []string{"notomllocation"}
@@ -83,6 +84,7 @@ func TestFindConfigFile(t *testing.T) {
 	}
 }
 
+// TestLoadToml tests if loadTOML() can correctly load TOML files
 func TestLoadToml(t *testing.T) {
 	var cfg config
 	if err := loadTOML(&cfg, "data/nonexistant.toml"); err.Error() != "open "+
