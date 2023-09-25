@@ -18,7 +18,9 @@ type config struct {
 // TestParse helps parsing command line arguments and loading
 // stored configurations from file.
 func TestParse(t *testing.T) {
-	originalArgs := os.Args
+	orig := os.Args
+	defer func() { os.Args = orig }()
+
 	os.Args = []string{"cmd"}
 	defaultConfigLocation := []string{"data/config.toml"}
 	p := Parser[config]{
@@ -77,7 +79,7 @@ func TestParse(t *testing.T) {
 	}
 
 	// Build subprocess that can be exited
-	cmd := exec.Command(originalArgs[0], "-test.run=TestParse")
+	cmd := exec.Command(orig[0], "-test.run=TestParse")
 	cmd.Env = append(os.Environ(), "TEST_HELP=1")
 	err := cmd.Run()
 	if err != nil {
@@ -91,14 +93,12 @@ func TestParse(t *testing.T) {
 		return
 	}
 
-	cmd = exec.Command(originalArgs[0], "-test.run=TestParse")
+	cmd = exec.Command(orig[0], "-test.run=TestParse")
 	cmd.Env = append(os.Environ(), "TEST_VERSION=1")
 	err = cmd.Run()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	// Reset os.Args
-	os.Args = originalArgs
 }
 
 // TestFindConfigFile tests if findConfigFile() correctly finds existing and
