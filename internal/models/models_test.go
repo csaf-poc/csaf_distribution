@@ -29,6 +29,13 @@ func TestGuessDate(t *testing.T) {
 	if _, guess := guessDate("2006-01-02T15:04:05"); !guess {
 		t.Errorf("Failure: Could not guess valid Date from valid string")
 	}
+	if _, guess := guessDate("2006"); !guess {
+		t.Errorf("Failure: Could not guess valid Date from valid string")
+	}
+	if _, guess := guessDate("2006-01-02"); !guess {
+		t.Errorf("Failure: Could not guess valid Date from valid string")
+	}
+
 	if _, guess := guessDate(""); guess {
 		t.Errorf("Failure: Guessed Date from invalid string")
 	}
