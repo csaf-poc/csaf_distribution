@@ -9,7 +9,7 @@
 package misc
 
 import (
-	"bytes"
+	"io"
 	"mime/multipart"
 	"testing"
 )
@@ -17,8 +17,7 @@ import (
 // TestCreateFormFile tests if CreateFormFile throws an error when creating
 // a FormFile
 func TestCreateFormFile(t *testing.T) {
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
+	writer := multipart.NewWriter(io.Discard)
 
 	if _, err := CreateFormFile(writer, "csaf", "data", "application/json"); err != nil {
 		t.Errorf("Failure: failed to create an io.Writer via CreateFormFile")

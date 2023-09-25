@@ -22,7 +22,7 @@ func TestNewPatternMatcher(t *testing.T) {
 	}
 	regex = append(regex, "++")
 	if pm, err := NewPatternMatcher(regex); pm != nil || err == nil {
-		t.Errorf("Failure: No error thrown at invalid compile pattern")
+		t.Errorf("Failure: No error returned at invalid compile pattern")
 	}
 }
 

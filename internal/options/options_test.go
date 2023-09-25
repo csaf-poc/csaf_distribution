@@ -92,8 +92,8 @@ func TestLoadToml(t *testing.T) {
 		t.Errorf("Failure: Didn't throw the correct " +
 			"error on trying to load nonexistant file")
 	}
-	if err := loadTOML(&cfg, "data/config_plus.toml"); err.Error() != "could not parse [\"surplus\"] "+
-		"from \"data/config_plus.toml\"" {
+	const errMsg = `could not parse ["surplus"] from "data/config_plus.toml"`
+	if err := loadTOML(&cfg, "data/config_plus.toml"); err.Error() != errMsg {
 		t.Errorf("Failure: Succeeded in parsing nonexistant parameter")
 	}
 	if err := loadTOML(&cfg, "data/config.toml"); err != nil {
