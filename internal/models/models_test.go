@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// TestNewTimeInterval tests the creation of time intervals via NewTimeInterval()
 func TestNewTimeInterval(t *testing.T) {
 	var before time.Time
 	before = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
@@ -25,6 +26,7 @@ func TestNewTimeInterval(t *testing.T) {
 	}
 }
 
+// TestGuessDate tests whether a sample of strings are correctly parsed into Dates by guessDate()
 func TestGuessDate(t *testing.T) {
 	if _, guess := guessDate("2006-01-02T15:04:05"); !guess {
 		t.Errorf("Failure: Could not guess valid Date from valid string")
@@ -41,6 +43,7 @@ func TestGuessDate(t *testing.T) {
 	}
 }
 
+// TestUnmarshalText tests whether UnmarshalText() correctly unmarshals a sample of byteSlices
 func TestUnmarshalText(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
@@ -55,6 +58,7 @@ func TestUnmarshalText(t *testing.T) {
 	}
 }
 
+// TestMarshalJSON tests whether MarshalJSON() correctly marshals a sample TimeRange
 func TestMarshalJSON(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
@@ -64,6 +68,7 @@ func TestMarshalJSON(t *testing.T) {
 	}
 }
 
+// TestUnmarshalFlag tests whether UnmarshalFlag() correctly extracts time from a given timeRange string.
 func TestUnmarshalFlag(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
@@ -88,6 +93,8 @@ func TestUnmarshalFlag(t *testing.T) {
 	}
 }
 
+// TestContains tests whether Contains() correctly identifies a sample of points in time to be within
+// a timerange or not.
 func TestContains(t *testing.T) {
 	testTimeRange := NewTimeInterval(
 		time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC),
