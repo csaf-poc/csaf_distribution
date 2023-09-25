@@ -14,8 +14,8 @@ import (
 	"testing"
 )
 
-// CreateFormFile creates an [io.Writer] like [mime/multipart.Writer.CreateFromFile].
-// This version allows to set the mime type, too.
+// TestCreateFormFile tests if CreateFormFile throws an error when creating
+// a FormFile
 func TestCreateFormFile(t *testing.T) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
