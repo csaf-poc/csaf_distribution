@@ -2,6 +2,9 @@ package certs
 
 import "testing"
 
+// TestLoadCertificates tests if LoadCertificate correctly loads
+// valid certificates and throws an error at invalid certificates,
+// keys or passphrases
 func TestLoadCertificates(t *testing.T) {
 	testCert := "data/testclient.crt"
 	testKey := "data/testclientkey.pem"
