@@ -14,7 +14,7 @@ type config struct {
 	ConfigLocation string `long:"configlocation" description:"test location"`
 }
 
-// Parser helps parsing command line arguments and loading
+// TestParse helps parsing command line arguments and loading
 // stored configurations from file.
 func TestParse(t *testing.T) {
 	originalArgs := os.Args
@@ -151,4 +151,23 @@ func TestErrorCheck(t *testing.T) {
 	}
 	t.Fatalf("process ran with err %v, want exit status 1", err)
 
+}
+
+// TestSecondPassCommandlineParsing checks if the second pass
+// of the command line passing is error checked.
+func TestSecondPassCommandlineParsing(t *testing.T) {
+	orig := os.Args
+	defer func() { os.Args = orig }()
+
+	os.Args = []string{"cmd"}
+	p := Parser[config]{
+		ConfigLocation: func(cfg *config) string {
+			// This is a bit stupid.
+			os.Args = []string{"cmd", "--invalid"}
+			return "data/empty.toml"
+		},
+	}
+	if _, _, err := p.Parse(); err == nil {
+		t.Fatalf("Second command line parsing pass did not fail.\n")
+	}
 }
