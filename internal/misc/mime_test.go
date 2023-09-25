@@ -20,8 +20,7 @@ func TestCreateFormFile(t *testing.T) {
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
-	_, err := CreateFormFile(writer, "csaf", "data", "application/json")
-	if err != nil {
-		t.Errorf("failed to create an io.Writer via CreateFormFile")
+	if _, err := CreateFormFile(writer, "csaf", "data", "application/json"); err != nil {
+		t.Errorf("Failure: failed to create an io.Writer via CreateFormFile")
 	}
 }
