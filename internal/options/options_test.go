@@ -4,6 +4,7 @@ package options
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"testing"
 )
 
@@ -16,6 +17,7 @@ type config struct {
 // Parser helps parsing command line arguments and loading
 // stored configurations from file.
 func TestParse(t *testing.T) {
+	originalArgs := os.Args
 	os.Args = []string{"cmd"}
 	defaultConfigLocation := []string{"data/config.toml"}
 	p := Parser[config]{
@@ -63,6 +65,39 @@ func TestParse(t *testing.T) {
 	if _, _, err := p.Parse(); err == nil {
 		t.Errorf("Failure: Invalid path expanded.")
 	}
+
+	// os.exit tests start here
+	// test the help flag
+	// if TEST_HELP was set, try parsing the help flag
+	if os.Getenv("TEST_HELP") == "1" {
+		os.Args = []string{"cmd", "--help"}
+		p.Parse()
+		return
+	}
+
+	// Build subprocess that can be exited
+	cmd := exec.Command(originalArgs[0], "-test.run=TestParse")
+	cmd.Env = append(os.Environ(), "TEST_HELP=1")
+	err := cmd.Run()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	// test the version flag
+	if os.Getenv("TEST_VERSION") == "1" {
+		os.Args = []string{"cmd", "--version"}
+		p.Parse()
+		return
+	}
+
+	cmd = exec.Command(originalArgs[0], "-test.run=TestParse")
+	cmd.Env = append(os.Environ(), "TEST_VERSION=1")
+	err = cmd.Run()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	// Reset os.Args
+	os.Args = originalArgs
 }
 
 // TestFindConfigFile tests if findConfigFile() correctly finds existing and
@@ -99,4 +134,21 @@ func TestLoadToml(t *testing.T) {
 	if err := loadTOML(&cfg, "data/config.toml"); err != nil {
 		t.Errorf(err.Error())
 	}
+}
+
+// TestErrorCheck checks whether the ErrorChecker correctly logs a fatal error
+func TestErrorCheck(t *testing.T) {
+	if os.Getenv("TEST_ERROR") == "1" {
+		testError := fmt.Errorf("Succesful")
+		ErrorCheck(testError)
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=TestErrorCheck")
+	cmd.Env = append(os.Environ(), "TEST_ERROR=1")
+	err := cmd.Run()
+	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+		return
+	}
+	t.Fatalf("process ran with err %v, want exit status 1", err)
+
 }
