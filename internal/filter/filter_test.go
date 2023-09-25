@@ -13,8 +13,8 @@ import (
 	"testing"
 )
 
-// NewPatternMatcher compiles a new list of regular expression from
-// a given list of strings.
+// TestNewPatternMatcher tests if NewPatternMatcher recognizes
+// whether a set of sample regular expressions is valid
 func TestNewPatternMatcher(t *testing.T) {
 	var regex []string
 	if pm, err := NewPatternMatcher(regex); pm == nil || err != nil {
@@ -26,7 +26,8 @@ func TestNewPatternMatcher(t *testing.T) {
 	}
 }
 
-// Matches returns true if the given string matches any of the expressions.
+// TestMatches tests if Matches returns whether a given string
+// matches a sample of the expressions correctly.
 func TestMatches(t *testing.T) {
 	regex := []string{"a"}
 	pm, _ := NewPatternMatcher(regex)
