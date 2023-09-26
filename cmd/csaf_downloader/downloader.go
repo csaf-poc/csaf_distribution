@@ -108,7 +108,7 @@ func (d *downloader) httpClient() util.Client {
 
 	hClient := http.Client{}
 
-	if d.cfg.LogLevel.slogLevel() <= slog.LevelDebug {
+	if d.cfg.verbose() {
 		hClient.CheckRedirect = logRedirect
 	}
 
@@ -136,8 +136,15 @@ func (d *downloader) httpClient() util.Client {
 	}
 
 	// Add optional URL logging.
-	if d.cfg.Verbose {
-		client = &util.LoggingClient{Client: client}
+	if d.cfg.verbose() {
+		client = &util.LoggingClient{
+			Client: client,
+			Log: func(method, url string) {
+				slog.Debug("fetching",
+					"method", method,
+					"url", url)
+			},
+		}
 	}
 
 	// Add optional rate limiting.
@@ -158,9 +165,9 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	lpmd := loader.Load(domain)
 
-	if d.cfg.Verbose {
+	if d.cfg.verbose() {
 		for i := range lpmd.Messages {
-			slog.Info("Loading provider-metadata.json",
+			slog.Debug("Loading provider-metadata.json",
 				"domain", domain,
 				"message", lpmd.Messages[i].Message)
 		}
@@ -347,7 +354,7 @@ func (d *downloader) logValidationIssues(url string, errors []string, err error)
 		return
 	}
 	if len(errors) > 0 {
-		if d.cfg.Verbose {
+		if d.cfg.verbose() {
 			slog.Error("CSAF file has validation errors",
 				"url", url,
 				"error", strings.Join(errors, ", "))
@@ -404,9 +411,7 @@ nextAdvisory:
 		}
 
 		if d.cfg.ignoreURL(file.URL()) {
-			if d.cfg.Verbose {
-				slog.Warn("Ignoring URL", "url", file.URL())
-			}
+			slog.Debug("Ignoring URL", "url", file.URL())
 			continue
 		}
 
@@ -454,22 +459,18 @@ nextAdvisory:
 
 		// Only hash when we have a remote counter part we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			if d.cfg.Verbose {
-				slog.Warn("Cannot fetch SHA256",
-					"url", file.SHA256URL(),
-					"error", err)
-			}
+			slog.Warn("Cannot fetch SHA256",
+				"url", file.SHA256URL(),
+				"error", err)
 		} else {
 			s256 = sha256.New()
 			writers = append(writers, s256)
 		}
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			if d.cfg.Verbose {
-				slog.Warn("Cannot fetch SHA512",
-					"url", file.SHA512URL(),
-					"error", err)
-			}
+			slog.Warn("Cannot fetch SHA512",
+				"url", file.SHA512URL(),
+				"error", err)
 		} else {
 			s512 = sha512.New()
 			writers = append(writers, s512)
@@ -522,11 +523,9 @@ nextAdvisory:
 			var sign *crypto.PGPSignature
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
-				if d.cfg.Verbose {
-					slog.Warn("Downloading signature failed",
-						"url", file.SignURL(),
-						"error", err)
-				}
+				slog.Warn("Downloading signature failed",
+					"url", file.SignURL(),
+					"error", err)
 			}
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {
