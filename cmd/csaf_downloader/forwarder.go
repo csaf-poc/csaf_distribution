@@ -117,7 +117,10 @@ func (f *forwarder) httpClient() util.Client {
 
 	// Add optional URL logging.
 	if f.cfg.verbose() {
-		client = &util.LoggingClient{Client: client}
+		client = &util.LoggingClient{
+			Client: client,
+			Log:    httpLog,
+		}
 	}
 
 	f.client = client
