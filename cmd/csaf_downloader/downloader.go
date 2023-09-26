@@ -92,9 +92,25 @@ func (d *downloader) addStats(o *stats) {
 	d.stats.add(o)
 }
 
+// logRedirect logs redirects of the http client.
+func logRedirect(req *http.Request, via []*http.Request) error {
+	vs := make([]string, len(via))
+	for i, v := range via {
+		vs[i] = v.URL.String()
+	}
+	slog.Debug("Redirecting",
+		"to", req.URL.String(),
+		"via", strings.Join(vs, " -> "))
+	return nil
+}
+
 func (d *downloader) httpClient() util.Client {
 
 	hClient := http.Client{}
+
+	if d.cfg.LogLevel.slogLevel() <= slog.LevelDebug {
+		hClient.CheckRedirect = logRedirect
+	}
 
 	var tlsConfig tls.Config
 	if d.cfg.Insecure {
