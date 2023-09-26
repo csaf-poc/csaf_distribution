@@ -139,7 +139,7 @@ func (d *downloader) httpClient() util.Client {
 	if d.cfg.verbose() {
 		client = &util.LoggingClient{
 			Client: client,
-			Log:    httpLog,
+			Log:    httpLog("downloader"),
 		}
 	}
 
@@ -155,10 +155,13 @@ func (d *downloader) httpClient() util.Client {
 }
 
 // httpLog does structured logging in a [util.LoggingClient].
-func httpLog(method, url string) {
-	slog.Debug("fetching",
-		"method", method,
-		"url", url)
+func httpLog(who string) func(string, string) {
+	return func(method, url string) {
+		slog.Debug("http",
+			"who", who,
+			"method", method,
+			"url", url)
+	}
 }
 
 func (d *downloader) download(ctx context.Context, domain string) error {

@@ -119,7 +119,7 @@ func (f *forwarder) httpClient() util.Client {
 	if f.cfg.verbose() {
 		client = &util.LoggingClient{
 			Client: client,
-			Log:    httpLog,
+			Log:    httpLog("forwarder"),
 		}
 	}
 
