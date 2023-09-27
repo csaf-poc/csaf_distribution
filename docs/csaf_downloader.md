@@ -123,6 +123,14 @@ In the config file this has to be noted as:
 ignorepattern = [".*white.*", ".*red.*"]
 ```
 
+#### Forwarding
+The downloader is able to forward downloaded advisories and their checksums,
+OpenPGP signatures and validation results to an HTTP endpoint.  
+The details of the implemented API are described [here](https://github.com/mfd2007/csaf_upload_interface).  
+**Attention** This is a work in progress. There is
+no production ready server which implements this protocol.
+The server in the linked repository is currently for development and testing only.
+
 #### beware of client cert passphrase
 
 The `client-passphrase` option implements a legacy private
