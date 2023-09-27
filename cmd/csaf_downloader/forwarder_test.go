@@ -13,7 +13,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"testing"
+
+	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
 
 func TestValidationStatusUpdate(t *testing.T) {
@@ -80,5 +83,19 @@ func TestForwarderLogStats(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("Cannot find forward statistics in log")
+	}
+}
+
+func TestForwarderHTTPClient(t *testing.T) {
+	cfg := &config{
+		ForwardInsecure: true,
+		ForwardHeader: http.Header{
+			"User-Agent": []string{"curl/7.55.1"},
+		},
+		LogLevel: &options.LogLevel{Level: slog.LevelDebug},
+	}
+	fw := newForwarder(cfg)
+	if c1, c2 := fw.httpClient(), fw.httpClient(); c1 != c2 {
+		t.Fatal("expected to return same client twice")
 	}
 }
