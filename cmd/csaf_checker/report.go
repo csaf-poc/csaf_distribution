@@ -18,8 +18,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 )
 
 // MessageType is the kind of the message.
