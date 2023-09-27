@@ -12,8 +12,12 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"io"
 	"log/slog"
+	"mime"
+	"mime/multipart"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
@@ -110,5 +114,101 @@ func TestForwarderReplaceExtension(t *testing.T) {
 		if got := replaceExt(x[0], ".ext"); got != x[1] {
 			t.Fatalf("got %q expected %q", got, x[1])
 		}
+	}
+}
+
+func TestForwarderBuildRequest(t *testing.T) {
+
+	// Good case ...
+	cfg := &config{
+		ForwardURL: "https://example.com",
+	}
+	fw := newForwarder(cfg)
+
+	req, err := fw.buildRequest(
+		"test.json", "{}",
+		invalidValidationStatus,
+		"256",
+		"512")
+
+	if err != nil {
+		t.Fatalf("buildRequest failed: %v", err)
+	}
+	mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+	if err != nil {
+		t.Fatalf("no Content-Type found")
+	}
+	if !strings.HasPrefix(mediaType, "multipart/") {
+		t.Fatalf("media type is not multipart")
+	}
+	mr := multipart.NewReader(req.Body, params["boundary"])
+
+	var foundAdvisory, foundValidationStatus, found256, found512 bool
+
+	for {
+		p, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("parsing multipart failed: %v", err)
+		}
+		data, err := io.ReadAll(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cd := p.Header["Content-Disposition"]
+		if len(cd) == 0 {
+			continue
+		}
+
+		switch contains := func(name string) bool {
+			return strings.Contains(cd[0], `name="`+name+`"`)
+		}; {
+		case contains("advisory"):
+			if a := string(data); a != "{}" {
+				t.Fatalf("advisory: got %q expected %q", a, "{}")
+			}
+			foundAdvisory = true
+		case contains("validation_status"):
+			if vs := validationStatus(data); vs != invalidValidationStatus {
+				t.Fatalf("validation_status: got %q expected %q",
+					vs, invalidValidationStatus)
+			}
+			foundValidationStatus = true
+		case contains("hash-256"):
+			if h := string(data); h != "256" {
+				t.Fatalf("hash-256: got %q expected %q", h, "256")
+			}
+			found256 = true
+		case contains("hash-512"):
+			if h := string(data); h != "512" {
+				t.Fatalf("hash-512: got %q expected %q", h, "512")
+			}
+			found512 = true
+		}
+	}
+
+	switch {
+	case !foundAdvisory:
+		t.Fatal("advisory not found")
+	case !foundValidationStatus:
+		t.Fatal("validation_status not found")
+	case !found256:
+		t.Fatal("hash-256 not found")
+	case !found512:
+		t.Fatal("hash-512 not found")
+	}
+
+	// Bad case ...
+	cfg.ForwardURL = "%"
+
+	if _, err := fw.buildRequest(
+		"test.json", "{}",
+		invalidValidationStatus,
+		"256",
+		"512",
+	); err == nil {
+		t.Fatal("bad forward URL should result in an error")
 	}
 }
