@@ -99,3 +99,16 @@ func TestForwarderHTTPClient(t *testing.T) {
 		t.Fatal("expected to return same client twice")
 	}
 }
+
+func TestForwarderReplaceExtension(t *testing.T) {
+	for _, x := range [][2]string{
+		{"foo", "foo.ext"},
+		{"foo.bar", "foo.ext"},
+		{".bar", ".ext"},
+		{"", ".ext"},
+	} {
+		if got := replaceExt(x[0], ".ext"); got != x[1] {
+			t.Fatalf("got %q expected %q", got, x[1])
+		}
+	}
+}
