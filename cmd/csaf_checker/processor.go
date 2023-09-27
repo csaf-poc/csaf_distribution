@@ -32,8 +32,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // topicMessages stores the collected topicMessages for a specific topic.

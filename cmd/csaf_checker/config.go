@@ -13,10 +13,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
 
 type outputFormat string

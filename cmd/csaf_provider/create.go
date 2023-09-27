@@ -21,8 +21,9 @@ import (
 	"unicode"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // ensureFolders initializes the paths and call functions to create

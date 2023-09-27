@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // AdvisoryFile constructs the urls of a remote file.

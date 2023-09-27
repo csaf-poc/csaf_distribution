@@ -18,7 +18,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // Parser helps parsing command line arguments and loading
