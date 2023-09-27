@@ -18,7 +18,7 @@ echo '==== run downloader (1)'
 mkdir ~/downloaded1
 
 ./bin-linux-amd64/csaf_downloader --directory ../downloaded1 \
-  --rate 4.1 --verbose --insecure localhost
+  --rate 4.1 --insecure localhost
 
 echo
 echo '==== this was downloaded (1)'
@@ -32,7 +32,7 @@ echo '==== run downloader (2)'
 mkdir ~/downloaded2
 
 ./bin-linux-amd64/csaf_downloader --directory ../downloaded2 \
-  --verbose --insecure https://localhost:9443/.well-known/csaf-aggregator/local-dev-provider2/provider-metadata.json
+  --insecure https://localhost:9443/.well-known/csaf-aggregator/local-dev-provider2/provider-metadata.json
 
 echo
 echo '==== this was downloaded (2)'
