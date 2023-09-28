@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"mime"
@@ -23,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 func TestValidationStatusUpdate(t *testing.T) {
@@ -277,7 +279,7 @@ func TestStoreFailedAdvisory(t *testing.T) {
 		t.Fatal("expected to fail with an error")
 	}
 
-	if err := os.Chmod(sha256Path, 644); err != nil {
+	if err := os.Chmod(sha256Path, 0644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -332,4 +334,96 @@ func TestStoredFailed(t *testing.T) {
 	if !found {
 		t.Fatal("Cannot error logging statistics in log")
 	}
+}
+
+type fakeClient struct {
+	util.Client
+	state int
+}
+
+func (fc *fakeClient) Do(*http.Request) (*http.Response, error) {
+	// The different states simulates different responses from the remote API.
+	switch fc.state {
+	case 0:
+		fc.state = 1
+		return &http.Response{
+			Status:     http.StatusText(http.StatusCreated),
+			StatusCode: http.StatusCreated,
+		}, nil
+	case 1:
+		fc.state = 2
+		return nil, errors.New("does not work")
+	case 2:
+		fc.state = 3
+		return &http.Response{
+			Status:     http.StatusText(http.StatusBadRequest),
+			StatusCode: http.StatusBadRequest,
+			Body:       io.NopCloser(&badReader{error: os.ErrInvalid}),
+		}, nil
+	default:
+		return &http.Response{
+			Status:     http.StatusText(http.StatusBadRequest),
+			StatusCode: http.StatusBadRequest,
+			Body:       io.NopCloser(strings.NewReader("This was bad!")),
+		}, nil
+	}
+}
+
+func TestForwarderForward(t *testing.T) {
+	dir, err := os.MkdirTemp("", "forward")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	orig := slog.Default()
+	defer slog.SetDefault(orig)
+
+	// We dont care in details here as we captured the details
+	// in the other test cases.
+	h := slog.NewJSONHandler(io.Discard, nil)
+	lg := slog.New(h)
+	slog.SetDefault(lg)
+
+	cfg := &config{
+		ForwardURL: "http://example.com",
+		Directory:  dir,
+	}
+	fw := newForwarder(cfg)
+
+	// Use the fact that http client is cached.
+	fw.client = &fakeClient{}
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		fw.run()
+	}()
+
+	// Iterate through states of http client.
+	for i := 0; i <= 3; i++ {
+		fw.forward(
+			"test.json", "{}",
+			invalidValidationStatus,
+			"256",
+			"512")
+	}
+
+	// Make buildRequest fail.
+	wait := make(chan struct{})
+	fw.cmds <- func(f *forwarder) {
+		f.cfg.ForwardURL = "%"
+		close(wait)
+	}
+	<-wait
+	fw.forward(
+		"test.json", "{}",
+		invalidValidationStatus,
+		"256",
+		"512")
+
+	fw.close()
+
+	<-done
 }
