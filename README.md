@@ -2,7 +2,7 @@
 
 An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker, aggregator and downloader. Includes an uploader command line tool for the trusted provider.
 
-## for users
+## Tools for users
 ### [csaf_downloader](docs/csaf_downloader.md)
 is a tool for downloading advisories from a provider.
 Can be used for automated forwarding of CSAF documents.
@@ -10,7 +10,7 @@ Can be used for automated forwarding of CSAF documents.
 ### [csaf_validator](docs/csaf_validator.md)
 is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
 
-## for advisory providers
+## Tools for advisory providers
 
 ### [csaf_provider](docs/csaf_provider.md)
 is an implementation of the role CSAF Trusted Provider, also offering
