@@ -244,10 +244,7 @@ func TestStoreFailedAdvisory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		os.Chmod(dir, 0700)
-		os.RemoveAll(dir)
-	}()
+	defer os.RemoveAll(dir)
 
 	cfg := &config{Directory: dir}
 	fw := newForwarder(cfg)
@@ -280,4 +277,7 @@ func TestStoreFailedAdvisory(t *testing.T) {
 		t.Fatal("expected to fail with an error")
 	}
 
+	if err := os.Chmod(sha256Path, 644); err != nil {
+		t.Fatal(err)
+	}
 }
