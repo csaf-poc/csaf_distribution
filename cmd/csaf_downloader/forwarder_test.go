@@ -379,7 +379,7 @@ func TestForwarderForward(t *testing.T) {
 	orig := slog.Default()
 	defer slog.SetDefault(orig)
 
-	// We dont care in details here as we captured the details
+	// We dont care in details here as we captured them
 	// in the other test cases.
 	h := slog.NewJSONHandler(io.Discard, nil)
 	lg := slog.New(h)
