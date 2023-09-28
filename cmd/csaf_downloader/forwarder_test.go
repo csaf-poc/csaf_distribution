@@ -240,7 +240,7 @@ func TestLimitedString(t *testing.T) {
 }
 
 func TestStoreFailedAdvisory(t *testing.T) {
-	dir, err := os.MkdirTemp("", "storeFailed")
+	dir, err := os.MkdirTemp("", "storeFailedAdvisory")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,5 +279,57 @@ func TestStoreFailedAdvisory(t *testing.T) {
 
 	if err := os.Chmod(sha256Path, 644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestStoredFailed(t *testing.T) {
+	dir, err := os.MkdirTemp("", "storeFailed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	orig := slog.Default()
+	defer slog.SetDefault(orig)
+
+	var buf bytes.Buffer
+	h := slog.NewJSONHandler(&buf, &slog.HandlerOptions{
+		Level: slog.LevelError,
+	})
+	lg := slog.New(h)
+	slog.SetDefault(lg)
+
+	cfg := &config{Directory: dir}
+	fw := newForwarder(cfg)
+
+	// An empty filename should lead to an error.
+	fw.storeFailed("", "{}", "256", "512")
+
+	if fw.failed != 1 {
+		t.Fatalf("got %d expected 1", fw.failed)
+	}
+
+	type entry struct {
+		Msg   string `json:"msg"`
+		Level string `json:"level"`
+	}
+
+	sc := bufio.NewScanner(bytes.NewReader(buf.Bytes()))
+	found := false
+	for sc.Scan() {
+		var e entry
+		if err := json.Unmarshal(sc.Bytes(), &e); err != nil {
+			t.Fatalf("JSON parsing log failed: %v", err)
+		}
+		if e.Msg == "Storing advisory failed forwarding failed" && e.Level == "ERROR" {
+			found = true
+			break
+		}
+	}
+	if err := sc.Err(); err != nil {
+		t.Fatalf("scanning log failed: %v", err)
+	}
+	if !found {
+		t.Fatal("Cannot error logging statistics in log")
 	}
 }
