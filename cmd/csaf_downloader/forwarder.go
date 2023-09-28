@@ -187,16 +187,10 @@ func (f *forwarder) buildRequest(
 // storeFailedAdvisory stores an advisory in a special folder
 // in case the forwarding failed.
 func (f *forwarder) storeFailedAdvisory(filename, doc, sha256, sha512 string) error {
-	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
 	// Create special folder if it does not exist.
-	if _, err := os.Stat(dir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
 	}
 	// Store parts which are not empty.
 	for _, x := range []struct {

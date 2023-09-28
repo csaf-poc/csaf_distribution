@@ -18,6 +18,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -236,4 +237,47 @@ func TestLimitedString(t *testing.T) {
 	if _, err := limitedString(&badReader{error: os.ErrInvalid}, 3); err == nil {
 		t.Fatal("expected to fail with an error")
 	}
+}
+
+func TestStoreFailedAdvisory(t *testing.T) {
+	dir, err := os.MkdirTemp("", "storeFailed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		os.Chmod(dir, 0700)
+		os.RemoveAll(dir)
+	}()
+
+	cfg := &config{Directory: dir}
+	fw := newForwarder(cfg)
+
+	badDir := filepath.Join(dir, failedForwardDir)
+	if err := os.WriteFile(badDir, []byte("test"), 0664); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
+		t.Fatal("if the destination exists as a file an error should occur")
+	}
+
+	if err := os.Remove(badDir); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err != nil {
+		t.Fatal(err)
+	}
+
+	sha256Path := filepath.Join(dir, failedForwardDir, "advisory.json.sha256")
+
+	// Write protect advisory.
+	if err := os.Chmod(sha256Path, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
+		t.Fatal("expected to fail with an error")
+	}
+
 }
