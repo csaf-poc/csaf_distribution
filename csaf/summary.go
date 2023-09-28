@@ -11,7 +11,7 @@ package csaf
 import (
 	"time"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 const (

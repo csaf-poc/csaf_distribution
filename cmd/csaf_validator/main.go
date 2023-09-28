@@ -16,9 +16,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
+
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 type options struct {

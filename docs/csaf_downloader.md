@@ -14,10 +14,8 @@ Application Options:
       --client-key=KEY-FILE                      TLS client private key file (PEM encoded data)
       --client-passphrase=PASSPHRASE             Optional passphrase for the client cert (limited, experimental, see doc)
       --version                                  Display version of the binary
-  -v, --verbose                                  Verbose output
   -n, --nostore                                  Do not store files
-  -r, --rate=                                    The average upper limit of https operations per second (defaults to
-                                                 unlimited)
+  -r, --rate=                                    The average upper limit of https operations per second (defaults to unlimited)
   -w, --worker=NUM                               NUMber of concurrent downloads (default: 2)
   -t, --timerange=RANGE                          RANGE of time from which advisories to download
   -f, --folder=FOLDER                            Download into a given subFOLDER
@@ -65,7 +63,6 @@ insecure            = false
 # client_key        # not set by default
 # client_passphrase # not set by default
 ignoresigcheck      = false
-verbose             = false
 # rate              # set to unlimited
 worker              = 2
 # timerange         # not set by default
@@ -125,6 +122,14 @@ In the config file this has to be noted as:
 ```
 ignorepattern = [".*white.*", ".*red.*"]
 ```
+
+#### Forwarding
+The downloader is able to forward downloaded advisories and their checksums,
+OpenPGP signatures and validation results to an HTTP endpoint.  
+The details of the implemented API are described [here](https://github.com/mfd2007/csaf_upload_interface).  
+**Attention** This is a work in progress. There is
+no production ready server which implements this protocol.
+The server in the linked repository is currently for development and testing only.
 
 #### beware of client cert passphrase
 
