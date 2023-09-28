@@ -17,6 +17,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -210,5 +211,29 @@ func TestForwarderBuildRequest(t *testing.T) {
 		"512",
 	); err == nil {
 		t.Fatal("bad forward URL should result in an error")
+	}
+}
+
+type badReader struct{ error }
+
+func (br *badReader) Read([]byte) (int, error) { return 0, br.error }
+
+func TestLimitedString(t *testing.T) {
+	for _, x := range [][2]string{
+		{"xx", "xx"},
+		{"xxx", "xxx..."},
+		{"xxxx", "xxx..."},
+	} {
+		got, err := limitedString(strings.NewReader(x[0]), 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != x[1] {
+			t.Fatalf("got %q expected %q", got, x[1])
+		}
+	}
+
+	if _, err := limitedString(&badReader{error: os.ErrInvalid}, 3); err == nil {
+		t.Fatal("expected to fail with an error")
 	}
 }
