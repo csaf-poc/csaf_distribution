@@ -28,6 +28,14 @@ func NewTimeInterval(a, b time.Time) TimeRange {
 	return TimeRange{a, b}
 }
 
+// Year returns the time range for a given year.
+func Year(year int) TimeRange {
+	return TimeRange{
+		time.Date(year, time.January, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(year, time.December, 31, 23, 59, 59, int(time.Second-time.Nanosecond), time.UTC),
+	}
+}
+
 // guessDate tries to guess an RFC 3339 date time from a given string.
 func guessDate(s string) (time.Time, bool) {
 	for _, layout := range []string{
@@ -99,4 +107,9 @@ func (tr *TimeRange) UnmarshalFlag(s string) error {
 // Contains return true if the given time is inside this time interval.
 func (tr TimeRange) Contains(t time.Time) bool {
 	return !(t.Before(tr[0]) || t.After(tr[1]))
+}
+
+// Intersects returns true if the two time ranges intersects.
+func (tr TimeRange) Intersects(other TimeRange) bool {
+	return !(other[1].Before(tr[0]) || tr[1].Before(other[0]))
 }

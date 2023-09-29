@@ -111,3 +111,58 @@ func TestContains(t *testing.T) {
 		t.Errorf("Failure: Did not recognize that a point in time was before a timerange correctly.")
 	}
 }
+
+// TestTimeRangeIntersects checks if TimeRange.Intersects works.
+func TestTimeRangeIntersects(t *testing.T) {
+	var (
+		a = time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+		b = a.AddDate(0, 0, 10)
+		c = b.AddDate(0, 0, 10)
+		d = c.AddDate(0, 0, 10)
+	)
+	for _, x := range []struct {
+		ranges   [2]TimeRange
+		expected bool
+	}{
+		{ranges: [2]TimeRange{{a, b}, {a, b}}, expected: true},  // equal
+		{ranges: [2]TimeRange{{a, b}, {c, d}}, expected: false}, // disjoint
+		{ranges: [2]TimeRange{{a, b}, {b, c}}, expected: true},  // touching
+		{ranges: [2]TimeRange{{a, c}, {b, d}}, expected: true},  // overlapping
+		{ranges: [2]TimeRange{{a, d}, {b, c}}, expected: true},  // containing
+		{ranges: [2]TimeRange{{a, b}, {a, c}}, expected: true},  // containing touch left
+		{ranges: [2]TimeRange{{b, c}, {a, c}}, expected: true},  // containing touch right
+	} {
+		got1 := x.ranges[0].Intersects(x.ranges[1])
+		got2 := x.ranges[1].Intersects(x.ranges[0])
+		if got1 != got2 {
+			t.Fatalf("intersecting %v is not commutative", x.ranges)
+		}
+		if got1 != x.expected {
+			t.Fatalf("%v: got %t expected %t", x.ranges, got1, x.expected)
+		}
+	}
+}
+
+// TestTimeRangeYear checks if the Year construction works.
+func TestTimeRangeYear(t *testing.T) {
+	var (
+		year   = Year(1984)
+		first  = time.Date(1984, time.January, 1, 0, 0, 0, 0, time.UTC)
+		before = first.Add(-time.Nanosecond)
+		after  = time.Date(1984+1, time.January, 1, 0, 0, 0, 0, time.UTC)
+		last   = after.Add(-time.Nanosecond)
+	)
+	for _, x := range []struct {
+		t        time.Time
+		expected bool
+	}{
+		{t: first, expected: true},
+		{t: before, expected: false},
+		{t: last, expected: true},
+		{t: after, expected: false},
+	} {
+		if got := year.Contains(x.t); got != x.expected {
+			t.Fatalf("%v: got %t expected %t", x.t, got, x.expected)
+		}
+	}
+}

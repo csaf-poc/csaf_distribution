@@ -33,6 +33,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
@@ -666,12 +667,9 @@ func (p *processor) integrity(
 		var folderYear *int
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
-			// Check if we are in checking time interval.
-			if accept := p.cfg.Range; accept != nil && !accept.Contains(
-				time.Date(
-					year, 12, 31, // Assume last day of year.
-					23, 59, 59, 0, // 23:59:59
-					time.UTC)) {
+			// Check if the year is in the accepted time interval.
+			if accept := p.cfg.Range; accept != nil &&
+				!accept.Intersects(models.Year(year)) {
 				continue
 			}
 			folderYear = &year
