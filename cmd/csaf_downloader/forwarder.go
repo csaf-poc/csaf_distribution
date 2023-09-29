@@ -187,16 +187,10 @@ func (f *forwarder) buildRequest(
 // storeFailedAdvisory stores an advisory in a special folder
 // in case the forwarding failed.
 func (f *forwarder) storeFailedAdvisory(filename, doc, sha256, sha512 string) error {
-	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
 	// Create special folder if it does not exist.
-	if _, err := os.Stat(dir); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
+	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
 	}
 	// Store parts which are not empty.
 	for _, x := range []struct {
@@ -226,6 +220,19 @@ func (f *forwarder) storeFailed(filename, doc, sha256, sha512 string) {
 	}
 }
 
+// limitedString reads max bytes from reader and returns it as a string.
+// Longer strings are indicated by "..." as a suffix.
+func limitedString(r io.Reader, max int) (string, error) {
+	var msg strings.Builder
+	if _, err := io.Copy(&msg, io.LimitReader(r, int64(max))); err != nil {
+		return "", err
+	}
+	if msg.Len() >= max {
+		msg.WriteString("...")
+	}
+	return msg.String(), nil
+}
+
 // forward sends a given document with filename, status and
 // checksums to the forwarder. This is async to the degree
 // till the configured queue size is filled.
@@ -252,16 +259,15 @@ func (f *forwarder) forward(
 		}
 		if res.StatusCode != http.StatusCreated {
 			defer res.Body.Close()
-			var msg strings.Builder
-			io.Copy(&msg, io.LimitReader(res.Body, 512))
-			var dots string
-			if msg.Len() >= 512 {
-				dots = "..."
+			if msg, err := limitedString(res.Body, 512); err != nil {
+				slog.Error("reading forward result failed",
+					"error", err)
+			} else {
+				slog.Error("forwarding failed",
+					"filename", filename,
+					"body", msg,
+					"status_code", res.StatusCode)
 			}
-			slog.Error("forwarding failed",
-				"filename", filename,
-				"body", msg.String()+dots,
-				"status_code", res.StatusCode)
 			f.storeFailed(filename, doc, sha256, sha512)
 		} else {
 			f.succeeded++
