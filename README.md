@@ -2,27 +2,31 @@
 
 An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker, aggregator and downloader. Includes an uploader command line tool for the trusted provider.
 
-## [csaf_provider](docs/csaf_provider.md)
+## Tools for users
+### [csaf_downloader](docs/csaf_downloader.md)
+is a tool for downloading advisories from a provider.
+Can be used for automated forwarding of CSAF documents.
+
+### [csaf_validator](docs/csaf_validator.md)
+is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
+
+## Tools for advisory providers
+
+### [csaf_provider](docs/csaf_provider.md)
 is an implementation of the role CSAF Trusted Provider, also offering
 a simple HTTPS based management service.
 
-## [csaf_uploader](docs/csaf_uploader.md)
-is a command line tool that uploads CSAF documents to the `csaf_provider`.
+### [csaf_uploader](docs/csaf_uploader.md)
+is a command line tool to upload CSAF documents to the `csaf_provider`.
 
-## [csaf_aggregator](docs/csaf_aggregator.md)
-is an implementation of the role CSAF Aggregator.
+### [csaf_checker](docs/csaf_checker.md)
+is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents).
 
-## [csaf_checker](docs/csaf_checker.md)
-is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSAF standard](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html#7-distributing-csaf-documents). Does check requirements without considering the indicated `role` yet.
-
-## [csaf_downloader](docs/csaf_downloader.md)
-is a tool for downloading advisories from a provider.
-
-## [csaf_validator](docs/csaf_validator.md)
-is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
+### [csaf_aggregator](docs/csaf_aggregator.md)
+is a CSAF Aggregator, to list or mirror providers.
 
 ## Setup
-Note that binaries for the server side are only available and tested
+Binaries for the server side are only available and tested
 for GNU/Linux-Systems, e.g. Ubuntu LTS.
 They are likely to run on similar systems when build from sources.
 
@@ -63,7 +67,7 @@ Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-wi
 
 ## License
 
-- csaf_distribution is licensed as Free Software under MIT License.
+- `csaf_distribution` is licensed as Free Software under MIT License.
 
 - See the specific source files
   for details, the license itself can be found in the directory `LICENSES/`.
