@@ -92,6 +92,7 @@ func loadURL(s string) (io.ReadCloser, error) {
 
 func (cs *compiledSchema) compile() {
 	c := jsonschema.NewCompiler()
+	c.AssertFormat = true
 	c.LoadURL = loadURL
 	cs.compiled, cs.err = c.Compile(cs.url)
 }
