@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 )
 
 type ruleCondition int

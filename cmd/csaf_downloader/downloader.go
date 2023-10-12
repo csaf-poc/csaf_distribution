@@ -33,8 +33,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 type downloader struct {
@@ -92,9 +92,25 @@ func (d *downloader) addStats(o *stats) {
 	d.stats.add(o)
 }
 
+// logRedirect logs redirects of the http client.
+func logRedirect(req *http.Request, via []*http.Request) error {
+	vs := make([]string, len(via))
+	for i, v := range via {
+		vs[i] = v.URL.String()
+	}
+	slog.Debug("Redirecting",
+		"to", req.URL.String(),
+		"via", strings.Join(vs, " -> "))
+	return nil
+}
+
 func (d *downloader) httpClient() util.Client {
 
 	hClient := http.Client{}
+
+	if d.cfg.verbose() {
+		hClient.CheckRedirect = logRedirect
+	}
 
 	var tlsConfig tls.Config
 	if d.cfg.Insecure {
@@ -120,8 +136,11 @@ func (d *downloader) httpClient() util.Client {
 	}
 
 	// Add optional URL logging.
-	if d.cfg.Verbose {
-		client = &util.LoggingClient{Client: client}
+	if d.cfg.verbose() {
+		client = &util.LoggingClient{
+			Client: client,
+			Log:    httpLog("downloader"),
+		}
 	}
 
 	// Add optional rate limiting.
@@ -135,6 +154,16 @@ func (d *downloader) httpClient() util.Client {
 	return client
 }
 
+// httpLog does structured logging in a [util.LoggingClient].
+func httpLog(who string) func(string, string) {
+	return func(method, url string) {
+		slog.Debug("http",
+			"who", who,
+			"method", method,
+			"url", url)
+	}
+}
+
 func (d *downloader) download(ctx context.Context, domain string) error {
 	client := d.httpClient()
 
@@ -142,9 +171,9 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	lpmd := loader.Load(domain)
 
-	if d.cfg.Verbose {
+	if d.cfg.verbose() {
 		for i := range lpmd.Messages {
-			slog.Info("Loading provider-metadata.json",
+			slog.Debug("Loading provider-metadata.json",
 				"domain", domain,
 				"message", lpmd.Messages[i].Message)
 		}
@@ -331,7 +360,7 @@ func (d *downloader) logValidationIssues(url string, errors []string, err error)
 		return
 	}
 	if len(errors) > 0 {
-		if d.cfg.Verbose {
+		if d.cfg.verbose() {
 			slog.Error("CSAF file has validation errors",
 				"url", url,
 				"error", strings.Join(errors, ", "))
@@ -388,9 +417,7 @@ nextAdvisory:
 		}
 
 		if d.cfg.ignoreURL(file.URL()) {
-			if d.cfg.Verbose {
-				slog.Warn("Ignoring URL", "url", file.URL())
-			}
+			slog.Debug("Ignoring URL", "url", file.URL())
 			continue
 		}
 
@@ -438,22 +465,18 @@ nextAdvisory:
 
 		// Only hash when we have a remote counter part we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			if d.cfg.Verbose {
-				slog.Warn("Cannot fetch SHA256",
-					"url", file.SHA256URL(),
-					"error", err)
-			}
+			slog.Warn("Cannot fetch SHA256",
+				"url", file.SHA256URL(),
+				"error", err)
 		} else {
 			s256 = sha256.New()
 			writers = append(writers, s256)
 		}
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			if d.cfg.Verbose {
-				slog.Warn("Cannot fetch SHA512",
-					"url", file.SHA512URL(),
-					"error", err)
-			}
+			slog.Warn("Cannot fetch SHA512",
+				"url", file.SHA512URL(),
+				"error", err)
 		} else {
 			s512 = sha512.New()
 			writers = append(writers, s512)
@@ -506,11 +529,9 @@ nextAdvisory:
 			var sign *crypto.PGPSignature
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
-				if d.cfg.Verbose {
-					slog.Warn("Downloading signature failed",
-						"url", file.SignURL(),
-						"error", err)
-				}
+				slog.Warn("Downloading signature failed",
+					"url", file.SignURL(),
+					"error", err)
 			}
 			if sign != nil {
 				if err := d.checkSignature(data.Bytes(), sign); err != nil {

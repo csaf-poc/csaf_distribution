@@ -3,8 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 //
-// SPDX-FileCopyrightText: 2022 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2022 Intevation GmbH <https://intevation.de>
+// SPDX-FileCopyrightText: 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
+// Software-Engineering: 2023 Intevation GmbH <https://intevation.de>
 
 // Package options contains helpers to handle command line options and config files.
 package options
@@ -18,7 +18,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // Parser helps parsing command line arguments and loading

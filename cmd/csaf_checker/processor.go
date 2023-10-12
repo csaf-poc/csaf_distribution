@@ -32,8 +32,9 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // topicMessages stores the collected topicMessages for a specific topic.
@@ -666,12 +667,9 @@ func (p *processor) integrity(
 		var folderYear *int
 		if m := yearFromURL.FindStringSubmatch(u); m != nil {
 			year, _ := strconv.Atoi(m[1])
-			// Check if we are in checking time interval.
-			if accept := p.cfg.Range; accept != nil && !accept.Contains(
-				time.Date(
-					year, 12, 31, // Assume last day of year.
-					23, 59, 59, 0, // 23:59:59
-					time.UTC)) {
+			// Check if the year is in the accepted time interval.
+			if accept := p.cfg.Range; accept != nil &&
+				!accept.Intersects(models.Year(year)) {
 				continue
 			}
 			folderYear = &year
@@ -1115,6 +1113,8 @@ func (p *processor) checkMissing(string) error {
 	for _, f := range files {
 		v := p.alreadyChecked[f]
 		var where []string
+		// mistake contains which requirements are broken
+		var mistake whereType
 		for mask := rolieMask; mask <= listingMask; mask <<= 1 {
 			if maxMask&mask == mask {
 				var in string
@@ -1122,11 +1122,26 @@ func (p *processor) checkMissing(string) error {
 					in = "in"
 				} else {
 					in = "not in"
+					// Which file is missing entries?
+					mistake |= mask
 				}
 				where = append(where, in+" "+mask.String())
 			}
 		}
-		p.badIntegrities.error("%s %s", f, strings.Join(where, ", "))
+		// List error in all appropriate categories
+		if mistake&(rolieMask|indexMask|changesMask|listingMask) == 0 {
+			continue
+		}
+		joined := strings.Join(where, ", ")
+		report := func(mask whereType, msgs *topicMessages) {
+			if mistake&mask != 0 {
+				msgs.error("%s %s", f, joined)
+			}
+		}
+		report(rolieMask, &p.badROLIEFeed)
+		report(indexMask, &p.badIndices)
+		report(changesMask, &p.badChanges)
+		report(listingMask, &p.badDirListings)
 	}
 	return nil
 }

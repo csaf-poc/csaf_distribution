@@ -17,7 +17,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // ProviderMetadataLoader helps load provider-metadata.json from

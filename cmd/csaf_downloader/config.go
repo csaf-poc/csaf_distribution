@@ -12,16 +12,17 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/models"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 	defaultForwardQueue   = 5
 	defaultValidationMode = validationStrict
 	defaultLogFile        = "downloader.log"
-	defaultLogLevel       = logLevelInfo
+	defaultLogLevel       = slog.LevelInfo
 )
 
 type validationMode string
@@ -38,15 +39,6 @@ type validationMode string
 const (
 	validationStrict = validationMode("strict")
 	validationUnsafe = validationMode("unsafe")
-)
-
-type logLevel string
-
-const (
-	logLevelDebug = logLevel("debug")
-	logLevelInfo  = logLevel("info")
-	logLevelWarn  = logLevel("warn")
-	logLevelError = logLevel("error")
 )
 
 type config struct {
@@ -57,7 +49,6 @@ type config struct {
 	ClientKey            *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
 	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
-	Verbose              bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
 	NoStore              bool              `long:"nostore" short:"n" description:"Do not store files" toml:"no_store"`
 	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
 	Worker               int               `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
@@ -78,9 +69,9 @@ type config struct {
 	ForwardQueue    int         `long:"forwardqueue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
 	ForwardInsecure bool        `long:"forwardinsecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
 
-	LogFile string `long:"logfile" description:"FILE to log downloading to" value-name:"FILE" toml:"log_file"`
+	LogFile *string `long:"logfile" description:"FILE to log downloading to" value-name:"FILE" toml:"log_file"`
 	//lint:ignore SA5008 We are using choice or than once: debug, info, warn, error
-	LogLevel logLevel `long:"loglevel" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
+	LogLevel *options.LogLevel `long:"loglevel" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 
@@ -97,6 +88,10 @@ var configPaths = []string{
 
 // parseArgsConfig parses the command line and if need a config file.
 func parseArgsConfig() ([]string, *config, error) {
+	var (
+		logFile  = defaultLogFile
+		logLevel = &options.LogLevel{Level: defaultLogLevel}
+	)
 	p := options.Parser[config]{
 		DefaultConfigLocations: configPaths,
 		ConfigLocation:         func(cfg *config) string { return cfg.Config },
@@ -107,8 +102,8 @@ func parseArgsConfig() ([]string, *config, error) {
 			cfg.RemoteValidatorPresets = []string{defaultPreset}
 			cfg.ValidationMode = defaultValidationMode
 			cfg.ForwardQueue = defaultForwardQueue
-			cfg.LogFile = defaultLogFile
-			cfg.LogLevel = defaultLogLevel
+			cfg.LogFile = &logFile
+			cfg.LogLevel = logLevel
 		},
 		// Re-establish default values if not set.
 		EnsureDefaults: func(cfg *config) {
@@ -123,30 +118,35 @@ func parseArgsConfig() ([]string, *config, error) {
 			default:
 				cfg.ValidationMode = validationStrict
 			}
+			if cfg.LogFile == nil {
+				cfg.LogFile = &logFile
+			}
+			if cfg.LogLevel == nil {
+				cfg.LogLevel = logLevel
+			}
 		},
 	}
 	return p.Parse()
 }
 
-// UnmarshalText implements [encoding/text.TextUnmarshaler].
+// UnmarshalText implements [encoding.TextUnmarshaler].
 func (vm *validationMode) UnmarshalText(text []byte) error {
 	switch m := validationMode(text); m {
 	case validationStrict, validationUnsafe:
 		*vm = m
 	default:
-		return fmt.Errorf(`invalid value %q (expected "strict" or "unsafe"`, m)
+		return fmt.Errorf(`invalid value %q (expected "strict" or "unsafe)"`, m)
 	}
 	return nil
 }
 
-// UnmarshalText implements [encoding/text.TextUnmarshaler].
-func (ll *logLevel) UnmarshalText(text []byte) error {
-	switch l := logLevel(text); l {
-	case logLevelDebug, logLevelInfo, logLevelWarn, logLevelError:
-		*ll = l
-	default:
-		return fmt.Errorf(`invalid value %q (expected "debug", "info", "warn", "error")`, l)
+// UnmarshalFlag implements [flags.UnmarshalFlag].
+func (vm *validationMode) UnmarshalFlag(value string) error {
+	var v validationMode
+	if err := v.UnmarshalText([]byte(value)); err != nil {
+		return err
 	}
+	*vm = v
 	return nil
 }
 
@@ -155,20 +155,9 @@ func (cfg *config) ignoreURL(u string) bool {
 	return cfg.ignorePattern.Matches(u)
 }
 
-// slogLevel converts logLevel to [slog.Level].
-func (ll logLevel) slogLevel() slog.Level {
-	switch ll {
-	case logLevelDebug:
-		return slog.LevelDebug
-	case logLevelInfo:
-		return slog.LevelInfo
-	case logLevelWarn:
-		return slog.LevelWarn
-	case logLevelError:
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
-	}
+// verbose is considered a log level equal or less debug.
+func (cfg *config) verbose() bool {
+	return cfg.LogLevel.Level <= slog.LevelDebug
 }
 
 // prepareDirectory ensures that the working directory
@@ -209,26 +198,28 @@ func dropSubSeconds(_ []string, a slog.Attr) slog.Attr {
 // prepareLogging sets up the structured logging.
 func (cfg *config) prepareLogging() error {
 	var w io.Writer
-	if cfg.LogFile == "" {
+	if cfg.LogFile == nil || *cfg.LogFile == "" {
+		log.Println("using STDERR for logging")
 		w = os.Stderr
 	} else {
 		var fname string
 		// We put the log inside the download folder
 		// if it is not absolute.
-		if filepath.IsAbs(cfg.LogFile) {
-			fname = cfg.LogFile
+		if filepath.IsAbs(*cfg.LogFile) {
+			fname = *cfg.LogFile
 		} else {
-			fname = filepath.Join(cfg.Directory, cfg.LogFile)
+			fname = filepath.Join(cfg.Directory, *cfg.LogFile)
 		}
 		f, err := os.OpenFile(fname, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {
 			return err
 		}
+		log.Printf("using %q for logging\n", *cfg.LogFile)
 		w = f
 	}
 	ho := slog.HandlerOptions{
 		//AddSource: true,
-		Level:       cfg.LogLevel.slogLevel(),
+		Level:       cfg.LogLevel.Level,
 		ReplaceAttr: dropSubSeconds,
 	}
 	handler := slog.NewJSONHandler(w, &ho)
