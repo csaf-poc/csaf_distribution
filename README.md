@@ -33,6 +33,12 @@ They are likely to run on similar systems when build from sources.
 The windows binary package only includes
 `csaf_downloader`, `csaf_validator`, `csaf_checker` and `csaf_uploader`.
 
+The MacOS binary archives come with the same set of client tools
+and are _community supported_. Which means:
+while they are expected to run fine,
+they are not at the same level of testing and maintenance
+as the Windows and GNU/Linux binaries.
+
 
 ### Prebuild binaries
 
