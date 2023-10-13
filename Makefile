@@ -89,10 +89,19 @@ dist: build_linux build_win build_mac_amd64 build_mac_arm64
 	mkdir -p dist/$(DISTDIR)-windows-amd64/docs
 	cp docs/csaf_uploader.md docs/csaf_validator.md docs/csaf_checker.md \
 	  docs/csaf_downloader.md dist/$(DISTDIR)-windows-amd64/docs
+	mkdir -p dist/$(DISTDIR)-macos/bin-darwin-amd64 \
+		     dist/$(DISTDIR)-macos/bin-darwin-arm64 \
+			 dist/$(DISTDIR)-macos/docs
+	for f in csaf_downloader csaf_checker csaf_validator csaf_uploader ; do \
+		cp bin-darwin-amd64/$$f dist/$(DISTDIR)-macos/bin-darwin-amd64 ; \
+		cp bin-darwin-arm64/$$f dist/$(DISTDIR)-macos/bin-darwin-arm64 ; \
+		cp docs/$${f}.md dist/$(DISTDIR)-macos/docs ; \
+	done
 	mkdir dist/$(DISTDIR)-gnulinux-amd64
 	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
 	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
 	cd dist/ ; tar -cvmlzf $(DISTDIR)-gnulinux-amd64.tar.gz $(DISTDIR)-gnulinux-amd64/
+	cd dist/ ; tar -cvmlzf $(DISTDIR)-macos.tar.gz $(DISTDIR)-macos
 
 # Remove bin-*-* and dist directories
 mostlyclean:
