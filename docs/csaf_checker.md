@@ -69,35 +69,10 @@ type 2: error
 
 The checker result is a success if no checks resulted in type 2, and a failure otherwise.
 
-The option `timerange` allows to only check advisories from a given time interval.
-It is only allowed to specify one off them. 
-There are following variants:
+The option `timerange` allows to only check advisories from a given time
+interval. It can only be given once.  See the
+[downloader documentation](csaf_downloader.md#timerange-option) for details.
 
-1. Relative. If the given string follows the rules of being a [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration)
-    the time interval from now minus that duration till now is used. 
-    E.g. `"3h"` means checking the advisories that have changed in the last three hours.
-
-2. Absolute. If the given string is an RFC 3339 date timestamp the time interval between
-   this date and now is used. 
-   E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to be
-   checked. 
-   Accepted patterns are:
-   - `"2006-01-02T15:04:05Z"`
-   - `"2006-01-02T15:04:05+07:00"`
-   - `"2006-01-02T15:04:05-07:00"`
-   - `"2006-01-02T15:04:05"`
-   - `"2006-01-02T15:04"`
-   - `"2006-01-02T15"`
-   - `"2006-01-02"`
-   - `"2006-01"`
-   - `"2006"`
-
-   Missing parts are set to the smallest value possible in that field.
-
-3. Range. Same as 2 but separated by a `,` to span an interval. e.g `2019,2024`
-   spans an interval from 1st January 2019 to the 1st January of 2024.
-
-All interval boundaries are inclusive.
 
 You can ignore certain advisories while checking by specifying a list
 of regular expressions[^1] to match their URLs by using the `ignorepattern`

@@ -79,17 +79,39 @@ forward_queue       = 5
 forward_insecure    = false
 ```
 
+If the `folder` option is given all the advisories are stored in a subfolder
+of this name. Otherwise the advisories are each stored in a folder named
+by the year they are from.
+
+You can ignore certain advisories while downloading by specifying a list
+of regular expressions[^1] to match their URLs by using the `ignorepattern`
+option.
+
+E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
+the sub strings **white** or **red**.
+In the config file this has to be noted as:
+```
+ignorepattern = [".*white.*", ".*red.*"]
+```
+
+#### Timerange option
+
 The `timerange` parameter enables downloading advisories which last changes falls
 into a given intervall. There are three possible notations:
 
-1. Relative. If the given string follows the rules of being a [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration)
-    the time interval from now minus that duration till now is used. 
-    E.g. `"3h"` means downloading the advisories that have changed in the last three hours.
+1. Relative. If the given string follows the rules of a
+   [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration),
+   the time interval from now going back that duration is used.
+    Some examples:
+    - `"3h"` means downloading the advisories that have changed in the last three hours.
+    - `"30m"` .. changed within the last thirty minutes.
+    - `"72h"` .. changed within the last three days.
+    - `"8760h"` .. changed within the last 365 days.
 
-2. Absolute. If the given string is an RFC 3339 date timestamp the time interval between
-   this date and now is used. 
+2. Absolute. If the given string is an RFC 3339 date timestamp
+   the time interval between this date and now is used.
    E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to being
-   downloaded. 
+   downloaded.
    Accepted patterns are:
    - `"2006-01-02T15:04:05Z"`
    - `"2006-01-02T15:04:05+07:00"`
@@ -107,21 +129,6 @@ into a given intervall. There are three possible notations:
    spans an interval from 1st January 2019 to the 1st January of 2024.
 
 All interval boundaries are inclusive.
-
-If the `folder` option is given all the advisories are stored in a subfolder
-of this name. Otherwise the advisories are each stored in a folder named
-by the year they are from.
-
-You can ignore certain advisories while downloading by specifying a list
-of regular expressions[^1] to match their URLs by using the `ignorepattern`
-option.
-
-E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
-the sub strings **white** or **red**.
-In the config file this has to be noted as:
-```
-ignorepattern = [".*white.*", ".*red.*"]
-```
 
 #### Forwarding
 The downloader is able to forward downloaded advisories and their checksums,
