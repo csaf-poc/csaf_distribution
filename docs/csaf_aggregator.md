@@ -109,7 +109,7 @@ client_cert             // path to client certificate to access access-protected
 client_key              // path to client key to access access-protected advisories
 client_passphrase       // optional client cert passphrase (limited, experimental, see downloader doc)
 header                  // adds extra HTTP header fields to the client
-timerange               // Accepted time range of advisories to handle. See checker doc for details.
+timerange               // Accepted time range of advisories to handle. See downloader docs for details.
 ```
 
 Next we have two TOML _tables_:
