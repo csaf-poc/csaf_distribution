@@ -104,7 +104,7 @@ into a given intervall. There are three possible notations:
    the time interval from now going back that duration is used.
     Some examples:
     - `"3h"` means downloading the advisories that have changed in the last three hours.
-    - `"60m"` .. changed within the last hour.
+    - `"30m"` .. changed within the last thirty minutes.
     - `"72h"` .. changed within the last three days.
     - `"8760h"` .. changed within the last 365 days.
 
