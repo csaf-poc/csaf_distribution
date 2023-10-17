@@ -178,8 +178,9 @@ func (p *provider) ageAccept(c *config) func(time.Time) bool {
 	}
 
 	if c.Verbose {
-		s, _ := r.MarshalJSON()
-		log.Printf("Setting up filter to accept docs within TimeRange %s", s)
+		log.Printf(
+			"Setting up filter to accept advisories within time range %s to %s\n",
+			r[0].Format(time.RFC3339), r[1].Format(time.RFC3339))
 	}
 	return r.Contains
 }
