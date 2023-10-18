@@ -214,7 +214,7 @@ func (cfg *config) prepareLogging() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("using %q for logging\n", *cfg.LogFile)
+		log.Printf("using %q for logging\n", fname)
 		w = f
 	}
 	ho := slog.HandlerOptions{

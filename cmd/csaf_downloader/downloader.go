@@ -204,6 +204,8 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	// Do we need time range based filtering?
 	if d.cfg.Range != nil {
+		slog.Debug("Setting up filter to accept advisories within",
+			"timerange", d.cfg.Range)
 		afp.AgeAccept = d.cfg.Range.Contains
 	}
 

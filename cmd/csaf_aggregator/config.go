@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"runtime"
@@ -166,14 +167,22 @@ func (c *config) tooOldForInterims() func(time.Time) bool {
 // is in the accepted download interval of the provider or
 // the global config.
 func (p *provider) ageAccept(c *config) func(time.Time) bool {
+	var r *models.TimeRange
 	switch {
 	case p.Range != nil:
-		return p.Range.Contains
+		r = p.Range
 	case c.Range != nil:
-		return c.Range.Contains
+		r = c.Range
 	default:
 		return nil
 	}
+
+	if c.Verbose {
+		log.Printf(
+			"Setting up filter to accept advisories within time range %s to %s\n",
+			r[0].Format(time.RFC3339), r[1].Format(time.RFC3339))
+	}
+	return r.Contains
 }
 
 // ignoreFile returns true if the given URL should not be downloaded.
