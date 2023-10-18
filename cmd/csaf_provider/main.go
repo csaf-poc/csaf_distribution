@@ -16,8 +16,9 @@ import (
 	"net/http/cgi"
 	"os"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
 	"github.com/jessevdk/go-flags"
+
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 type options struct {

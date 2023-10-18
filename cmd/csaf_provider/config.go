@@ -16,8 +16,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 )
 
 const (

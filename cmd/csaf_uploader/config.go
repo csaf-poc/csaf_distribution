@@ -15,10 +15,11 @@ import (
 	"os"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v2/internal/options"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
+
+	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
 
 const (

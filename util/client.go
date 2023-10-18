@@ -31,6 +31,7 @@ type Client interface {
 // LoggingClient is a client that logs called URLs.
 type LoggingClient struct {
 	Client
+	Log func(method, url string)
 }
 
 // LimitingClient is a Client implementing rate throttling.
@@ -97,33 +98,42 @@ func (hc *HeaderClient) PostForm(url string, data url.Values) (*http.Response, e
 		url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 }
 
+// log logs to a callback if given.
+func (lc *LoggingClient) log(method, url string) {
+	if lc.Log != nil {
+		lc.Log(method, url)
+	} else {
+		log.Printf("[%s]: %s\n", method, url)
+	}
+}
+
 // Do implements the respective method of the Client interface.
 func (lc *LoggingClient) Do(req *http.Request) (*http.Response, error) {
-	log.Printf("[DO]: %s\n", req.URL.String())
+	lc.log("DO", req.URL.String())
 	return lc.Client.Do(req)
 }
 
 // Get implements the respective method of the Client interface.
 func (lc *LoggingClient) Get(url string) (*http.Response, error) {
-	log.Printf("[GET]: %s\n", url)
+	lc.log("GET", url)
 	return lc.Client.Get(url)
 }
 
 // Head implements the respective method of the Client interface.
 func (lc *LoggingClient) Head(url string) (*http.Response, error) {
-	log.Printf("[HEAD]: %s\n", url)
+	lc.log("HEAD", url)
 	return lc.Client.Head(url)
 }
 
 // Post implements the respective method of the Client interface.
 func (lc *LoggingClient) Post(url, contentType string, body io.Reader) (*http.Response, error) {
-	log.Printf("[POST]: %s\n", url)
+	lc.log("POST", url)
 	return lc.Client.Post(url, contentType, body)
 }
 
 // PostForm implements the respective method of the Client interface.
 func (lc *LoggingClient) PostForm(url string, data url.Values) (*http.Response, error) {
-	log.Printf("[POST FORM]: %s\n", url)
+	lc.log("POST FORM", url)
 	return lc.Client.PostForm(url, data)
 }
 

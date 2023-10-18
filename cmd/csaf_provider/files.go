@@ -13,7 +13,7 @@ import (
 	"crypto/sha512"
 	"os"
 
-	"github.com/csaf-poc/csaf_distribution/v2/util"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 func writeHashedFile(fname, name string, data []byte, armored string) error {
