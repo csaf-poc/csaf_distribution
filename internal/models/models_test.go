@@ -9,6 +9,7 @@
 package models
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -22,6 +23,36 @@ func TestNewTimeInterval(t *testing.T) {
 	)
 	if NewTimeInterval(after, before) != pseudoTimeRange {
 		t.Errorf("Failure: Couldn't generate timerange.")
+	}
+}
+
+func TestParseDuration(t *testing.T) {
+
+	now := time.Now()
+
+	for _, x := range []struct {
+		in        string
+		expected  time.Duration
+		reference time.Time
+		fail      bool
+	}{
+		{"1h", time.Hour, now, false},
+		{"2y", now.Sub(now.AddDate(-2, 0, 0)), now, false},
+		{"13M", now.Sub(now.AddDate(0, -13, 0)), now, false},
+		{"31d", now.Sub(now.AddDate(0, 0, -31)), now, false},
+		{"1h2d3m", now.Sub(now.AddDate(0, 0, -2)) + time.Hour + 3*time.Minute, now, false},
+		{strings.Repeat("1", 70) + "y1d", 0, now, true},
+	} {
+		got, err := parseDuration(x.in, x.reference)
+		if err != nil {
+			if !x.fail {
+				t.Errorf("%q should not fail: %v", x.in, err)
+			}
+			continue
+		}
+		if got != x.expected {
+			t.Errorf("%q got %v expected %v", x.in, got, x.expected)
+		}
 	}
 }
 

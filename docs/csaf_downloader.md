@@ -102,11 +102,14 @@ into a given intervall. There are three possible notations:
 1. Relative. If the given string follows the rules of a
    [Go duration](https://pkg.go.dev/time@go1.20.6#ParseDuration),
    the time interval from now going back that duration is used.
-    Some examples:
-    - `"3h"` means downloading the advisories that have changed in the last three hours.
-    - `"30m"` .. changed within the last thirty minutes.
-    - `"72h"` .. changed within the last three days.
-    - `"8760h"` .. changed within the last 365 days.
+   In extension to this the suffixes 'd' for days, 'M' for month
+   and 'y' for years are recognized. In these cases only integer
+   values are accepted without any fractions.
+   Some examples:
+   - `"3h"` means downloading the advisories that have changed in the last three hours.
+   - `"30m"`  .. changed within the last thirty minutes.
+   - `"3M2m"` .. changed within the last three months and two minutes.
+   - `"2y"`   .. changed within the last two years.
 
 2. Absolute. If the given string is an RFC 3339 date timestamp
    the time interval between this date and now is used.
