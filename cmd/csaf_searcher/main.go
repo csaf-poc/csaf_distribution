@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/csaf-poc/csaf_distribution/v2/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 )
 
 func main() {
