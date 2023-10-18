@@ -10,6 +10,9 @@ Can be used for automated forwarding of CSAF documents.
 ### [csaf_validator](docs/csaf_validator.md)
 is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
 
+### [csaf_searcher](docs/csaf_searcher.md)
+is a tool to search through local advisories. It finds PURLs based on the product ID of an advisory.
+
 ## Tools for advisory providers
 
 ### [csaf_provider](docs/csaf_provider.md)
