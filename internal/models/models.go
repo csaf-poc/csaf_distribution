@@ -12,7 +12,10 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -59,6 +62,65 @@ func (tr *TimeRange) UnmarshalText(text []byte) error {
 	return tr.UnmarshalFlag(string(text))
 }
 
+var (
+	yearsMonthsDays     *regexp.Regexp
+	yearsMonthsDaysOnce sync.Once
+)
+
+// parseDuration extends time.ParseDuration with recognition of
+// years, month and days with the suffixes "y", "M" and "d".
+// Onlys integer values are detected. The handling of fractional
+// values would increase the complexity and may be done in the future.
+// The calculate dates are assumed to be before the reference time.
+func parseDuration(s string, reference time.Time) (time.Duration, error) {
+	var (
+		extra time.Duration
+		err   error
+		used  bool
+	)
+	parse := func(s string) int {
+		if err == nil {
+			var v int
+			v, err = strconv.Atoi(s)
+			return v
+		}
+		return 0
+	}
+	// Only compile expression if really needed.
+	yearsMonthsDaysOnce.Do(func() {
+		yearsMonthsDays = regexp.MustCompile(`[-+]?[0-9]+[yMd]`)
+	})
+	s = yearsMonthsDays.ReplaceAllStringFunc(s, func(part string) string {
+		used = true
+		var years, months, days int
+		switch suf, num := part[len(part)-1], part[:len(part)-1]; suf {
+		case 'y':
+			years = -parse(num)
+		case 'M':
+			months = -parse(num)
+		case 'd':
+			days = -parse(num)
+		}
+		date := reference.AddDate(years, months, days)
+		extra += reference.Sub(date)
+		// Remove from string
+		return ""
+	})
+	if err != nil {
+		return 0, err
+	}
+	// If there is no rest we don't need the stdlib parser.
+	if used && s == "" {
+		return extra, nil
+	}
+	// Parse the rest with the stdlib.
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return d, err
+	}
+	return d + extra, nil
+}
+
 // MarshalJSON implements [encoding/json.Marshaler].
 func (tr TimeRange) MarshalJSON() ([]byte, error) {
 	s := []string{
@@ -72,9 +134,10 @@ func (tr TimeRange) MarshalJSON() ([]byte, error) {
 func (tr *TimeRange) UnmarshalFlag(s string) error {
 	s = strings.TrimSpace(s)
 
+	now := time.Now()
+
 	// Handle relative case first.
-	if duration, err := time.ParseDuration(s); err == nil {
-		now := time.Now()
+	if duration, err := parseDuration(s, now); err == nil {
 		*tr = NewTimeInterval(now.Add(-duration), now)
 		return nil
 	}
@@ -88,7 +151,7 @@ func (tr *TimeRange) UnmarshalFlag(s string) error {
 		if !ok {
 			return fmt.Errorf("%q is not a valid RFC date time", a)
 		}
-		*tr = NewTimeInterval(start, time.Now())
+		*tr = NewTimeInterval(start, now)
 		return nil
 	}
 	// Real interval
