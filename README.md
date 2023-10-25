@@ -10,6 +10,9 @@ Can be used for automated forwarding of CSAF documents.
 ### [csaf_validator](docs/csaf_validator.md)
 is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
 
+### [csaf_searcher](docs/csaf_searcher.md)
+is a tool to search through local advisories. It finds PURLs based on the product ID of an advisory.
+
 ## Tools for advisory providers
 
 ### [csaf_provider](docs/csaf_provider.md)
@@ -55,6 +58,12 @@ Download the binaries from the most recent release assets on Github.
     - Remove the generated binaries und their directories: `make mostlyclean`
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
+
+- Maintainers only: No need to do this if you have cloned this repository for unmodified usage only.
+```
+go generate ./...
+```
+will update the machine generated code.
 
 
 ### Setup (Trusted Provider)
