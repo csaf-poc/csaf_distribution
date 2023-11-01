@@ -116,8 +116,6 @@ The following example file documents all available configuration options:
 #   - vendor, product family and product names:  "expr:$.product_tree..branches[?(@.category==\"vendor\" || @.category==\"product_family\" || @.category==\"product_name\")].name"
 #   - CVEs: "expr:$.vulnerabilities[*].cve"
 #   - CWEs: "expr:$.vulnerabilities[*].cwe.id"
-#   The used implementation to evaluate JSONPath expressions does
-#   not support the use of single-quotes. Double quotes have to be quoted. 
 # Strings not starting with `expr:` are taken verbatim.
 # By default no category documents are created.
 # This example provides an overview over the syntax,
