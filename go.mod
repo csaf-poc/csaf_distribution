@@ -4,8 +4,8 @@ go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.3.2
-	github.com/PaesslerAG/gval v1.2.2
-	github.com/PaesslerAG/jsonpath v0.1.1
+	github.com/Intevation/gval v1.3.0
+	github.com/Intevation/jsonpath v0.2.1
 	github.com/ProtonMail/gopenpgp/v2 v2.7.3
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/gofrs/flock v0.8.1

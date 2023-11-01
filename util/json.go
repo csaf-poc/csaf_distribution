@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/PaesslerAG/gval"
-	"github.com/PaesslerAG/jsonpath"
+	"github.com/Intevation/gval"
+	"github.com/Intevation/jsonpath"
 )
 
 // ReMarshalJSON transforms data from src to dst via JSON marshalling.
