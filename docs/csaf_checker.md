@@ -44,7 +44,7 @@ Supported options in config files:
 ```
 output              = ""
 format              = "json"
-insecure            = false 
+insecure            = false
 # client_cert       # not set by default
 # client_key        # not set by default
 # client_passphrase # not set by default
@@ -53,8 +53,8 @@ verbose             = false
 # timerange         # not set by default
 # header            # not set by default
 # validator         # not set by default
-# validatorcache    # not set by default
-validatorpreset     = ["mandatory"]
+# validator_cache   # not set by default
+validator_preset    = ["mandatory"]
 ```
 
 Usage example:
