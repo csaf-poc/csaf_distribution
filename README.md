@@ -28,8 +28,8 @@ is a CSAF Aggregator, to list or mirror providers.
 ## Other stuff
 
 ### [examples](./examples/README.md)
-are small examples how to use `github.com/csaf-poc/csaf_distribution` as an API.
-Currently this work in progress. They may be extended and/or changed in the future.
+are small examples of how to use `github.com/csaf-poc/csaf_distribution` as an API.
+Currently this is work in progress. They may be extended and/or changed in the future.
 
 ## Setup
 Binaries for the server side are only available and tested
