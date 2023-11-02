@@ -71,7 +71,7 @@ Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-wi
 
 ### Development
 
-For further details of the development process consult our [development page](./docs/development.md).
+For further details of the development process consult our [development page](./docs/Development.md).
 
 
 ## License
