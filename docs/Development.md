@@ -3,7 +3,7 @@
 ## Generated files
 
 Some source code files are machine generated. At the moment these are only
-[cvss20enums.go](../csaf/cvss20enums.go) and [](../csaf/cvss20enums.go) on the
+[cvss20enums.go](../csaf/cvss20enums.go) and [cvss3enums.go](../csaf/cvss3enums.go) on the
 basis of the [Advisory JSON schema](../csaf/schema/csaf_json_schema.json).
 
 If you change the source files please regenerate the generated files
