@@ -106,7 +106,7 @@ var cpePattern = patternUnmarshal("^(cpe:2\\.3:[aho\\*\\-](:(((\\?*|\\*?)([a-zA-
 // PURL represents a package URL in an advisory.
 type PURL string
 
-var pURLPattern = patternUnmarshal(`^pkg:[A-Za-z\\.\\-\\+][A-Za-z0-9\\.\\-\\+]*/.+`)
+var pURLPattern = patternUnmarshal("^pkg:[A-Za-z\\.\\-\\+][A-Za-z0-9\\.\\-\\+]*/.+")
 
 // XGenericURI represents an identifier for a product.
 type XGenericURI struct {
@@ -223,7 +223,7 @@ type AggregateSeverity struct {
 // DocumentCategory represents a category of a document.
 type DocumentCategory string
 
-var documentCategoryPattern = patternUnmarshal(`^[^\\s\\-_\\.](.*[^\\s\\-_\\.])?$`)
+var documentCategoryPattern = patternUnmarshal("^[^\\s\\-_\\.](.*[^\\s\\-_\\.])?$")
 
 // Version is the version of a document.
 type Version string
