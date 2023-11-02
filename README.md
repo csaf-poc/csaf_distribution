@@ -10,9 +10,6 @@ Can be used for automated forwarding of CSAF documents.
 ### [csaf_validator](docs/csaf_validator.md)
 is a tool to validate local advisories files against the JSON Schema and an optional remote validator.
 
-### [csaf_searcher](docs/csaf_searcher.md)
-is a tool to search through local advisories. It finds PURLs based on the product ID of an advisory.
-
 ## Tools for advisory providers
 
 ### [csaf_provider](docs/csaf_provider.md)
@@ -27,6 +24,12 @@ is a tool for testing a CSAF Trusted Provider according to [Section 7 of the CSA
 
 ### [csaf_aggregator](docs/csaf_aggregator.md)
 is a CSAF Aggregator, to list or mirror providers.
+
+## Other stuff
+
+### [examples](./examples/README.md)
+are small examples of how to use `github.com/csaf-poc/csaf_distribution` as an API.
+Currently this is a work in progress. They may be extended and/or changed in the future.
 
 ## Setup
 Binaries for the server side are only available and tested
