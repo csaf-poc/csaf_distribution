@@ -123,4 +123,15 @@ func (uf *urlFinder) findURLs(adv *csaf.Advisory) {
 	for _, b := range tree.Branches {
 		recBranch(b)
 	}
+
+	// Third iterate over relationships.
+	if tree.RelationShips != nil {
+		for _, rel := range *tree.RelationShips {
+			if rel != nil {
+				if fpn := rel.FullProductName; fpn != nil && fpn.ProductID != nil {
+					add(slices.Index(uf.ids, *fpn.ProductID), fpn.ProductIdentificationHelper)
+				}
+			}
+		}
+	}
 }
