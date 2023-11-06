@@ -16,8 +16,8 @@ Application Options:
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
-  -t, --timerange=RANGE                 RANGE of time from which advisories to download
-  -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
+  -t, --time_range=RANGE                RANGE of time from which advisories to download
+  -i, --ignore_pattern=PATTERN          Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                         One or more extra HTTP header fields
       --validator=URL                   URL to validate documents remotely
       --validator_cache=FILE            FILE to cache remote validations
@@ -50,7 +50,7 @@ insecure            = false
 # client_passphrase # not set by default
 verbose             = false
 # rate              # not set by default
-# timerange         # not set by default
+# time_range         # not set by default
 # header            # not set by default
 # validator         # not set by default
 # validator_cache   # not set by default

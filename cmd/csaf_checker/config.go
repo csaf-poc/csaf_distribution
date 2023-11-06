@@ -37,8 +37,8 @@ type config struct {
 	Version                bool              `long:"version" description:"Display version of the binary" toml:"-"`
 	Verbose                bool              `long:"verbose" short:"v" description:"Verbose output" toml:"verbose"`
 	Rate                   *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
-	Range                  *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
-	IgnorePattern          []string          `long:"ignorepattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
+	Range                  *models.TimeRange `long:"time_range" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"time_range"`
+	IgnorePattern          []string          `long:"ignore_pattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignore_pattern"`
 	ExtraHeader            http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 	RemoteValidator        string            `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
 	RemoteValidatorCache   string            `long:"validator_cache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
