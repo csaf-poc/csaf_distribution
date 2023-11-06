@@ -44,34 +44,34 @@ const (
 type config struct {
 	Directory            string            `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
 	Insecure             bool              `long:"insecure" description:"Do not check TLS certificates from provider" toml:"insecure"`
-	IgnoreSignatureCheck bool              `long:"ignoresigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignoresigcheck"`
-	ClientCert           *string           `long:"client-cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
-	ClientKey            *string           `long:"client-key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
-	ClientPassphrase     *string           `long:"client-passphrase" description:"Optional passphrase for the client cert (limited, experimental, see doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
+	IgnoreSignatureCheck bool              `long:"ignore_sigcheck" description:"Ignore signature check results, just warn on mismatch" toml:"ignore_sigcheck"`
+	ClientCert           *string           `long:"client_cert" description:"TLS client certificate file (PEM encoded data)" value-name:"CERT-FILE" toml:"client_cert"`
+	ClientKey            *string           `long:"client_key" description:"TLS client private key file (PEM encoded data)" value-name:"KEY-FILE" toml:"client_key"`
+	ClientPassphrase     *string           `long:"client_passphrase" description:"Optional passphrase for the client cert (limited, experimental, see doc)" value-name:"PASSPHRASE" toml:"client_passphrase"`
 	Version              bool              `long:"version" description:"Display version of the binary" toml:"-"`
-	NoStore              bool              `long:"nostore" short:"n" description:"Do not store files" toml:"no_store"`
+	NoStore              bool              `long:"no_store" short:"n" description:"Do not store files" toml:"no_store"`
 	Rate                 *float64          `long:"rate" short:"r" description:"The average upper limit of https operations per second (defaults to unlimited)" toml:"rate"`
 	Worker               int               `long:"worker" short:"w" description:"NUMber of concurrent downloads" value-name:"NUM" toml:"worker"`
-	Range                *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
+	Range                *models.TimeRange `long:"time_range" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"time_range"`
 	Folder               string            `long:"folder" short:"f" description:"Download into a given subFOLDER" value-name:"FOLDER" toml:"folder"`
-	IgnorePattern        []string          `long:"ignorepattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignorepattern"`
+	IgnorePattern        []string          `long:"ignore_pattern" short:"i" description:"Do not download files if their URLs match any of the given PATTERNs" value-name:"PATTERN" toml:"ignore_pattern"`
 	ExtraHeader          http.Header       `long:"header" short:"H" description:"One or more extra HTTP header fields" toml:"header"`
 
 	RemoteValidator        string   `long:"validator" description:"URL to validate documents remotely" value-name:"URL" toml:"validator"`
-	RemoteValidatorCache   string   `long:"validatorcache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validatorcache"`
-	RemoteValidatorPresets []string `long:"validatorpreset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validatorpreset"`
+	RemoteValidatorCache   string   `long:"validator_cache" description:"FILE to cache remote validations" value-name:"FILE" toml:"validator_cache"`
+	RemoteValidatorPresets []string `long:"validator_preset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validator_preset"`
 
 	//lint:ignore SA5008 We are using choice twice: strict, unsafe.
-	ValidationMode validationMode `long:"validationmode" short:"m" choice:"strict" choice:"unsafe" value-name:"MODE" description:"MODE how strict the validation is" toml:"validation_mode"`
+	ValidationMode validationMode `long:"validation_mode" short:"m" choice:"strict" choice:"unsafe" value-name:"MODE" description:"MODE how strict the validation is" toml:"validation_mode"`
 
-	ForwardURL      string      `long:"forwardurl" description:"URL of HTTP endpoint to forward downloads to" value-name:"URL" toml:"forward_url"`
-	ForwardHeader   http.Header `long:"forwardheader" description:"One or more extra HTTP header fields used by forwarding" toml:"forward_header"`
-	ForwardQueue    int         `long:"forwardqueue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
-	ForwardInsecure bool        `long:"forwardinsecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
+	ForwardURL      string      `long:"forward_url" description:"URL of HTTP endpoint to forward downloads to" value-name:"URL" toml:"forward_url"`
+	ForwardHeader   http.Header `long:"forward_header" description:"One or more extra HTTP header fields used by forwarding" toml:"forward_header"`
+	ForwardQueue    int         `long:"forward_queue" description:"Maximal queue LENGTH before forwarder" value-name:"LENGTH" toml:"forward_queue"`
+	ForwardInsecure bool        `long:"forward_insecure" description:"Do not check TLS certificates from forward endpoint" toml:"forward_insecure"`
 
-	LogFile *string `long:"logfile" description:"FILE to log downloading to" value-name:"FILE" toml:"log_file"`
+	LogFile *string `long:"log_file" description:"FILE to log downloading to" value-name:"FILE" toml:"log_file"`
 	//lint:ignore SA5008 We are using choice or than once: debug, info, warn, error
-	LogLevel *options.LogLevel `long:"loglevel" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
+	LogLevel *options.LogLevel `long:"log_level" description:"LEVEL of logging details" value-name:"LEVEL" choice:"debug" choice:"info" choice:"warn" choice:"error" toml:"log_level"`
 
 	Config string `short:"c" long:"config" description:"Path to config TOML file" value-name:"TOML-FILE" toml:"-"`
 

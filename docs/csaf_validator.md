@@ -10,8 +10,8 @@ csaf_validator [OPTIONS] files...
 Application Options:
       --version                   Display version of the binary
       --validator=URL             URL to validate documents remotely
-      --validatorcache=FILE       FILE to cache remote validations
-      --validatorpreset=          One or more presets to validate remotely (default: mandatory)
+      --validator_cache=FILE       FILE to cache remote validations
+      --validator_preset=          One or more presets to validate remotely (default: mandatory)
       -o AMOUNT, --output=AMOUNT  If a remote validator was used, display the results in JSON format
 
 AMOUNT:

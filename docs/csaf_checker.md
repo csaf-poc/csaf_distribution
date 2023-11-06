@@ -10,18 +10,18 @@ Application Options:
   -o, --output=REPORT-FILE              File name of the generated report
   -f, --format=[json|html]              Format of report (default: json)
       --insecure                        Do not check TLS certificates from provider
-      --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
-      --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
+      --client_cert=CERT-FILE           TLS client certificate file (PEM encoded data)
+      --client_key=KEY-FILE             TLS client private key file (PEM encoded data)
+      --client_passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
-  -t, --timerange=RANGE                 RANGE of time from which advisories to download
-  -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
+  -t, --time_range=RANGE                RANGE of time from which advisories to download
+  -i, --ignore_pattern=PATTERN          Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                         One or more extra HTTP header fields
       --validator=URL                   URL to validate documents remotely
-      --validatorcache=FILE             FILE to cache remote validations
-      --validatorpreset=                One or more presets to validate remotely (default: [mandatory])
+      --validator_cache=FILE            FILE to cache remote validations
+      --validator_preset=               One or more presets to validate remotely (default: [mandatory])
   -c, --config=TOML-FILE                Path to config TOML file
 
 Help Options:
@@ -50,7 +50,7 @@ insecure            = false
 # client_passphrase # not set by default
 verbose             = false
 # rate              # not set by default
-# timerange         # not set by default
+# time_range         # not set by default
 # header            # not set by default
 # validator         # not set by default
 # validator_cache   # not set by default

@@ -6,7 +6,7 @@
   csaf_aggregator [OPTIONS]
 
 Application Options:
-  -t, --timerange=RANGE     RANGE of time from which advisories to download
+  -t, --time_range=RANGE    RANGE of time from which advisories to download
   -i, --interim             Perform an interim scan
       --version             Display version of the binary
   -c, --config=TOML-FILE    Path to config TOML file
@@ -104,12 +104,12 @@ lock_file               // path to lockfile, to stop other instances if one is n
 interim_years           // limiting the years for which interim documents are searched (default 0)
 verbose                 // print more diagnostic output, e.g. https requests (default false)
 allow_single_provider   // debugging option (default false)
-ignorepattern           // patterns of advisory URLs to be ignored (see checker doc for details)
+ignore_pattern          // patterns of advisory URLs to be ignored (see checker doc for details)
 client_cert             // path to client certificate to access access-protected advisories
 client_key              // path to client key to access access-protected advisories
 client_passphrase       // optional client cert passphrase (limited, experimental, see downloader doc)
 header                  // adds extra HTTP header fields to the client
-timerange               // Accepted time range of advisories to handle. See downloader docs for details.
+time_range              // Accepted time range of advisories to handle. See downloader docs for details.
 ```
 
 Next we have two TOML _tables_:
@@ -139,7 +139,7 @@ category
 update_interval
 create_service_document
 categories
-ignorepattern
+ignore_pattern
 client_cert
 client_key
 client_passphrase
@@ -229,7 +229,7 @@ insecure = true
   # If aggregator.category == "aggregator", set for an entry that should
   # be listed in addition:
   category = "lister"
-#  ignorepattern = [".*white.*", ".*red.*"]
+#  ignore_pattern = [".*white.*", ".*red.*"]
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 

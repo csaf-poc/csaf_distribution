@@ -10,7 +10,7 @@ insecure = true
 #interim_years =
 #passphrase =
 #write_indices = false
-#timerange =
+#time_range =
 
 # specification requires at least two providers (default),
 # to override for testing, enable:
@@ -32,7 +32,7 @@ insecure = true
   create_service_document = true
 #  rate = 1.5
 #  insecure = true
-#  timerange =
+#  time_range =
 
 [[providers]]
   name = "local-dev-provider2"
@@ -54,4 +54,4 @@ insecure = true
   # If aggregator.category == "aggreator", set for an entry that should
   # be listed in addition:
   category = "lister"
-# ignorepattern = [".*white.*", ".*red.*"]
+# ignore_pattern = [".*white.*", ".*red.*"]

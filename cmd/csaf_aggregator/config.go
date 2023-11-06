@@ -54,7 +54,7 @@ type provider struct {
 	UpdateInterval *string `toml:"update_interval"`
 
 	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
-	IgnorePattern []string `toml:"ignorepattern"`
+	IgnorePattern []string `toml:"ignore_pattern"`
 
 	// ExtraHeader adds extra HTTP header fields to client
 	ExtraHeader http.Header `toml:"header"`
@@ -63,7 +63,7 @@ type provider struct {
 	ClientKey        *string `toml:"client_key"`
 	ClientPassphrase *string `toml:"client_passphrase"`
 
-	Range *models.TimeRange `toml:"timerange"`
+	Range *models.TimeRange `toml:"time_range"`
 
 	clientCerts   []tls.Certificate
 	ignorePattern filter.PatternMatcher
@@ -92,7 +92,7 @@ type config struct {
 	ClientKey        *string `toml:"client_key"`
 	ClientPassphrase *string `toml:"client_passphrase"`
 
-	Range *models.TimeRange `long:"timerange" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"timerange"`
+	Range *models.TimeRange `long:"time_range" short:"t" description:"RANGE of time from which advisories to download" value-name:"RANGE" toml:"time_range"`
 
 	// LockFile tries to lock to a given file.
 	LockFile *string `toml:"lock_file"`
@@ -116,7 +116,7 @@ type config struct {
 	UpdateInterval *string `toml:"update_interval"`
 
 	// IgnorePattern is a list of patterns of advisory URLs to be ignored.
-	IgnorePattern []string `toml:"ignorepattern"`
+	IgnorePattern []string `toml:"ignore_pattern"`
 
 	// ExtraHeader adds extra HTTP header fields to client
 	ExtraHeader http.Header `toml:"header"`

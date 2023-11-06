@@ -23,7 +23,7 @@ for f in $(ls csaf_examples); do
     ../../bin-linux-amd64/csaf_uploader --insecure -P security123 -a upload \
         -t ${TLPs[$((COUNTER++ % 4))]} \
         -u https://localhost:8443/cgi-bin/csaf_provider.go \
-        --client-cert ~/devca1/testclient1.crt \
-        --client-key ~/devca1/testclient1-key.pem \
+        --client_cert ~/devca1/testclient1.crt \
+        --client_key ~/devca1/testclient1-key.pem \
         ./csaf_examples/"$f"
 done
