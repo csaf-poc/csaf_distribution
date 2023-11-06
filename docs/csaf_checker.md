@@ -10,9 +10,9 @@ Application Options:
   -o, --output=REPORT-FILE              File name of the generated report
   -f, --format=[json|html]              Format of report (default: json)
       --insecure                        Do not check TLS certificates from provider
-      --client-cert=CERT-FILE           TLS client certificate file (PEM encoded data)
-      --client-key=KEY-FILE             TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
+      --client_cert=CERT-FILE           TLS client certificate file (PEM encoded data)
+      --client_key=KEY-FILE             TLS client private key file (PEM encoded data)
+      --client_passphrase=PASSPHRASE    Optional passphrase for the client cert (limited, experimental, see downloader doc)
       --version                         Display version of the binary
   -v, --verbose                         Verbose output
   -r, --rate=                           The average upper limit of https operations per second (defaults to unlimited)
@@ -20,8 +20,8 @@ Application Options:
   -i, --ignorepattern=PATTERN           Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                         One or more extra HTTP header fields
       --validator=URL                   URL to validate documents remotely
-      --validatorcache=FILE             FILE to cache remote validations
-      --validatorpreset=                One or more presets to validate remotely (default: [mandatory])
+      --validator_cache=FILE            FILE to cache remote validations
+      --validator_preset=               One or more presets to validate remotely (default: [mandatory])
   -c, --config=TOML-FILE                Path to config TOML file
 
 Help Options:

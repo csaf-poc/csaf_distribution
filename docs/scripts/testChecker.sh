@@ -14,8 +14,8 @@ echo '==== run checker (twice)'
 cd ~/csaf_distribution
 
 ./bin-linux-amd64/csaf_checker -f html -o ../checker-results.html --insecure \
-  --client-cert ~/devca1/testclient1.crt \
-  --client-key ~/devca1/testclient1-key.pem \
+  --client_cert ~/devca1/testclient1.crt \
+  --client_key ~/devca1/testclient1-key.pem \
   --verbose --insecure localhost
 
 cat ../checker-results.html

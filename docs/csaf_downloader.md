@@ -10,9 +10,9 @@ Application Options:
   -d, --directory=DIR                            DIRectory to store the downloaded files in
       --insecure                                 Do not check TLS certificates from provider
       --ignoresigcheck                           Ignore signature check results, just warn on mismatch
-      --client-cert=CERT-FILE                    TLS client certificate file (PEM encoded data)
-      --client-key=KEY-FILE                      TLS client private key file (PEM encoded data)
-      --client-passphrase=PASSPHRASE             Optional passphrase for the client cert (limited, experimental, see doc)
+      --client_cert=CERT-FILE                    TLS client certificate file (PEM encoded data)
+      --client_key=KEY-FILE                      TLS client private key file (PEM encoded data)
+      --client_passphrase=PASSPHRASE             Optional passphrase for the client cert (limited, experimental, see doc)
       --version                                  Display version of the binary
   -n, --nostore                                  Do not store files
   -r, --rate=                                    The average upper limit of https operations per second (defaults to unlimited)
@@ -22,13 +22,13 @@ Application Options:
   -i, --ignorepattern=PATTERN                    Do not download files if their URLs match any of the given PATTERNs
   -H, --header=                                  One or more extra HTTP header fields
       --validator=URL                            URL to validate documents remotely
-      --validatorcache=FILE                      FILE to cache remote validations
-      --validatorpreset=PRESETS                  One or more PRESETS to validate remotely (default: [mandatory])
-  -m, --validationmode=MODE[strict|unsafe]       MODE how strict the validation is (default: strict)
-      --forwardurl=URL                           URL of HTTP endpoint to forward downloads to
-      --forwardheader=                           One or more extra HTTP header fields used by forwarding
-      --forwardqueue=LENGTH                      Maximal queue LENGTH before forwarder (default: 5)
-      --forwardinsecure                          Do not check TLS certificates from forward endpoint
+      --validator_cache=FILE                      FILE to cache remote validations
+      --validator_preset=PRESETS                  One or more PRESETS to validate remotely (default: [mandatory])
+  -m, --validation_mode=MODE[strict|unsafe]       MODE how strict the validation is (default: strict)
+      --forward_url=URL                           URL of HTTP endpoint to forward downloads to
+      --forward_header=                           One or more extra HTTP header fields used by forwarding
+      --forward_queue=LENGTH                      Maximal queue LENGTH before forwarder (default: 5)
+      --forward_insecure                          Do not check TLS certificates from forward endpoint
       --logfile=FILE                             FILE to log downloading to (default: downloader.log)
       --loglevel=LEVEL[debug|info|warn|error]    LEVEL of logging details (default: info)
   -c, --config=TOML-FILE                         Path to config TOML file
@@ -70,8 +70,8 @@ worker              = 2
 # ignorepattern     # not set by default
 # header            # not set by default
 # validator         # not set by default
-# validatorcache    # not set by default
-validatorpreset     = ["mandatory"]
+# validator_cache    # not set by default
+validator_preset     = ["mandatory"]
 validation_mode     = "strict"
 # forward_url       # not set by default
 # forward_header    # not set by default
