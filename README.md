@@ -1,6 +1,9 @@
 # csaf_distribution
 
-An implementation of a [CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csd02/csaf-v2.0-csd02.html) trusted provider, checker, aggregator and downloader. Includes an uploader command line tool for the trusted provider.
+An implementation of a
+[CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html)
+trusted provider, checker, aggregator and downloader.
+Includes an uploader command line tool for the trusted provider.
 
 ## Tools for users
 ### [csaf_downloader](docs/csaf_downloader.md)
