@@ -31,8 +31,10 @@ is a CSAF Aggregator, to list or mirror providers.
 ## Other stuff
 
 ### [examples](./examples/README.md)
-are small examples of how to use `github.com/csaf-poc/csaf_distribution` as an API.
-Currently this is a work in progress. They may be extended and/or changed in the future.
+are small examples of how to use `github.com/csaf-poc/csaf_distribution`
+as an API. Currently this is a work in progress, as usage of this repository
+as a library to access is _not officially supported_, e.g.
+see https://github.com/csaf-poc/csaf_distribution/issues/367 .
 
 ## Setup
 Binaries for the server side are only available and tested
