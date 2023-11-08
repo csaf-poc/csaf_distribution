@@ -42,6 +42,12 @@ They are likely to run on similar systems when build from sources.
 The windows binary package only includes
 `csaf_downloader`, `csaf_validator`, `csaf_checker` and `csaf_uploader`.
 
+The MacOS binary archives come with the same set of client tools
+and are _community supported_. Which means:
+while they are expected to run fine,
+they are not at the same level of testing and maintenance
+as the Windows and GNU/Linux binaries.
+
 
 ### Prebuild binaries
 
@@ -55,12 +61,14 @@ Download the binaries from the most recent release assets on Github.
 - Clone the repository `git clone https://github.com/csaf-poc/csaf_distribution.git `
 
 - Build Go components Makefile supplies the following targets:
-	- Build For GNU/Linux System: `make build_linux`
-	- Build For Windows System (cross build): `make build_win`
-    - Build For both linux and windows: `make build`
-	- Build from a specific github tag by passing the intended tag to the `BUILDTAG` variable.
+	- Build for GNU/Linux system: `make build_linux`
+    - Build for Windows system (cross build): `make build_win`
+    - Build for macOS system on Intel Processor (AMD64) (cross build): `make build_mac_amd64`
+    - Build for macOS system on Apple Silicon (ARM64) (cross build): `make build_mac_arm64`
+    - Build For GNU/Linux, macOS and Windows: `make build`
+	- Build from a specific git tag by passing the intended tag to the `BUILDTAG` variable.
 	   E.g. `make BUILDTAG=v1.0.0 build` or `make BUILDTAG=1 build_linux`.
-     The special value `1` means checking out the highest github tag for the build.
+     The special value `1` means checking out the highest git tag for the build.
     - Remove the generated binaries und their directories: `make mostlyclean`
 
 Binaries will be placed in directories named like `bin-linux-amd64/` and `bin-windows-amd64/`.
