@@ -12,15 +12,15 @@ SHELL = /bin/bash
 BUILD = go build
 MKDIR = mkdir -p
 
-.PHONY: build build_linux build_win tag_checked_out mostlyclean
+.PHONY: build build_linux build_win build_mac_amd64 build_mac_arm64 tag_checked_out mostlyclean
 
 all:
-	@echo choose a target from: build build_linux build_win mostlyclean
+	@echo choose a target from: build build_linux build_win build_mac_amd64 build_mac_arm64 mostlyclean
 	@echo prepend \`make BUILDTAG=1\` to checkout the highest git tag before building
 	@echo or set BUILDTAG to a specific tag
 
 # Build all binaries
-build: build_linux build_win
+build: build_linux build_win build_mac_amd64 build_mac_arm64
 
 # if BUILDTAG == 1 set it to the highest git tag
 ifeq ($(strip $(BUILDTAG)),1)
@@ -29,7 +29,7 @@ endif
 
 ifdef BUILDTAG
 # add the git tag checkout to the requirements of our build targets
-build_linux build_win: tag_checked_out
+build_linux build_win build_mac_amd64 build_mac_arm64: tag_checked_out
 endif
 
 tag_checked_out:
@@ -67,15 +67,19 @@ LDFLAGS = -ldflags "-X github.com/csaf-poc/csaf_distribution/v3/util.SemVersion=
 GOARCH = amd64
 build_linux: GOOS = linux
 build_win: GOOS = windows
+build_mac_amd64: GOOS = darwin
 
-build_linux build_win:
+build_mac_arm64: GOARCH = arm64
+build_mac_arm64: GOOS = darwin
+
+build_linux build_win build_mac_amd64 build_mac_arm64:
 	$(eval BINDIR = bin-$(GOOS)-$(GOARCH)/ )
 	$(MKDIR) $(BINDIR)
 	env GOARCH=$(GOARCH) GOOS=$(GOOS) $(BUILD) -o $(BINDIR) $(LDFLAGS) -v ./cmd/...
 
 
 DISTDIR := csaf_distribution-$(SEMVER)
-dist: build_linux build_win
+dist: build_linux build_win build_mac_amd64 build_mac_arm64
 	mkdir -p dist
 	mkdir -p dist/$(DISTDIR)-windows-amd64/bin-windows-amd64
 	cp README.md dist/$(DISTDIR)-windows-amd64
@@ -85,10 +89,19 @@ dist: build_linux build_win
 	mkdir -p dist/$(DISTDIR)-windows-amd64/docs
 	cp docs/csaf_uploader.md docs/csaf_validator.md docs/csaf_checker.md \
 	  docs/csaf_downloader.md dist/$(DISTDIR)-windows-amd64/docs
+	mkdir -p dist/$(DISTDIR)-macos/bin-darwin-amd64 \
+		     dist/$(DISTDIR)-macos/bin-darwin-arm64 \
+			 dist/$(DISTDIR)-macos/docs
+	for f in csaf_downloader csaf_checker csaf_validator csaf_uploader ; do \
+		cp bin-darwin-amd64/$$f dist/$(DISTDIR)-macos/bin-darwin-amd64 ; \
+		cp bin-darwin-arm64/$$f dist/$(DISTDIR)-macos/bin-darwin-arm64 ; \
+		cp docs/$${f}.md dist/$(DISTDIR)-macos/docs ; \
+	done
 	mkdir dist/$(DISTDIR)-gnulinux-amd64
 	cp -r README.md docs bin-linux-amd64 dist/$(DISTDIR)-gnulinux-amd64
 	cd dist/ ; zip -r $(DISTDIR)-windows-amd64.zip $(DISTDIR)-windows-amd64/
 	cd dist/ ; tar -cvmlzf $(DISTDIR)-gnulinux-amd64.tar.gz $(DISTDIR)-gnulinux-amd64/
+	cd dist/ ; tar -cvmlzf $(DISTDIR)-macos.tar.gz $(DISTDIR)-macos
 
 # Remove bin-*-* and dist directories
 mostlyclean:
