@@ -17,8 +17,6 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 	type fields struct {
 		Branches         Branches
 		FullProductNames *FullProductNames
-		ProductGroups    *ProductGroups
-		RelationShips    *Relationships
 	}
 	type args struct {
 		id ProductID
@@ -136,8 +134,6 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 			pt := &ProductTree{
 				Branches:         test.fields.Branches,
 				FullProductNames: test.fields.FullProductNames,
-				ProductGroups:    test.fields.ProductGroups,
-				RelationShips:    test.fields.RelationShips,
 			}
 			if got := pt.FindProductIdentificationHelpers(test.args.id); !reflect.DeepEqual(got, test.want) {
 				tt.Errorf("ProductTree.FindProductIdentificationHelpers() = %v, want %v", got, test.want)
