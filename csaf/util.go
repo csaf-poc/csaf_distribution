@@ -36,3 +36,39 @@ func ExtractProviderURL(r io.Reader, all bool) ([]string, error) {
 	}
 	return urls, nil
 }
+
+// FindProductIdentificationHelpers finds all ProductIdentificationHelper for a given ProductID
+// by iterating over all full product names and branches recursively available in the ProductTree.
+func (pt *ProductTree) FindProductIdentificationHelpers(id ProductID) []*ProductIdentificationHelper {
+	var result []*ProductIdentificationHelper
+	add := func(h *ProductIdentificationHelper) {
+		if h != nil {
+			result = append(result, h)
+		}
+	}
+
+	// Iterate over all full product names
+	if fpns := pt.FullProductNames; fpns != nil {
+		for _, fpn := range *fpns {
+			if fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
+				add(fpn.ProductIdentificationHelper)
+			}
+		}
+	}
+
+	// Iterate over branches recursively
+	var recBranch func(b *Branch)
+	recBranch = func(b *Branch) {
+		if fpn := b.Product; fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
+			add(fpn.ProductIdentificationHelper)
+		}
+		for _, c := range b.Branches {
+			recBranch(c)
+		}
+	}
+	for _, b := range pt.Branches {
+		recBranch(b)
+	}
+
+	return result
+}
