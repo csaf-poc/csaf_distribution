@@ -132,8 +132,7 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 	}
 
 	// Next load the PMDs from security.txt
-	secURL := "https://" + domain + "/.well-known/security.txt"
-	secResults := pmdl.loadFromSecurity(secURL)
+	secResults := pmdl.loadFromSecurity(domain)
 
 	// Filter out the results which are valid.
 	var secGoods []*LoadedProviderMetadata
@@ -199,56 +198,63 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 }
 
 // loadFromSecurity loads the PMDs mentioned in the security.txt.
-func (pmdl *ProviderMetadataLoader) loadFromSecurity(path string) []*LoadedProviderMetadata {
+func (pmdl *ProviderMetadataLoader) loadFromSecurity(domain string) []*LoadedProviderMetadata {
 
-	res, err := pmdl.client.Get(path)
-	if err != nil {
-		pmdl.messages.Add(
-			HTTPFailed,
-			fmt.Sprintf("Fetching %q failed: %v", path, err))
-		return nil
-	}
-	if res.StatusCode != http.StatusOK {
-		pmdl.messages.Add(
-			HTTPFailed,
-			fmt.Sprintf("Fetching %q failed: %s (%d)", path, res.Status, res.StatusCode))
-		return nil
-	}
-
-	// Extract all potential URLs from CSAF.
-	urls, err := func() ([]string, error) {
-		defer res.Body.Close()
-		return ExtractProviderURL(res.Body, true)
-	}()
-
-	if err != nil {
-		pmdl.messages.Add(
-			HTTPFailed,
-			fmt.Sprintf("Loading %q failed: %v", path, err))
-		return nil
-	}
-
-	var loaded []*LoadedProviderMetadata
-
-	// Load the URLs
-nextURL:
-	for _, url := range urls {
-		lpmd := pmdl.loadFromURL(url)
-		// If loading failed note it down.
-		if !lpmd.Valid() {
-			pmdl.messages.AppendUnique(lpmd.Messages)
+	// If .well-known fails try legacy location.
+	for _, path := range []string{
+		"https://" + domain + "/.well-known/security.txt",
+		"https://" + domain + "/security.txt",
+	} {
+		res, err := pmdl.client.Get(path)
+		if err != nil {
+			pmdl.messages.Add(
+				HTTPFailed,
+				fmt.Sprintf("Fetching %q failed: %v", path, err))
 			continue
 		}
-		// Check for duplicates
-		for _, l := range loaded {
-			if l == lpmd {
-				continue nextURL
-			}
+		if res.StatusCode != http.StatusOK {
+			pmdl.messages.Add(
+				HTTPFailed,
+				fmt.Sprintf("Fetching %q failed: %s (%d)", path, res.Status, res.StatusCode))
+			continue
 		}
-		loaded = append(loaded, lpmd)
-	}
 
-	return loaded
+		// Extract all potential URLs from CSAF.
+		urls, err := func() ([]string, error) {
+			defer res.Body.Close()
+			return ExtractProviderURL(res.Body, true)
+		}()
+
+		if err != nil {
+			pmdl.messages.Add(
+				HTTPFailed,
+				fmt.Sprintf("Loading %q failed: %v", path, err))
+			continue
+		}
+
+		var loaded []*LoadedProviderMetadata
+
+		// Load the URLs
+	nextURL:
+		for _, url := range urls {
+			lpmd := pmdl.loadFromURL(url)
+			// If loading failed note it down.
+			if !lpmd.Valid() {
+				pmdl.messages.AppendUnique(lpmd.Messages)
+				continue
+			}
+			// Check for duplicates
+			for _, l := range loaded {
+				if l == lpmd {
+					continue nextURL
+				}
+			}
+			loaded = append(loaded, lpmd)
+		}
+
+		return loaded
+	}
+	return nil
 }
 
 // loadFromURL loads a provider metadata from a given URL.
