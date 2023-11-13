@@ -1263,9 +1263,26 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 // the value of this field. Returns an empty string if no error was encountered,
 // the errormessage otherwise.
 func (p *processor) checkSecurity(domain string) string {
+	var msgs []string
+	// Try well-known first and fall back to legacy when it fails.
+	for _, folder := range []string{
+		"https://" + domain + "/.well-known/",
+		"https://" + domain + "/",
+	} {
+		msg := p.checkSecurityFolder(folder)
+		if msg == "" {
+			break
+		}
+		msgs = append(msgs, msg)
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// checkSecurityFolder checks the security.txt in a given folder.
+func (p *processor) checkSecurityFolder(folder string) string {
 
 	client := p.httpClient()
-	path := "https://" + domain + "/.well-known/security.txt"
+	path := folder + "security.txt"
 	res, err := client.Get(path)
 	if err != nil {
 		return fmt.Sprintf("Fetching %s failed: %v", path, err)
@@ -1298,7 +1315,7 @@ func (p *processor) checkSecurity(domain string) string {
 		return fmt.Sprintf("CSAF URL '%s' invalid: %v", u, err)
 	}
 
-	base, err := url.Parse("https://" + domain + "/.well-known/")
+	base, err := url.Parse(folder)
 	if err != nil {
 		return err.Error()
 	}
