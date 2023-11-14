@@ -17,6 +17,7 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 	type fields struct {
 		Branches         Branches
 		FullProductNames *FullProductNames
+		RelationShips    *Relationships
 	}
 	type args struct {
 		id ProductID
@@ -124,6 +125,42 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name: "product tree with matching relationships",
+			fields: fields{
+				RelationShips: &Relationships{{
+					FullProductName: &FullProductName{
+						ProductID: &[]ProductID{"CSAFPID-0001"}[0],
+						ProductIdentificationHelper: &ProductIdentificationHelper{
+							CPE: &[]CPE{"cpe:2.3:a:microsoft:internet_explorer:1.0.0:beta:*:*:*:*:*:*"}[0],
+						},
+					},
+				}},
+			},
+			args: args{
+				id: "CSAFPID-0001",
+			},
+			want: []*ProductIdentificationHelper{{
+				CPE: &[]CPE{"cpe:2.3:a:microsoft:internet_explorer:1.0.0:beta:*:*:*:*:*:*"}[0],
+			}},
+		},
+		{
+			name: "product tree with no matching relationships",
+			fields: fields{
+				RelationShips: &Relationships{{
+					FullProductName: &FullProductName{
+						ProductID: &[]ProductID{"CSAFPID-0001"}[0],
+						ProductIdentificationHelper: &ProductIdentificationHelper{
+							CPE: &[]CPE{"cpe:2.3:a:microsoft:internet_explorer:1.0.0:beta:*:*:*:*:*:*"}[0],
+						},
+					},
+				}},
+			},
+			args: args{
+				id: "CSAFPID-0002",
+			},
+			want: nil,
+		},
 	}
 
 	t.Parallel()
@@ -134,6 +171,7 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 			pt := &ProductTree{
 				Branches:         test.fields.Branches,
 				FullProductNames: test.fields.FullProductNames,
+				RelationShips:    test.fields.RelationShips,
 			}
 			if got := pt.FindProductIdentificationHelpers(test.args.id); !reflect.DeepEqual(got, test.want) {
 				tt.Errorf("ProductTree.FindProductIdentificationHelpers() = %v, want %v", got, test.want)

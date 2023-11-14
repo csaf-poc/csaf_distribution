@@ -70,5 +70,16 @@ func (pt *ProductTree) FindProductIdentificationHelpers(id ProductID) []*Product
 		recBranch(b)
 	}
 
+	// Iterate over relationships
+	if rels := pt.RelationShips; rels != nil {
+		for _, rel := range *rels {
+			if rel != nil {
+				if fpn := rel.FullProductName; fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
+					add(fpn.ProductIdentificationHelper)
+				}
+			}
+		}
+	}
+
 	return result
 }
