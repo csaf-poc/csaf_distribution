@@ -1273,7 +1273,9 @@ func (p *processor) checkSecurity(domain string) string {
 		if msg == "" {
 			break
 		}
-		msgs = append(msgs, msg)
+		// Show which security.txt caused this message
+		lmsg := folder + "security.txt:" + msg
+		msgs = append(msgs, lmsg)
 	}
 	return strings.Join(msgs, "; ")
 }
