@@ -70,7 +70,9 @@ func newURLFinder(ids []string) *urlFinder {
 
 // clear resets the url finder after a run on an advisory.
 func (uf *urlFinder) clear() {
-	clear(uf.urls)
+	for i := range uf.urls {
+		uf.urls[i] = uf.urls[i][:0]
+	}
 }
 
 // dumpURLs dumps the found URLs to stdout.
