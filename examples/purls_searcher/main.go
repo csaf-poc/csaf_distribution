@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"slices"
 	"strings"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 )
