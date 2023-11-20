@@ -631,16 +631,16 @@ nextAdvisory:
 		// Advisories that failed validation are store in a special folder.
 		var newDir string
 		if valStatus != validValidationStatus {
-			newDir = path.Join(d.cfg.Directory, failedValidationDir, lower)
+			newDir = path.Join(d.cfg.Directory, failedValidationDir)
 		} else {
-			newDir = path.Join(d.cfg.Directory, lower)
+			newDir = d.cfg.Directory
 		}
 
 		// Do we have a configured destination folder?
 		if d.cfg.Folder != "" {
 			newDir = path.Join(newDir, d.cfg.Folder)
 		} else {
-			newDir = path.Join(newDir, strconv.Itoa(initialReleaseDate.Year()))
+			newDir = path.Join(newDir, lower, strconv.Itoa(initialReleaseDate.Year()))
 		}
 
 		if newDir != lastDir {
