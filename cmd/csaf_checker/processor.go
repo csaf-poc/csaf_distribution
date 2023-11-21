@@ -1262,22 +1262,20 @@ func (p *processor) checkProviderMetadata(domain string) bool {
 // It checks the existence of the CSAF field in the file content and tries to fetch
 // the value of this field. Returns an empty string if no error was encountered,
 // the errormessage otherwise.
-func (p *processor) checkSecurity(domain string) string {
-	var msgs []string
-	// Try well-known first and fall back to legacy when it fails.
-	for _, folder := range []string{
-		"https://" + domain + "/.well-known/",
-		"https://" + domain + "/",
-	} {
-		msg := p.checkSecurityFolder(folder)
-		if msg == "" {
-			break
-		}
-		// Show which security.txt caused this message
-		lmsg := folder + "security.txt: " + msg
-		msgs = append(msgs, lmsg)
+func (p *processor) checkSecurity(domain string, legacy bool) (int, string) {
+	folder := "https://" + domain + "/"
+	if !legacy {
+		folder = folder + ".well-known/"
 	}
-	return strings.Join(msgs, "; ")
+	msg := p.checkSecurityFolder(folder)
+	if msg == "" {
+		if !legacy {
+			return 0, "Found valid security.txt within the well-known directory"
+		} else {
+			return 2, "Found valid security.txt in the legacy location"
+		}
+	}
+	return 1, folder + "security.txt: " + msg
 }
 
 // checkSecurityFolder checks the security.txt in a given folder.
@@ -1410,7 +1408,13 @@ func (p *processor) checkWellknown(domain string) string {
 func (p *processor) checkWellknownSecurityDNS(domain string) error {
 
 	warningsW := p.checkWellknown(domain)
-	warningsS := p.checkSecurity(domain)
+	// Security check for well known (default) and legacy location
+	warningsS, sDMessage := p.checkSecurity(domain, false)
+	// if the security.txt under .well-known was not okay
+	sLMessage := ""
+	if warningsS == 1 {
+		warningsS, sLMessage = p.checkSecurity(domain, true)
+	}
 	warningsD := p.checkDNS(domain)
 
 	p.badWellknownMetadata.use()
@@ -1418,17 +1422,30 @@ func (p *processor) checkWellknownSecurityDNS(domain string) error {
 	p.badDNSPath.use()
 
 	var kind MessageType
-	if warningsS == "" || warningsD == "" || warningsW == "" {
+	if warningsS != 1 || warningsD == "" || warningsW == "" {
 		kind = WarnType
 	} else {
 		kind = ErrorType
 	}
 
+	// Info, Warning or Error depending on kind and warningS
+	kindSD := kind
+	if warningsS == 0 {
+		kindSD = InfoType
+	}
+	kindSL := kind
+	if warningsS == 2 {
+		kindSL = InfoType
+	}
+
 	if warningsW != "" {
 		p.badWellknownMetadata.add(kind, warningsW)
 	}
-	if warningsS != "" {
-		p.badSecurity.add(kind, warningsS)
+	p.badSecurity.add(kindSD, sDMessage)
+	// only if the well-known security.txt was not successful:
+	// report about the legacy location
+	if warningsS != 0 {
+		p.badSecurity.add(kindSL, sLMessage)
 	}
 	if warningsD != "" {
 		p.badDNSPath.add(kind, warningsD)
