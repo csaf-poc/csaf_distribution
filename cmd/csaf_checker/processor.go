@@ -1411,6 +1411,7 @@ func (p *processor) checkWellknownSecurityDNS(domain string) error {
 	// Security check for well known (default) and legacy location
 	warningsS, sDMessage := p.checkSecurity(domain, false)
 	// if the security.txt under .well-known was not okay
+	// check for a security.txt within its legacy location
 	sLMessage := ""
 	if warningsS == 1 {
 		warningsS, sLMessage = p.checkSecurity(domain, true)
