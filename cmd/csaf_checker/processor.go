@@ -1271,9 +1271,8 @@ func (p *processor) checkSecurity(domain string, legacy bool) (int, string) {
 	if msg == "" {
 		if !legacy {
 			return 0, "Found valid security.txt within the well-known directory"
-		} else {
-			return 2, "Found valid security.txt in the legacy location"
 		}
+		return 2, "Found valid security.txt in the legacy location"
 	}
 	return 1, folder + "security.txt: " + msg
 }
