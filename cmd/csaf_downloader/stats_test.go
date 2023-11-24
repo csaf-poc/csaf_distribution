@@ -11,8 +11,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"log/slog"
 	"testing"
+
+	"golang.org/x/exp/slog"
 )
 
 func TestStatsAdd(t *testing.T) {

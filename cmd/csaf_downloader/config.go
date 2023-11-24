@@ -13,11 +13,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
+
+	"golang.org/x/exp/slog"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
