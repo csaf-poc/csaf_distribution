@@ -1,5 +1,10 @@
 # Development
 
+## Supported Go versions
+
+We support the latest version and the one before
+the latest version of Go (currently 1.21 and 1.20).
+
 ## Generated files
 
 Some source code files are machine generated. At the moment these are only
