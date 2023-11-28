@@ -11,9 +11,10 @@ package main
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/signal"
+
+	"golang.org/x/exp/slog"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
