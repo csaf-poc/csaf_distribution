@@ -251,10 +251,6 @@ func (r *securityReporter) report(p *processor, domain *Domain) {
 		req.message(WarnType, "Performed no in-depth test of security.txt.")
 		return
 	}
-	if len(p.badSecurity) == 0 {
-		req.message(InfoType, "Found CSAF entry in security.txt.")
-		return
-	}
 	req.Messages = p.badSecurity
 }
 
