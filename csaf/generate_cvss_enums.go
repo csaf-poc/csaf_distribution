@@ -17,7 +17,7 @@ import (
 	"go/format"
 	"log"
 	"os"
-	"slices"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -135,7 +135,7 @@ func main() {
 			defs = append(defs, k)
 		}
 	}
-	slices.Sort(defs)
+	sort.Strings(defs)
 
 	var source bytes.Buffer
 
