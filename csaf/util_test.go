@@ -173,8 +173,9 @@ func TestProductTree_FindProductIdentificationHelpers(t *testing.T) {
 				FullProductNames: test.fields.FullProductNames,
 				RelationShips:    test.fields.RelationShips,
 			}
-			if got := pt.FindProductIdentificationHelpers(test.args.id); !reflect.DeepEqual(got, test.want) {
-				tt.Errorf("ProductTree.FindProductIdentificationHelpers() = %v, want %v", got, test.want)
+			if got := pt.CollectProductIdentificationHelpers(test.args.id); !reflect.DeepEqual(got, test.want) {
+				tt.Errorf("ProductTree.FindProductIdentificationHelpers() = %v, want %v",
+					got, test.want)
 			}
 		})
 	}

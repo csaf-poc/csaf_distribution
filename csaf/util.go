@@ -37,21 +37,31 @@ func ExtractProviderURL(r io.Reader, all bool) ([]string, error) {
 	return urls, nil
 }
 
-// FindProductIdentificationHelpers finds all ProductIdentificationHelper for a given ProductID
-// by iterating over all full product names and branches recursively available in the ProductTree.
-func (pt *ProductTree) FindProductIdentificationHelpers(id ProductID) []*ProductIdentificationHelper {
-	var result []*ProductIdentificationHelper
-	add := func(h *ProductIdentificationHelper) {
-		if h != nil {
-			result = append(result, h)
-		}
-	}
+// CollectProductIdentificationHelpers returns a slice of all ProductIdentificationHelper
+// for a given ProductID.
+func (pt *ProductTree) CollectProductIdentificationHelpers(id ProductID) []*ProductIdentificationHelper {
+	var helpers []*ProductIdentificationHelper
+	pt.FindProductIdentificationHelpers(
+		id, func(helper *ProductIdentificationHelper) {
+			helpers = append(helpers, helper)
+		})
+	return helpers
+}
 
+// FindProductIdentificationHelpers calls visit on all ProductIdentificationHelper
+// for a given ProductID by iterating over all full product names and branches
+// recursively available in the ProductTree.
+func (pt *ProductTree) FindProductIdentificationHelpers(
+	id ProductID,
+	visit func(*ProductIdentificationHelper),
+) {
 	// Iterate over all full product names
 	if fpns := pt.FullProductNames; fpns != nil {
 		for _, fpn := range *fpns {
-			if fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
-				add(fpn.ProductIdentificationHelper)
+			if fpn != nil &&
+				fpn.ProductID != nil && *fpn.ProductID == id &&
+				fpn.ProductIdentificationHelper != nil {
+				visit(fpn.ProductIdentificationHelper)
 			}
 		}
 	}
@@ -59,8 +69,13 @@ func (pt *ProductTree) FindProductIdentificationHelpers(id ProductID) []*Product
 	// Iterate over branches recursively
 	var recBranch func(b *Branch)
 	recBranch = func(b *Branch) {
-		if fpn := b.Product; fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
-			add(fpn.ProductIdentificationHelper)
+		if b == nil {
+			return
+		}
+		if fpn := b.Product; fpn != nil &&
+			fpn.ProductID != nil && *fpn.ProductID == id &&
+			fpn.ProductIdentificationHelper != nil {
+			visit(fpn.ProductIdentificationHelper)
 		}
 		for _, c := range b.Branches {
 			recBranch(c)
@@ -74,12 +89,11 @@ func (pt *ProductTree) FindProductIdentificationHelpers(id ProductID) []*Product
 	if rels := pt.RelationShips; rels != nil {
 		for _, rel := range *rels {
 			if rel != nil {
-				if fpn := rel.FullProductName; fpn != nil && fpn.ProductID != nil && *fpn.ProductID == id {
-					add(fpn.ProductIdentificationHelper)
+				if fpn := rel.FullProductName; fpn != nil && fpn.ProductID != nil &&
+					*fpn.ProductID == id && fpn.ProductIdentificationHelper != nil {
+					visit(fpn.ProductIdentificationHelper)
 				}
 			}
 		}
 	}
-
-	return result
 }
