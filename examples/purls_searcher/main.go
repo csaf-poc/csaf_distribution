@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/csaf-poc/csaf_distribution/v3/csaf"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 func main() {
@@ -40,11 +41,17 @@ func run(files []string, ids string) error {
 		}
 
 		for _, id := range strings.Split(ids, ",") {
-			for i, h := range adv.ProductTree.FindProductIdentificationHelpers(csaf.ProductID(id)) {
-				if h.PURL != nil {
-					fmt.Printf("%d. %s\n", i, *h.PURL)
-				}
-			}
+			already := util.Set[csaf.PURL]{}
+			i := 0
+			adv.ProductTree.FindProductIdentificationHelpers(
+				csaf.ProductID(id),
+				func(h *csaf.ProductIdentificationHelper) {
+					if h.PURL != nil && !already.Contains(*h.PURL) {
+						already.Add(*h.PURL)
+						i++
+						fmt.Printf("%d. %s\n", i, *h.PURL)
+					}
+				})
 		}
 	}
 
