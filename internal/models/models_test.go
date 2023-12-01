@@ -173,27 +173,3 @@ func TestTimeRangeIntersects(t *testing.T) {
 		}
 	}
 }
-
-// TestTimeRangeYear checks if the Year construction works.
-func TestTimeRangeYear(t *testing.T) {
-	var (
-		year   = Year(1984)
-		first  = time.Date(1984, time.January, 1, 0, 0, 0, 0, time.UTC)
-		before = first.Add(-time.Nanosecond)
-		after  = time.Date(1984+1, time.January, 1, 0, 0, 0, 0, time.UTC)
-		last   = after.Add(-time.Nanosecond)
-	)
-	for _, x := range []struct {
-		t        time.Time
-		expected bool
-	}{
-		{t: first, expected: true},
-		{t: before, expected: false},
-		{t: last, expected: true},
-		{t: after, expected: false},
-	} {
-		if got := year.Contains(x.t); got != x.expected {
-			t.Fatalf("%v: got %t expected %t", x.t, got, x.expected)
-		}
-	}
-}

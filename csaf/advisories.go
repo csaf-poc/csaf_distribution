@@ -316,7 +316,7 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 
 			// Filter if we have date checking.
 			if afp.AgeAccept != nil {
-				if pub := time.Time(entry.Published); !pub.IsZero() && !afp.AgeAccept(pub) {
+				if pub := time.Time(entry.Updated); !pub.IsZero() && !afp.AgeAccept(pub) {
 					return
 				}
 			}
