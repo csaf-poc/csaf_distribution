@@ -547,7 +547,7 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 
 		// Filter if we have date checking.
 		if accept := p.cfg.Range; accept != nil {
-			if pub := time.Time(entry.Updated); !pub.IsZero() && !accept.Contains(pub) {
+			if t := time.Time(entry.Updated); !t.IsZero() && !accept.Contains(t) {
 				return
 			}
 		}
