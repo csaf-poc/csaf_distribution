@@ -17,24 +17,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 'stable'
+          go-version: 'oldstable'
 
       - name: Build
         run: go build -v ./cmd/...
-
-      - name: vet
-        run: go vet ./...
-
-      - name: gofmt
-        uses: Jerome1337/gofmt-action@v1.0.4
-        with:
-          gofmt-flags: "-l -d"
-
-      - name: golint
-        uses: Jerome1337/golint-action@v1.0.2
-
-      - name: Revive Action
-        uses: morphy2k/revive-action@v2.5.1
 
       - name: Tests
         run: go test -v ./...
