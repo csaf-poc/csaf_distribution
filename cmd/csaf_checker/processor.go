@@ -202,8 +202,8 @@ func (p *processor) close() {
 	}
 }
 
-// clean clears the fields values of the given processor.
-func (p *processor) clean() {
+// reset clears the fields values of the given processor.
+func (p *processor) reset() {
 	p.redirects = nil
 	p.noneTLS = nil
 	for k := range p.alreadyChecked {
@@ -247,6 +247,8 @@ func (p *processor) run(domains []string) (*Report, error) {
 	}
 
 	for _, d := range domains {
+		p.reset()
+
 		if !p.checkProviderMetadata(d) {
 			// We cannot build a report if the provider metadata cannot be parsed.
 			log.Printf("Could not parse the Provider-Metadata.json of: %s\n", d)
@@ -287,7 +289,6 @@ func (p *processor) run(domains []string) (*Report, error) {
 		domain.Passed = rules.eval(p)
 
 		report.Domains = append(report.Domains, domain)
-		p.clean()
 	}
 
 	return &report, nil
