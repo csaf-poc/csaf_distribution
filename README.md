@@ -1,7 +1,8 @@
 # csaf_distribution
 
-An implementation of a
-[CSAF 2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html)
+An implementation of a [CSAF](https://csaf.io/)
+[2.0 Spec](https://docs.oasis-open.org/csaf/csaf/v2.0/os/csaf-v2.0-os.html)
+([Errata](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html))
 trusted provider, checker, aggregator and downloader.
 Includes an uploader command line tool for the trusted provider.
 
