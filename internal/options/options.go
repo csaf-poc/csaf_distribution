@@ -19,6 +19,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 
 	"github.com/csaf-poc/csaf_distribution/v3/util"
+	"golang.org/x/exp/slog"
 )
 
 // Parser helps parsing command line arguments and loading
@@ -145,5 +146,14 @@ func loadTOML(cfg any, path string) error {
 func ErrorCheck(err error) {
 	if err != nil {
 		log.Fatalf("error: %v\n", err)
+	}
+}
+
+// ErrorCheck checks if err is not nil and terminates
+// the program if so.
+func ErrorCheckStructured(err error) {
+	if err != nil {
+		slog.Error("Error while executing program", "err", err)
+		os.Exit(1)
 	}
 }

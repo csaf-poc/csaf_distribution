@@ -9,11 +9,11 @@
 package main
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/v3/util"
+	"golang.org/x/exp/slog"
 )
 
 type lazyTransaction struct {
@@ -85,7 +85,8 @@ func (lt *lazyTransaction) commit() error {
 		os.RemoveAll(lt.dst)
 		return err
 	}
-	log.Printf("Move %q -> %q\n", symlink, lt.src)
+
+	slog.Debug("Moving directory", "from", symlink, "to", lt.src)
 	if err := os.Rename(symlink, lt.src); err != nil {
 		os.RemoveAll(lt.dst)
 		return err
