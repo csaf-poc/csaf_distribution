@@ -178,20 +178,7 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 	}
 
 	// Next load the PMDs from security.txt
-	secResults := pmdl.loadFromSecurity(domain)
-
-	// Filter out the results which are valid.
-	var secGoods []*LoadedProviderMetadata
-
-	for _, result := range secResults {
-		if len(result.Messages) > 0 {
-			// If there where validation issues append them
-			// to the overall report
-			pmdl.messages.AppendUnique(pmdl.messages)
-		} else {
-			secGoods = append(secGoods, result)
-		}
-	}
+	secGoods := pmdl.loadFromSecurity(domain)
 
 	// Mention extra CSAF entries in security.txt.
 	ignoreExtras := func() {
@@ -246,7 +233,7 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 	return dnsURLResult
 }
 
-// loadFromSecurity loads the PMDs mentioned in the security.txt.
+// loadFromSecurity loads the PMDs mentioned in the security.txt. Only valid PMDs are returned.
 func (pmdl *ProviderMetadataLoader) loadFromSecurity(domain string) []*LoadedProviderMetadata {
 
 	// If .well-known fails try legacy location.
