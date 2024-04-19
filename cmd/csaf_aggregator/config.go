@@ -396,7 +396,7 @@ func (c *config) setDefaults() {
 }
 
 // prepareLogging sets up the structured logging.
-func (cfg *config) prepareLogging() error {
+func (c *config) prepareLogging() error {
 	ho := slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}

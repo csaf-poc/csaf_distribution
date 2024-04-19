@@ -149,8 +149,9 @@ func ErrorCheck(err error) {
 	}
 }
 
-// ErrorCheck checks if err is not nil and terminates
-// the program if so.
+// ErrorCheckStructured checks if err is not nil and terminates the program if
+// so. This is similar to [ErrorCheck], but uses [slog] instead of the
+// non-structured Go logging.
 func ErrorCheckStructured(err error) {
 	if err != nil {
 		slog.Error("Error while executing program", "err", err)
