@@ -165,6 +165,39 @@ func httpLog(who string) func(string, string) {
 	}
 }
 
+func (d *downloader) enumerate(ctx context.Context, domain string) error {
+	client := d.httpClient()
+
+	loader := csaf.NewProviderMetadataLoader(client)
+
+	lpmd := loader.Enumerate(domain)
+
+	if d.cfg.verbose() {
+		for i := range lpmd.Messages {
+			slog.Debug("Loading provider-metadata.json",
+				"domain", domain,
+				"message", lpmd.Messages[i].Message)
+		}
+	}
+
+	for _, pmd := range lpmd {
+		if !pmd.Valid() {
+			return fmt.Errorf("invalid provider-metadata.json found for '%s'", domain)
+		}
+		_, err := url.Parse(pmd.URL)
+		if err != nil {
+			return fmt.Errorf("invalid URL found '%s': %v", pmd.URL, err)
+		}
+
+		// TODO print
+		fmt.Println(pmd.URL)
+		fmt.Println(pmd.Document)
+		fmt.Println(pmd.Messages)
+		fmt.Println(pmd.Hash)
+	}
+
+}
+
 func (d *downloader) download(ctx context.Context, domain string) error {
 	client := d.httpClient()
 
