@@ -108,6 +108,42 @@ func NewProviderMetadataLoader(client util.Client) *ProviderMetadataLoader {
 	}
 }
 
+func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMetadata {
+
+	// Our array of PMDs to be found
+	var resPMDs []*LoadedProviderMetadata
+
+	// TODO check direct path?
+
+	// First try the well-known path.
+	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	wellknownResult := pmdl.loadFromURL(wellknownURL)
+
+	// Validate the candidate and add to the result array
+	if wellknownResult.Valid() {
+		resPMDs = append(resPMDs, wellknownResult)
+	}
+
+	// Next load the PMDs from security.txt
+	secResults := pmdl.loadFromSecurity(domain)
+
+	for _, result := range secResults {
+		if result.Valid() {
+			resPMDs = append(resPMDs, result)
+		}
+	}
+
+	// According to the spec, only if no PMDs have been found, should the DNS URL be used
+	if len(resPMDs) > 0 {
+		return resPMDs
+	} else {
+		dnsURL := "https://csaf.data.security." + domain
+		return []*LoadedProviderMetadata{pmdl.loadFromURL(dnsURL)}
+	}
+
+}
+
 // Load loads a provider metadata for a given path.
 // If the domain starts with `https://` it only attemps to load
 // the data from that URL.
