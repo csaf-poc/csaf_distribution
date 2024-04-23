@@ -9,11 +9,11 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/v3/util"
-	"golang.org/x/exp/slog"
 )
 
 type lazyTransaction struct {

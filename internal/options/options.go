@@ -12,14 +12,14 @@ package options
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
+
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 
 	"github.com/BurntSushi/toml"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
-
-	"github.com/csaf-poc/csaf_distribution/v3/util"
-	"golang.org/x/exp/slog"
 )
 
 // Parser helps parsing command line arguments and loading

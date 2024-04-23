@@ -12,13 +12,12 @@ import (
 	"bytes"
 	"crypto/tls"
 	"io"
+	"log/slog"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/misc"
 	"github.com/csaf-poc/csaf_distribution/v3/util"

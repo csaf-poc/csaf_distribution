@@ -1,6 +1,6 @@
 module github.com/csaf-poc/csaf_distribution/v3
 
-go 1.20
+go 1.21
 
 require (
 	github.com/BurntSushi/toml v1.3.2
@@ -14,7 +14,6 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	go.etcd.io/bbolt v1.3.8
 	golang.org/x/crypto v0.14.0
-	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
 	golang.org/x/term v0.13.0
 	golang.org/x/time v0.3.0
 )

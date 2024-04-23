@@ -11,6 +11,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 	"github.com/csaf-poc/csaf_distribution/v3/util"
-	"golang.org/x/exp/slog"
 )
 
 type fullJob struct {

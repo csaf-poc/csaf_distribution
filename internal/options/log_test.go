@@ -9,9 +9,8 @@
 package options
 
 import (
+	"log/slog"
 	"testing"
-
-	"golang.org/x/exp/slog"
 )
 
 func TestMarshalFlag(t *testing.T) {

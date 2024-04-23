@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime"
@@ -25,7 +26,6 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/util"
-	"golang.org/x/exp/slog"
 	"golang.org/x/time/rate"
 )
 

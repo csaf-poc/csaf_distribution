@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -28,8 +29,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"

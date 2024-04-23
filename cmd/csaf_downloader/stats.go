@@ -8,7 +8,7 @@
 
 package main
 
-import "golang.org/x/exp/slog"
+import "log/slog"
 
 // stats contains counters of the downloads.
 type stats struct {

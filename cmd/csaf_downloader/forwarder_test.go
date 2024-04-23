@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -21,8 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"golang.org/x/exp/slog"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/util"

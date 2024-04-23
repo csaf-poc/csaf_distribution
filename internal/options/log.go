@@ -9,9 +9,8 @@
 package options
 
 import (
+	"log/slog"
 	"strings"
-
-	"golang.org/x/exp/slog"
 )
 
 // LogLevel implements a helper type to be used in configurations.

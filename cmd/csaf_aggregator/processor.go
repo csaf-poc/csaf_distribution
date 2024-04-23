@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v3/util"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"golang.org/x/exp/slog"
 )
 
 type processor struct {

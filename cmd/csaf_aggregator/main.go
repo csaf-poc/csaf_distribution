@@ -11,13 +11,13 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 
 	"github.com/gofrs/flock"
-	"golang.org/x/exp/slog"
 )
 
 func lock(lockFile *string, fn func() error) error {
