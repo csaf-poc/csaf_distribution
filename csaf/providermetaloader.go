@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -125,13 +126,13 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 
 	// Validate the candidate and add to the result array
 	if wellknownResult.Valid() {
-		fmt.Println("Found well known result")
+		slog.Debug("Found well known provider-metadata.json")
 		resPMDs = append(resPMDs, wellknownResult)
 	}
 
 	// Next load the PMDs from security.txt
 	secResults := pmdl.loadFromSecurity(domain)
-	fmt.Println("Found security.txt results", len(secResults))
+	slog.Info("Found provider metadata results in security.txt", "num", len(secResults))
 
 	for _, result := range secResults {
 		if result.Valid() {

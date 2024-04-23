@@ -169,8 +169,9 @@ func (d *downloader) enumerate(domain string) error {
 	client := d.httpClient()
 
 	loader := csaf.NewProviderMetadataLoader(client)
-
 	lpmd := loader.Enumerate(domain)
+
+	docs := []any{}
 
 	for _, pmd := range lpmd {
 		if d.cfg.verbose() {
@@ -181,22 +182,16 @@ func (d *downloader) enumerate(domain string) error {
 			}
 		}
 
-		if !pmd.Valid() {
-			return fmt.Errorf("invalid provider-metadata.json found for '%s'", domain)
-		}
-		_, err := url.Parse(pmd.URL)
-		if err != nil {
-			return fmt.Errorf("invalid URL found '%s': %v", pmd.URL, err)
-		}
-
-		// print the results
-		fmt.Println("Found provider-metadata file under URL", pmd.URL)
-		doc, err := json.MarshalIndent(pmd.Document, "", "  ")
-		if err != nil {
-			slog.Error("Couldn't marshal PMD document json")
-		}
-		fmt.Println(string(doc))
+		docs = append(docs, pmd.Document)
 	}
+
+	// print the results
+	doc, err := json.MarshalIndent(docs, "", "  ")
+	if err != nil {
+		slog.Error("Couldn't marshal PMD document json")
+	}
+	fmt.Println(string(doc))
+
 	return nil
 }
 
