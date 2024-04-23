@@ -41,6 +41,11 @@ func run(cfg *config, domains []string) error {
 		d.forwarder = f
 	}
 
+	// First, enumerate existing PMDs, then load
+	err = d.runEnumerate(domains)
+	if err != nil {
+		return err
+	}
 	return d.run(ctx, domains)
 }
 

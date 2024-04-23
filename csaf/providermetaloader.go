@@ -45,7 +45,7 @@ const (
 	// WellknownSecurityMismatch indicates that the PMDs found under wellknown and
 	// in the security do not match.
 	WellknownSecurityMismatch
-	// IgnoreProviderMetadata indicates that a extra PMD was ignored.
+	// IgnoreProviderMetadata indicates that an extra PMD was ignored.
 	IgnoreProviderMetadata
 )
 
@@ -113,7 +113,10 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 	// Our array of PMDs to be found
 	var resPMDs []*LoadedProviderMetadata
 
-	// TODO check direct path?
+	// Check direct path
+	if strings.HasPrefix(domain, "https://") {
+		return []*LoadedProviderMetadata{pmdl.loadFromURL(domain)}
+	}
 
 	// First try the well-known path.
 	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
@@ -122,11 +125,13 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 
 	// Validate the candidate and add to the result array
 	if wellknownResult.Valid() {
+		fmt.Println("Found well known result")
 		resPMDs = append(resPMDs, wellknownResult)
 	}
 
 	// Next load the PMDs from security.txt
 	secResults := pmdl.loadFromSecurity(domain)
+	fmt.Println("Found security.txt results", len(secResults))
 
 	for _, result := range secResults {
 		if result.Valid() {
@@ -134,7 +139,7 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 		}
 	}
 
-	// According to the spec, only if no PMDs have been found, should the DNS URL be used
+	// According to the spec, only if no PMDs have been found, the should DNS URL be used
 	if len(resPMDs) > 0 {
 		return resPMDs
 	} else {
@@ -144,8 +149,8 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 
 }
 
-// Load loads a provider metadata for a given path.
-// If the domain starts with `https://` it only attemps to load
+// Load loads one valid provider metadata for a given path.
+// If the domain starts with `https://` it only attempts to load
 // the data from that URL.
 func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata {
 

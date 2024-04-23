@@ -165,22 +165,22 @@ func httpLog(who string) func(string, string) {
 	}
 }
 
-func (d *downloader) enumerate(ctx context.Context, domain string) error {
+func (d *downloader) enumerate(domain string) error {
 	client := d.httpClient()
 
 	loader := csaf.NewProviderMetadataLoader(client)
 
 	lpmd := loader.Enumerate(domain)
 
-	if d.cfg.verbose() {
-		for i := range lpmd.Messages {
-			slog.Debug("Loading provider-metadata.json",
-				"domain", domain,
-				"message", lpmd.Messages[i].Message)
-		}
-	}
-
 	for _, pmd := range lpmd {
+		if d.cfg.verbose() {
+			for i := range pmd.Messages {
+				slog.Debug("Enumerating provider-metadata.json",
+					"domain", domain,
+					"message", pmd.Messages[i].Message)
+			}
+		}
+
 		if !pmd.Valid() {
 			return fmt.Errorf("invalid provider-metadata.json found for '%s'", domain)
 		}
@@ -189,13 +189,15 @@ func (d *downloader) enumerate(ctx context.Context, domain string) error {
 			return fmt.Errorf("invalid URL found '%s': %v", pmd.URL, err)
 		}
 
-		// TODO print
-		fmt.Println(pmd.URL)
-		fmt.Println(pmd.Document)
-		fmt.Println(pmd.Messages)
-		fmt.Println(pmd.Hash)
+		// print the results
+		fmt.Println("Found provider-metadata file under URL", pmd.URL)
+		doc, err := json.MarshalIndent(pmd.Document, "", "  ")
+		if err != nil {
+			slog.Error("Couldn't marshal PMD document json")
+		}
+		fmt.Println(string(doc))
 	}
-
+	return nil
 }
 
 func (d *downloader) download(ctx context.Context, domain string) error {
@@ -770,6 +772,17 @@ func (d *downloader) run(ctx context.Context, domains []string) error {
 	defer d.stats.log()
 	for _, domain := range domains {
 		if err := d.download(ctx, domain); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// runEnumerate performs the enumeration of PMDs for all the given domains.
+func (d *downloader) runEnumerate(domains []string) error {
+	defer d.stats.log()
+	for _, domain := range domains {
+		if err := d.enumerate(domain); err != nil {
 			return err
 		}
 	}
