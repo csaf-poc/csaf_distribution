@@ -109,6 +109,9 @@ func NewProviderMetadataLoader(client util.Client) *ProviderMetadataLoader {
 	}
 }
 
+// Enumerate lists all PMD files that can be found under the given domain.
+// As specified in CSAF 2.0, it looks for PMDs using the well-known URL and
+// the security.txt, and if no PMDs have been found, it also checks the DNS-URL.
 func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMetadata {
 
 	// Our array of PMDs to be found
@@ -143,10 +146,9 @@ func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMe
 	// According to the spec, only if no PMDs have been found, the should DNS URL be used
 	if len(resPMDs) > 0 {
 		return resPMDs
-	} else {
-		dnsURL := "https://csaf.data.security." + domain
-		return []*LoadedProviderMetadata{pmdl.loadFromURL(dnsURL)}
 	}
+	dnsURL := "https://csaf.data.security." + domain
+	return []*LoadedProviderMetadata{pmdl.loadFromURL(dnsURL)}
 
 }
 
