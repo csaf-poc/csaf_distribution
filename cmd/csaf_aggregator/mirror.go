@@ -359,7 +359,7 @@ func (w *worker) doMirrorTransaction() error {
 		}
 	}
 
-	w.log.Debug("Creating symbol", "from", w.dir, "to", target)
+	w.log.Debug("Creating sym link", "from", w.dir, "to", target)
 
 	// Create a new symlink
 	if err := os.Symlink(w.dir, target); err != nil {
@@ -368,7 +368,7 @@ func (w *worker) doMirrorTransaction() error {
 	}
 
 	// Move the symlink
-	w.log.Debug("Moving symbol", "from", target, "to", webTarget)
+	w.log.Debug("Moving sym link", "from", target, "to", webTarget)
 	if err := os.Rename(target, webTarget); err != nil {
 		os.RemoveAll(w.dir)
 		return err
