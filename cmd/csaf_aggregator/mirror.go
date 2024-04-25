@@ -16,7 +16,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -47,7 +47,7 @@ func (w *worker) mirror() (*csaf.AggregatorCSAFProvider, error) {
 	if err != nil && w.dir != "" {
 		// If something goes wrong remove the debris.
 		if err := os.RemoveAll(w.dir); err != nil {
-			log.Printf("error: %v\n", err)
+			w.log.Error("Could not remove directory", "path", w.dir, "err", err)
 		}
 	}
 	return result, err
@@ -166,7 +166,7 @@ func (w *worker) writeProviderMetadata() error {
 		{Expr: `$.public_openpgp_keys`, Action: util.ReMarshalMatcher(&pm.PGPKeys)},
 	}, w.metadataProvider); err != nil {
 		// only log the errors
-		log.Printf("extracting data from orignal provider failed: %v\n", err)
+		w.log.Error("Extracting data from original provider failed", "err", err)
 	}
 
 	// We are mirroring the remote public keys, too.
@@ -196,11 +196,11 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 	for i := range pm.PGPKeys {
 		pgpKey := &pm.PGPKeys[i]
 		if pgpKey.URL == nil {
-			log.Printf("ignoring PGP key without URL: %s\n", pgpKey.Fingerprint)
+			w.log.Warn("Ignoring PGP key without URL", "fingerprint", pgpKey.Fingerprint)
 			continue
 		}
 		if _, err := hex.DecodeString(string(pgpKey.Fingerprint)); err != nil {
-			log.Printf("ignoring PGP with invalid fingerprint: %s\n", *pgpKey.URL)
+			w.log.Warn("Ignoring PGP key with invalid fingerprint", "url", *pgpKey.URL)
 			continue
 		}
 
@@ -344,7 +344,7 @@ func (w *worker) doMirrorTransaction() error {
 
 	// Check if there is a sysmlink already.
 	target := filepath.Join(w.processor.cfg.Folder, w.provider.Name)
-	log.Printf("target: '%s'\n", target)
+	w.log.Debug("Checking for path existance", "path", target)
 
 	exists, err := util.PathExists(target)
 	if err != nil {
@@ -359,7 +359,7 @@ func (w *worker) doMirrorTransaction() error {
 		}
 	}
 
-	log.Printf("sym link: %s -> %s\n", w.dir, target)
+	w.log.Debug("Creating sym link", "from", w.dir, "to", target)
 
 	// Create a new symlink
 	if err := os.Symlink(w.dir, target); err != nil {
@@ -368,7 +368,7 @@ func (w *worker) doMirrorTransaction() error {
 	}
 
 	// Move the symlink
-	log.Printf("Move: %s -> %s\n", target, webTarget)
+	w.log.Debug("Moving sym link", "from", target, "to", webTarget)
 	if err := os.Rename(target, webTarget); err != nil {
 		os.RemoveAll(w.dir)
 		return err
@@ -499,14 +499,14 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 
 		u, err := url.Parse(file.URL())
 		if err != nil {
-			log.Printf("error: %s\n", err)
+			w.log.Error("Could not parse advisory file URL", "err", err)
 			continue
 		}
 
 		// Should we ignore this advisory?
 		if w.provider.ignoreURL(file.URL(), w.processor.cfg) {
 			if w.processor.cfg.Verbose {
-				log.Printf("Ignoring %s: %q\n", w.provider.Name, file.URL())
+				w.log.Info("Ignoring advisory", slog.Group("provider", "name", w.provider.Name), "file", file)
 			}
 			continue
 		}
@@ -514,7 +514,7 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 		// Ignore not conforming filenames.
 		filename := filepath.Base(u.Path)
 		if !util.ConformingFileName(filename) {
-			log.Printf("Not conforming filename %q. Ignoring.\n", filename)
+			w.log.Warn("Ignoring advisory because of non-conforming filename", "filename", filename)
 			continue
 		}
 
@@ -531,19 +531,18 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 		}
 
 		if err := downloadJSON(w.client, file.URL(), download); err != nil {
-			log.Printf("error: %v\n", err)
+			w.log.Error("Error while downloading JSON", "err", err)
 			continue
 		}
 
 		// Check against CSAF schema.
 		errors, err := csaf.ValidateCSAF(advisory)
 		if err != nil {
-			log.Printf("error: %s: %v", file, err)
+			w.log.Error("Error while validating CSAF schema", "err", err)
 			continue
 		}
 		if len(errors) > 0 {
-			log.Printf("CSAF file %s has %d validation errors.\n",
-				file, len(errors))
+			w.log.Error("CSAF file has validation errors", "num.errors", len(errors), "file", file)
 			continue
 		}
 
@@ -551,29 +550,27 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 		if rmv := w.processor.remoteValidator; rmv != nil {
 			rvr, err := rmv.Validate(advisory)
 			if err != nil {
-				log.Printf("Calling remote validator failed: %s\n", err)
+				w.log.Error("Calling remote validator failed", "err", err)
 				continue
 			}
 			if !rvr.Valid {
-				log.Printf(
-					"CSAF file %s does not validate remotely.\n", file)
+				w.log.Error("CSAF file does not validate remotely", "file", file.URL())
 				continue
 			}
 		}
 
 		sum, err := csaf.NewAdvisorySummary(w.expr, advisory)
 		if err != nil {
-			log.Printf("error: %s: %v\n", file, err)
+			w.log.Error("Error while creating new advisory", "file", file, "err", err)
 			continue
 		}
 
 		if util.CleanFileName(sum.ID) != filename {
-			log.Printf("ID %q does not match filename %s",
-				sum.ID, filename)
+			w.log.Error("ID mismatch", "id", sum.ID, "filename", filename)
 		}
 
 		if err := w.extractCategories(label, advisory); err != nil {
-			log.Printf("error: %s: %v\n", file, err)
+			w.log.Error("Could not extract categories", "file", file, "err", err)
 			continue
 		}
 
@@ -624,7 +621,7 @@ func (w *worker) downloadSignatureOrSign(url, fname string, data []byte) error {
 
 	if err != nil {
 		if err != errNotFound {
-			log.Printf("error: %s: %v\n", url, err)
+			w.log.Error("Could not find signature URL", "url", url, "err", err)
 		}
 		// Sign it our self.
 		if sig, err = w.sign(data); err != nil {

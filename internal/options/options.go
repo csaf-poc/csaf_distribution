@@ -12,13 +12,14 @@ package options
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
+
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 
 	"github.com/BurntSushi/toml"
 	"github.com/jessevdk/go-flags"
 	"github.com/mitchellh/go-homedir"
-
-	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // Parser helps parsing command line arguments and loading
@@ -145,5 +146,15 @@ func loadTOML(cfg any, path string) error {
 func ErrorCheck(err error) {
 	if err != nil {
 		log.Fatalf("error: %v\n", err)
+	}
+}
+
+// ErrorCheckStructured checks if err is not nil and terminates the program if
+// so. This is similar to [ErrorCheck], but uses [slog] instead of the
+// non-structured Go logging.
+func ErrorCheckStructured(err error) {
+	if err != nil {
+		slog.Error("Error while executing program", "err", err)
+		os.Exit(1)
 	}
 }

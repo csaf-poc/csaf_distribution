@@ -12,7 +12,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime"
@@ -178,9 +178,11 @@ func (p *provider) ageAccept(c *config) func(time.Time) bool {
 	}
 
 	if c.Verbose {
-		log.Printf(
-			"Setting up filter to accept advisories within time range %s to %s\n",
-			r[0].Format(time.RFC3339), r[1].Format(time.RFC3339))
+		slog.Debug(
+			"Setting up filter to accept advisories within time range",
+			"from", r[0].Format(time.RFC3339),
+			"to", r[1].Format(time.RFC3339),
+		)
 	}
 	return r.Contains
 }
@@ -391,6 +393,17 @@ func (c *config) setDefaults() {
 	if c.Workers > len(c.Providers) {
 		c.Workers = len(c.Providers)
 	}
+}
+
+// prepareLogging sets up the structured logging.
+func (c *config) prepareLogging() error {
+	ho := slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handler := slog.NewTextHandler(os.Stdout, &ho)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+	return nil
 }
 
 // compileIgnorePatterns compiles the configured patterns to be ignored.

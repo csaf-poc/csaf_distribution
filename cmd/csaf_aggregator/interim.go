@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -102,12 +101,12 @@ func (w *worker) checkInterims(
 
 		// XXX: Should we return an error here?
 		for _, e := range errors {
-			log.Printf("validation error: %s: %v\n", url, e)
+			w.log.Error("validation error", "url", url, "err", e)
 		}
 
 		// We need to write the changed content.
 
-		// This will start the transcation if not already started.
+		// This will start the transaction if not already started.
 		dst, err := tx.Dst()
 		if err != nil {
 			return nil, err
@@ -159,8 +158,7 @@ func (w *worker) checkInterims(
 
 // setupProviderInterim prepares the worker for a specific provider.
 func (w *worker) setupProviderInterim(provider *provider) {
-	log.Printf("worker #%d: %s (%s)\n",
-		w.num, provider.Name, provider.Domain)
+	w.log.Info("Setting up worker", provider.Name, provider.Domain)
 
 	w.dir = ""
 	w.provider = provider
@@ -262,7 +260,7 @@ func (p *processor) interim() error {
 	queue := make(chan *interimJob)
 	var wg sync.WaitGroup
 
-	log.Printf("Starting %d workers.\n", p.cfg.Workers)
+	p.log.Info("Starting workers...", "num", p.cfg.Workers)
 	for i := 1; i <= p.cfg.Workers; i++ {
 		wg.Add(1)
 		w := newWorker(i, p)

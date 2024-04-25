@@ -9,7 +9,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -85,7 +85,8 @@ func (lt *lazyTransaction) commit() error {
 		os.RemoveAll(lt.dst)
 		return err
 	}
-	log.Printf("Move %q -> %q\n", symlink, lt.src)
+
+	slog.Debug("Moving directory", "from", symlink, "to", lt.src)
 	if err := os.Rename(symlink, lt.src); err != nil {
 		os.RemoveAll(lt.dst)
 		return err

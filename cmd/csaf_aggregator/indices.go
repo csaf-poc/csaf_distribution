@@ -12,7 +12,6 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -377,7 +376,7 @@ func (w *worker) writeIndices() error {
 	}
 
 	for label, summaries := range w.summaries {
-		log.Printf("%s: %d\n", label, len(summaries))
+		w.log.Debug("Writing indices", "label", label, "summaries.num", len(summaries))
 		if err := w.writeInterims(label, summaries); err != nil {
 			return err
 		}
