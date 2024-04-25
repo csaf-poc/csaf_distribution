@@ -41,6 +41,11 @@ func run(cfg *config, domains []string) error {
 		d.forwarder = f
 	}
 
+	// If the enumerate-only flag is set, enumerate found PMDs,
+	// else use the normal load method
+	if cfg.EnumeratePMDOnly {
+		return d.runEnumerate(domains)
+	}
 	return d.run(ctx, domains)
 }
 

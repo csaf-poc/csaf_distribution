@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -45,7 +46,7 @@ const (
 	// WellknownSecurityMismatch indicates that the PMDs found under wellknown and
 	// in the security do not match.
 	WellknownSecurityMismatch
-	// IgnoreProviderMetadata indicates that a extra PMD was ignored.
+	// IgnoreProviderMetadata indicates that an extra PMD was ignored.
 	IgnoreProviderMetadata
 )
 
@@ -108,8 +109,51 @@ func NewProviderMetadataLoader(client util.Client) *ProviderMetadataLoader {
 	}
 }
 
-// Load loads a provider metadata for a given path.
-// If the domain starts with `https://` it only attemps to load
+// Enumerate lists all PMD files that can be found under the given domain.
+// As specified in CSAF 2.0, it looks for PMDs using the well-known URL and
+// the security.txt, and if no PMDs have been found, it also checks the DNS-URL.
+func (pmdl *ProviderMetadataLoader) Enumerate(domain string) []*LoadedProviderMetadata {
+
+	// Our array of PMDs to be found
+	var resPMDs []*LoadedProviderMetadata
+
+	// Check direct path
+	if strings.HasPrefix(domain, "https://") {
+		return []*LoadedProviderMetadata{pmdl.loadFromURL(domain)}
+	}
+
+	// First try the well-known path.
+	wellknownURL := "https://" + domain + "/.well-known/csaf/provider-metadata.json"
+
+	wellknownResult := pmdl.loadFromURL(wellknownURL)
+
+	// Validate the candidate and add to the result array
+	if wellknownResult.Valid() {
+		slog.Debug("Found well known provider-metadata.json")
+		resPMDs = append(resPMDs, wellknownResult)
+	}
+
+	// Next load the PMDs from security.txt
+	secResults := pmdl.loadFromSecurity(domain)
+	slog.Info("Found provider metadata results in security.txt", "num", len(secResults))
+
+	for _, result := range secResults {
+		if result.Valid() {
+			resPMDs = append(resPMDs, result)
+		}
+	}
+
+	// According to the spec, only if no PMDs have been found, the should DNS URL be used
+	if len(resPMDs) > 0 {
+		return resPMDs
+	}
+	dnsURL := "https://csaf.data.security." + domain
+	return []*LoadedProviderMetadata{pmdl.loadFromURL(dnsURL)}
+
+}
+
+// Load loads one valid provider metadata for a given path.
+// If the domain starts with `https://` it only attempts to load
 // the data from that URL.
 func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata {
 

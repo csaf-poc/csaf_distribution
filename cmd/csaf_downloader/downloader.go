@@ -165,6 +165,36 @@ func httpLog(who string) func(string, string) {
 	}
 }
 
+func (d *downloader) enumerate(domain string) error {
+	client := d.httpClient()
+
+	loader := csaf.NewProviderMetadataLoader(client)
+	lpmd := loader.Enumerate(domain)
+
+	docs := []any{}
+
+	for _, pmd := range lpmd {
+		if d.cfg.verbose() {
+			for i := range pmd.Messages {
+				slog.Debug("Enumerating provider-metadata.json",
+					"domain", domain,
+					"message", pmd.Messages[i].Message)
+			}
+		}
+
+		docs = append(docs, pmd.Document)
+	}
+
+	// print the results
+	doc, err := json.MarshalIndent(docs, "", "  ")
+	if err != nil {
+		slog.Error("Couldn't marshal PMD document json")
+	}
+	fmt.Println(string(doc))
+
+	return nil
+}
+
 func (d *downloader) download(ctx context.Context, domain string) error {
 	client := d.httpClient()
 
@@ -737,6 +767,17 @@ func (d *downloader) run(ctx context.Context, domains []string) error {
 	defer d.stats.log()
 	for _, domain := range domains {
 		if err := d.download(ctx, domain); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// runEnumerate performs the enumeration of PMDs for all the given domains.
+func (d *downloader) runEnumerate(domains []string) error {
+	defer d.stats.log()
+	for _, domain := range domains {
+		if err := d.enumerate(domain); err != nil {
 			return err
 		}
 	}

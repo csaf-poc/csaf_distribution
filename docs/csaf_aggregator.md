@@ -177,7 +177,7 @@ categories document. For a more detailed explanation and examples,
 ```toml
 workers = 2
 folder = "/var/csaf_aggregator"
-lock_file = "/var/csaf_aggregator/run.lock"
+lock_file = "/var/lock/csaf_aggregator/lock"
 web = "/var/csaf_aggregator/html"
 domain = "https://localhost:9443"
 rate = 10.0
@@ -187,6 +187,7 @@ insecure = true
 #interim_years =
 #passphrase =
 #write_indices = false
+#time_range =
 
 # specification requires at least two providers (default),
 # to override for testing, enable:
@@ -208,6 +209,7 @@ insecure = true
   create_service_document = true
 #  rate = 1.5
 #  insecure = true
+#  time_range =
 
 [[providers]]
   name = "local-dev-provider2"
@@ -217,8 +219,8 @@ insecure = true
   write_indices = true
   client_cert = "./../devca1/testclient1.crt"
   client_key = "./../devca1/testclient1-key.pem"
-#  client_passphrase =
-# header =
+#  client_passphrase = # Limited and experimental, see downloader doc.
+#  header =
 
 [[providers]]
   name = "local-dev-provider3"
@@ -226,10 +228,10 @@ insecure = true
 #  rate = 1.8
 #  insecure = true
   write_indices = true
-  # If aggregator.category == "aggregator", set for an entry that should
+  # If aggregator.category == "aggreator", set for an entry that should
   # be listed in addition:
   category = "lister"
-#  ignore_pattern = [".*white.*", ".*red.*"]
+# ignore_pattern = [".*white.*", ".*red.*"]
 ```
 <!-- MARKDOWN-AUTO-DOCS:END -->
 
