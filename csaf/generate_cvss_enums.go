@@ -22,13 +22,11 @@ import (
 	"text/template"
 )
 
-const tmplText = `// This file is Free Software under the MIT License
-// without warranty, see README.md and LICENSES/MIT.txt for details.
-//
-// SPDX-License-Identifier: MIT
-//
-// SPDX-FileCopyrightText: 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
-// Software-Engineering: 2023 Intevation GmbH <https://intevation.de>
+// We from Intevation consider the source code parts in the following
+// template file as too insignificant to be a piece of work that gains
+// "copyrights" protection in the European Union. So the license(s)
+// of the output files are fully determined by the input file.
+const tmplText = `// determine license(s) from input file and replace this line
 //
 // THIS FILE IS MACHINE GENERATED. EDIT WITH CARE!
 
