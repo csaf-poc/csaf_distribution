@@ -10,7 +10,7 @@
 
 # csaf_distribution
 
-Implementations of a [CSAF](https://csaf.io/)
+Implements a [CSAF](https://csaf.io/)
 ([Specification v2.0](https://docs.oasis-open.org/csaf/csaf/v2.0/csaf-v2.0.html))
 trusted provider, checker, aggregator and downloader.
 Includes an uploader command line tool for the trusted provider.
