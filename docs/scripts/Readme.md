@@ -1,6 +1,7 @@
-Scripts for assisting the Integration tests. They are written on Ubuntu 20.04 TLS amd64.
+Scripts for assisting the Integration tests.
+They were written on Ubuntu 20.04 TLS amd64 and also tested with 24.04 TLS.
 
-- `prepareUbunutForITest.sh` installs the required packages for the csaf_distribution integration tests on a naked ubuntu 20.04 LTS amd64.
+- `prepareUbuntuInstanceForITests.sh` installs the required packages for the csaf_distribution integration tests on a naked ubuntu LTS amd64.
 
 - `TLSConfigsForITest.sh` generates a root CA and webserver cert by running `createRootCAForITest.sh` and `createWebserverCertForITest.sh`
 and configures nginx for serving TLS connections.
