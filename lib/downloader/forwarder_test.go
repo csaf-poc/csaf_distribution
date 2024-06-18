@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2023 Intevation GmbH <https://intevation.de>
 
-package main
+package downloader
 
 import (
 	"bufio"
@@ -53,18 +53,18 @@ func TestForwarderLogStats(t *testing.T) {
 	lg := slog.New(h)
 	slog.SetDefault(lg)
 
-	cfg := &config{}
-	fw := newForwarder(cfg)
+	cfg := &Config{}
+	fw := NewForwarder(cfg)
 	fw.failed = 11
 	fw.succeeded = 13
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		fw.run()
+		fw.Run()
 	}()
-	fw.log()
-	fw.close()
+	fw.Log()
+	fw.Close()
 	<-done
 
 	type fwStats struct {
@@ -95,14 +95,14 @@ func TestForwarderLogStats(t *testing.T) {
 }
 
 func TestForwarderHTTPClient(t *testing.T) {
-	cfg := &config{
+	cfg := &Config{
 		ForwardInsecure: true,
 		ForwardHeader: http.Header{
 			"User-Agent": []string{"curl/7.55.1"},
 		},
 		LogLevel: &options.LogLevel{Level: slog.LevelDebug},
 	}
-	fw := newForwarder(cfg)
+	fw := NewForwarder(cfg)
 	if c1, c2 := fw.httpClient(), fw.httpClient(); c1 != c2 {
 		t.Fatal("expected to return same client twice")
 	}
@@ -124,10 +124,10 @@ func TestForwarderReplaceExtension(t *testing.T) {
 func TestForwarderBuildRequest(t *testing.T) {
 
 	// Good case ...
-	cfg := &config{
+	cfg := &Config{
 		ForwardURL: "https://example.com",
 	}
-	fw := newForwarder(cfg)
+	fw := NewForwarder(cfg)
 
 	req, err := fw.buildRequest(
 		"test.json", "{}",
@@ -248,8 +248,8 @@ func TestStoreFailedAdvisory(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	cfg := &config{Directory: dir}
-	fw := newForwarder(cfg)
+	cfg := &Config{Directory: dir}
+	fw := NewForwarder(cfg)
 
 	badDir := filepath.Join(dir, failedForwardDir)
 	if err := os.WriteFile(badDir, []byte("test"), 0664); err != nil {
@@ -301,8 +301,8 @@ func TestStoredFailed(t *testing.T) {
 	lg := slog.New(h)
 	slog.SetDefault(lg)
 
-	cfg := &config{Directory: dir}
-	fw := newForwarder(cfg)
+	cfg := &Config{Directory: dir}
+	fw := NewForwarder(cfg)
 
 	// An empty filename should lead to an error.
 	fw.storeFailed("", "{}", "256", "512")
@@ -385,11 +385,11 @@ func TestForwarderForward(t *testing.T) {
 	lg := slog.New(h)
 	slog.SetDefault(lg)
 
-	cfg := &config{
+	cfg := &Config{
 		ForwardURL: "http://example.com",
 		Directory:  dir,
 	}
-	fw := newForwarder(cfg)
+	fw := NewForwarder(cfg)
 
 	// Use the fact that http client is cached.
 	fw.client = &fakeClient{}
@@ -398,7 +398,7 @@ func TestForwarderForward(t *testing.T) {
 
 	go func() {
 		defer close(done)
-		fw.run()
+		fw.Run()
 	}()
 
 	// Iterate through states of http client.
@@ -412,7 +412,7 @@ func TestForwarderForward(t *testing.T) {
 
 	// Make buildRequest fail.
 	wait := make(chan struct{})
-	fw.cmds <- func(f *forwarder) {
+	fw.cmds <- func(f *Forwarder) {
 		f.cfg.ForwardURL = "%"
 		close(wait)
 	}
@@ -423,7 +423,7 @@ func TestForwarderForward(t *testing.T) {
 		"256",
 		"512")
 
-	fw.close()
+	fw.Close()
 
 	<-done
 }
