@@ -12,10 +12,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"io"
-	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -27,19 +25,22 @@ import (
 // where advisories get stored which fail forwarding.
 const failedForwardDir = "failed_forward"
 
-// validationStatus represents the validation status
+// ValidationStatus represents the validation status
 // known to the HTTP endpoint.
-type validationStatus string
+type ValidationStatus string
 
 const (
-	validValidationStatus        = validationStatus("valid")
-	invalidValidationStatus      = validationStatus("invalid")
-	notValidatedValidationStatus = validationStatus("not_validated")
+	// ValidValidationStatus represents a valid document.
+	ValidValidationStatus = ValidationStatus("valid")
+	// InvalidValidationStatus represents an invalid document.
+	InvalidValidationStatus = ValidationStatus("invalid")
+	// NotValidatedValidationStatus represents a not validated document.
+	NotValidatedValidationStatus = ValidationStatus("not_validated")
 )
 
-func (vs *validationStatus) update(status validationStatus) {
+func (vs *ValidationStatus) update(status ValidationStatus) {
 	// Cannot heal after it fails at least once.
-	if *vs != invalidValidationStatus {
+	if *vs != InvalidValidationStatus {
 		*vs = status
 	}
 }
@@ -69,7 +70,7 @@ func NewForwarder(cfg *Config) *Forwarder {
 
 // Run runs the Forwarder. Meant to be used in a Go routine.
 func (f *Forwarder) Run() {
-	defer slog.Debug("Forwarder done")
+	defer f.cfg.Logger.Debug("Forwarder done")
 
 	for cmd := range f.cmds {
 		cmd(f)
@@ -84,7 +85,7 @@ func (f *Forwarder) Close() {
 // Log logs the current statistics.
 func (f *Forwarder) Log() {
 	f.cmds <- func(f *Forwarder) {
-		slog.Info("Forward statistics",
+		f.cfg.Logger.Info("Forward statistics",
 			"succeeded", f.succeeded,
 			"failed", f.failed)
 	}
@@ -122,7 +123,7 @@ func (f *Forwarder) httpClient() util.Client {
 	if f.cfg.verbose() {
 		client = &util.LoggingClient{
 			Client: client,
-			Log:    httpLog("Forwarder"),
+			Log:    httpLog("Forwarder", f.cfg.Logger),
 		}
 	}
 
@@ -139,7 +140,7 @@ func replaceExt(fname, nExt string) string {
 // buildRequest creates an HTTP request suited to forward the given advisory.
 func (f *Forwarder) buildRequest(
 	filename, doc string,
-	status validationStatus,
+	status ValidationStatus,
 	sha256, sha512 string,
 ) (*http.Request, error) {
 	body := new(bytes.Buffer)
@@ -187,38 +188,11 @@ func (f *Forwarder) buildRequest(
 	return req, nil
 }
 
-// storeFailedAdvisory stores an advisory in a special folder
-// in case the forwarding failed.
-func (f *Forwarder) storeFailedAdvisory(filename, doc, sha256, sha512 string) error {
-	// Create special folder if it does not exist.
-	dir := filepath.Join(f.cfg.Directory, failedForwardDir)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
-	// Store parts which are not empty.
-	for _, x := range []struct {
-		p string
-		d string
-	}{
-		{filename, doc},
-		{filename + ".sha256", sha256},
-		{filename + ".sha512", sha512},
-	} {
-		if len(x.d) != 0 {
-			path := filepath.Join(dir, x.p)
-			if err := os.WriteFile(path, []byte(x.d), 0644); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 // storeFailed is a logging wrapper around storeFailedAdvisory.
 func (f *Forwarder) storeFailed(filename, doc, sha256, sha512 string) {
 	f.failed++
-	if err := f.storeFailedAdvisory(filename, doc, sha256, sha512); err != nil {
-		slog.Error("Storing advisory failed forwarding failed",
+	if err := f.cfg.FailedForwardHandler(filename, doc, sha256, sha512); err != nil {
+		f.cfg.Logger.Error("Storing advisory failed forwarding failed",
 			"error", err)
 	}
 }
@@ -241,21 +215,21 @@ func limitedString(r io.Reader, max int) (string, error) {
 // till the configured queue size is filled.
 func (f *Forwarder) forward(
 	filename, doc string,
-	status validationStatus,
+	status ValidationStatus,
 	sha256, sha512 string,
 ) {
 	// Run this in the main loop of the Forwarder.
 	f.cmds <- func(f *Forwarder) {
 		req, err := f.buildRequest(filename, doc, status, sha256, sha512)
 		if err != nil {
-			slog.Error("building forward Request failed",
+			f.cfg.Logger.Error("building forward Request failed",
 				"error", err)
 			f.storeFailed(filename, doc, sha256, sha512)
 			return
 		}
 		res, err := f.httpClient().Do(req)
 		if err != nil {
-			slog.Error("sending forward request failed",
+			f.cfg.Logger.Error("sending forward request failed",
 				"error", err)
 			f.storeFailed(filename, doc, sha256, sha512)
 			return
@@ -263,10 +237,10 @@ func (f *Forwarder) forward(
 		if res.StatusCode != http.StatusCreated {
 			defer res.Body.Close()
 			if msg, err := limitedString(res.Body, 512); err != nil {
-				slog.Error("reading forward result failed",
+				f.cfg.Logger.Error("reading forward result failed",
 					"error", err)
 			} else {
-				slog.Error("forwarding failed",
+				f.cfg.Logger.Error("forwarding failed",
 					"filename", filename,
 					"body", msg,
 					"status_code", res.StatusCode)
@@ -274,7 +248,7 @@ func (f *Forwarder) forward(
 			f.storeFailed(filename, doc, sha256, sha512)
 		} else {
 			f.succeeded++
-			slog.Debug(
+			f.cfg.Logger.Debug(
 				"forwarding succeeded",
 				"filename", filename)
 		}

@@ -19,26 +19,24 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 func TestValidationStatusUpdate(t *testing.T) {
-	sv := validValidationStatus
-	sv.update(invalidValidationStatus)
-	sv.update(validValidationStatus)
-	if sv != invalidValidationStatus {
-		t.Fatalf("got %q expected %q", sv, invalidValidationStatus)
+	sv := ValidValidationStatus
+	sv.update(InvalidValidationStatus)
+	sv.update(ValidValidationStatus)
+	if sv != InvalidValidationStatus {
+		t.Fatalf("got %q expected %q", sv, InvalidValidationStatus)
 	}
-	sv = notValidatedValidationStatus
-	sv.update(validValidationStatus)
-	sv.update(notValidatedValidationStatus)
-	if sv != notValidatedValidationStatus {
-		t.Fatalf("got %q expected %q", sv, notValidatedValidationStatus)
+	sv = NotValidatedValidationStatus
+	sv.update(ValidValidationStatus)
+	sv.update(NotValidatedValidationStatus)
+	if sv != NotValidatedValidationStatus {
+		t.Fatalf("got %q expected %q", sv, NotValidatedValidationStatus)
 	}
 }
 
@@ -51,9 +49,10 @@ func TestForwarderLogStats(t *testing.T) {
 		Level: slog.LevelInfo,
 	})
 	lg := slog.New(h)
-	slog.SetDefault(lg)
 
-	cfg := &Config{}
+	cfg := &Config{
+		Logger: lg,
+	}
 	fw := NewForwarder(cfg)
 	fw.failed = 11
 	fw.succeeded = 13
@@ -100,7 +99,7 @@ func TestForwarderHTTPClient(t *testing.T) {
 		ForwardHeader: http.Header{
 			"User-Agent": []string{"curl/7.55.1"},
 		},
-		LogLevel: &options.LogLevel{Level: slog.LevelDebug},
+		Logger: slog.Default(),
 	}
 	fw := NewForwarder(cfg)
 	if c1, c2 := fw.httpClient(), fw.httpClient(); c1 != c2 {
@@ -122,7 +121,6 @@ func TestForwarderReplaceExtension(t *testing.T) {
 }
 
 func TestForwarderBuildRequest(t *testing.T) {
-
 	// Good case ...
 	cfg := &Config{
 		ForwardURL: "https://example.com",
@@ -131,10 +129,9 @@ func TestForwarderBuildRequest(t *testing.T) {
 
 	req, err := fw.buildRequest(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512")
-
 	if err != nil {
 		t.Fatalf("buildRequest failed: %v", err)
 	}
@@ -175,9 +172,9 @@ func TestForwarderBuildRequest(t *testing.T) {
 			}
 			foundAdvisory = true
 		case contains("validation_status"):
-			if vs := validationStatus(data); vs != invalidValidationStatus {
+			if vs := ValidationStatus(data); vs != InvalidValidationStatus {
 				t.Fatalf("validation_status: got %q expected %q",
-					vs, invalidValidationStatus)
+					vs, InvalidValidationStatus)
 			}
 			foundValidationStatus = true
 		case contains("hash-256"):
@@ -209,7 +206,7 @@ func TestForwarderBuildRequest(t *testing.T) {
 
 	if _, err := fw.buildRequest(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512",
 	); err == nil {
@@ -238,101 +235,6 @@ func TestLimitedString(t *testing.T) {
 
 	if _, err := limitedString(&badReader{error: os.ErrInvalid}, 3); err == nil {
 		t.Fatal("expected to fail with an error")
-	}
-}
-
-func TestStoreFailedAdvisory(t *testing.T) {
-	dir, err := os.MkdirTemp("", "storeFailedAdvisory")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	cfg := &Config{Directory: dir}
-	fw := NewForwarder(cfg)
-
-	badDir := filepath.Join(dir, failedForwardDir)
-	if err := os.WriteFile(badDir, []byte("test"), 0664); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
-		t.Fatal("if the destination exists as a file an error should occur")
-	}
-
-	if err := os.Remove(badDir); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err != nil {
-		t.Fatal(err)
-	}
-
-	sha256Path := filepath.Join(dir, failedForwardDir, "advisory.json.sha256")
-
-	// Write protect advisory.
-	if err := os.Chmod(sha256Path, 0); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
-		t.Fatal("expected to fail with an error")
-	}
-
-	if err := os.Chmod(sha256Path, 0644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestStoredFailed(t *testing.T) {
-	dir, err := os.MkdirTemp("", "storeFailed")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	orig := slog.Default()
-	defer slog.SetDefault(orig)
-
-	var buf bytes.Buffer
-	h := slog.NewJSONHandler(&buf, &slog.HandlerOptions{
-		Level: slog.LevelError,
-	})
-	lg := slog.New(h)
-	slog.SetDefault(lg)
-
-	cfg := &Config{Directory: dir}
-	fw := NewForwarder(cfg)
-
-	// An empty filename should lead to an error.
-	fw.storeFailed("", "{}", "256", "512")
-
-	if fw.failed != 1 {
-		t.Fatalf("got %d expected 1", fw.failed)
-	}
-
-	type entry struct {
-		Msg   string `json:"msg"`
-		Level string `json:"level"`
-	}
-
-	sc := bufio.NewScanner(bytes.NewReader(buf.Bytes()))
-	found := false
-	for sc.Scan() {
-		var e entry
-		if err := json.Unmarshal(sc.Bytes(), &e); err != nil {
-			t.Fatalf("JSON parsing log failed: %v", err)
-		}
-		if e.Msg == "Storing advisory failed forwarding failed" && e.Level == "ERROR" {
-			found = true
-			break
-		}
-	}
-	if err := sc.Err(); err != nil {
-		t.Fatalf("scanning log failed: %v", err)
-	}
-	if !found {
-		t.Fatal("Cannot error logging statistics in log")
 	}
 }
 
@@ -383,11 +285,15 @@ func TestForwarderForward(t *testing.T) {
 	// in the other test cases.
 	h := slog.NewJSONHandler(io.Discard, nil)
 	lg := slog.New(h)
-	slog.SetDefault(lg)
+
+	failedHandler := func(filename, doc, sha256, sha512 string) error {
+		return nil
+	}
 
 	cfg := &Config{
-		ForwardURL: "http://example.com",
-		Directory:  dir,
+		ForwardURL:           "http://example.com",
+		Logger:               lg,
+		FailedForwardHandler: failedHandler,
 	}
 	fw := NewForwarder(cfg)
 
@@ -405,7 +311,7 @@ func TestForwarderForward(t *testing.T) {
 	for i := 0; i <= 3; i++ {
 		fw.forward(
 			"test.json", "{}",
-			invalidValidationStatus,
+			InvalidValidationStatus,
 			"256",
 			"512")
 	}
@@ -419,7 +325,7 @@ func TestForwarderForward(t *testing.T) {
 	<-wait
 	fw.forward(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512")
 
