@@ -51,7 +51,7 @@ insecure = true
 #  rate = 1.8
 #  insecure = true
   write_indices = true
-  # If aggregator.category == "aggreator", set for an entry that should
+  # If aggregator.category == "aggregator", set for an entry that should
   # be listed in addition:
   category = "lister"
 # ignore_pattern = [".*white.*", ".*red.*"]
