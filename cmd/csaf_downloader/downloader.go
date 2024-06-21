@@ -40,7 +40,6 @@ import (
 type downloader struct {
 	cfg       *config
 	keys      *crypto.KeyRing
-	eval      *util.PathEval
 	validator csaf.RemoteValidator
 	forwarder *forwarder
 	mkdirMu   sync.Mutex
@@ -73,7 +72,6 @@ func newDownloader(cfg *config) (*downloader, error) {
 
 	return &downloader{
 		cfg:       cfg,
-		eval:      util.NewPathEval(),
 		validator: validator,
 	}, nil
 }
@@ -218,17 +216,20 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 		return fmt.Errorf("invalid URL '%s': %v", lpmd.URL, err)
 	}
 
+	expr := util.NewPathEval()
+
 	if err := d.loadOpenPGPKeys(
 		client,
 		lpmd.Document,
 		base,
+		expr,
 	); err != nil {
 		return err
 	}
 
 	afp := csaf.NewAdvisoryFileProcessor(
 		client,
-		d.eval,
+		expr,
 		lpmd.Document,
 		base)
 
@@ -297,9 +298,10 @@ func (d *downloader) loadOpenPGPKeys(
 	client util.Client,
 	doc any,
 	base *url.URL,
+	expr *util.PathEval,
 ) error {
 
-	src, err := d.eval.Eval("$.public_openpgp_keys", doc)
+	src, err := expr.Eval("$.public_openpgp_keys", doc)
 	if err != nil {
 		// no keys.
 		return nil
@@ -421,6 +423,7 @@ func (d *downloader) downloadWorker(
 		dateExtract        = util.TimeMatcher(&initialReleaseDate, time.RFC3339)
 		lower              = strings.ToLower(string(label))
 		stats              = stats{}
+		expr               = util.NewPathEval()
 	)
 
 	// Add collected stats back to total.
@@ -588,7 +591,7 @@ nextAdvisory:
 
 		// Validate if filename is conforming.
 		filenameCheck := func() error {
-			if err := util.IDMatchesFilename(d.eval, doc, filename); err != nil {
+			if err := util.IDMatchesFilename(expr, doc, filename); err != nil {
 				stats.filenameFailed++
 				return fmt.Errorf("filename not conforming %s: %s", file.URL(), err)
 			}
@@ -651,7 +654,7 @@ nextAdvisory:
 			continue
 		}
 
-		if err := d.eval.Extract(
+		if err := expr.Extract(
 			`$.document.tracking.initial_release_date`, dateExtract, false, doc,
 		); err != nil {
 			slog.Warn("Cannot extract initial_release_date from advisory",
