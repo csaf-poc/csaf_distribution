@@ -17,15 +17,13 @@ func TestCSV(t *testing.T) {
 	buf := new(bytes.Buffer)
 	csvWriter := NewFullyQuotedCSWWriter(buf)
 	for _, x := range [][]string{{"a", "b", "c"}, {"d", "e", "f"}} {
-		err := csvWriter.Write(x)
-		if err != nil {
+		if err := csvWriter.Write(x); err != nil {
 			t.Error(err)
 		}
 	}
 
 	csvWriter.Flush()
-	err := csvWriter.Error()
-	if err != nil {
+	if err := csvWriter.Error(); err != nil {
 		t.Error(err)
 	}
 	for _, want := range []string{`"a","b","c"`, `"d","e","f"`} {

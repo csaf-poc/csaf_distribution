@@ -64,8 +64,7 @@ func TestWriteHashToFile(t *testing.T) {
 	nameArg := "name"
 	want := "deadbeef " + nameArg + "\n"
 
-	err := WriteHashToFile(filePath, nameArg, hashArg, []byte{})
-	if err != nil {
+	if err := WriteHashToFile(filePath, nameArg, hashArg, []byte{}); err != nil {
 		t.Error(err)
 	}
 	testFile, err := os.Open(filePath)
@@ -90,8 +89,7 @@ func TestWriteHashSumToFile(t *testing.T) {
 	nameArg := "name"
 	want := "deadbeef " + nameArg + "\n"
 
-	err := WriteHashSumToFile(filePath, nameArg, sum)
-	if err != nil {
+	if err := WriteHashSumToFile(filePath, nameArg, sum); err != nil {
 		t.Error(err)
 	}
 	testFile, err := os.Open(filePath)

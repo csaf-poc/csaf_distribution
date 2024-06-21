@@ -60,28 +60,25 @@ func TestConformingFileName(t *testing.T) {
 func TestIDMatchesFilename(t *testing.T) {
 	pathEval := NewPathEval()
 
-	doc := make(map[string]interface{})
-	doc["document"] = map[string]interface{}{
-		"tracking": map[string]interface{}{
+	doc := make(map[string]any)
+	doc["document"] = map[string]any{
+		"tracking": map[string]any{
 			"id": "valid.json",
 		},
 	}
 
-	err := IDMatchesFilename(pathEval, doc, "valid.json")
-	if err != nil {
+	if err := IDMatchesFilename(pathEval, doc, "valid.json"); err != nil {
 		t.Errorf("IDMatchesFilename: Expected nil, got %q", err)
 	}
 
-	err = IDMatchesFilename(pathEval, doc, "different_file_name.json")
-	if err == nil {
+	if err := IDMatchesFilename(pathEval, doc, "different_file_name.json"); err == nil {
 		t.Error("IDMatchesFilename: Expected error, got nil")
 	}
 
-	doc["document"] = map[string]interface{}{
-		"tracking": map[string]interface{}{},
+	doc["document"] = map[string]any{
+		"tracking": map[string]any{},
 	}
-	err = IDMatchesFilename(pathEval, doc, "valid.json")
-	if err == nil {
+	if err := IDMatchesFilename(pathEval, doc, "valid.json"); err == nil {
 		t.Error("IDMatchesFilename: Expected error, got nil")
 	}
 }
@@ -130,8 +127,7 @@ func TestNWriter(t *testing.T) {
 func TestWriteToFile(t *testing.T) {
 	filename := filepath.Join(t.TempDir(), "test_file")
 	wt := bytes.NewBufferString("test_data")
-	err := WriteToFile(filename, wt)
-	if err != nil {
+	if err := WriteToFile(filename, wt); err != nil {
 		t.Error(err)
 	}
 	fileData, err := os.ReadFile(filename)
@@ -149,12 +145,10 @@ func TestMakeUniqFile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = file.Write([]byte("test_data"))
-	if err != nil {
+	if _, err = file.Write([]byte("test_data")); err != nil {
 		t.Error(err)
 	}
-	err = file.Close()
-	if err != nil {
+	if err = file.Close(); err != nil {
 		t.Error(err)
 	}
 }
@@ -185,16 +179,20 @@ func Test_mkUniq(t *testing.T) {
 
 func TestDeepCopy(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, "src/folder0"), 0755)
-	os.MkdirAll(filepath.Join(dir, "dst"), 0755)
-	os.MkdirAll(filepath.Join(dir, "dst1"), 0755)
-	err := os.WriteFile(filepath.Join(dir, "src/folder0/test_file"), []byte("test_data"), 0755)
-	if err != nil {
-		t.Error(err)
+	if err := os.MkdirAll(filepath.Join(dir, "src/folder0"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "dst"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "dst1"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "src/folder0/test_file"), []byte("test_data"), 0755); err != nil {
+		t.Fatal(err)
 	}
 
-	err = DeepCopy(filepath.Join(dir, "dst"), filepath.Join(dir, "src"))
-	if err != nil {
+	if err := DeepCopy(filepath.Join(dir, "dst"), filepath.Join(dir, "src")); err != nil {
 		t.Error(err)
 	}
 
@@ -207,13 +205,11 @@ func TestDeepCopy(t *testing.T) {
 		t.Errorf("DeepCopy: Expected test_data, got %v", fileData)
 	}
 
-	err = DeepCopy("/path/does/not/exist", filepath.Join(dir, "src"))
-	if err == nil {
+	if err = DeepCopy("/path/does/not/exist", filepath.Join(dir, "src")); err == nil {
 		t.Error("DeepCopy: Expected error, got nil")
 	}
 
-	err = DeepCopy(filepath.Join(dir, "dst1"), "/path/does/not/exist")
-	if err == nil {
+	if err = DeepCopy(filepath.Join(dir, "dst1"), "/path/does/not/exist"); err == nil {
 		t.Error("DeepCopy: Expected error, got nil")
 	}
 }

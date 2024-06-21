@@ -31,7 +31,7 @@ func TestPathEval_Compile(t *testing.T) {
 		t.Error("PathEval_Compile: Expected cached eval")
 	}
 
-	got, err := eval.EvalInt(context.Background(), map[string]interface{}{"foo": 5})
+	got, err := eval.EvalInt(context.Background(), map[string]any{"foo": 5})
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +46,7 @@ func TestPathEval_Eval(t *testing.T) {
 	if err == nil {
 		t.Error("PathEval_Eval: Expected error, got nil")
 	}
-	got, err := pathEval.Eval("foo", map[string]interface{}{"foo": 5})
+	got, err := pathEval.Eval("foo", map[string]any{"foo": 5})
 	if err != nil {
 		t.Error(err)
 	}
@@ -59,8 +59,7 @@ func TestReMarshalMatcher(t *testing.T) {
 	var intDst int
 	var uintSrc uint = 2
 	remarshalFunc := ReMarshalMatcher(&intDst)
-	err := remarshalFunc(uintSrc)
-	if err != nil {
+	if err := remarshalFunc(uintSrc); err != nil {
 		t.Error(err)
 	}
 	if intDst != 2 {
@@ -71,8 +70,7 @@ func TestReMarshalMatcher(t *testing.T) {
 func TestBoolMatcher(t *testing.T) {
 	var boolDst bool
 	boolFunc := BoolMatcher(&boolDst)
-	err := boolFunc(true)
-	if err != nil {
+	if err := boolFunc(true); err != nil {
 		t.Error(err)
 	}
 
@@ -80,8 +78,7 @@ func TestBoolMatcher(t *testing.T) {
 		t.Error("BoolMatcher: Expected true got false")
 	}
 
-	err = boolFunc(1)
-	if err == nil {
+	if err := boolFunc(1); err == nil {
 		t.Error("BoolMatcher: Expected error, got nil")
 	}
 }
@@ -89,8 +86,7 @@ func TestBoolMatcher(t *testing.T) {
 func TestStringMatcher(t *testing.T) {
 	var stringDst string
 	stringFunc := StringMatcher(&stringDst)
-	err := stringFunc("test")
-	if err != nil {
+	if err := stringFunc("test"); err != nil {
 		t.Error(err)
 	}
 
@@ -98,8 +94,7 @@ func TestStringMatcher(t *testing.T) {
 		t.Errorf("StringMatcher: Expected test, got %v", stringDst)
 	}
 
-	err = stringFunc(1)
-	if err == nil {
+	if err := stringFunc(1); err == nil {
 		t.Error("StringMatcher: Expected error, got nil")
 	}
 }
@@ -107,8 +102,7 @@ func TestStringMatcher(t *testing.T) {
 func TestStringTreeMatcher(t *testing.T) {
 	var stringTreeDst []string
 	stringTreeFunc := StringTreeMatcher(&stringTreeDst)
-	err := stringTreeFunc([]any{"a", "a", "b"})
-	if err != nil {
+	if err := stringTreeFunc([]any{"a", "a", "b"}); err != nil {
 		t.Error(err)
 	}
 
@@ -117,13 +111,11 @@ func TestStringTreeMatcher(t *testing.T) {
 		t.Errorf("StringTreeMatcher: Expected %v, got %v", wantAnySlice, stringTreeDst)
 	}
 
-	err = stringTreeFunc([]string{"a", "a", "b"})
-	if err == nil {
+	if err := stringTreeFunc([]string{"a", "a", "b"}); err == nil {
 		t.Error("StringTreeMatcher: Expected error, got nil")
 	}
 
-	err = stringTreeFunc(1)
-	if err == nil {
+	if err := stringTreeFunc(1); err == nil {
 		t.Error("StringTreeMatcher: Expected error, got nil")
 	}
 }
@@ -131,8 +123,7 @@ func TestStringTreeMatcher(t *testing.T) {
 func TestTimeMatcher(t *testing.T) {
 	var timeDst time.Time
 	timeFunc := TimeMatcher(&timeDst, time.RFC3339)
-	err := timeFunc("2024-03-18T12:57:48.236Z")
-	if err != nil {
+	if err := timeFunc("2024-03-18T12:57:48.236Z"); err != nil {
 		t.Error(err)
 	}
 	wantTime := time.Date(2024, time.March, 18, 12, 57, 48, 236_000_000, time.UTC)
@@ -140,13 +131,11 @@ func TestTimeMatcher(t *testing.T) {
 		t.Errorf("TimeMatcher: Expected %v, got %v", wantTime, timeDst)
 	}
 
-	err = timeFunc("")
-	if err == nil {
+	if err := timeFunc(""); err == nil {
 		t.Error("TimeMatcher: Expected error, got nil")
 	}
 
-	err = timeFunc(1)
-	if err == nil {
+	if err := timeFunc(1); err == nil {
 		t.Error("TimeMatcher: Expected error, got nil")
 	}
 }
@@ -155,8 +144,7 @@ func TestPathEval_Extract(t *testing.T) {
 	pathEval := NewPathEval()
 	var result string
 	matcher := StringMatcher(&result)
-	err := pathEval.Extract("foo", matcher, true, map[string]interface{}{"foo": "bar"})
-	if err != nil {
+	if err := pathEval.Extract("foo", matcher, true, map[string]any{"foo": "bar"}); err != nil {
 		t.Error(err)
 	}
 	if result != "bar" {
@@ -166,13 +154,12 @@ func TestPathEval_Extract(t *testing.T) {
 
 func TestPathEval_Match(t *testing.T) {
 	var got string
-	doc := map[string]interface{}{"foo": "bar"}
+	doc := map[string]any{"foo": "bar"}
 
 	pe := NewPathEval()
 	pem := PathEvalMatcher{Expr: "foo", Action: StringMatcher(&got)}
 
-	err := pe.Match([]PathEvalMatcher{pem}, doc)
-	if err != nil {
+	if err := pe.Match([]PathEvalMatcher{pem}, doc); err != nil {
 		t.Error(err)
 	}
 	if got != "bar" {
@@ -182,7 +169,7 @@ func TestPathEval_Match(t *testing.T) {
 
 func TestPathEval_Strings(t *testing.T) {
 	pe := NewPathEval()
-	doc := map[string]interface{}{"foo": "bar"}
+	doc := map[string]any{"foo": "bar"}
 	want := []string{"bar"}
 
 	got, err := pe.Strings([]string{"foo"}, true, doc)
@@ -196,7 +183,7 @@ func TestPathEval_Strings(t *testing.T) {
 }
 
 func TestAsStrings(t *testing.T) {
-	arg := []interface{}{"foo", "bar"}
+	arg := []any{"foo", "bar"}
 	want := []string{"foo", "bar"}
 
 	got, valid := AsStrings(arg)
