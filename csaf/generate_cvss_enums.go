@@ -14,9 +14,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"go/format"
 	"log"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -26,7 +28,7 @@ import (
 // template file as too insignificant to be a piece of work that gains
 // "copyrights" protection in the European Union. So the license(s)
 // of the output files are fully determined by the input file.
-const tmplText = `// determine license(s) from input file and replace this line
+const tmplText = `// {{ $.License }}
 //
 // THIS FILE IS MACHINE GENERATED. EDIT WITH CARE!
 
@@ -67,6 +69,7 @@ type definition struct {
 }
 
 type schema struct {
+	License     []string               `json:"license"`
 	Definitions map[string]*definition `json:"definitions"`
 }
 
@@ -135,9 +138,22 @@ func main() {
 	}
 	sort.Strings(defs)
 
+	license := "determine license(s) from input file and replace this line"
+
+	pattern := regexp.MustCompile(`Copyright \(c\) (\d+), FIRST.ORG, INC.`)
+	for _, line := range s.License {
+		if m := pattern.FindStringSubmatch(line); m != nil {
+			license = fmt.Sprintf(
+				"SPDX-License-Identifier: BSD-3-Clause\n"+
+					"// SPDX-FileCopyrightText: %s FIRST.ORG, INC.", m[1])
+			break
+		}
+	}
+
 	var source bytes.Buffer
 
 	check(tmpl.Execute(&source, map[string]any{
+		"License":     license,
 		"Prefix":      *prefix,
 		"Definitions": s.Definitions,
 		"Keys":        defs,
