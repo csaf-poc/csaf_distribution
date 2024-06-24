@@ -11,6 +11,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -19,9 +20,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/csaf-poc/csaf_distribution/v3/csaf"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/lib/downloader"
+	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 // failedForwardDir is the name of the special sub folder
@@ -79,6 +83,35 @@ func mkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
 
+func extractInitialReleaseDate(doc any) time.Time {
+	var initialReleaseDate time.Time
+	dateExtract := util.TimeMatcher(&initialReleaseDate, time.RFC3339)
+
+	eval := util.NewPathEval()
+
+	if err := eval.Extract(
+		`$.document.tracking.initial_release_date`, dateExtract, false, doc,
+	); err != nil {
+		slog.Warn("Cannot extract initial_release_date from advisory")
+		initialReleaseDate = time.Now()
+	}
+	initialReleaseDate = initialReleaseDate.UTC()
+	return initialReleaseDate
+}
+
+func extractTLP(doc any) csaf.TLPLabel {
+	eval := util.NewPathEval()
+	labelString, err := eval.Eval(`$.document.distribution.tlp.label`, doc)
+	if err != nil {
+		return csaf.TLPLabelUnlabeled
+	}
+	label, ok := labelString.(string)
+	if !ok {
+		return csaf.TLPLabelUnlabeled
+	}
+	return csaf.TLPLabel(label)
+}
+
 func downloadHandler(cfg *config) func(d downloader.DownloadedDocument) error {
 	return func(d downloader.DownloadedDocument) error {
 		if cfg.NoStore {
@@ -98,13 +131,22 @@ func downloadHandler(cfg *config) func(d downloader.DownloadedDocument) error {
 			newDir = cfg.Directory
 		}
 
-		lower := strings.ToLower(string(d.Label))
+		var doc any
+		if err := json.Unmarshal(d.Data, &doc); err != nil {
+			slog.Error("Could not parse json document", "err", err)
+			return nil
+		}
+
+		initialReleaseDate := extractInitialReleaseDate(doc)
+		label := extractTLP(doc)
+
+		lower := strings.ToLower(string(label))
 
 		// Do we have a configured destination folder?
 		if cfg.Folder != "" {
 			newDir = path.Join(newDir, cfg.Folder)
 		} else {
-			newDir = path.Join(newDir, lower, strconv.Itoa(d.InitialReleaseDate.Year()))
+			newDir = path.Join(newDir, lower, strconv.Itoa(initialReleaseDate.Year()))
 		}
 
 		if newDir != lastDir {
@@ -121,9 +163,9 @@ func downloadHandler(cfg *config) func(d downloader.DownloadedDocument) error {
 			p string
 			d []byte
 		}{
-			{filePath, d.Data.Bytes()},
-			{filePath + ".sha256", d.S256Data},
-			{filePath + ".sha512", d.S512Data},
+			{filePath, d.Data},
+			{filePath + ".sha256", d.SHA256},
+			{filePath + ".sha512", d.SHA512},
 			{filePath + ".asc", d.SignData},
 		} {
 			if x.d != nil {
@@ -157,8 +199,8 @@ func storeFailedAdvisory(cfg *config) func(filename, doc, sha256, sha512 string)
 			{filename + ".sha512", sha512},
 		} {
 			if len(x.d) != 0 {
-				path := filepath.Join(dir, x.p)
-				if err := os.WriteFile(path, []byte(x.d), 0644); err != nil {
+				p := filepath.Join(dir, x.p)
+				if err := os.WriteFile(p, []byte(x.d), 0644); err != nil {
 					return err
 				}
 			}
