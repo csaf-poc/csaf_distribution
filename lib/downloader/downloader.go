@@ -38,6 +38,7 @@ import (
 type Downloader struct {
 	cfg       *Config
 	keys      *crypto.KeyRing
+	eval      *util.PathEval
 	validator csaf.RemoteValidator
 	Forwarder *Forwarder
 	mkdirMu   sync.Mutex
@@ -47,14 +48,12 @@ type Downloader struct {
 
 // DownloadedDocument contains the document data with additional metadata.
 type DownloadedDocument struct {
-	Data               bytes.Buffer
-	S256Data           []byte
-	S512Data           []byte
-	SignData           []byte
-	InitialReleaseDate time.Time
-	Filename           string
-	ValStatus          ValidationStatus
-	Label              csaf.TLPLabel
+	Data      []byte
+	SHA256    []byte
+	SHA512    []byte
+	SignData  []byte
+	Filename  string
+	ValStatus ValidationStatus
 }
 
 // failedValidationDir is the name of the sub folder
@@ -64,7 +63,6 @@ const failedValidationDir = "failed_validation"
 
 // NewDownloader constructs a new downloader given the configuration.
 func NewDownloader(cfg *Config) (*Downloader, error) {
-
 	var validator csaf.RemoteValidator
 
 	if cfg.RemoteValidator != "" {
@@ -117,7 +115,6 @@ func logRedirect(logger *slog.Logger) func(req *http.Request, via []*http.Reques
 }
 
 func (d *Downloader) httpClient() util.Client {
-
 	hClient := http.Client{}
 
 	if d.cfg.verbose() {
@@ -258,16 +255,14 @@ func (d *Downloader) download(ctx context.Context, domain string) error {
 	}
 
 	return afp.Process(func(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
-		return d.downloadFiles(ctx, label, files)
+		return d.downloadFiles(ctx, files)
 	})
 }
 
 func (d *Downloader) downloadFiles(
 	ctx context.Context,
-	label csaf.TLPLabel,
 	files []csaf.AdvisoryFile,
 ) error {
-
 	var (
 		advisoryCh = make(chan csaf.AdvisoryFile)
 		errorCh    = make(chan error)
@@ -291,7 +286,7 @@ func (d *Downloader) downloadFiles(
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go d.downloadWorker(ctx, &wg, label, advisoryCh, errorCh)
+		go d.downloadWorker(ctx, &wg, advisoryCh, errorCh)
 	}
 
 allFiles:
@@ -370,7 +365,6 @@ func (d *Downloader) loadOpenPGPKeys(
 			defer res.Body.Close()
 			return crypto.NewKeyFromArmoredReader(res.Body)
 		}()
-
 		if err != nil {
 			d.cfg.Logger.Warn(
 				"Reading public OpenPGP key failed",
@@ -425,18 +419,15 @@ func (d *Downloader) logValidationIssues(url string, errors []string, err error)
 func (d *Downloader) downloadWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	label csaf.TLPLabel,
 	files <-chan csaf.AdvisoryFile,
 	errorCh chan<- error,
 ) {
 	defer wg.Done()
 
 	var (
-		client             = d.httpClient()
-		data               bytes.Buffer
-		initialReleaseDate time.Time
-		dateExtract        = util.TimeMatcher(&initialReleaseDate, time.RFC3339)
-		stats              = stats{}
+		client = d.httpClient()
+		data   bytes.Buffer
+		stats  = stats{}
 		expr               = util.NewPathEval()
 	)
 
@@ -659,24 +650,14 @@ nextAdvisory:
 				string(s256Data),
 				string(s512Data))
 		}
-		if err := expr.Extract(
-			`$.document.tracking.initial_release_date`, dateExtract, false, doc,
-		); err != nil {
-			slog.Warn("Cannot extract initial_release_date from advisory",
-				"url", file.URL())
-			initialReleaseDate = time.Now()
-		}
-		initialReleaseDate = initialReleaseDate.UTC()
 
 		download := DownloadedDocument{
-			Data:               data,
-			S256Data:           s256Data,
-			S512Data:           s512Data,
-			SignData:           signData,
-			InitialReleaseDate: initialReleaseDate,
-			Filename:           filename,
-			ValStatus:          valStatus,
-			Label:              label,
+			Data:      data.Bytes(),
+			SHA256:    s256Data,
+			SHA512:    s512Data,
+			SignData:  signData,
+			Filename:  filename,
+			ValStatus: valStatus,
 		}
 
 		err = d.cfg.DownloadHandler(download)
