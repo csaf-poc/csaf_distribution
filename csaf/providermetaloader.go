@@ -173,23 +173,12 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 	// We have a candidate.
 	if wellknownResult.Valid() {
 		wellknownGood = wellknownResult
+	} else {
+		pmdl.messages.AppendUnique(wellknownResult.Messages)
 	}
 
 	// Next load the PMDs from security.txt
-	secResults := pmdl.loadFromSecurity(domain)
-
-	// Filter out the results which are valid.
-	var secGoods []*LoadedProviderMetadata
-
-	for _, result := range secResults {
-		if len(result.Messages) > 0 {
-			// If there where validation issues append them
-			// to the overall report
-			pmdl.messages.AppendUnique(pmdl.messages)
-		} else {
-			secGoods = append(secGoods, result)
-		}
-	}
+	secGoods := pmdl.loadFromSecurity(domain)
 
 	// Mention extra CSAF entries in security.txt.
 	ignoreExtras := func() {
@@ -220,28 +209,31 @@ func (pmdl *ProviderMetadataLoader) Load(domain string) *LoadedProviderMetadata 
 				}
 			}
 			// Take the good well-known.
-			wellknownGood.Messages.AppendUnique(pmdl.messages)
+			wellknownGood.Messages = pmdl.messages
 			return wellknownGood
 		}
 
 		// Don't have well-known. Take first good from security.txt.
 		ignoreExtras()
-		secGoods[0].Messages.AppendUnique(pmdl.messages)
+		secGoods[0].Messages = pmdl.messages
 		return secGoods[0]
 	}
 
 	// If we have a good well-known take it.
 	if wellknownGood != nil {
-		wellknownGood.Messages.AppendUnique(pmdl.messages)
+		wellknownGood.Messages = pmdl.messages
 		return wellknownGood
 	}
 
 	// Last resort: fall back to DNS.
 	dnsURL := "https://csaf.data.security." + domain
-	return pmdl.loadFromURL(dnsURL)
+	dnsURLResult := pmdl.loadFromURL(dnsURL)
+	pmdl.messages.AppendUnique(dnsURLResult.Messages) // keep order of messages consistent (i.e. last occurred message is last element)
+	dnsURLResult.Messages = pmdl.messages
+	return dnsURLResult
 }
 
-// loadFromSecurity loads the PMDs mentioned in the security.txt.
+// loadFromSecurity loads the PMDs mentioned in the security.txt. Only valid PMDs are returned.
 func (pmdl *ProviderMetadataLoader) loadFromSecurity(domain string) []*LoadedProviderMetadata {
 
 	// If .well-known fails try legacy location.
