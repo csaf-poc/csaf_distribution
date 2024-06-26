@@ -13,9 +13,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-
-	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
+	"regexp"
+	"time"
 )
 
 // ValidationMode specifies the strict the validation is.
@@ -37,8 +36,8 @@ type Config struct {
 	ClientPassphrase     *string
 	Rate                 *float64
 	Worker               int
-	Range                *models.TimeRange
-	IgnorePattern        filter.PatternMatcher
+	Range                *[2]time.Time
+	IgnorePattern        []*regexp.Regexp
 	ExtraHeader          http.Header
 
 	RemoteValidator string
@@ -82,7 +81,13 @@ func (vm *ValidationMode) UnmarshalFlag(value string) error {
 
 // ignoreFile returns true if the given URL should not be downloaded.
 func (cfg *Config) ignoreURL(u string) bool {
-	return cfg.IgnorePattern.Matches(u)
+	for _, expr := range cfg.IgnorePattern {
+		if expr.MatchString(u) {
+			return true
+		}
+	}
+	return false
+
 }
 
 // verbose is considered a log level equal or less debug.

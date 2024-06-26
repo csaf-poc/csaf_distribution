@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"hash"
 	"io"
 	"log/slog"
@@ -25,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"
@@ -55,11 +55,6 @@ type DownloadedDocument struct {
 	Filename  string
 	ValStatus ValidationStatus
 }
-
-// failedValidationDir is the name of the sub folder
-// where advisories are stored that fail validation in
-// unsafe mode.
-const failedValidationDir = "failed_validation"
 
 // NewDownloader constructs a new downloader given the configuration.
 func NewDownloader(cfg *Config) (*Downloader, error) {
@@ -179,7 +174,7 @@ func (d *Downloader) enumerate(domain string) error {
 	loader := csaf.NewProviderMetadataLoader(client)
 	lpmd := loader.Enumerate(domain)
 
-	docs := []any{}
+	var docs []any
 
 	for _, pmd := range lpmd {
 		if d.cfg.verbose() {
@@ -249,9 +244,10 @@ func (d *Downloader) download(ctx context.Context, domain string) error {
 
 	// Do we need time range based filtering?
 	if d.cfg.Range != nil {
+		timeRange := models.NewTimeInterval(d.cfg.Range[0], d.cfg.Range[1])
 		d.cfg.Logger.Debug("Setting up filter to accept advisories within",
-			"timerange", d.cfg.Range)
-		afp.AgeAccept = d.cfg.Range.Contains
+			"timerange", timeRange)
+		afp.AgeAccept = timeRange.Contains
 	}
 
 	return afp.Process(func(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
@@ -428,7 +424,7 @@ func (d *Downloader) downloadWorker(
 		client = d.httpClient()
 		data   bytes.Buffer
 		stats  = stats{}
-		expr               = util.NewPathEval()
+		expr   = util.NewPathEval()
 	)
 
 	// Add collected stats back to total.
