@@ -126,7 +126,7 @@ func parseArgsConfig() ([]string, *config, error) {
 }
 
 // prepareDirectory ensures that the working directory
-// exists and is setup properly.
+// exists and is set up properly.
 func (cfg *config) prepareDirectory() error {
 	// If not given use current working directory.
 	if cfg.Directory == "" {
@@ -213,7 +213,7 @@ func (cfg *config) prepareCertificates() error {
 	return nil
 }
 
-// Prepare prepares internal state of a loaded configuration.
+// GetDownloadConfig Prepare prepares internal state of a loaded configuration.
 func (cfg *config) GetDownloadConfig() (*downloader.Config, error) {
 	for _, prepare := range []func(*config) error{
 		(*config).prepareDirectory,
@@ -233,7 +233,7 @@ func (cfg *config) GetDownloadConfig() (*downloader.Config, error) {
 		ClientPassphrase:     cfg.ClientPassphrase,
 		Rate:                 cfg.Rate,
 		Worker:               cfg.Worker,
-		Range:                cfg.Range,
+		Range:                (*[2]time.Time)(cfg.Range),
 		IgnorePattern:        cfg.ignorePattern,
 		ExtraHeader:          cfg.ExtraHeader,
 
