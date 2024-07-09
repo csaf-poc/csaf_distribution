@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"hash"
 	"io"
 	"log/slog"

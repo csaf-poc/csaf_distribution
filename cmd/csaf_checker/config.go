@@ -11,11 +11,11 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"net/http"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 )
 

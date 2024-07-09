@@ -13,13 +13,13 @@ import (
 	_ "embed" // Used for embedding.
 	"encoding/json"
 	"fmt"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"html/template"
 	"io"
 	"os"
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v3/csaf"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 )
 
 // MessageType is the kind of the message.

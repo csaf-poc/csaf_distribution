@@ -10,6 +10,8 @@ package main
 
 import (
 	"crypto/tls"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"io"
 	"log"
 	"log/slog"
@@ -19,8 +21,6 @@ import (
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/lib/downloader"
 )
