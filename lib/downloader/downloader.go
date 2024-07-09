@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"hash"
 	"io"
 	"log/slog"
@@ -244,10 +243,9 @@ func (d *Downloader) download(ctx context.Context, domain string) error {
 
 	// Do we need time range based filtering?
 	if d.cfg.Range != nil {
-		timeRange := models.NewTimeInterval(d.cfg.Range[0], d.cfg.Range[1])
 		d.cfg.Logger.Debug("Setting up filter to accept advisories within",
-			"timerange", timeRange)
-		afp.AgeAccept = timeRange.Contains
+			"timerange", d.cfg.Range)
+		afp.AgeAccept = d.cfg.Range.Contains
 	}
 
 	return afp.Process(func(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {

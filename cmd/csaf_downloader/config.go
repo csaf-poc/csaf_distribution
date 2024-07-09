@@ -233,7 +233,7 @@ func (cfg *config) GetDownloadConfig() (*downloader.Config, error) {
 		ClientPassphrase:     cfg.ClientPassphrase,
 		Rate:                 cfg.Rate,
 		Worker:               cfg.Worker,
-		Range:                (*[2]time.Time)(cfg.Range),
+		Range:                cfg.Range,
 		IgnorePattern:        cfg.ignorePattern,
 		ExtraHeader:          cfg.ExtraHeader,
 

@@ -11,10 +11,10 @@ package downloader
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"log/slog"
 	"net/http"
-	"regexp"
-	"time"
 )
 
 // ValidationMode specifies the strict the validation is.
@@ -36,8 +36,8 @@ type Config struct {
 	ClientPassphrase     *string
 	Rate                 *float64
 	Worker               int
-	Range                *[2]time.Time
-	IgnorePattern        []*regexp.Regexp
+	Range                *models.TimeRange
+	IgnorePattern        filter.PatternMatcher
 	ExtraHeader          http.Header
 
 	RemoteValidator string
