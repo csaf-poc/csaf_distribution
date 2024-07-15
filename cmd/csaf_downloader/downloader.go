@@ -199,16 +199,19 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	lpmd := loader.Load(domain)
 
-	if d.cfg.verbose() {
+	if !lpmd.Valid() {
+		for i := range lpmd.Messages {
+			slog.Error("Loading provider-metadata.json",
+				"domain", domain,
+				"message", lpmd.Messages[i].Message)
+		}
+		return fmt.Errorf("no valid provider-metadata.json found for '%s': ", domain)
+	} else if d.cfg.verbose() {
 		for i := range lpmd.Messages {
 			slog.Debug("Loading provider-metadata.json",
 				"domain", domain,
 				"message", lpmd.Messages[i].Message)
 		}
-	}
-
-	if !lpmd.Valid() {
-		return fmt.Errorf("no valid provider-metadata.json found for '%s'", domain)
 	}
 
 	base, err := url.Parse(lpmd.URL)
