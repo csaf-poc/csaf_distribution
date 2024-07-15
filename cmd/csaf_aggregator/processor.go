@@ -89,17 +89,21 @@ func (w *worker) locateProviderMetadata(domain string) error {
 
 	lpmd := loader.Load(domain)
 
-	if w.processor.cfg.Verbose {
+	if !lpmd.Valid() {
 		for i := range lpmd.Messages {
-			w.log.Info(
+			w.log.Error(
 				"Loading provider-metadata.json",
 				"domain", domain,
 				"message", lpmd.Messages[i].Message)
 		}
-	}
-
-	if !lpmd.Valid() {
 		return fmt.Errorf("no valid provider-metadata.json found for '%s'", domain)
+	} else if w.processor.cfg.Verbose {
+		for i := range lpmd.Messages {
+			w.log.Debug(
+				"Loading provider-metadata.json",
+				"domain", domain,
+				"message", lpmd.Messages[i].Message)
+		}
 	}
 
 	w.metadataProvider = lpmd.Document
