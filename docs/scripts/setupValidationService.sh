@@ -21,7 +21,7 @@ echo '
 remote_validator= { "url" = "http://localhost:8082", "presets" = ["mandatory"], "cache" = "/var/lib/csaf/validations.db" }
 ' | sudo tee --append /etc/csaf/config.toml
 
-npm install pm2 -g
+sudo npm install pm2 -g
 
 pushd ~
 git clone https://github.com/secvisogram/csaf-validator-service.git
