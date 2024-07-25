@@ -435,11 +435,9 @@ func (p *processor) fullClient() util.Client {
 	client := util.Client(&hClient)
 
 	// Add extra headers.
-	if len(p.cfg.ExtraHeader) > 0 {
-		client = &util.HeaderClient{
-			Client: client,
-			Header: p.cfg.ExtraHeader,
-		}
+	client = &util.HeaderClient{
+		Client: client,
+		Header: p.cfg.ExtraHeader,
 	}
 
 	// Add optional URL logging.
