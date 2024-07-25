@@ -34,53 +34,28 @@ type AdvisoryFile interface {
 // PlainAdvisoryFile is a simple implementation of checkFile.
 // The hash and signature files are directly constructed by extending
 // the file name.
-type PlainAdvisoryFile string
+type PlainAdvisoryFile struct {
+	Path   string
+	SHA256 string
+	SHA512 string
+	Sign   string
+}
 
 // URL returns the URL of this advisory.
-func (paf PlainAdvisoryFile) URL() string { return string(paf) }
+func (paf PlainAdvisoryFile) URL() string { return paf.Path }
 
 // SHA256URL returns the URL of SHA256 hash file of this advisory.
-func (paf PlainAdvisoryFile) SHA256URL() string { return string(paf) + ".sha256" }
+func (paf PlainAdvisoryFile) SHA256URL() string { return paf.SHA256 }
 
 // SHA512URL returns the URL of SHA512 hash file of this advisory.
-func (paf PlainAdvisoryFile) SHA512URL() string { return string(paf) + ".sha512" }
+func (paf PlainAdvisoryFile) SHA512URL() string { return paf.SHA512 }
 
 // SignURL returns the URL of signature file of this advisory.
-func (paf PlainAdvisoryFile) SignURL() string { return string(paf) + ".asc" }
+func (paf PlainAdvisoryFile) SignURL() string { return paf.Sign }
 
 // LogValue implements [slog.LogValuer]
 func (paf PlainAdvisoryFile) LogValue() slog.Value {
 	return slog.GroupValue(slog.String("url", paf.URL()))
-}
-
-// HashedAdvisoryFile is a more involed version of checkFile.
-// Here each component can be given explicitly.
-// If a component is not given it is constructed by
-// extending the first component.
-type HashedAdvisoryFile [4]string
-
-func (haf HashedAdvisoryFile) name(i int, ext string) string {
-	if haf[i] != "" {
-		return haf[i]
-	}
-	return haf[0] + ext
-}
-
-// URL returns the URL of this advisory.
-func (haf HashedAdvisoryFile) URL() string { return haf[0] }
-
-// SHA256URL returns the URL of SHA256 hash file of this advisory.
-func (haf HashedAdvisoryFile) SHA256URL() string { return haf.name(1, ".sha256") }
-
-// SHA512URL returns the URL of SHA512 hash file of this advisory.
-func (haf HashedAdvisoryFile) SHA512URL() string { return haf.name(2, ".sha512") }
-
-// SignURL returns the URL of signature file of this advisory.
-func (haf HashedAdvisoryFile) SignURL() string { return haf.name(3, ".asc") }
-
-// LogValue implements [slog.LogValuer]
-func (haf HashedAdvisoryFile) LogValue() slog.Value {
-	return slog.GroupValue(slog.String("url", haf.URL()))
 }
 
 // AdvisoryFileProcessor implements the extraction of
@@ -120,7 +95,7 @@ func empty(arr []string) bool {
 	return true
 }
 
-// Process extracts the adivisory filenames and passes them with
+// Process extracts the advisory filenames and passes them with
 // the corresponding label to fn.
 func (afp *AdvisoryFileProcessor) Process(
 	fn func(TLPLabel, []AdvisoryFile) error,
@@ -201,6 +176,15 @@ func (afp *AdvisoryFileProcessor) Process(
 	return nil
 }
 
+// checkURL returns the URL if it is accessible.
+func (afp *AdvisoryFileProcessor) checkURL(url string) string {
+	_, err := afp.client.Head(url)
+	if err != nil {
+		return url
+	}
+	return ""
+}
+
 // loadChanges loads baseURL/changes.csv and returns a list of files
 // prefixed by baseURL/.
 func (afp *AdvisoryFileProcessor) loadChanges(
@@ -257,8 +241,19 @@ func (afp *AdvisoryFileProcessor) loadChanges(
 			lg("%q contains an invalid URL %q in line %d", changesURL, path, line)
 			continue
 		}
+
+		self := base.JoinPath(path).String()
+		sha256 := afp.checkURL(self + ".sha256")
+		sha512 := afp.checkURL(self + ".sha512")
+		sign := afp.checkURL(self + ".asc")
+
 		files = append(files,
-			PlainAdvisoryFile(base.JoinPath(path).String()))
+			PlainAdvisoryFile{
+				Path:   path,
+				SHA256: sha256,
+				SHA512: sha512,
+				Sign:   sign,
+			})
 	}
 	return files, nil
 }
@@ -325,7 +320,6 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 		}
 
 		rfeed.Entries(func(entry *Entry) {
-
 			// Filter if we have date checking.
 			if afp.AgeAccept != nil {
 				if t := time.Time(entry.Updated); !t.IsZero() && !afp.AgeAccept(t) {
@@ -359,10 +353,15 @@ func (afp *AdvisoryFileProcessor) processROLIE(
 
 			var file AdvisoryFile
 
-			if sha256 != "" || sha512 != "" || sign != "" {
-				file = HashedAdvisoryFile{self, sha256, sha512, sign}
-			} else {
-				file = PlainAdvisoryFile(self)
+			switch {
+			case sha256 == "" && sha512 == "":
+				slog.Error("No hash listed on ROLIE feed", "file", self)
+				return
+			case sign == "":
+				slog.Error("No signature listed on ROLIE feed", "file", self)
+				return
+			default:
+				file = PlainAdvisoryFile{self, sha256, sha512, sign}
 			}
 
 			files = append(files, file)

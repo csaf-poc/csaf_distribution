@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -138,7 +139,7 @@ func (m *topicMessages) info(format string, args ...any) {
 	m.add(InfoType, format, args...)
 }
 
-// use signals that we going to use this topic.
+// use signals that we're going to use this topic.
 func (m *topicMessages) use() {
 	if *m == nil {
 		*m = []Message{}
@@ -164,7 +165,7 @@ func (m *topicMessages) hasErrors() bool {
 	return false
 }
 
-// newProcessor returns an initilaized processor.
+// newProcessor returns an initialized processor.
 func newProcessor(cfg *config) (*processor, error) {
 
 	var validator csaf.RemoteValidator
@@ -594,10 +595,15 @@ func (p *processor) rolieFeedEntries(feed string) ([]csaf.AdvisoryFile, error) {
 
 		var file csaf.AdvisoryFile
 
-		if sha256 != "" || sha512 != "" || sign != "" {
-			file = csaf.HashedAdvisoryFile{url, sha256, sha512, sign}
-		} else {
-			file = csaf.PlainAdvisoryFile(url)
+		switch {
+		case sha256 == "" && sha512 == "":
+			slog.Error("No hash listed on ROLIE feed", "file", url)
+			return
+		case sign == "":
+			slog.Error("No signature listed on ROLIE feed", "file", url)
+			return
+		default:
+			file = csaf.PlainAdvisoryFile{Path: url, SHA256: sha256, SHA512: sha512, Sign: sign}
 		}
 
 		files = append(files, file)
@@ -888,7 +894,16 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 				p.badIntegrities.error("index.txt contains invalid URL %q in line %d", u, line)
 				continue
 			}
-			files = append(files, csaf.PlainAdvisoryFile(u))
+
+			SHA256 := p.checkURL(u + ".sha256")
+			SHA512 := p.checkURL(u + ".sha512")
+			sign := p.checkURL(u + ".asc")
+			files = append(files, csaf.PlainAdvisoryFile{
+				Path:   u,
+				SHA256: SHA256,
+				SHA512: SHA512,
+				Sign:   sign,
+			})
 		}
 		return files, scanner.Err()
 	}()
@@ -904,6 +919,15 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badIndices.add)
+}
+
+// checkURL returns the URL if it is accessible.
+func (p *processor) checkURL(url string) string {
+	_, err := p.client.Head(url)
+	if err != nil {
+		return url
+	}
+	return ""
 }
 
 // checkChanges fetches the "changes.csv" and calls the "checkTLS" method for HTTPs checks.
@@ -970,9 +994,14 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 				continue
 			}
 			path := r[pathColumn]
+
+			SHA256 := p.checkURL(path + ".sha256")
+			SHA512 := p.checkURL(path + ".sha512")
+			sign := p.checkURL(path + ".asc")
+
 			times, files =
 				append(times, t),
-				append(files, csaf.PlainAdvisoryFile(path))
+				append(files, csaf.PlainAdvisoryFile{Path: path, SHA256: SHA256, SHA512: SHA512, Sign: sign})
 		}
 		return times, files, nil
 	}()
