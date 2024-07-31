@@ -29,11 +29,10 @@ type AdvisoryFile interface {
 	SHA256URL() string
 	SHA512URL() string
 	SignURL() string
+	IsDirectory() bool
 }
 
-// PlainAdvisoryFile is a simple implementation of checkFile.
-// The hash and signature files are directly constructed by extending
-// the file name.
+// PlainAdvisoryFile contains all relevant urls of a remote file.
 type PlainAdvisoryFile struct {
 	Path   string
 	SHA256 string
@@ -53,9 +52,39 @@ func (paf PlainAdvisoryFile) SHA512URL() string { return paf.SHA512 }
 // SignURL returns the URL of signature file of this advisory.
 func (paf PlainAdvisoryFile) SignURL() string { return paf.Sign }
 
+// IsDirectory returns true, if was fetched via directory feeds.
+func (paf PlainAdvisoryFile) IsDirectory() bool { return false }
+
 // LogValue implements [slog.LogValuer]
 func (paf PlainAdvisoryFile) LogValue() slog.Value {
 	return slog.GroupValue(slog.String("url", paf.URL()))
+}
+
+// DirectoryAdvisoryFile only contains the base file path.
+// The hash and signature files are directly constructed by extending
+// the file name.
+type DirectoryAdvisoryFile struct {
+	Path string
+}
+
+// URL returns the URL of this advisory.
+func (daf DirectoryAdvisoryFile) URL() string { return daf.Path }
+
+// SHA256URL returns the URL of SHA256 hash file of this advisory.
+func (daf DirectoryAdvisoryFile) SHA256URL() string { return daf.Path + ".sha256" }
+
+// SHA512URL returns the URL of SHA512 hash file of this advisory.
+func (daf DirectoryAdvisoryFile) SHA512URL() string { return daf.Path + ".sha512" }
+
+// SignURL returns the URL of signature file of this advisory.
+func (daf DirectoryAdvisoryFile) SignURL() string { return daf.Path + ".asc" }
+
+// IsDirectory returns true, if was fetched via directory feeds.
+func (daf DirectoryAdvisoryFile) IsDirectory() bool { return true }
+
+// LogValue implements [slog.LogValuer]
+func (daf DirectoryAdvisoryFile) LogValue() slog.Value {
+	return slog.GroupValue(slog.String("url", daf.URL()))
 }
 
 // AdvisoryFileProcessor implements the extraction of
@@ -69,7 +98,7 @@ type AdvisoryFileProcessor struct {
 	base      *url.URL
 }
 
-// NewAdvisoryFileProcessor constructs an filename extractor
+// NewAdvisoryFileProcessor constructs a filename extractor
 // for a given metadata document.
 func NewAdvisoryFileProcessor(
 	client util.Client,
@@ -176,15 +205,6 @@ func (afp *AdvisoryFileProcessor) Process(
 	return nil
 }
 
-// checkURL returns the URL if it is accessible.
-func (afp *AdvisoryFileProcessor) checkURL(url string) string {
-	_, err := afp.client.Head(url)
-	if err != nil {
-		return url
-	}
-	return ""
-}
-
 // loadChanges loads baseURL/changes.csv and returns a list of files
 // prefixed by baseURL/.
 func (afp *AdvisoryFileProcessor) loadChanges(
@@ -242,18 +262,8 @@ func (afp *AdvisoryFileProcessor) loadChanges(
 			continue
 		}
 
-		self := base.JoinPath(path).String()
-		sha256 := afp.checkURL(self + ".sha256")
-		sha512 := afp.checkURL(self + ".sha512")
-		sign := afp.checkURL(self + ".asc")
-
 		files = append(files,
-			PlainAdvisoryFile{
-				Path:   path,
-				SHA256: sha256,
-				SHA512: sha512,
-				Sign:   sign,
-			})
+			DirectoryAdvisoryFile{Path: base.JoinPath(path).String()})
 	}
 	return files, nil
 }

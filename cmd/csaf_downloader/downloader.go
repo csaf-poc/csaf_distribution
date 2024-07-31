@@ -501,31 +501,31 @@ nextAdvisory:
 			signData                   []byte
 		)
 
-		if file.SHA256URL() == "" {
-			slog.Info("SHA256 not present", "file", file.URL())
-		} else {
-			// Only hash when we have a remote counterpart we can compare it with.
-			if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
+		// Only hash when we have a remote counterpart we can compare it with.
+		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
+			if !file.IsDirectory() {
 				slog.Warn("Cannot fetch SHA256",
 					"url", file.SHA256URL(),
 					"error", err)
 			} else {
-				s256 = sha256.New()
-				writers = append(writers, s256)
+				slog.Info("SHA256 not present", "file", file.URL())
 			}
+		} else {
+			s256 = sha256.New()
+			writers = append(writers, s256)
 		}
 
-		if file.SHA512URL() == "" {
-			slog.Info("SHA512 not present", "file", file.URL())
-		} else {
-			if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
+		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
+			if !file.IsDirectory() {
 				slog.Warn("Cannot fetch SHA512",
 					"url", file.SHA512URL(),
 					"error", err)
 			} else {
-				s512 = sha512.New()
-				writers = append(writers, s512)
+				slog.Info("SHA512 not present", "file", file.URL())
 			}
+		} else {
+			s512 = sha512.New()
+			writers = append(writers, s512)
 		}
 
 		// Remember the data as we need to store it to file later.
@@ -757,6 +757,9 @@ func loadSignature(client util.Client, p string) (*crypto.PGPSignature, []byte, 
 }
 
 func loadHash(client util.Client, p string) ([]byte, []byte, error) {
+	if p == "" {
+		return nil, nil, fmt.Errorf("no hash path provided")
+	}
 	resp, err := client.Get(p)
 	if err != nil {
 		return nil, nil, err

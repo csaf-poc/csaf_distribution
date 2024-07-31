@@ -895,15 +895,7 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 				continue
 			}
 
-			SHA256 := p.checkURL(u + ".sha256")
-			SHA512 := p.checkURL(u + ".sha512")
-			sign := p.checkURL(u + ".asc")
-			files = append(files, csaf.PlainAdvisoryFile{
-				Path:   u,
-				SHA256: SHA256,
-				SHA512: SHA512,
-				Sign:   sign,
-			})
+			files = append(files, csaf.DirectoryAdvisoryFile{Path: u})
 		}
 		return files, scanner.Err()
 	}()
@@ -919,15 +911,6 @@ func (p *processor) checkIndex(base string, mask whereType) error {
 	p.labelChecker.feedLabel = ""
 
 	return p.integrity(files, base, mask, p.badIndices.add)
-}
-
-// checkURL returns the URL if it is accessible.
-func (p *processor) checkURL(url string) string {
-	_, err := p.client.Head(url)
-	if err != nil {
-		return url
-	}
-	return ""
 }
 
 // checkChanges fetches the "changes.csv" and calls the "checkTLS" method for HTTPs checks.
@@ -995,13 +978,9 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 			}
 			path := r[pathColumn]
 
-			SHA256 := p.checkURL(path + ".sha256")
-			SHA512 := p.checkURL(path + ".sha512")
-			sign := p.checkURL(path + ".asc")
-
 			times, files =
 				append(times, t),
-				append(files, csaf.PlainAdvisoryFile{Path: path, SHA256: SHA256, SHA512: SHA512, Sign: sign})
+				append(files, csaf.DirectoryAdvisoryFile{Path: path})
 		}
 		return times, files, nil
 	}()
