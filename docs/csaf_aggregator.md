@@ -16,6 +16,7 @@ Help Options:
 ```
 
 If no config file is explictly given the follwing places are searched for a config file:
+
 ```
 ~/.config/csaf/aggregator.toml
 ~/.csaf_aggregator.toml
@@ -25,6 +26,7 @@ csaf_aggregator.toml
 with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
 
 Usage example for a single run, to test if the config is good:
+
 ```bash
 ./csaf_aggregator -c docs/examples/aggregator.toml
 ```
@@ -62,7 +64,6 @@ SHELL=/bin/bash
 30 0-23 * * * $HOME/bin/csaf_aggregator --config /etc/csaf_aggregator.toml --interim >> /var/log/csaf_aggregator/interim.log 2>&1
 ```
 
-
 #### serve via web server
 
 Serve the paths where the aggregator writes its `html/` output
@@ -77,7 +78,6 @@ If you are using nginx, the setup instructions for the provider give
 a template. For the aggregator the difference is that you can leave out
 the cgi-bin part, potentially commend out the TLS client parts and
 adjust the `root` path accordingly.
-
 
 ### config options
 
@@ -118,10 +118,12 @@ Next we have two TOML _tables_:
 aggregator            // basic infos for the aggregator object
 remote_validator      // config for optional remote validation checker
 ```
+
 [See the provider config](csaf_provider.md#provider-options) about
 how to configure `remote_validator`.
 
 At last there is the TOML _array of tables_:
+
 ```
 providers             // each entry to be mirrored or listed
 ```
@@ -148,6 +150,9 @@ header
 
 Where valid `name` and `domain` settings are required.
 
+If no user agent is specified with `header = "user-agent:custom-agent/1.0"`
+then the default agent in the form of `csaf_distribution/VERSION` is sent.
+
 If you want an entry to be listed instead of mirrored
 in a `aggregator.category == "aggregator"` instance,
 set `category` to `lister` in the entry.
@@ -165,15 +170,16 @@ To offer an easy way of assorting CSAF documents by criteria like
 document category, languages or values of the branch category within
 the product tree, ROLIE category values can be configured in `categories`.
 This can either
-be done using an array of strings taken literally or, by prepending `"expr:"`. 
-The latter is evaluated as JSONPath and the result will be added into the 
+be done using an array of strings taken literally or, by prepending `"expr:"`.
+The latter is evaluated as JSONPath and the result will be added into the
 categories document. For a more detailed explanation and examples,
 [refer to the provider config](csaf_provider.md#provider-options).
 
-
 #### Example config file
+
 <!-- MARKDOWN-AUTO-DOCS:START (CODE:src=../docs/examples/aggregator.toml) -->
 <!-- The below code snippet is automatically added from ../docs/examples/aggregator.toml -->
+
 ```toml
 workers = 2
 folder = "/var/csaf_aggregator"
@@ -233,8 +239,8 @@ insecure = true
   category = "lister"
 # ignore_pattern = [".*white.*", ".*red.*"]
 ```
-<!-- MARKDOWN-AUTO-DOCS:END -->
 
+<!-- MARKDOWN-AUTO-DOCS:END -->
 
 #### Publish others' advisories
 
