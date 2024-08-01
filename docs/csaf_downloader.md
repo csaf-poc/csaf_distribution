@@ -40,7 +40,7 @@ Help Options:
 
 Will download all CSAF documents for the given _domains_, by trying each as a CSAF provider.
 
-If no user agent is specified with `--header=user-agent:custom-agent/1.0` then the default agent in the form of `csaf-distribution/version` is sent.
+If no user agent is specified with `--header=user-agent:custom-agent/1.0` then the default agent in the form of `csaf_distribution/VERSION` is sent.
 
 If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and downloading procedes from there.
 

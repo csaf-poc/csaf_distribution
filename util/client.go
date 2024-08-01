@@ -64,7 +64,7 @@ func (hc *HeaderClient) Do(req *http.Request) (*http.Response, error) {
 
 	// Use default user agent if none is set
 	if userAgent := hc.Header.Get("User-Agent"); userAgent == "" {
-		req.Header.Add("User-Agent", "csaf-distribution/"+SemVersion)
+		req.Header.Add("User-Agent", "csaf_distribution/"+SemVersion)
 	}
 	return hc.Client.Do(req)
 }
