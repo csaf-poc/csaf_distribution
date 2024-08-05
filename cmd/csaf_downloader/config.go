@@ -10,7 +10,8 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/filter"
+	"github.com/csaf-poc/csaf_distribution/v3/csaf/models"
 	"io"
 	"log"
 	"log/slog"
@@ -20,26 +21,25 @@ import (
 	"time"
 
 	"github.com/csaf-poc/csaf_distribution/v3/internal/certs"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/filter"
-	"github.com/csaf-poc/csaf_distribution/v3/internal/models"
 	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
+	"github.com/csaf-poc/csaf_distribution/v3/lib/downloader"
 )
 
 const (
 	defaultWorker         = 2
 	defaultPreset         = "mandatory"
 	defaultForwardQueue   = 5
-	defaultValidationMode = validationStrict
+	defaultValidationMode = downloader.ValidationStrict
 	defaultLogFile        = "downloader.log"
 	defaultLogLevel       = slog.LevelInfo
 )
 
-type validationMode string
-
-const (
-	validationStrict = validationMode("strict")
-	validationUnsafe = validationMode("unsafe")
-)
+// configPaths are the potential file locations of the Config file.
+var configPaths = []string{
+	"~/.config/csaf/downloader.toml",
+	"~/.csaf_downloader.toml",
+	"csaf_downloader.toml",
+}
 
 type config struct {
 	Directory            string            `short:"d" long:"directory" description:"DIRectory to store the downloaded files in" value-name:"DIR" toml:"directory"`
@@ -64,7 +64,7 @@ type config struct {
 	RemoteValidatorPresets []string `long:"validator_preset" description:"One or more PRESETS to validate remotely" value-name:"PRESETS" toml:"validator_preset"`
 
 	//lint:ignore SA5008 We are using choice twice: strict, unsafe.
-	ValidationMode validationMode `long:"validation_mode" short:"m" choice:"strict" choice:"unsafe" value-name:"MODE" description:"MODE how strict the validation is" toml:"validation_mode"`
+	ValidationMode downloader.ValidationMode `long:"validation_mode" short:"m" choice:"strict" choice:"unsafe" value-name:"MODE" description:"MODE how strict the validation is" toml:"validation_mode"`
 
 	ForwardURL      string      `long:"forward_url" description:"URL of HTTP endpoint to forward downloads to" value-name:"URL" toml:"forward_url"`
 	ForwardHeader   http.Header `long:"forward_header" description:"One or more extra HTTP header fields used by forwarding" toml:"forward_header"`
@@ -79,16 +79,10 @@ type config struct {
 
 	clientCerts   []tls.Certificate
 	ignorePattern filter.PatternMatcher
+	logger        *slog.Logger
 }
 
-// configPaths are the potential file locations of the config file.
-var configPaths = []string{
-	"~/.config/csaf/downloader.toml",
-	"~/.csaf_downloader.toml",
-	"csaf_downloader.toml",
-}
-
-// parseArgsConfig parses the command line and if need a config file.
+// parseArgsConfig parses the command line and if needed a config file.
 func parseArgsConfig() ([]string, *config, error) {
 	var (
 		logFile  = defaultLogFile
@@ -116,9 +110,9 @@ func parseArgsConfig() ([]string, *config, error) {
 				cfg.RemoteValidatorPresets = []string{defaultPreset}
 			}
 			switch cfg.ValidationMode {
-			case validationStrict, validationUnsafe:
+			case downloader.ValidationStrict, downloader.ValidationUnsafe:
 			default:
-				cfg.ValidationMode = validationStrict
+				cfg.ValidationMode = downloader.ValidationStrict
 			}
 			if cfg.LogFile == nil {
 				cfg.LogFile = &logFile
@@ -131,39 +125,8 @@ func parseArgsConfig() ([]string, *config, error) {
 	return p.Parse()
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler].
-func (vm *validationMode) UnmarshalText(text []byte) error {
-	switch m := validationMode(text); m {
-	case validationStrict, validationUnsafe:
-		*vm = m
-	default:
-		return fmt.Errorf(`invalid value %q (expected "strict" or "unsafe)"`, m)
-	}
-	return nil
-}
-
-// UnmarshalFlag implements [flags.UnmarshalFlag].
-func (vm *validationMode) UnmarshalFlag(value string) error {
-	var v validationMode
-	if err := v.UnmarshalText([]byte(value)); err != nil {
-		return err
-	}
-	*vm = v
-	return nil
-}
-
-// ignoreFile returns true if the given URL should not be downloaded.
-func (cfg *config) ignoreURL(u string) bool {
-	return cfg.ignorePattern.Matches(u)
-}
-
-// verbose is considered a log level equal or less debug.
-func (cfg *config) verbose() bool {
-	return cfg.LogLevel.Level <= slog.LevelDebug
-}
-
 // prepareDirectory ensures that the working directory
-// exists and is setup properly.
+// exists and is set up properly.
 func (cfg *config) prepareDirectory() error {
 	// If not given use current working directory.
 	if cfg.Directory == "" {
@@ -220,13 +183,12 @@ func (cfg *config) prepareLogging() error {
 		w = f
 	}
 	ho := slog.HandlerOptions{
-		//AddSource: true,
+		// AddSource: true,
 		Level:       cfg.LogLevel.Level,
 		ReplaceAttr: dropSubSeconds,
 	}
 	handler := slog.NewJSONHandler(w, &ho)
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
+	cfg.logger = slog.New(handler)
 	return nil
 }
 
@@ -251,8 +213,8 @@ func (cfg *config) prepareCertificates() error {
 	return nil
 }
 
-// prepare prepares internal state of a loaded configuration.
-func (cfg *config) prepare() error {
+// GetDownloadConfig Prepare prepares internal state of a loaded configuration.
+func (cfg *config) GetDownloadConfig() (*downloader.Config, error) {
 	for _, prepare := range []func(*config) error{
 		(*config).prepareDirectory,
 		(*config).prepareLogging,
@@ -260,8 +222,32 @@ func (cfg *config) prepare() error {
 		(*config).compileIgnorePatterns,
 	} {
 		if err := prepare(cfg); err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	dCfg := &downloader.Config{
+		Insecure:             cfg.Insecure,
+		IgnoreSignatureCheck: cfg.IgnoreSignatureCheck,
+		ClientCerts:          cfg.clientCerts,
+		ClientKey:            cfg.ClientKey,
+		ClientPassphrase:     cfg.ClientPassphrase,
+		Rate:                 cfg.Rate,
+		Worker:               cfg.Worker,
+		Range:                cfg.Range,
+		IgnorePattern:        cfg.ignorePattern,
+		ExtraHeader:          cfg.ExtraHeader,
+
+		RemoteValidator:        cfg.RemoteValidator,
+		RemoteValidatorCache:   cfg.RemoteValidatorCache,
+		RemoteValidatorPresets: cfg.RemoteValidatorPresets,
+
+		ValidationMode: cfg.ValidationMode,
+
+		ForwardURL:      cfg.ForwardURL,
+		ForwardHeader:   cfg.ForwardHeader,
+		ForwardQueue:    cfg.ForwardQueue,
+		ForwardInsecure: cfg.ForwardInsecure,
+		Logger:          cfg.logger,
+	}
+	return dCfg, nil
 }

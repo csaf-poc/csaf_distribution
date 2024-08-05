@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2022, 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2022, 2023 Intevation GmbH <https://intevation.de>
 
-package main
+package downloader
 
 import (
 	"bytes"
@@ -22,13 +22,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"golang.org/x/time/rate"
@@ -37,23 +33,30 @@ import (
 	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
-type downloader struct {
-	cfg       *config
+// Downloader provides the CSAF downloader.
+type Downloader struct {
+	cfg       *Config
 	keys      *crypto.KeyRing
+	eval      *util.PathEval
 	validator csaf.RemoteValidator
-	forwarder *forwarder
+	Forwarder *Forwarder
 	mkdirMu   sync.Mutex
 	statsMu   sync.Mutex
 	stats     stats
 }
 
-// failedValidationDir is the name of the sub folder
-// where advisories are stored that fail validation in
-// unsafe mode.
-const failedValidationDir = "failed_validation"
+// DownloadedDocument contains the document data with additional metadata.
+type DownloadedDocument struct {
+	Data      []byte
+	SHA256    []byte
+	SHA512    []byte
+	SignData  []byte
+	Filename  string
+	ValStatus ValidationStatus
+}
 
-func newDownloader(cfg *config) (*downloader, error) {
-
+// NewDownloader constructs a new downloader given the configuration.
+func NewDownloader(cfg *Config) (*Downloader, error) {
 	var validator csaf.RemoteValidator
 
 	if cfg.RemoteValidator != "" {
@@ -70,13 +73,14 @@ func newDownloader(cfg *config) (*downloader, error) {
 		validator = csaf.SynchronizedRemoteValidator(validator)
 	}
 
-	return &downloader{
+	return &Downloader{
 		cfg:       cfg,
 		validator: validator,
 	}, nil
 }
 
-func (d *downloader) close() {
+// Close closes the downloader.
+func (d *Downloader) Close() {
 	if d.validator != nil {
 		d.validator.Close()
 		d.validator = nil
@@ -84,30 +88,31 @@ func (d *downloader) close() {
 }
 
 // addStats add stats to total stats
-func (d *downloader) addStats(o *stats) {
+func (d *Downloader) addStats(o *stats) {
 	d.statsMu.Lock()
 	defer d.statsMu.Unlock()
 	d.stats.add(o)
 }
 
 // logRedirect logs redirects of the http client.
-func logRedirect(req *http.Request, via []*http.Request) error {
-	vs := make([]string, len(via))
-	for i, v := range via {
-		vs[i] = v.URL.String()
+func logRedirect(logger *slog.Logger) func(req *http.Request, via []*http.Request) error {
+	return func(req *http.Request, via []*http.Request) error {
+		vs := make([]string, len(via))
+		for i, v := range via {
+			vs[i] = v.URL.String()
+		}
+		logger.Debug("Redirecting",
+			"to", req.URL.String(),
+			"via", strings.Join(vs, " -> "))
+		return nil
 	}
-	slog.Debug("Redirecting",
-		"to", req.URL.String(),
-		"via", strings.Join(vs, " -> "))
-	return nil
 }
 
-func (d *downloader) httpClient() util.Client {
-
+func (d *Downloader) httpClient() util.Client {
 	hClient := http.Client{}
 
 	if d.cfg.verbose() {
-		hClient.CheckRedirect = logRedirect
+		hClient.CheckRedirect = logRedirect(d.cfg.Logger)
 	}
 
 	var tlsConfig tls.Config
@@ -115,8 +120,8 @@ func (d *downloader) httpClient() util.Client {
 		tlsConfig.InsecureSkipVerify = true
 	}
 
-	if len(d.cfg.clientCerts) != 0 {
-		tlsConfig.Certificates = d.cfg.clientCerts
+	if len(d.cfg.ClientCerts) != 0 {
+		tlsConfig.Certificates = d.cfg.ClientCerts
 	}
 
 	hClient.Transport = &http.Transport{
@@ -137,7 +142,7 @@ func (d *downloader) httpClient() util.Client {
 	if d.cfg.verbose() {
 		client = &util.LoggingClient{
 			Client: client,
-			Log:    httpLog("downloader"),
+			Log:    httpLog("downloader", d.cfg.Logger),
 		}
 	}
 
@@ -153,27 +158,27 @@ func (d *downloader) httpClient() util.Client {
 }
 
 // httpLog does structured logging in a [util.LoggingClient].
-func httpLog(who string) func(string, string) {
+func httpLog(who string, logger *slog.Logger) func(string, string) {
 	return func(method, url string) {
-		slog.Debug("http",
+		logger.Debug("http",
 			"who", who,
 			"method", method,
 			"url", url)
 	}
 }
 
-func (d *downloader) enumerate(domain string) error {
+func (d *Downloader) enumerate(domain string) error {
 	client := d.httpClient()
 
 	loader := csaf.NewProviderMetadataLoader(client)
 	lpmd := loader.Enumerate(domain)
 
-	docs := []any{}
+	var docs []any
 
 	for _, pmd := range lpmd {
 		if d.cfg.verbose() {
 			for i := range pmd.Messages {
-				slog.Debug("Enumerating provider-metadata.json",
+				d.cfg.Logger.Debug("Enumerating provider-metadata.json",
 					"domain", domain,
 					"message", pmd.Messages[i].Message)
 			}
@@ -185,14 +190,14 @@ func (d *downloader) enumerate(domain string) error {
 	// print the results
 	doc, err := json.MarshalIndent(docs, "", "  ")
 	if err != nil {
-		slog.Error("Couldn't marshal PMD document json")
+		d.cfg.Logger.Error("Couldn't marshal PMD document json")
 	}
 	fmt.Println(string(doc))
 
 	return nil
 }
 
-func (d *downloader) download(ctx context.Context, domain string) error {
+func (d *Downloader) download(ctx context.Context, domain string) error {
 	client := d.httpClient()
 
 	loader := csaf.NewProviderMetadataLoader(client)
@@ -208,7 +213,7 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 		return fmt.Errorf("no valid provider-metadata.json found for '%s'", domain)
 	} else if d.cfg.verbose() {
 		for i := range lpmd.Messages {
-			slog.Debug("Loading provider-metadata.json",
+			d.cfg.Logger.Debug("Loading provider-metadata.json",
 				"domain", domain,
 				"message", lpmd.Messages[i].Message)
 		}
@@ -238,22 +243,20 @@ func (d *downloader) download(ctx context.Context, domain string) error {
 
 	// Do we need time range based filtering?
 	if d.cfg.Range != nil {
-		slog.Debug("Setting up filter to accept advisories within",
+		d.cfg.Logger.Debug("Setting up filter to accept advisories within",
 			"timerange", d.cfg.Range)
 		afp.AgeAccept = d.cfg.Range.Contains
 	}
 
 	return afp.Process(func(label csaf.TLPLabel, files []csaf.AdvisoryFile) error {
-		return d.downloadFiles(ctx, label, files)
+		return d.downloadFiles(ctx, files)
 	})
 }
 
-func (d *downloader) downloadFiles(
+func (d *Downloader) downloadFiles(
 	ctx context.Context,
-	label csaf.TLPLabel,
 	files []csaf.AdvisoryFile,
 ) error {
-
 	var (
 		advisoryCh = make(chan csaf.AdvisoryFile)
 		errorCh    = make(chan error)
@@ -277,7 +280,7 @@ func (d *downloader) downloadFiles(
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go d.downloadWorker(ctx, &wg, label, advisoryCh, errorCh)
+		go d.downloadWorker(ctx, &wg, advisoryCh, errorCh)
 	}
 
 allFiles:
@@ -297,13 +300,12 @@ allFiles:
 	return errors.Join(errs...)
 }
 
-func (d *downloader) loadOpenPGPKeys(
+func (d *Downloader) loadOpenPGPKeys(
 	client util.Client,
 	doc any,
 	base *url.URL,
 	expr *util.PathEval,
 ) error {
-
 	src, err := expr.Eval("$.public_openpgp_keys", doc)
 	if err != nil {
 		// no keys.
@@ -328,7 +330,7 @@ func (d *downloader) loadOpenPGPKeys(
 		}
 		up, err := url.Parse(*key.URL)
 		if err != nil {
-			slog.Warn("Invalid URL",
+			d.cfg.Logger.Warn("Invalid URL",
 				"url", *key.URL,
 				"error", err)
 			continue
@@ -338,14 +340,14 @@ func (d *downloader) loadOpenPGPKeys(
 
 		res, err := client.Get(u)
 		if err != nil {
-			slog.Warn(
+			d.cfg.Logger.Warn(
 				"Fetching public OpenPGP key failed",
 				"url", u,
 				"error", err)
 			continue
 		}
 		if res.StatusCode != http.StatusOK {
-			slog.Warn(
+			d.cfg.Logger.Warn(
 				"Fetching public OpenPGP key failed",
 				"url", u,
 				"status_code", res.StatusCode,
@@ -357,9 +359,8 @@ func (d *downloader) loadOpenPGPKeys(
 			defer res.Body.Close()
 			return crypto.NewKeyFromArmoredReader(res.Body)
 		}()
-
 		if err != nil {
-			slog.Warn(
+			d.cfg.Logger.Warn(
 				"Reading public OpenPGP key failed",
 				"url", u,
 				"error", err)
@@ -367,14 +368,14 @@ func (d *downloader) loadOpenPGPKeys(
 		}
 
 		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
-			slog.Warn(
+			d.cfg.Logger.Warn(
 				"Fingerprint of public OpenPGP key does not match remotely loaded",
 				"url", u)
 			continue
 		}
 		if d.keys == nil {
 			if keyring, err := crypto.NewKeyRing(ckey); err != nil {
-				slog.Warn(
+				d.cfg.Logger.Warn(
 					"Creating store for public OpenPGP key failed",
 					"url", u,
 					"error", err)
@@ -389,44 +390,39 @@ func (d *downloader) loadOpenPGPKeys(
 }
 
 // logValidationIssues logs the issues reported by the advisory schema validation.
-func (d *downloader) logValidationIssues(url string, errors []string, err error) {
+func (d *Downloader) logValidationIssues(url string, errors []string, err error) {
 	if err != nil {
-		slog.Error("Failed to validate",
+		d.cfg.Logger.Error("Failed to validate",
 			"url", url,
 			"error", err)
 		return
 	}
 	if len(errors) > 0 {
 		if d.cfg.verbose() {
-			slog.Error("CSAF file has validation errors",
+			d.cfg.Logger.Error("CSAF file has validation errors",
 				"url", url,
 				"error", strings.Join(errors, ", "))
 		} else {
-			slog.Error("CSAF file has validation errors",
+			d.cfg.Logger.Error("CSAF file has validation errors",
 				"url", url,
 				"count", len(errors))
 		}
 	}
 }
 
-func (d *downloader) downloadWorker(
+func (d *Downloader) downloadWorker(
 	ctx context.Context,
 	wg *sync.WaitGroup,
-	label csaf.TLPLabel,
 	files <-chan csaf.AdvisoryFile,
 	errorCh chan<- error,
 ) {
 	defer wg.Done()
 
 	var (
-		client             = d.httpClient()
-		data               bytes.Buffer
-		lastDir            string
-		initialReleaseDate time.Time
-		dateExtract        = util.TimeMatcher(&initialReleaseDate, time.RFC3339)
-		lower              = strings.ToLower(string(label))
-		stats              = stats{}
-		expr               = util.NewPathEval()
+		client = d.httpClient()
+		data   bytes.Buffer
+		stats  = stats{}
+		expr   = util.NewPathEval()
 	)
 
 	// Add collected stats back to total.
@@ -448,14 +444,14 @@ nextAdvisory:
 		u, err := url.Parse(file.URL())
 		if err != nil {
 			stats.downloadFailed++
-			slog.Warn("Ignoring invalid URL",
+			d.cfg.Logger.Warn("Ignoring invalid URL",
 				"url", file.URL(),
 				"error", err)
 			continue
 		}
 
 		if d.cfg.ignoreURL(file.URL()) {
-			slog.Debug("Ignoring URL", "url", file.URL())
+			d.cfg.Logger.Debug("Ignoring URL", "url", file.URL())
 			continue
 		}
 
@@ -463,7 +459,7 @@ nextAdvisory:
 		filename := filepath.Base(u.Path)
 		if !util.ConformingFileName(filename) {
 			stats.filenameFailed++
-			slog.Warn("Ignoring none conforming filename",
+			d.cfg.Logger.Warn("Ignoring none conforming filename",
 				"filename", filename)
 			continue
 		}
@@ -471,7 +467,7 @@ nextAdvisory:
 		resp, err := client.Get(file.URL())
 		if err != nil {
 			stats.downloadFailed++
-			slog.Warn("Cannot GET",
+			d.cfg.Logger.Warn("Cannot GET",
 				"url", file.URL(),
 				"error", err)
 			continue
@@ -479,7 +475,7 @@ nextAdvisory:
 
 		if resp.StatusCode != http.StatusOK {
 			stats.downloadFailed++
-			slog.Warn("Cannot load",
+			d.cfg.Logger.Warn("Cannot load",
 				"url", file.URL(),
 				"status", resp.Status,
 				"status_code", resp.StatusCode)
@@ -488,7 +484,7 @@ nextAdvisory:
 
 		// Warn if we do not get JSON.
 		if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
-			slog.Warn("Content type is not 'application/json'",
+			d.cfg.Logger.Warn("Content type is not 'application/json'",
 				"url", file.URL(),
 				"content_type", ct)
 		}
@@ -503,7 +499,7 @@ nextAdvisory:
 
 		// Only hash when we have a remote counter part we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			slog.Warn("Cannot fetch SHA256",
+			d.cfg.Logger.Warn("Cannot fetch SHA256",
 				"url", file.SHA256URL(),
 				"error", err)
 		} else {
@@ -512,7 +508,7 @@ nextAdvisory:
 		}
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			slog.Warn("Cannot fetch SHA512",
+			d.cfg.Logger.Warn("Cannot fetch SHA512",
 				"url", file.SHA512URL(),
 				"error", err)
 		} else {
@@ -535,7 +531,7 @@ nextAdvisory:
 			return json.NewDecoder(tee).Decode(&doc)
 		}(); err != nil {
 			stats.downloadFailed++
-			slog.Warn("Downloading failed",
+			d.cfg.Logger.Warn("Downloading failed",
 				"url", file.URL(),
 				"error", err)
 			continue
@@ -567,7 +563,7 @@ nextAdvisory:
 			var sign *crypto.PGPSignature
 			sign, signData, err = loadSignature(client, file.SignURL())
 			if err != nil {
-				slog.Warn("Downloading signature failed",
+				d.cfg.Logger.Warn("Downloading signature failed",
 					"url", file.SignURL(),
 					"error", err)
 			}
@@ -584,9 +580,9 @@ nextAdvisory:
 
 		// Validate against CSAF schema.
 		schemaCheck := func() error {
-			if errors, err := csaf.ValidateCSAF(doc); err != nil || len(errors) > 0 {
+			if errs, err := csaf.ValidateCSAF(doc); err != nil || len(errs) > 0 {
 				stats.schemaFailed++
-				d.logValidationIssues(file.URL(), errors, err)
+				d.logValidationIssues(file.URL(), errs, err)
 				return fmt.Errorf("schema validation for %q failed", file.URL())
 			}
 			return nil
@@ -621,7 +617,7 @@ nextAdvisory:
 		}
 
 		// Run all the validations.
-		valStatus := notValidatedValidationStatus
+		valStatus := NotValidatedValidationStatus
 		for _, check := range []func() error{
 			s256Check,
 			s512Check,
@@ -631,97 +627,43 @@ nextAdvisory:
 			remoteValidatorCheck,
 		} {
 			if err := check(); err != nil {
-				slog.Error("Validation check failed", "error", err)
-				valStatus.update(invalidValidationStatus)
-				if d.cfg.ValidationMode == validationStrict {
+				d.cfg.Logger.Error("Validation check failed", "error", err)
+				valStatus.update(InvalidValidationStatus)
+				if d.cfg.ValidationMode == ValidationStrict {
 					continue nextAdvisory
 				}
 			}
 		}
-		valStatus.update(validValidationStatus)
+		valStatus.update(ValidValidationStatus)
 
-		// Send to forwarder
-		if d.forwarder != nil {
-			d.forwarder.forward(
+		// Send to Forwarder
+		if d.Forwarder != nil {
+			d.Forwarder.forward(
 				filename, data.String(),
 				valStatus,
 				string(s256Data),
 				string(s512Data))
 		}
 
-		if d.cfg.NoStore {
-			// Do not write locally.
-			if valStatus == validValidationStatus {
-				stats.succeeded++
-			}
-			continue
+		download := DownloadedDocument{
+			Data:      data.Bytes(),
+			SHA256:    s256Data,
+			SHA512:    s512Data,
+			SignData:  signData,
+			Filename:  filename,
+			ValStatus: valStatus,
 		}
 
-		if err := expr.Extract(
-			`$.document.tracking.initial_release_date`, dateExtract, false, doc,
-		); err != nil {
-			slog.Warn("Cannot extract initial_release_date from advisory",
-				"url", file.URL())
-			initialReleaseDate = time.Now()
-		}
-		initialReleaseDate = initialReleaseDate.UTC()
-
-		// Advisories that failed validation are stored in a special folder.
-		var newDir string
-		if valStatus != validValidationStatus {
-			newDir = path.Join(d.cfg.Directory, failedValidationDir)
+		err = d.cfg.DownloadHandler(download)
+		if err != nil {
+			errorCh <- err
 		} else {
-			newDir = d.cfg.Directory
+			stats.succeeded++
 		}
-
-		// Do we have a configured destination folder?
-		if d.cfg.Folder != "" {
-			newDir = path.Join(newDir, d.cfg.Folder)
-		} else {
-			newDir = path.Join(newDir, lower, strconv.Itoa(initialReleaseDate.Year()))
-		}
-
-		if newDir != lastDir {
-			if err := d.mkdirAll(newDir, 0755); err != nil {
-				errorCh <- err
-				continue
-			}
-			lastDir = newDir
-		}
-
-		// Write advisory to file
-		path := filepath.Join(lastDir, filename)
-
-		// Write data to disk.
-		for _, x := range []struct {
-			p string
-			d []byte
-		}{
-			{path, data.Bytes()},
-			{path + ".sha256", s256Data},
-			{path + ".sha512", s512Data},
-			{path + ".asc", signData},
-		} {
-			if x.d != nil {
-				if err := os.WriteFile(x.p, x.d, 0644); err != nil {
-					errorCh <- err
-					continue nextAdvisory
-				}
-			}
-		}
-
-		stats.succeeded++
-		slog.Info("Written advisory", "path", path)
 	}
 }
 
-func (d *downloader) mkdirAll(path string, perm os.FileMode) error {
-	d.mkdirMu.Lock()
-	defer d.mkdirMu.Unlock()
-	return os.MkdirAll(path, perm)
-}
-
-func (d *downloader) checkSignature(data []byte, sign *crypto.PGPSignature) error {
+func (d *Downloader) checkSignature(data []byte, sign *crypto.PGPSignature) error {
 	pm := crypto.NewPlainMessage(data)
 	t := crypto.GetUnixTime()
 	return d.keys.VerifyDetached(pm, sign, t)
@@ -767,8 +709,8 @@ func loadHash(client util.Client, p string) ([]byte, []byte, error) {
 	return hash, data.Bytes(), nil
 }
 
-// run performs the downloads for all the given domains.
-func (d *downloader) run(ctx context.Context, domains []string) error {
+// Run performs the downloads for all the given domains.
+func (d *Downloader) Run(ctx context.Context, domains []string) error {
 	defer d.stats.log()
 	for _, domain := range domains {
 		if err := d.download(ctx, domain); err != nil {
@@ -778,8 +720,8 @@ func (d *downloader) run(ctx context.Context, domains []string) error {
 	return nil
 }
 
-// runEnumerate performs the enumeration of PMDs for all the given domains.
-func (d *downloader) runEnumerate(domains []string) error {
+// RunEnumerate performs the enumeration of PMDs for all the given domains.
+func (d *Downloader) RunEnumerate(domains []string) error {
 	defer d.stats.log()
 	for _, domain := range domains {
 		if err := d.enumerate(domain); err != nil {

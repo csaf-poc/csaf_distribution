@@ -6,7 +6,7 @@
 // SPDX-FileCopyrightText: 2023 German Federal Office for Information Security (BSI) <https://www.bsi.bund.de>
 // Software-Engineering: 2023 Intevation GmbH <https://intevation.de>
 
-package main
+package downloader
 
 import (
 	"bufio"
@@ -19,26 +19,24 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/csaf-poc/csaf_distribution/v3/internal/options"
 	"github.com/csaf-poc/csaf_distribution/v3/util"
 )
 
 func TestValidationStatusUpdate(t *testing.T) {
-	sv := validValidationStatus
-	sv.update(invalidValidationStatus)
-	sv.update(validValidationStatus)
-	if sv != invalidValidationStatus {
-		t.Fatalf("got %q expected %q", sv, invalidValidationStatus)
+	sv := ValidValidationStatus
+	sv.update(InvalidValidationStatus)
+	sv.update(ValidValidationStatus)
+	if sv != InvalidValidationStatus {
+		t.Fatalf("got %q expected %q", sv, InvalidValidationStatus)
 	}
-	sv = notValidatedValidationStatus
-	sv.update(validValidationStatus)
-	sv.update(notValidatedValidationStatus)
-	if sv != notValidatedValidationStatus {
-		t.Fatalf("got %q expected %q", sv, notValidatedValidationStatus)
+	sv = NotValidatedValidationStatus
+	sv.update(ValidValidationStatus)
+	sv.update(NotValidatedValidationStatus)
+	if sv != NotValidatedValidationStatus {
+		t.Fatalf("got %q expected %q", sv, NotValidatedValidationStatus)
 	}
 }
 
@@ -51,20 +49,21 @@ func TestForwarderLogStats(t *testing.T) {
 		Level: slog.LevelInfo,
 	})
 	lg := slog.New(h)
-	slog.SetDefault(lg)
 
-	cfg := &config{}
-	fw := newForwarder(cfg)
+	cfg := &Config{
+		Logger: lg,
+	}
+	fw := NewForwarder(cfg)
 	fw.failed = 11
 	fw.succeeded = 13
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		fw.run()
+		fw.Run()
 	}()
-	fw.log()
-	fw.close()
+	fw.Log()
+	fw.Close()
 	<-done
 
 	type fwStats struct {
@@ -95,14 +94,14 @@ func TestForwarderLogStats(t *testing.T) {
 }
 
 func TestForwarderHTTPClient(t *testing.T) {
-	cfg := &config{
+	cfg := &Config{
 		ForwardInsecure: true,
 		ForwardHeader: http.Header{
 			"User-Agent": []string{"curl/7.55.1"},
 		},
-		LogLevel: &options.LogLevel{Level: slog.LevelDebug},
+		Logger: slog.Default(),
 	}
-	fw := newForwarder(cfg)
+	fw := NewForwarder(cfg)
 	if c1, c2 := fw.httpClient(), fw.httpClient(); c1 != c2 {
 		t.Fatal("expected to return same client twice")
 	}
@@ -122,19 +121,17 @@ func TestForwarderReplaceExtension(t *testing.T) {
 }
 
 func TestForwarderBuildRequest(t *testing.T) {
-
 	// Good case ...
-	cfg := &config{
+	cfg := &Config{
 		ForwardURL: "https://example.com",
 	}
-	fw := newForwarder(cfg)
+	fw := NewForwarder(cfg)
 
 	req, err := fw.buildRequest(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512")
-
 	if err != nil {
 		t.Fatalf("buildRequest failed: %v", err)
 	}
@@ -175,9 +172,9 @@ func TestForwarderBuildRequest(t *testing.T) {
 			}
 			foundAdvisory = true
 		case contains("validation_status"):
-			if vs := validationStatus(data); vs != invalidValidationStatus {
+			if vs := ValidationStatus(data); vs != InvalidValidationStatus {
 				t.Fatalf("validation_status: got %q expected %q",
-					vs, invalidValidationStatus)
+					vs, InvalidValidationStatus)
 			}
 			foundValidationStatus = true
 		case contains("hash-256"):
@@ -209,7 +206,7 @@ func TestForwarderBuildRequest(t *testing.T) {
 
 	if _, err := fw.buildRequest(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512",
 	); err == nil {
@@ -238,101 +235,6 @@ func TestLimitedString(t *testing.T) {
 
 	if _, err := limitedString(&badReader{error: os.ErrInvalid}, 3); err == nil {
 		t.Fatal("expected to fail with an error")
-	}
-}
-
-func TestStoreFailedAdvisory(t *testing.T) {
-	dir, err := os.MkdirTemp("", "storeFailedAdvisory")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	cfg := &config{Directory: dir}
-	fw := newForwarder(cfg)
-
-	badDir := filepath.Join(dir, failedForwardDir)
-	if err := os.WriteFile(badDir, []byte("test"), 0664); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
-		t.Fatal("if the destination exists as a file an error should occur")
-	}
-
-	if err := os.Remove(badDir); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err != nil {
-		t.Fatal(err)
-	}
-
-	sha256Path := filepath.Join(dir, failedForwardDir, "advisory.json.sha256")
-
-	// Write protect advisory.
-	if err := os.Chmod(sha256Path, 0); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := fw.storeFailedAdvisory("advisory.json", "{}", "256", "512"); err == nil {
-		t.Fatal("expected to fail with an error")
-	}
-
-	if err := os.Chmod(sha256Path, 0644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestStoredFailed(t *testing.T) {
-	dir, err := os.MkdirTemp("", "storeFailed")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	orig := slog.Default()
-	defer slog.SetDefault(orig)
-
-	var buf bytes.Buffer
-	h := slog.NewJSONHandler(&buf, &slog.HandlerOptions{
-		Level: slog.LevelError,
-	})
-	lg := slog.New(h)
-	slog.SetDefault(lg)
-
-	cfg := &config{Directory: dir}
-	fw := newForwarder(cfg)
-
-	// An empty filename should lead to an error.
-	fw.storeFailed("", "{}", "256", "512")
-
-	if fw.failed != 1 {
-		t.Fatalf("got %d expected 1", fw.failed)
-	}
-
-	type entry struct {
-		Msg   string `json:"msg"`
-		Level string `json:"level"`
-	}
-
-	sc := bufio.NewScanner(bytes.NewReader(buf.Bytes()))
-	found := false
-	for sc.Scan() {
-		var e entry
-		if err := json.Unmarshal(sc.Bytes(), &e); err != nil {
-			t.Fatalf("JSON parsing log failed: %v", err)
-		}
-		if e.Msg == "Storing advisory failed forwarding failed" && e.Level == "ERROR" {
-			found = true
-			break
-		}
-	}
-	if err := sc.Err(); err != nil {
-		t.Fatalf("scanning log failed: %v", err)
-	}
-	if !found {
-		t.Fatal("Cannot error logging statistics in log")
 	}
 }
 
@@ -383,13 +285,17 @@ func TestForwarderForward(t *testing.T) {
 	// in the other test cases.
 	h := slog.NewJSONHandler(io.Discard, nil)
 	lg := slog.New(h)
-	slog.SetDefault(lg)
 
-	cfg := &config{
-		ForwardURL: "http://example.com",
-		Directory:  dir,
+	failedHandler := func(filename, doc, sha256, sha512 string) error {
+		return nil
 	}
-	fw := newForwarder(cfg)
+
+	cfg := &Config{
+		ForwardURL:           "http://example.com",
+		Logger:               lg,
+		FailedForwardHandler: failedHandler,
+	}
+	fw := NewForwarder(cfg)
 
 	// Use the fact that http client is cached.
 	fw.client = &fakeClient{}
@@ -398,32 +304,32 @@ func TestForwarderForward(t *testing.T) {
 
 	go func() {
 		defer close(done)
-		fw.run()
+		fw.Run()
 	}()
 
 	// Iterate through states of http client.
 	for i := 0; i <= 3; i++ {
 		fw.forward(
 			"test.json", "{}",
-			invalidValidationStatus,
+			InvalidValidationStatus,
 			"256",
 			"512")
 	}
 
 	// Make buildRequest fail.
 	wait := make(chan struct{})
-	fw.cmds <- func(f *forwarder) {
+	fw.cmds <- func(f *Forwarder) {
 		f.cfg.ForwardURL = "%"
 		close(wait)
 	}
 	<-wait
 	fw.forward(
 		"test.json", "{}",
-		invalidValidationStatus,
+		InvalidValidationStatus,
 		"256",
 		"512")
 
-	fw.close()
+	fw.Close()
 
 	<-done
 }
