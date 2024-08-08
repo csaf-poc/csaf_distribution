@@ -27,7 +27,7 @@ dns_name = "localhost"
 
 serial = 010
 expiration_days = 50
-' sudo tee gnutls-certtool.testserver.template
+' | sudo tee gnutls-certtool.testserver.template
 
 sudo certtool --generate-certificate --load-privkey testserver-key.pem --outfile testserver.crt --load-ca-certificate rootca-cert.pem --load-ca-privkey rootca-key.pem --template gnutls-certtool.testserver.template --stdout | head -1
 

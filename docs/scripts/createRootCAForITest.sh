@@ -26,6 +26,6 @@ crl_signing_key
 
 serial = 001
 expiration_days = 100
-' sudo tee gnutls-certtool.rootca.template
+' | sudo tee gnutls-certtool.rootca.template
 
 sudo certtool --generate-self-signed --load-privkey rootca-key.pem --outfile rootca-cert.pem --template gnutls-certtool.rootca.template --stdout | head -1
