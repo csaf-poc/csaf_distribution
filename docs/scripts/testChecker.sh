@@ -13,7 +13,7 @@ set -e  # to exit if a command in the script fails
 echo '==== run checker (twice)'
 cd ~/csaf_distribution
 
-./bin-linux-amd64/csaf_checker -f html -o ../checker-results.html --insecure \
+sudo ./bin-linux-amd64/csaf_checker -f html -o ../checker-results.html --insecure \
   --client_cert ~/devca1/testclient1.crt \
   --client_key ~/devca1/testclient1-key.pem \
   --verbose --insecure localhost
