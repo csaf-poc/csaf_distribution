@@ -1449,7 +1449,7 @@ func (p *processor) checkWellknownSecurityDNS(domain string) error {
 }
 
 // checkPGPKeys checks if the OpenPGP keys are available and valid, fetches
-// the the remotely keys and compares the fingerprints.
+// the remotely keys and compares the fingerprints.
 // As a result of these a respective error messages are passed to badPGP method
 // in case of errors. It returns nil if all checks are passed.
 func (p *processor) checkPGPKeys(_ string) error {
@@ -1518,8 +1518,13 @@ func (p *processor) checkPGPKeys(_ string) error {
 			continue
 		}
 
+		if key.Fingerprint == "" {
+			p.badPGPs.warn("No fingerprint for public OpenPGP key found.")
+			continue
+		}
+
 		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
-			p.badPGPs.error("Fingerprint of public OpenPGP key %s does not match remotely loaded.", u)
+			p.badPGPs.error("Given Fingerprint (%q) of public OpenPGP key %q does not match remotely loaded (%q).", string(key.Fingerprint), u, ckey.GetFingerprint())
 			continue
 		}
 		if p.keys == nil {
