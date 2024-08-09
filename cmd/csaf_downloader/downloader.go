@@ -499,20 +499,28 @@ nextAdvisory:
 			signData                   []byte
 		)
 
-		// Only hash when we have a remote counter part we can compare it with.
+		// Only hash when we have a remote counterpart we can compare it with.
 		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			slog.Warn("Cannot fetch SHA256",
-				"url", file.SHA256URL(),
-				"error", err)
+			if !file.IsDirectory() {
+				slog.Warn("Cannot fetch SHA256",
+					"url", file.SHA256URL(),
+					"error", err)
+			} else {
+				slog.Info("SHA256 not present", "file", file.URL())
+			}
 		} else {
 			s256 = sha256.New()
 			writers = append(writers, s256)
 		}
 
 		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			slog.Warn("Cannot fetch SHA512",
-				"url", file.SHA512URL(),
-				"error", err)
+			if !file.IsDirectory() {
+				slog.Warn("Cannot fetch SHA512",
+					"url", file.SHA512URL(),
+					"error", err)
+			} else {
+				slog.Info("SHA512 not present", "file", file.URL())
+			}
 		} else {
 			s512 = sha512.New()
 			writers = append(writers, s512)
@@ -747,6 +755,9 @@ func loadSignature(client util.Client, p string) (*crypto.PGPSignature, []byte, 
 }
 
 func loadHash(client util.Client, p string) ([]byte, []byte, error) {
+	if p == "" {
+		return nil, nil, fmt.Errorf("no hash path provided")
+	}
 	resp, err := client.Get(p)
 	if err != nil {
 		return nil, nil, err
