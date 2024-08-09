@@ -301,6 +301,11 @@ func (c *config) httpClient(p *provider) util.Client {
 			Client: client,
 			Header: c.ExtraHeader,
 		}
+	default:
+		client = &util.HeaderClient{
+			Client: client,
+			Header: http.Header{},
+		}
 	}
 
 	if c.Verbose {

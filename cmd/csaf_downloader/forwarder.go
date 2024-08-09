@@ -111,11 +111,9 @@ func (f *forwarder) httpClient() util.Client {
 	client := util.Client(&hClient)
 
 	// Add extra headers.
-	if len(f.cfg.ForwardHeader) > 0 {
-		client = &util.HeaderClient{
-			Client: client,
-			Header: f.cfg.ForwardHeader,
-		}
+	client = &util.HeaderClient{
+		Client: client,
+		Header: f.cfg.ForwardHeader,
 	}
 
 	// Add optional URL logging.

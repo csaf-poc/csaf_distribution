@@ -1,4 +1,5 @@
 ## csaf_downloader
+
 A tool to download CSAF documents from CSAF providers.
 
 ### Usage
@@ -39,6 +40,8 @@ Help Options:
 
 Will download all CSAF documents for the given _domains_, by trying each as a CSAF provider.
 
+If no user agent is specified with `--header=user-agent:custom-agent/1.0` then the default agent in the form of `csaf_distribution/VERSION` is sent.
+
 If a _domain_ starts with `https://` it is instead considered a direct URL to the `provider-metadata.json` and downloading procedes from there.
 
 Increasing the number of workers opens more connections to the web servers
@@ -47,6 +50,7 @@ However, since this also increases the load on the servers, their administrators
 have taken countermeasures to limit this.
 
 If no config file is explictly given the follwing places are searched for a config file:
+
 ```
 ~/.config/csaf/downloader.toml
 ~/.csaf_downloader.toml
@@ -56,6 +60,7 @@ csaf_downloader.toml
 with `~` expanding to `$HOME` on unixoid systems and `%HOMEPATH` on Windows systems.
 
 Supported options in config files:
+
 ```
 # directory         # not set by default
 insecure            = false
@@ -90,6 +95,7 @@ option.
 E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
 the sub strings **white** or **red**.
 In the config file this has to be noted as:
+
 ```
 ignorepattern = [".*white.*", ".*red.*"]
 ```
@@ -106,16 +112,18 @@ into a given intervall. There are three possible notations:
    and 'y' for years are recognized. In these cases only integer
    values are accepted without any fractions.
    Some examples:
+
    - `"3h"` means downloading the advisories that have changed in the last three hours.
-   - `"30m"`  .. changed within the last thirty minutes.
+   - `"30m"` .. changed within the last thirty minutes.
    - `"3M2m"` .. changed within the last three months and two minutes.
-   - `"2y"`   .. changed within the last two years.
+   - `"2y"` .. changed within the last two years.
 
 2. Absolute. If the given string is an RFC 3339 date timestamp
    the time interval between this date and now is used.
    E.g. `"2006-01-02"` means that all files between 2006 January 2nd and now going to being
    downloaded.
    Accepted patterns are:
+
    - `"2006-01-02T15:04:05Z"`
    - `"2006-01-02T15:04:05+07:00"`
    - `"2006-01-02T15:04:05-07:00"`
@@ -134,6 +142,7 @@ into a given intervall. There are three possible notations:
 All interval boundaries are inclusive.
 
 #### Forwarding
+
 The downloader is able to forward downloaded advisories and their checksums,
 OpenPGP signatures and validation results to an HTTP endpoint.  
 The details of the implemented API are described [here](https://github.com/mfd2007/csaf_upload_interface).  
