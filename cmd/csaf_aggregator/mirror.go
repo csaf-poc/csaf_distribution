@@ -199,7 +199,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 			w.log.Warn("Ignoring PGP key without URL", "fingerprint", pgpKey.Fingerprint)
 			continue
 		}
-		if _, err := hex.DecodeString(string(pgpKey.Fingerprint)); err != nil {
+		if _, err := hex.DecodeString(string(*pgpKey.Fingerprint)); err != nil {
 			w.log.Warn("Ignoring PGP key with invalid fingerprint", "url", *pgpKey.URL)
 			continue
 		}
@@ -217,7 +217,7 @@ func (w *worker) mirrorPGPKeys(pm *csaf.ProviderMetadata) error {
 				*pgpKey.URL, res.Status, res.StatusCode)
 		}
 
-		fingerprint := strings.ToUpper(string(pgpKey.Fingerprint))
+		fingerprint := strings.ToUpper(string(*pgpKey.Fingerprint))
 
 		localFile := filepath.Join(openPGPFolder, fingerprint+".asc")
 
@@ -588,12 +588,12 @@ func (w *worker) mirrorFiles(tlpLabel csaf.TLPLabel, files []csaf.AdvisoryFile) 
 			if err := os.MkdirAll(yearDir, 0755); err != nil {
 				return err
 			}
-			//log.Printf("created %s\n", yearDir)
+			// log.Printf("created %s\n", yearDir)
 			yearDirs[year] = yearDir
 		}
 
 		fname := filepath.Join(yearDir, filename)
-		//log.Printf("write: %s\n", fname)
+		// log.Printf("write: %s\n", fname)
 		data := content.Bytes()
 		if err := writeFileHashes(
 			fname, filename,

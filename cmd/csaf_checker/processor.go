@@ -83,10 +83,8 @@ type reporter interface {
 	report(*processor, *Domain)
 }
 
-var (
-	// errContinue indicates that the current check should continue.
-	errContinue = errors.New("continue")
-)
+// errContinue indicates that the current check should continue.
+var errContinue = errors.New("continue")
 
 type whereType byte
 
@@ -970,8 +968,7 @@ func (p *processor) checkChanges(base string, mask whereType) error {
 				continue
 			}
 			path := r[pathColumn]
-			times, files =
-				append(times, t),
+			times, files = append(times, t),
 				append(files, csaf.PlainAdvisoryFile(path))
 		}
 		return times, files, nil
@@ -1227,7 +1224,6 @@ func (p *processor) checkWhitePermissions(string) error {
 // According to the result, the respective error messages added to
 // badProviderMetadata.
 func (p *processor) checkProviderMetadata(domain string) bool {
-
 	p.badProviderMetadata.use()
 
 	client := p.httpClient()
@@ -1518,13 +1514,17 @@ func (p *processor) checkPGPKeys(_ string) error {
 			continue
 		}
 
-		if key.Fingerprint == "" {
+		if key.Fingerprint == nil {
 			p.badPGPs.warn("No fingerprint for public OpenPGP key found.")
 			continue
 		}
 
-		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
-			p.badPGPs.error("Given Fingerprint (%q) of public OpenPGP key %q does not match remotely loaded (%q).", string(key.Fingerprint), u, ckey.GetFingerprint())
+		if *key.Fingerprint == "" {
+			p.badPGPs.warn("Empty fingerprint for public OpenPGP key found.")
+		}
+
+		if !strings.EqualFold(ckey.GetFingerprint(), string(*key.Fingerprint)) {
+			p.badPGPs.error("Given Fingerprint (%q) of public OpenPGP key %q does not match remotely loaded (%q).", string(*key.Fingerprint), u, ckey.GetFingerprint())
 			continue
 		}
 		if p.keys == nil {

@@ -81,8 +81,8 @@ var fingerprintPattern = patternUnmarshal(`^[0-9a-fA-F]{40,}$`)
 // PGPKey is location and the fingerprint of the key
 // used to sign the CSAF documents.
 type PGPKey struct {
-	Fingerprint Fingerprint `json:"fingerprint,omitempty"`
-	URL         *string     `json:"url"` // required
+	Fingerprint *Fingerprint `json:"fingerprint,omitempty"`
+	URL         *string      `json:"url"` // required
 }
 
 // Category is the category of the CSAF feed.
@@ -616,13 +616,14 @@ func (pmd *ProviderMetadata) SetLastUpdated(t time.Time) {
 // If there is no such key it is append to the list of keys.
 func (pmd *ProviderMetadata) SetPGP(fingerprint, url string) {
 	for i := range pmd.PGPKeys {
-		if strings.EqualFold(string(pmd.PGPKeys[i].Fingerprint), fingerprint) {
+		if strings.EqualFold(string(*pmd.PGPKeys[i].Fingerprint), fingerprint) {
 			pmd.PGPKeys[i].URL = &url
 			return
 		}
 	}
+	f := Fingerprint(fingerprint)
 	pmd.PGPKeys = append(pmd.PGPKeys, PGPKey{
-		Fingerprint: Fingerprint(fingerprint),
+		Fingerprint: &f,
 		URL:         &url,
 	})
 }
