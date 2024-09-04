@@ -1445,9 +1445,9 @@ func (p *processor) checkWellknownSecurityDNS(domain string) error {
 }
 
 // checkPGPKeys checks if the OpenPGP keys are available and valid, fetches
-// the remotely keys and compares the fingerprints.
-// As a result of these a respective error messages are passed to badPGP method
-// in case of errors. It returns nil if all checks are passed.
+// the remote pubkeys and compares the fingerprints.
+// As a result of these checks respective error messages are passed
+// to badPGPs methods. It returns nil if all checks are passed.
 func (p *processor) checkPGPKeys(_ string) error {
 
 	p.badPGPs.use()
@@ -1481,7 +1481,7 @@ func (p *processor) checkPGPKeys(_ string) error {
 	for i := range keys {
 		key := &keys[i]
 		if key.URL == nil {
-			p.badPGPs.error("Missing URL for fingerprint %x.", key.Fingerprint)
+			p.badPGPs.error("Missing URL for fingerprint %x.", *key.Fingerprint)
 			continue
 		}
 		up, err := url.Parse(*key.URL)
