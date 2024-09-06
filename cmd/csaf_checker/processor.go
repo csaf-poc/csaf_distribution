@@ -1518,11 +1518,6 @@ func (p *processor) checkPGPKeys(_ string) error {
 			continue
 		}
 
-		if key.Fingerprint == "" {
-			p.badPGPs.warn("No fingerprint for public OpenPGP key found.")
-			continue
-		}
-
 		if !strings.EqualFold(ckey.GetFingerprint(), string(key.Fingerprint)) {
 			p.badPGPs.error("Given Fingerprint (%q) of public OpenPGP key %q does not match remotely loaded (%q).", string(key.Fingerprint), u, ckey.GetFingerprint())
 			continue
