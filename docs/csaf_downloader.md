@@ -158,7 +158,7 @@ key protection mechanism based on RFC 1423, see
 Thus it considered experimental and most likely to be removed
 in a future release. Please only use this option, if you fully understand
 the security implications!
-Note that for fully automated processes, it usually not make sense
+Note that for fully automated processes, it usually does not make sense
 to protect the client certificate's private key with a passphrase.
 Because the passphrase has to be accessible to the process anyway to run
 unattented. In this situation the processing environment should be secured
