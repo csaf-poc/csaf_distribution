@@ -1,5 +1,5 @@
 {
-  "canonical_url": "/provider-metadata.json",
+  "canonical_url": "{{.URL}}/provider-metadata.json",
   "distributions": [
     {
       "rolie": {
@@ -7,20 +7,20 @@
           {
             "summary": "TLP:WHITE advisories",
             "tlp_label": "WHITE",
-            "url": "/white/white-feed.json"
+            "url": "{{.URL}}/white/white-feed.json"
           }
         ]
       }
     }
   ],
-  "last_updated": "2020-00-00T00:00:00Z",
+  "last_updated": "2020-01-01T00:00:00Z",
   "list_on_CSAF_aggregators": true,
   "metadata_version": "2.0",
   "mirror_on_CSAF_aggregators": true,
   "public_openpgp_keys": [
     {
       "fingerprint": "A8914CA2F11139C6A69A0018FB3CD9B15DE61596",
-      "url": "/openpgp/pubkey.asc"
+      "url": "{{.URL}}/openpgp/pubkey.asc"
     }
   ],
   "publisher": {

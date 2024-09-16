@@ -23,9 +23,9 @@ import (
 )
 
 type ProviderParams struct {
-	url          string
-	enableSha256 bool
-	enableSha512 bool
+	URL          string
+	EnableSha256 bool
+	EnableSha512 bool
 }
 
 func ProviderHandler(params *ProviderParams, directoryProvider bool) http.HandlerFunc {
@@ -88,14 +88,15 @@ func TestShaMarking(t *testing.T) {
 			tt.Parallel()
 			serverURL := ""
 			params := ProviderParams{
-				url:          "",
-				enableSha256: true,
-				enableSha512: true,
+				URL:          "",
+				EnableSha256: true,
+				EnableSha512: true,
 			}
 			server := httptest.NewTLSServer(ProviderHandler(&params, test.directoryProvider))
 			defer server.Close()
 
 			serverURL = server.URL
+			params.URL = server.URL
 
 			hClient := server.Client()
 			client := util.Client(hClient)
