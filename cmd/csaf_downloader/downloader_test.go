@@ -101,7 +101,8 @@ func TestShaMarking(t *testing.T) {
 			hClient := server.Client()
 			client := util.Client(hClient)
 
-			cfg := config{LogLevel: &options.LogLevel{Level: slog.LevelDebug}}
+			tempDir := t.TempDir()
+			cfg := config{LogLevel: &options.LogLevel{Level: slog.LevelDebug}, Directory: tempDir}
 			cfg.prepare()
 			d, err := newDownloader(&cfg)
 			if err != nil {
