@@ -18,7 +18,7 @@
         "term": "csaf"
       }
     ],
-    "updated": "2024-05-24T09:22:31Z",
+    "updated": "2020-01-01T00:00:00Z",
     "entry": [
       {
         "id": "Avendor-advisory-0004",
@@ -28,21 +28,25 @@
             "rel": "self",
             "href": "/white/avendor-advisory-0004.json"
           },
+          {{if .EnableSha256}}
           {
             "rel": "hash",
             "href": "/white/avendor-advisory-0004.json.sha256"
           },
+          {{end}}
+          {{if .EnableSha512}}
           {
             "rel": "hash",
             "href": "/white/avendor-advisory-0004.json.sha512"
           },
+          {{end}}
           {
             "rel": "signature",
             "href": "/white/avendor-advisory-0004.json.asc"
           }
         ],
-        "published": "2020-00-00T00:00:00Z",
-        "updated": "2020-00-00T00:00:00Z",
+        "published": "2020-01-01T00:00:00Z",
+        "updated": "2020-01-01T00:00:00Z",
         "content": {
           "type": "application/json",
           "src": "/avendor-advisory-0004.json"
