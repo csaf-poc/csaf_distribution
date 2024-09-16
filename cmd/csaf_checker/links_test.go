@@ -107,7 +107,7 @@ func Test_listed(t *testing.T) {
 		t.Run(test.name, func(tt *testing.T) {
 			tt.Parallel()
 			serverURL := ""
-			fs := http.FileServer(http.Dir("../../testdata/simple-directory-feed"))
+			fs := http.FileServer(http.Dir("../../testdata/simple-directory-provider"))
 			server := httptest.NewTLSServer(fs)
 			defer server.Close()
 
