@@ -22,19 +22,19 @@
     },
     "title": "Test CSAF document",
     "tracking": {
-      "current_release_date": "2020-00-00T00:00:00Z",
+      "current_release_date": "2020-01-01T00:00:00Z",
       "generator": {
-        "date": "2020-00-00T00:00:00Z",
+        "date": "2020-01-01T00:00:00Z",
         "engine": {
           "name": "csaf-tool",
           "version": "0.3.2"
         }
       },
       "id": "Avendor-advisory-0004",
-      "initial_release_date": "2020-00-00T00:00:00Z",
+      "initial_release_date": "2020-01-01T00:00:00Z",
       "revision_history": [
         {
-          "date": "2020-00-00T00:00:00Z",
+          "date": "2020-01-01T00:00:00Z",
           "number": "1",
           "summary": "Initial version"
         }
@@ -140,7 +140,7 @@
         {
           "category": "impact",
           "details": "Customers should upgrade to the latest version of the product",
-          "date": "2020-00-00T00:00:00Z",
+          "date": "2020-01-01T00:00:00Z",
           "product_ids": ["CSAFPID_0001"]
         }
       ]
@@ -161,7 +161,7 @@
         {
           "category": "impact",
           "details": "Still under investigation",
-          "date": "2020-00-00T00:00:00Z",
+          "date": "2020-01-01T00:00:00Z",
           "product_ids": ["CSAFPID_0001"]
         }
       ]

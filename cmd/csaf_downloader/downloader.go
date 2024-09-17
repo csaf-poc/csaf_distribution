@@ -502,7 +502,7 @@ nextAdvisory:
 			signData                   []byte
 		)
 
-		if (d.cfg.PreferredHash != "sha512" || file.SHA512URL() == "") && file.SHA256URL() != "" {
+		if (d.cfg.PreferredHash != algSha512 || file.SHA512URL() == "") && file.SHA256URL() != "" {
 			// Only hash when we have a remote counterpart we can compare it with.
 			if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
 				if !file.IsDirectory() {
@@ -518,7 +518,7 @@ nextAdvisory:
 			}
 		}
 
-		if (d.cfg.PreferredHash != "sha256" || file.SHA256URL() == "") && file.SHA512URL() != "" {
+		if (d.cfg.PreferredHash != algSha256 || file.SHA256URL() == "") && file.SHA512URL() != "" {
 			if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
 				if !file.IsDirectory() {
 					slog.Warn("Cannot fetch SHA512",
