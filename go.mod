@@ -1,6 +1,6 @@
 module github.com/csaf-poc/csaf_distribution/v3
 
-go 1.21
+go 1.22
 
 require (
 	github.com/BurntSushi/toml v1.3.2
