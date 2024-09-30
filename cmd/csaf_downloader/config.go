@@ -44,8 +44,8 @@ const (
 type hashAlgorithm string
 
 const (
-	algSha256  = hashAlgorithm("SHA256")
-	algSha2512 = hashAlgorithm("SHA512")
+	algSha256 = hashAlgorithm("sha256")
+	algSha512 = hashAlgorithm("sha512")
 )
 
 type config struct {
