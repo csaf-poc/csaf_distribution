@@ -53,7 +53,6 @@ type downloader struct {
 const failedValidationDir = "failed_validation"
 
 func newDownloader(cfg *config) (*downloader, error) {
-
 	var validator csaf.RemoteValidator
 
 	if cfg.RemoteValidator != "" {
@@ -103,7 +102,6 @@ func logRedirect(req *http.Request, via []*http.Request) error {
 }
 
 func (d *downloader) httpClient() util.Client {
-
 	hClient := http.Client{}
 
 	if d.cfg.verbose() {
@@ -251,7 +249,6 @@ func (d *downloader) downloadFiles(
 	label csaf.TLPLabel,
 	files []csaf.AdvisoryFile,
 ) error {
-
 	var (
 		advisoryCh = make(chan csaf.AdvisoryFile)
 		errorCh    = make(chan error)
@@ -301,7 +298,6 @@ func (d *downloader) loadOpenPGPKeys(
 	base *url.URL,
 	expr *util.PathEval,
 ) error {
-
 	src, err := expr.Eval("$.public_openpgp_keys", doc)
 	if err != nil {
 		// no keys.
@@ -355,7 +351,6 @@ func (d *downloader) loadOpenPGPKeys(
 			defer res.Body.Close()
 			return crypto.NewKeyFromArmoredReader(res.Body)
 		}()
-
 		if err != nil {
 			slog.Warn(
 				"Reading public OpenPGP key failed",
@@ -499,23 +494,35 @@ nextAdvisory:
 			signData                   []byte
 		)
 
-		// Only hash when we have a remote counter part we can compare it with.
-		if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
-			slog.Warn("Cannot fetch SHA256",
-				"url", file.SHA256URL(),
-				"error", err)
-		} else {
-			s256 = sha256.New()
-			writers = append(writers, s256)
+		if (d.cfg.PreferredHash != "sha512" || file.SHA512URL() == "") && file.SHA256URL() != "" {
+			// Only hash when we have a remote counterpart we can compare it with.
+			if remoteSHA256, s256Data, err = loadHash(client, file.SHA256URL()); err != nil {
+				if !file.IsDirectory() {
+					slog.Warn("Cannot fetch SHA256",
+						"url", file.SHA256URL(),
+						"error", err)
+				} else {
+					slog.Info("SHA256 not present", "file", file.URL())
+				}
+			} else {
+				s256 = sha256.New()
+				writers = append(writers, s256)
+			}
 		}
 
-		if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
-			slog.Warn("Cannot fetch SHA512",
-				"url", file.SHA512URL(),
-				"error", err)
-		} else {
-			s512 = sha512.New()
-			writers = append(writers, s512)
+		if (d.cfg.PreferredHash != "sha256" || file.SHA256URL() == "") && file.SHA512URL() != "" {
+			if remoteSHA512, s512Data, err = loadHash(client, file.SHA512URL()); err != nil {
+				if !file.IsDirectory() {
+					slog.Warn("Cannot fetch SHA512",
+						"url", file.SHA512URL(),
+						"error", err)
+				} else {
+					slog.Info("SHA512 not present", "file", file.URL())
+				}
+			} else {
+				s512 = sha512.New()
+				writers = append(writers, s512)
+			}
 		}
 
 		// Remember the data as we need to store it to file later.
