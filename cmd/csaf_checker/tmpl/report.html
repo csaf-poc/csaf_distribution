@@ -32,11 +32,13 @@
         <td>{{ . }}</td>
       </tr>
       {{ end }}
-      {{ with .ContactDetails }}
-      <tr>
-        <td><strong>Contact Details:</strong></td>
-        <td>{{ . }}</td>
-      </tr>
+      {{ if and .Contact .Contact.Details }}
+        {{ with .Contact.Details }}
+          <tr>
+            <td><strong>Contact Details:</strong></td>
+            <td>{{ . }}</td>
+          </tr>
+        {{ end }}
       {{ end }}
       {{ with .IssuingAuthority }}
       <tr>
