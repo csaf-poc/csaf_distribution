@@ -105,6 +105,13 @@ def prepare_public_api(models: dict[str, str]) -> dict[str, str]:
             msg = f"generated enum values diverged: {old}, {shared}"
             raise ValueError(msg)
     provider = replace_once(provider, "type RoleT string", "type RoleT = ProviderRole")
+
+    for field in ("issuing_authority", "public_openpgp_key_url"):
+        provider = replace_once(
+            provider,
+            f'`json:"{field},omitempty,omitzero"`',
+            f'`json:"{field},omitempty,omitzero" toml:"{field}"`',
+        )
     csaf = replace_once(
         csaf,
         "type BranchesT []struct {",
@@ -120,6 +127,12 @@ def prepare_public_api(models: dict[str, str]) -> dict[str, str]:
         '\tAggregatorVersion AggregatorAggregatorVersion `json:"aggregator_version"`',
         '\tVersion AggregatorAggregatorVersion `json:"aggregator_version"`',
     )
+    for field in ("contact_details", "issuing_authority"):
+        models["aggregator_generated.go"] = replace_once(
+            models["aggregator_generated.go"],
+            f'`json:"{field},omitempty,omitzero"`',
+            f'`json:"{field},omitempty,omitzero" toml:"{field}"`',
+        )
     models["csaf_generated.go"] = csaf
     models["provider_generated.go"] = provider
     return models

@@ -47,12 +47,12 @@ type AggregatorAggregator struct {
 
 	// Information on how to contact the aggregator, possibly including details such
 	// as web sites, email addresses, phone numbers, and postal mail addresses.
-	ContactDetails *string `json:"contact_details,omitempty,omitzero"`
+	ContactDetails *string `json:"contact_details,omitempty,omitzero" toml:"contact_details"`
 
 	// Provides information about the authority of the aggregator to release the list,
 	// in particular, the party's constituency and responsibilities or other
 	// obligations.
-	IssuingAuthority *string `json:"issuing_authority,omitempty,omitzero"`
+	IssuingAuthority *string `json:"issuing_authority,omitempty,omitzero" toml:"issuing_authority"`
 
 	// Contains the name of the aggregator.
 	Name string `json:"name"`

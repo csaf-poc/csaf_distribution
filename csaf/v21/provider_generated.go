@@ -137,7 +137,7 @@ type PublisherT struct {
 	// Provides information about the authority of the issuing party to release the
 	// document, in particular, the party's constituency and responsibilities or other
 	// obligations.
-	IssuingAuthority *string `json:"issuing_authority,omitempty,omitzero"`
+	IssuingAuthority *string `json:"issuing_authority,omitempty,omitzero" toml:"issuing_authority"`
 
 	// Contains the name of the issuing party.
 	Name string `json:"name"`
@@ -168,7 +168,7 @@ type PublisherTContact struct {
 
 	// Contains a URL pointing to a public OpenPGP key valid for the email of issuing
 	// party provided in the sibling property `email`.
-	PublicOpenpgpKeyURL *string `json:"public_openpgp_key_url,omitempty,omitzero"`
+	PublicOpenpgpKeyURL *string `json:"public_openpgp_key_url,omitempty,omitzero" toml:"public_openpgp_key_url"`
 }
 
 type RoleT = ProviderRole
