@@ -245,7 +245,7 @@ insecure = true
   # If aggregator.category == "aggreator", set for an entry that should
   # be listed in addition:
   category = "lister"
-# ignore_pattern = [".*white.*", ".*red.*"]
+# ignore_pattern = [".*clear.*", ".*red.*"]
 ```
 
 <!-- MARKDOWN-AUTO-DOCS:END -->

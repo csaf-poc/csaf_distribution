@@ -33,7 +33,7 @@ at `/etc/csaf/internal-provider1.toml`:
 ```toml
 openpgp_private_key = "/etc/csaf/real_private.asc"
 openpgp_public_key = "/etc/csaf/real_public.asc"
-tlps = ["white"]
+tlps = ["clear"]
 canonical_url_prefix = "https://nein.ntvtn.de:10443"
 categories = ["Example Company Product B", "expr:document.lang"]
 create_service_document = true

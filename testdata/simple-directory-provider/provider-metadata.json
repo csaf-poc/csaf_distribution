@@ -2,7 +2,7 @@
   "canonical_url": "{{.URL}}/provider-metadata.json",
   "distributions": [
     {
-      "directory_url": "{{.URL}}/white/"
+      "directory_url": "{{.URL}}/clear/"
     }
   ],
   "last_updated": "2020-01-01T00:00:00Z",

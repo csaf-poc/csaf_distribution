@@ -5,9 +5,9 @@
       "rolie": {
         "feeds": [
           {
-            "summary": "TLP:WHITE advisories",
-            "tlp_label": "WHITE",
-            "url": "{{.URL}}/white/white-feed.json"
+            "summary": "TLP:CLEAR advisories",
+            "tlp_label": "CLEAR",
+            "url": "{{.URL}}/clear/clear-feed.json"
           }
         ]
       }

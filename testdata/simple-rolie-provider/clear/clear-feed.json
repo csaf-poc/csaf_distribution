@@ -1,11 +1,11 @@
 {
   "feed": {
-    "id": "csaf-feed-tlp-white",
-    "title": "CSAF feed (TLP:WHITE)",
+    "id": "csaf-feed-tlp-clear",
+    "title": "CSAF feed (TLP:CLEAR)",
     "link": [
       {
         "rel": "self",
-        "href": "{{.URL}}/white/csaf-feed-tlp-white.json"
+        "href": "{{.URL}}/clear/csaf-feed-tlp-clear.json"
       },
       {
         "rel": "service",
@@ -26,23 +26,23 @@
         "link": [
           {
             "rel": "self",
-            "href": "{{.URL}}/white/avendor-advisory-0004.json"
+            "href": "{{.URL}}/clear/avendor-advisory-0004.json"
           },
           {{if .EnableSha256}}
           {
             "rel": "hash",
-            "href": "{{.URL}}/white/avendor-advisory-0004.json.sha256"
+            "href": "{{.URL}}/clear/avendor-advisory-0004.json.sha256"
           },
           {{end}}
           {{if .EnableSha512}}
           {
             "rel": "hash",
-            "href": "{{.URL}}/white/avendor-advisory-0004.json.sha512"
+            "href": "{{.URL}}/clear/avendor-advisory-0004.json.sha512"
           },
           {{end}}
           {
             "rel": "signature",
-            "href": "{{.URL}}/white/avendor-advisory-0004.json.asc"
+            "href": "{{.URL}}/clear/avendor-advisory-0004.json.asc"
           }
         ],
         "published": "2020-01-01T00:00:00Z",

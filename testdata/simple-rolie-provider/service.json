@@ -5,8 +5,8 @@
         "title": "CSAF feeds",
         "collection": [
           {
-            "title": "CSAF feed (TLP:WHITE)",
-            "href": "{{.URL}}/white/white-feed.json",
+            "title": "CSAF feed (TLP:CLEAR)",
+            "href": "{{.URL}}/clear/clear-feed.json",
             "categories": {
               "category": [
                 {

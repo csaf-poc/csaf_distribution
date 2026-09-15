@@ -9,7 +9,7 @@ Application Options:
   -a, --action=[upload|create]              Action to perform (default: upload)
   -u, --url=URL                             URL of the CSAF provider (default:
                                             https://localhost/cgi-bin/csaf_provider.go)
-  -t, --tlp=[csaf|white|green|amber|red]    TLP of the feed (default: csaf)
+  -t, --tlp=[csaf|clear|green|amber|red]    TLP of the feed (default: csaf)
   -x, --external_signed                     CSAF files are signed externally. Assumes .asc files beside
                                             CSAF files.
   -X, --signing_tool=                       Tool to sign a file externally
@@ -43,7 +43,7 @@ may not lead to the desired result.
 E.g. uploading a csaf-document
 
 ```bash
-./csaf_uploader -a upload -I -t white -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
+./csaf_uploader -a upload -I -t clear -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
 ```
 
 which asks to enter a password interactively.
@@ -51,12 +51,12 @@ which asks to enter a password interactively.
 To upload an already signed document, use the `-x` option
 ```bash
 # Note: The file CSAF-document-1.json.asc must exist
-./csaf_uploader -x -a upload -I -t white -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
+./csaf_uploader -x -a upload -I -t clear -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
 ```
 
 To use external tool for signing
 ```bash
-./csaf_uploader --signing_tool signing_tool.sh white -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
+./csaf_uploader --signing_tool signing_tool.sh clear -u https://localhost/cgi-bin/csaf_provider.go  CSAF-document-1.json
 ```
 Example script under `csaf/docs/scripts/signing_tool.sh`
 There is an optional timeout `signing_tool_timeout` which - if set to values greater 0 - stops the external call after the given duration.

@@ -100,12 +100,12 @@ sent by the checker to an acceptable rate.
 You can ignore certain advisories while checking by specifying a list
 of regular expressions[^1] to match their URLs by using the `ignorepattern`
 option.
-E.g. `-i='.*white.*' -i='*.red.*'` will ignore files which URLs contain
-the sub strings **white** or **red**.
+E.g. `-i='.*clear.*' -i='*.red.*'` will ignore files which URLs contain
+the sub strings **clear** or **red**.
 In the config file this has to be noted as:
 
 ```
-ignorepattern = [".*white.*", ".*red.*"]
+ignorepattern = [".*clear.*", ".*red.*"]
 ```
 
 ### Remarks

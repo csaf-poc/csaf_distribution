@@ -35,11 +35,11 @@
   },
   {
     "num": 4,
-    "description": "TLP:WHITE",
+    "description": "TLP:CLEAR",
     "messages": [
       {
         "type": 0,
-        "text": "All advisories labeled TLP:WHITE were freely accessible."
+        "text": "All advisories labeled TLP:CLEAR were freely accessible."
       }
     ]
   },
