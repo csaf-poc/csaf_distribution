@@ -17,7 +17,7 @@ set -e
 # which are save to process further
 ./downloadExamples.sh
 
-TLPs=("white" "green" "amber" "red")
+TLPs=("clear" "green" "amber" "red")
 COUNTER=0
 for f in $(ls csaf_examples); do
     ../../bin-linux-amd64/csaf_uploader --insecure -P security123 -a upload \
