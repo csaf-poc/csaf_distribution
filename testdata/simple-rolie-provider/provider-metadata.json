@@ -1,10 +1,12 @@
 {
+  "$schema": "https://docs.oasis-open.org/csaf/csaf/v2.1/schema/provider.json",
   "canonical_url": "{{.URL}}/provider-metadata.json",
   "distributions": [
     {
       "rolie": {
         "feeds": [
           {
+            "last_updated": "2020-01-01T00:00:00Z",
             "summary": "TLP:CLEAR advisories",
             "tlp_label": "CLEAR",
             "url": "{{.URL}}/clear/clear-feed.json"
@@ -15,7 +17,7 @@
   ],
   "last_updated": "2020-01-01T00:00:00Z",
   "list_on_CSAF_aggregators": true,
-  "metadata_version": "2.0",
+  "metadata_version": "2.1",
   "mirror_on_CSAF_aggregators": true,
   "public_openpgp_keys": [
     {
@@ -25,9 +27,11 @@
   ],
   "publisher": {
     "category": "vendor",
+    "contact": {
+      "email": "security@example.com"
+    },
     "name": "ACME Inc",
-    "namespace": "https://example.com",
-    "contact_details": "mailto:security@example.com"
+    "namespace": "https://example.com"
   },
   "role": "csaf_trusted_provider"
 }

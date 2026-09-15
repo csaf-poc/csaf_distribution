@@ -45,11 +45,11 @@
   },
   {
     "num": 5,
-    "description": "TLP:AMBER and TLP:RED",
+    "description": "TLP:AMBER, TLP:AMBER+STRICT, and TLP:RED",
     "messages": [
       {
         "type": 0,
-        "text": "No advisories labeled TLP:AMBER or TLP:RED tested for accessibility."
+        "text": "No advisories labeled TLP:AMBER, TLP:AMBER+STRICT, or TLP:RED tested for accessibility."
       }
     ]
   },
@@ -109,7 +109,7 @@
     "messages": [
       {
         "type": 2,
-        "text": "No year folder found in {{.URL}}/white/avendor-advisory-0004.json"
+        "text": "No year folder found in {{.URL}}/clear/avendor-advisory-0004.json"
       }
     ]
   },
@@ -139,11 +139,11 @@
     "messages": [
       {
         "type": 2,
-        "text": "Fetching {{.URL}}/white/ failed. Status code 404 (404 Not Found)"
+        "text": "Fetching {{.URL}}/clear/ failed. Status code 404 (404 Not Found)"
       },
       {
         "type": 2,
-        "text": "Not listed advisories: {{.URL}}/white/avendor-advisory-0004.json"
+        "text": "Not listed advisories: {{.URL}}/clear/avendor-advisory-0004.json"
       }
     ]
   },
@@ -153,7 +153,7 @@
     "messages": [
       {
         "type": 0,
-        "text": "No sha512 hash file listed on ROLIE feed {{.URL}}/white/avendor-advisory-0004.json"
+        "text": "No sha512 hash file listed on ROLIE feed {{.URL}}/clear/avendor-advisory-0004.json"
       }
     ]
   },
@@ -173,7 +173,7 @@
     "messages": [
       {
         "type": 1,
-        "text": "Fetching {{.URL}}/white/category-white.json failed. Status code 404 (404 Not Found)"
+        "text": "Fetching {{.URL}}/clear/category-clear.json failed. Status code 404 (404 Not Found)"
       }
     ]
   },

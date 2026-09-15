@@ -73,13 +73,13 @@ func Test_listed(t *testing.T) {
 		{
 			name:    "listed path",
 			badDirs: util.Set[string]{},
-			path:    "/white/avendor-advisory-0004.json",
+			path:    "/clear/avendor-advisory-0004.json",
 			want:    true,
 		},
 		{
 			name:    "badDirs contains path",
-			badDirs: util.Set[string]{"/white/": {}},
-			path:    "/white/avendor-advisory-0004.json",
+			badDirs: util.Set[string]{"/clear/": {}},
+			path:    "/clear/avendor-advisory-0004.json",
 			want:    false,
 		},
 		{
@@ -91,13 +91,13 @@ func Test_listed(t *testing.T) {
 		{
 			name:    "badDirs does not contain path",
 			badDirs: util.Set[string]{"/bad-dir/": {}},
-			path:    "/white/avendor-advisory-0004.json",
+			path:    "/clear/avendor-advisory-0004.json",
 			want:    true,
 		},
 		{
 			name:    "unlisted path",
 			badDirs: util.Set[string]{},
-			path:    "/white/avendor-advisory-0004-not-listed.json",
+			path:    "/clear/avendor-advisory-0004-not-listed.json",
 			want:    false,
 		},
 	}

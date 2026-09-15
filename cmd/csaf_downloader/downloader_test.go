@@ -145,8 +145,8 @@ func TestShaMarking(t *testing.T) {
 			d.close()
 
 			// Check for downloaded hashes
-			sha256Exists := checkIfFileExists(tempDir+"/white/2020/avendor-advisory-0004.json.sha256", t)
-			sha512Exists := checkIfFileExists(tempDir+"/white/2020/avendor-advisory-0004.json.sha512", t)
+			sha256Exists := checkIfFileExists(tempDir+"/clear/2020/avendor-advisory-0004.json.sha256", t)
+			sha512Exists := checkIfFileExists(tempDir+"/clear/2020/avendor-advisory-0004.json.sha512", t)
 
 			if sha256Exists != test.wantSha256 {
 				t.Errorf("%v: expected sha256 hash present to be %v, got: %v", test.name, test.wantSha256, sha256Exists)

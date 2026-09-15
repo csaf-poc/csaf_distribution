@@ -45,11 +45,11 @@
   },
   {
     "num": 5,
-    "description": "TLP:AMBER and TLP:RED",
+    "description": "TLP:AMBER, TLP:AMBER+STRICT, and TLP:RED",
     "messages": [
       {
         "type": 0,
-        "text": "No advisories labeled TLP:AMBER or TLP:RED tested for accessibility."
+        "text": "No advisories labeled TLP:AMBER, TLP:AMBER+STRICT, or TLP:RED tested for accessibility."
       }
     ]
   },
